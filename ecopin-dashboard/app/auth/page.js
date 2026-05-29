@@ -30,22 +30,55 @@ export default function AuthPage() {
   }
 
   return (
-    <div style={{ maxWidth: 400, margin: '80px auto', padding: 32 }}>
-      <h1>{isLogin ? 'LGU Login' : 'Register'}</h1>
-      <input type="email" placeholder="Email"
-        value={email} onChange={e => setEmail(e.target.value)}
-        style={{ display: 'block', width: '100%', marginBottom: 12 }} />
-      <input type="password" placeholder="Password"
-        value={password} onChange={e => setPassword(e.target.value)}
-        style={{ display: 'block', width: '100%', marginBottom: 16 }} />
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <button onClick={handleSubmit} disabled={loading}>
-        {loading ? 'Loading...' : isLogin ? 'Login' : 'Register'}
-      </button>
-      <p style={{ marginTop: 16, cursor: 'pointer', color: 'blue' }}
-        onClick={() => setIsLogin(!isLogin)}>
-        {isLogin ? 'No account? Register' : 'Have account? Login'}
-      </p>
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      <div className="card w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-text-primary mb-2">
+            {isLogin ? 'Welcome Back' : 'Create Account'}
+          </h1>
+          <p className="text-sm text-text-secondary">
+            {isLogin ? 'Sign in to access your dashboard' : 'Register to get started'}
+          </p>
+        </div>
+        
+        <div className="space-y-4">
+          <input 
+            type="email" 
+            placeholder="Email"
+            value={email} 
+            onChange={e => setEmail(e.target.value)}
+            className="input"
+          />
+          <input 
+            type="password" 
+            placeholder="Password"
+            value={password} 
+            onChange={e => setPassword(e.target.value)}
+            className="input"
+          />
+          
+          {error && (
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <p className="text-sm text-error">{error}</p>
+            </div>
+          )}
+          
+          <button 
+            onClick={handleSubmit} 
+            disabled={loading}
+            className="btn-primary w-full"
+          >
+            {loading ? 'Loading...' : isLogin ? 'Sign In' : 'Create Account'}
+          </button>
+          
+          <p 
+            className="text-center text-sm text-text-secondary cursor-pointer hover:text-accent-green transition-colors"
+            onClick={() => setIsLogin(!isLogin)}
+          >
+            {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
+          </p>
+        </div>
+      </div>
     </div>
   )
 }
