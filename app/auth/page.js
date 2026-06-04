@@ -1,7 +1,8 @@
 'use client'
 import { useState } from 'react'
-import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL + '/api/auth';
 
 export default function AuthPage() {
   const [email, setEmail] = useState('')
@@ -13,20 +14,36 @@ export default function AuthPage() {
 
   async function handleSubmit() {
     setLoading(true); setError(null)
-    let result
+    let endpoint = isLogin ? `${API_BASE_URL}/login` : `${API_BASE_URL}/register`;
 
-    if (isLogin) {
-      result = await supabase.auth.signInWithPassword({ email, password })
-    } else {
-      result = await supabase.auth.signUp({ email, password })
-    }
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-    if (result.error) {
-      setError(result.error.message)
-    } else {
-      router.push('/dashboard')
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || data.message || 'Authentication failed');
+      }
+
+      if (data.token) {
+        localStorage.setItem('authToken', data.token);
+      }
+      
+      console.log('Authentication successful:', data);
+      
+      router.push('/dashboard');
+
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false)
   }
 
   return (

@@ -1,8 +1,9 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL + '/api/auth';
 
 const EcoPinMap = dynamic(
   () => import('@/components/map/EcoPinMap'),
@@ -14,15 +15,41 @@ export default function DashboardPage() {
   const router = useRouter()
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) router.push('/auth')
-      else setUser(data.user)
-    })
+    const checkAuth = async () => {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        router.push('/auth');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/me`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          localStorage.removeItem('authToken');
+          router.push('/auth');
+          return;
+        }
+
+        const data = await response.json();
+        setUser(data.user);
+      } catch (error) {
+        console.error('Failed to fetch user data:', error);
+        localStorage.removeItem('authToken');
+        router.push('/auth');
+      }
+    };
+
+    checkAuth();
   }, [])
 
   async function logout() {
-    await supabase.auth.signOut()
-    router.push('/auth')
+    localStorage.removeItem('authToken');
+    router.push('/auth');
   }
 
   if (!user) return <p className="text-center text-text-primary mt-8">Loading...</p>
