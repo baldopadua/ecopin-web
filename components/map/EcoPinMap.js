@@ -6,6 +6,7 @@ import L from 'leaflet'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
 import { fetchValidatedReports, fetchIssueTypes } from '@/lib/api'
+import { supabase } from '@/lib/supabase'
 
 // Polyfill Buffer for browser environment
 if (typeof window !== 'undefined' && !window.Buffer) {
@@ -15,20 +16,22 @@ if (typeof window !== 'undefined' && !window.Buffer) {
 const PLP_CENTER = [14.561433, 121.075636]
 const DEFAULT_ZOOM = 15
 
-// Pasig area bounds (approximately)
+// area bounds
 const PASIG_BOUNDS = [
   [14.52, 121.02], // Southwest
   [14.62, 121.12]  // Northeast
 ]
 
-const createIcon = (status) => {
-  let color = '#EF4444' // red for unresolved
-  if (status === 'in_progress') color = '#F59E0B' // orange
-  if (status === 'resolved') color = '#ADFF2F' // green
+const createIcon = (status, isRemoving = false) => {
+  let color = '#EF4444' // unresolved
+  if (status === 'in_progress') color = '#F59E0B' // in_progress
+  if (status === 'resolved') color = '#ADFF2F' // resolved
+  
+  const animation = isRemoving ? 'markerBounceOut 0.3s ease-in forwards' : 'markerBounceIn 0.5s ease-out'
   
   return L.divIcon({
-    className: 'custom-marker',
-    html: `<div style="background-color: ${color}; width: 40px; height: 40px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;">
+    className: isRemoving ? 'custom-marker removing' : 'custom-marker',
+    html: `<div style="background-color: ${color}; width: 40px; height: 40px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; animation: ${animation};">
       <img src="/pin-icon.svg" alt="pin" style="width: 20px; height: 20px;" />
     </div>`,
     iconSize: [40, 40],
@@ -40,6 +43,7 @@ export default function EcoPinMap() {
   const [mounted, setMounted] = useState(false)
   const [reports, setReports] = useState([])
   const [filteredReports, setFilteredReports] = useState([])
+  const [removingIds, setRemovingIds] = useState(new Set())
   const [issueTypes, setIssueTypes] = useState([])
   const [loading, setLoading] = useState(true)
   const router = useRouter()
@@ -65,6 +69,31 @@ export default function EcoPinMap() {
       setIssueTypes(typesData)
       setLoading(false)
     })
+
+    // Set up real-time subscription for reports table 
+    const subscription = supabase
+      .channel('reports-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to all changes 
+          schema: 'public',
+          table: 'reports'
+        },
+        (payload) => {
+          console.log('Real-time update received:', payload)
+          // Refetch reports when changes occur
+          fetchValidatedReports().then(reportsData => {
+            setReports(reportsData)
+          })
+        }
+      )
+      .subscribe()
+
+    // Cleanup subscription on unmount
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [])
 
   // Apply filters
@@ -87,7 +116,23 @@ export default function EcoPinMap() {
       filtered = filtered.filter(r => new Date(r.created_at) <= new Date(endDate))
     }
 
-    setFilteredReports(filtered)
+    // Identify reports being removed
+    const currentIds = new Set(filtered.map(r => r.id))
+    const removedIds = filteredReports
+      .filter(r => !currentIds.has(r.id))
+      .map(r => r.id)
+
+    if (removedIds.length > 0) {
+      setRemovingIds(new Set(removedIds))
+      
+      // Wait for exit animation to complete
+      setTimeout(() => {
+        setRemovingIds(new Set())
+        setFilteredReports(filtered)
+      }, 300)
+    } else {
+      setFilteredReports(filtered)
+    }
   }, [statusFilter, issueTypeFilter, startDate, endDate, reports])
 
   const handleMarkerClick = (reportId) => {
@@ -97,7 +142,42 @@ export default function EcoPinMap() {
   if (!mounted) return <p>Loading map...</p>
 
   return (
-    <div className="relative h-full w-full">
+    <>
+      <style jsx global>{`
+        @keyframes markerBounceIn {
+          0% {
+            transform: scale(0);
+            opacity: 0;
+          }
+          50% {
+            transform: scale(1.2);
+          }
+          100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+        @keyframes markerBounceOut {
+          0% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: scale(1.2);
+          }
+          100% {
+            transform: scale(0);
+            opacity: 0;
+          }
+        }
+        .custom-marker div {
+          animation: markerBounceIn 0.5s ease-out;
+        }
+        .custom-marker.removing div {
+          animation: markerBounceOut 0.3s ease-in forwards;
+        }
+      `}</style>
+      <div className="relative h-full w-full">
       <MapContainer
         key="ecopin-map"
         center={PLP_CENTER}
@@ -153,11 +233,13 @@ export default function EcoPinMap() {
           }
 
           if (latitude && longitude && !isNaN(latitude) && !isNaN(longitude)) {
+            const isRemoving = removingIds.has(report.id)
+            
             return (
               <Marker 
                 key={report.id} 
                 position={[latitude, longitude]} 
-                icon={createIcon(report.status)}
+                icon={createIcon(report.status, isRemoving)}
                 eventHandlers={{
                   mouseover: (e) => {
                     const marker = e.target
@@ -326,6 +408,7 @@ export default function EcoPinMap() {
           </p>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   )
 }
