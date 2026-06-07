@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL + '/api/auth';
@@ -11,6 +11,9 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const router = useRouter()
+  
+  const emailRef = useRef(null)
+  const passwordRef = useRef(null)
 
   async function handleSubmit() {
     setLoading(true); setError(null)
@@ -46,6 +49,20 @@ export default function AuthPage() {
     }
   }
 
+  const handleEmailKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      passwordRef.current?.focus()
+    }
+  }
+
+  const handlePasswordKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleSubmit()
+    }
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="card w-full max-w-md">
@@ -60,17 +77,21 @@ export default function AuthPage() {
         
         <div className="space-y-4">
           <input 
+            ref={emailRef}
             type="email" 
             placeholder="Email"
             value={email} 
             onChange={e => setEmail(e.target.value)}
+            onKeyDown={handleEmailKeyDown}
             className="input"
           />
           <input 
+            ref={passwordRef}
             type="password" 
             placeholder="Password"
             value={password} 
             onChange={e => setPassword(e.target.value)}
+            onKeyDown={handlePasswordKeyDown}
             className="input"
           />
           

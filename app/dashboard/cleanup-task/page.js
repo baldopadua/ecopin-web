@@ -1,10 +1,16 @@
+import PageHeader from '@/components/layout/PageHeader'
+
 export default function CleanupTaskPage() {
   return (
     <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-text-primary mb-2">Cleanup Task</h1>
-        <p className="text-text-secondary">Manage cleanup tasks and assignments</p>
-      </div>
+      <PageHeader 
+        title="Cleanup Task"
+        subtitle="Manage cleanup tasks and assignments"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Cleanup Task' }
+        ]}
+      />
 
       <div className="card">
         <h2 className="text-xl font-bold text-text-primary mb-4">Cleanup Tasks</h2>
