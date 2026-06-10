@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { fetchReportById, fetchReportEvidence } from '@/lib/api'
+import { fetchReportById, fetchReportEvidence, updateReportStatus } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
@@ -21,6 +21,8 @@ export default function ReportDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selectedImage, setSelectedImage] = useState(null)
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false)
+  const [updatingStatus, setUpdatingStatus] = useState(false)
 
   useEffect(() => {
     Promise.all([
@@ -105,6 +107,22 @@ export default function ReportDetailPage() {
     }
   }
 
+  const handleStatusUpdate = async (newStatus) => {
+    setUpdatingStatus(true)
+    try {
+      await updateReportStatus(reportId, newStatus)
+      // Refresh report data
+      const updatedReport = await fetchReportById(reportId)
+      setReport(updatedReport)
+      setShowStatusDropdown(false)
+    } catch (error) {
+      console.error('Failed to update status:', error)
+      alert('Failed to update status. Please try again.')
+    } finally {
+      setUpdatingStatus(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="p-8">
@@ -184,7 +202,7 @@ export default function ReportDetailPage() {
               </button>
               <div className="flex gap-3">
                 <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getStatusColor(report.status)}`}>
-                  {report.status.toUpperCase()}
+                  {report.status.replace('_', ' ').toUpperCase()}
                 </span>
                 <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getValidationColor(report.validation_status)}`}>
                   {report.validation_status === 'validated' ? 'AI VALIDATED' : report.validation_status.toUpperCase()}
@@ -355,9 +373,55 @@ export default function ReportDetailPage() {
           <div className="card">
             <h2 className="text-lg font-bold text-text-primary mb-4">Actions</h2>
             <div className="space-y-3">
-              <button className="btn-primary w-full">
-                Update Status
-              </button>
+              <div className="relative">
+                <button 
+                  onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+                  disabled={updatingStatus}
+                  className="btn-primary w-full"
+                >
+                  {updatingStatus ? 'Updating...' : 'Update Status'}
+                </button>
+                {showStatusDropdown && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-surface border border-border rounded-lg shadow-lg z-10">
+                    <button
+                      onClick={() => handleStatusUpdate('unresolved')}
+                      disabled={report.status === 'unresolved'}
+                      className={`w-full px-4 py-3 text-left border-b border-border last:border-b-0 transition-colors ${
+                        report.status === 'unresolved'
+                          ? 'bg-accent-green/20 text-accent-green font-semibold cursor-not-allowed'
+                          : 'text-text-primary hover:bg-accent-green/10'
+                      }`}
+                    >
+                      <span className="font-medium">Unresolved</span>
+                      {report.status === 'unresolved'}
+                    </button>
+                    <button
+                      onClick={() => handleStatusUpdate('in_progress')}
+                      disabled={report.status === 'in_progress'}
+                      className={`w-full px-4 py-3 text-left border-b border-border last:border-b-0 transition-colors ${
+                        report.status === 'in_progress'
+                          ? 'bg-accent-green/20 text-accent-green font-semibold cursor-not-allowed'
+                          : 'text-text-primary hover:bg-accent-green/10'
+                      }`}
+                    >
+                      <span className="font-medium">In Progress</span>
+                      {report.status === 'in_progress'}
+                    </button>
+                    <button
+                      onClick={() => handleStatusUpdate('resolved')}
+                      disabled={report.status === 'resolved'}
+                      className={`w-full px-4 py-3 text-left transition-colors ${
+                        report.status === 'resolved'
+                          ? 'bg-accent-green/20 text-accent-green font-semibold cursor-not-allowed'
+                          : 'text-text-primary hover:bg-accent-green/10'
+                      }`}
+                    >
+                      <span className="font-medium">Resolved</span>
+                      {report.status === 'resolved'}
+                    </button>
+                  </div>
+                )}
+              </div>
               <button className="btn-secondary w-full">
                 Add Note
               </button>

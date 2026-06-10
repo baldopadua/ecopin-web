@@ -262,7 +262,7 @@ export default function EcoPinMap() {
                         report.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
                         'bg-red-100 text-red-800'
                       }`}>
-                        {report.status}
+                        {report.status.replace('_', ' ')}
                       </span>
                       <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
                         {report.issue_type}
