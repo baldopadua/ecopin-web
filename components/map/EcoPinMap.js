@@ -1,11 +1,12 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
+import React from 'react'
 import { useRouter } from 'next/navigation'
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, Polygon, Circle, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
-import { fetchValidatedReports, fetchIssueTypes } from '@/lib/api'
+import { fetchValidatedReports, fetchIssueTypes, fetchClusters } from '@/lib/api'
 import { supabase } from '@/lib/supabase'
 
 // Polyfill Buffer for browser environment
@@ -26,9 +27,9 @@ const createIcon = (status, isRemoving = false) => {
   let color = '#EF4444' // unresolved
   if (status === 'in_progress') color = '#F59E0B' // in_progress
   if (status === 'resolved') color = '#ADFF2F' // resolved
-  
+
   const animation = isRemoving ? 'markerBounceOut 0.3s ease-in forwards' : 'markerBounceIn 0.5s ease-out'
-  
+
   return L.divIcon({
     className: isRemoving ? 'custom-marker removing' : 'custom-marker',
     html: `<div style="background-color: ${color}; width: 40px; height: 40px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; animation: ${animation};">
@@ -39,6 +40,59 @@ const createIcon = (status, isRemoving = false) => {
   })
 }
 
+const createClusterIcon = (cluster) => {
+  const severity = cluster.severity
+  let color = '#F59E0B' // medium (default)
+  if (severity === 'high') color = '#EF4444'
+  if (severity === 'low') color = '#3B82F6'
+
+  const count = cluster.report_count
+
+  return L.divIcon({
+    className: 'custom-cluster-marker',
+    html: `<div style="background-color: ${color}; width: 50px; height: 50px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 16px;">
+      ${count}
+    </div>`,
+    iconSize: [50, 50],
+    iconAnchor: [25, 25],
+  })
+}
+
+const parseGeometry = (geometry) => {
+  if (!geometry) return null
+
+  try {
+    // Handle PostGIS geometry (hex string)
+    if (typeof geometry === 'string') {
+      const buffer = Buffer.from(geometry, 'hex')
+      const parsed = wkx.Geometry.parse(buffer)
+      if (parsed && parsed.x && parsed.y) {
+        return [parsed.y, parsed.x] // Leaflet uses [lat, lng]
+      }
+    }
+    // Handle GeoJSON format
+    else if (typeof geometry === 'object' && geometry.type === 'Point') {
+      const [lng, lat] = geometry.coordinates
+      return [lat, lng]
+    }
+  } catch (error) {
+    console.error('Error parsing geometry:', error)
+  }
+
+  return null
+}
+
+function ZoomTracker({ setZoom }) {
+  const map = useMapEvents({
+    zoomend: () => {
+      const newZoom = map.getZoom()
+      console.log('Zoom changed to:', newZoom)
+      setZoom(newZoom)
+    },
+  })
+  return null
+}
+
 export default function EcoPinMap() {
   const [mounted, setMounted] = useState(false)
   const [reports, setReports] = useState([])
@@ -46,10 +100,15 @@ export default function EcoPinMap() {
   const [removingIds, setRemovingIds] = useState(new Set())
   const [issueTypes, setIssueTypes] = useState([])
   const [loading, setLoading] = useState(true)
+  const [clusters, setClusters] = useState([])
+  const [clusterReports, setClusterReports] = useState({}) // Map of cluster_id -> array of reports
+  const [zoom, setZoom] = useState(DEFAULT_ZOOM)
+  const mapRef = useRef(null)
   const router = useRouter()
 
   // Filter states
   const [showPins, setShowPins] = useState(true)
+  const [showClusters, setShowClusters] = useState(true)
   const [statusFilter, setStatusFilter] = useState('all')
   const [issueTypeFilter, setIssueTypeFilter] = useState('all')
   const [startDate, setStartDate] = useState('')
@@ -58,33 +117,68 @@ export default function EcoPinMap() {
   useEffect(() => {
     import('@/lib/leaflet-fix')
     setMounted(true)
-    
+
     // Fetch data when component mounts
     Promise.all([
       fetchValidatedReports(),
-      fetchIssueTypes()
-    ]).then(([reportsData, typesData]) => {
+      fetchIssueTypes(),
+      fetchClusters()
+    ]).then(([reportsData, typesData, clustersData]) => {
+      console.log('Clusters fetched:', clustersData)
+      console.log('Reports fetched:', reportsData)
+      console.log('Reports with cluster_id:', reportsData.filter(r => r.cluster_id))
       setReports(reportsData)
       setFilteredReports(reportsData)
       setIssueTypes(typesData)
+      setClusters(clustersData)
+
+      // Group reports by cluster_id
+      const reportsByCluster = {}
+      reportsData.forEach(report => {
+        if (report.cluster_id) {
+          if (!reportsByCluster[report.cluster_id]) {
+            reportsByCluster[report.cluster_id] = []
+          }
+          reportsByCluster[report.cluster_id].push(report)
+        }
+      })
+      console.log('Reports by cluster:', reportsByCluster)
+      setClusterReports(reportsByCluster)
+
       setLoading(false)
     })
 
-    // Set up real-time subscription for reports table 
+    // Set up real-time subscription for reports table
     const subscription = supabase
       .channel('reports-changes')
       .on(
         'postgres_changes',
         {
-          event: '*', // Listen to all changes 
+          event: '*', // Listen to all changes
           schema: 'public',
           table: 'reports'
         },
         (payload) => {
           console.log('Real-time update received:', payload)
           // Refetch reports when changes occur
-          fetchValidatedReports().then(reportsData => {
+          Promise.all([
+            fetchValidatedReports(),
+            fetchClusters()
+          ]).then(([reportsData, clustersData]) => {
             setReports(reportsData)
+            setClusters(clustersData)
+
+            // Group reports by cluster_id
+            const reportsByCluster = {}
+            reportsData.forEach(report => {
+              if (report.cluster_id) {
+                if (!reportsByCluster[report.cluster_id]) {
+                  reportsByCluster[report.cluster_id] = []
+                }
+                reportsByCluster[report.cluster_id].push(report)
+              }
+            })
+            setClusterReports(reportsByCluster)
           })
         }
       )
@@ -186,12 +280,121 @@ export default function EcoPinMap() {
         maxBoundsViscosity={1.0}
         minZoom={13}
         style={{ height: '100%', width: '100%' }}
+        ref={mapRef}
       >
+        <ZoomTracker setZoom={setZoom} />
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>'
         />
+
+        {/* Cluster Markers (shown when zoomed out) */}
+        {showClusters && zoom <= 15 && clusters.map((cluster) => {
+          const center = parseGeometry(cluster.center)
+          if (!center) return null
+
+          console.log('Rendering cluster marker:', cluster.id, 'zoom:', zoom)
+          return (
+            <Marker
+              key={cluster.id}
+              position={center}
+              icon={createClusterIcon(cluster)}
+            >
+              <Popup>
+                <div className="p-2">
+                  <strong className="block text-sm">Cluster</strong>
+                  <p className="text-xs text-gray-600 mt-1">
+                    {cluster.report_count} reports
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    Severity: <span className={`font-semibold ${
+                      cluster.severity === 'high' ? 'text-red-600' :
+                      cluster.severity === 'medium' ? 'text-orange-600' :
+                      'text-blue-600'
+                    }`}>{cluster.severity}</span>
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    Type: {cluster.issue_type}
+                  </p>
+                </div>
+              </Popup>
+            </Marker>
+          )
+        })}
+
+        {/* Cluster Polygons (shown when zoomed in - connects actual report pins) */}
+        {showClusters && zoom > 15 && clusters.map((cluster) => {
+          const memberReports = clusterReports[cluster.id]
+          console.log('Cluster polygon check:', cluster.id, 'memberReports:', memberReports, 'zoom:', zoom)
+          if (!memberReports || memberReports.length < 2) return null
+
+          // Get coordinates of all member reports
+          const polygonPoints = memberReports.map(report => {
+            let latitude, longitude
+
+            if (report.latitude && report.longitude) {
+              latitude = report.latitude
+              longitude = report.longitude
+            } else if (report.location) {
+              try {
+                if (typeof report.location === 'string' && report.location.startsWith('{')) {
+                  const geoJSON = JSON.parse(report.location)
+                  if (geoJSON.type === 'Point' && geoJSON.coordinates) {
+                    longitude = geoJSON.coordinates[0]
+                    latitude = geoJSON.coordinates[1]
+                  }
+                } else if (typeof report.location === 'string') {
+                  const buffer = Buffer.from(report.location, 'hex')
+                  const geometry = wkx.Geometry.parse(buffer)
+                  if (geometry && geometry.x && geometry.y) {
+                    longitude = geometry.x
+                    latitude = geometry.y
+                  }
+                }
+              } catch (error) {
+                console.error('Error parsing location for report', report.id, ':', error)
+              }
+            }
+
+            if (latitude && longitude && !isNaN(latitude) && !isNaN(longitude)) {
+              return [latitude, longitude]
+            }
+            return null
+          }).filter(point => point !== null)
+
+          if (polygonPoints.length < 3) return null
+
+          // Calculate center of points
+          const centerLat = polygonPoints.reduce((sum, p) => sum + p[0], 0) / polygonPoints.length
+          const centerLng = polygonPoints.reduce((sum, p) => sum + p[1], 0) / polygonPoints.length
+
+          // Sort points by angle around center to prevent self-intersection
+          const sortedPoints = [...polygonPoints].sort((a, b) => {
+            const angleA = Math.atan2(a[1] - centerLng, a[0] - centerLat)
+            const angleB = Math.atan2(b[1] - centerLng, b[0] - centerLat)
+            return angleA - angleB
+          })
+
+          return (
+            <Polygon
+              key={`polygon-${cluster.id}`}
+              positions={sortedPoints}
+              color="#EF4444"
+              fillColor="#EF4444"
+              fillOpacity={0.2}
+              weight={2}
+            />
+          )
+        })}
+
+        {/* Report Pins */}
         {showPins && filteredReports.map((report) => {
+          // Hide individual pins that belong to clusters when zoomed out
+          // Show them when zoomed in
+          if (report.cluster_id && zoom <= 15) {
+            console.log('Hiding cluster member pin:', report.id, 'cluster_id:', report.cluster_id, 'zoom:', zoom)
+            return null
+          }
           let latitude, longitude
           
           // reports_view has latitude and longitude columns directly
@@ -290,7 +493,7 @@ export default function EcoPinMap() {
         {/* Map Layers */}
         <div className="mb-4">
           <h4 className="text-sm font-semibold text-text-secondary mb-2">MAP LAYERS</h4>
-          <label className="flex items-center gap-2 cursor-pointer">
+          <label className="flex items-center gap-2 cursor-pointer mb-2">
             <input
               type="checkbox"
               checked={showPins}
@@ -298,6 +501,15 @@ export default function EcoPinMap() {
               className="w-4 h-4 accent-accent-green"
             />
             <span className="text-sm text-text-primary">Report Pins</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showClusters}
+              onChange={(e) => setShowClusters(e.target.checked)}
+              className="w-4 h-4 accent-accent-green"
+            />
+            <span className="text-sm text-text-primary">Report Clusters</span>
           </label>
         </div>
 
@@ -404,7 +616,7 @@ export default function EcoPinMap() {
         {/* Report Count */}
         <div className="pt-4 border-t border-border">
           <p className="text-sm text-text-secondary">
-            {loading ? 'Loading...' : `${filteredReports.length} validated reports displayed`}
+            {loading ? 'Loading...' : `${filteredReports.length} reports, ${clusters.length} clusters displayed`}
           </p>
         </div>
       </div>
