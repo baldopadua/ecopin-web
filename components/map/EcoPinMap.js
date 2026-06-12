@@ -2,8 +2,9 @@
 import { useEffect, useState, useRef } from 'react'
 import React from 'react'
 import { useRouter } from 'next/navigation'
-import { MapContainer, TileLayer, Marker, Popup, Polygon, Circle, useMapEvents } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, Polygon, Circle, useMapEvents, useMap } from 'react-leaflet'
 import L from 'leaflet'
+import 'leaflet.heat'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
 import { fetchValidatedReports, fetchIssueTypes, fetchClusters } from '@/lib/api'
@@ -93,6 +94,44 @@ function ZoomTracker({ setZoom }) {
   return null
 }
 
+function HeatmapLayer({ heatPoints, showHeatmap }) {
+  const map = useMap()
+  const heatLayerRef = useRef(null)
+
+  useEffect(() => {
+    if (showHeatmap && heatPoints.length > 0) {
+      if (!heatLayerRef.current) {
+        heatLayerRef.current = L.heatLayer(heatPoints, {
+          radius: 25,
+          blur: 15,
+          maxZoom: 17,
+          max: 1.0,
+          gradient: { 0.4: 'blue', 0.65: 'lime', 1: 'red' }
+        }).addTo(map)
+      } else {
+        heatLayerRef.current.setLatLngs(heatPoints)
+      }
+    } else if (heatLayerRef.current) {
+      heatLayerRef.current.remove()
+      heatLayerRef.current = null
+    }
+
+    return () => {
+      try {
+        if (heatLayerRef.current && map) {
+          map.removeLayer(heatLayerRef.current)
+        }
+      } catch (e) {
+        console.error(e)
+      }
+
+      heatLayerRef.current = null
+    }
+  }, [heatPoints, showHeatmap, map])
+
+  return null
+}
+
 export default function EcoPinMap() {
   const [mounted, setMounted] = useState(false)
   const [reports, setReports] = useState([])
@@ -109,10 +148,49 @@ export default function EcoPinMap() {
   // Filter states
   const [showPins, setShowPins] = useState(true)
   const [showClusters, setShowClusters] = useState(true)
+  const [showHeatmap, setShowHeatmap] = useState(false)
   const [statusFilter, setStatusFilter] = useState('all')
   const [issueTypeFilter, setIssueTypeFilter] = useState('all')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
+
+  // Prepare heat points from filtered reports
+  const heatPoints = filteredReports.map(report => {
+    let latitude, longitude
+    if (report.latitude && report.longitude) {
+      latitude = report.latitude
+      longitude = report.longitude
+    } else if (report.location) {
+      try {
+        if (typeof report.location === 'string' && report.location.startsWith('{')) {
+          const geoJSON = JSON.parse(report.location)
+          if (geoJSON.type === 'Point' && geoJSON.coordinates) {
+            longitude = geoJSON.coordinates[0]
+            latitude = geoJSON.coordinates[1]
+          }
+        } else if (typeof report.location === 'string') {
+          const buffer = Buffer.from(report.location, 'hex')
+          const geometry = wkx.Geometry.parse(buffer)
+          if (geometry && geometry.x && geometry.y) {
+            longitude = geometry.x
+            latitude = geometry.y
+          }
+        } else if (Buffer.isBuffer(report.location)) {
+          const geometry = wkx.Geometry.parse(report.location)
+          if (geometry && geometry.x && geometry.y) {
+            longitude = geometry.x
+            latitude = geometry.y
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing location for report', report.id, ':', error)
+      }
+    }
+    if (latitude && longitude && !isNaN(latitude) && !isNaN(longitude)) {
+      return [latitude, longitude, 1.0] // [lat, lng, intensity]
+    }
+    return null
+  }).filter(point => point !== null)
 
   useEffect(() => {
     import('@/lib/leaflet-fix')
@@ -218,7 +296,7 @@ export default function EcoPinMap() {
 
     if (removedIds.length > 0) {
       setRemovingIds(new Set(removedIds))
-      
+
       // Wait for exit animation to complete
       setTimeout(() => {
         setRemovingIds(new Set())
@@ -272,80 +350,184 @@ export default function EcoPinMap() {
         }
       `}</style>
       <div className="relative h-full w-full">
-      <MapContainer
-        key="ecopin-map"
-        center={PLP_CENTER}
-        zoom={DEFAULT_ZOOM}
-        maxBounds={PASIG_BOUNDS}
-        maxBoundsViscosity={1.0}
-        minZoom={13}
-        style={{ height: '100%', width: '100%' }}
-        ref={mapRef}
-      >
-        <ZoomTracker setZoom={setZoom} />
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>'
-        />
+        <MapContainer
+          key="ecopin-map"
+          center={PLP_CENTER}
+          zoom={DEFAULT_ZOOM}
+          maxBounds={PASIG_BOUNDS}
+          maxBoundsViscosity={1.0}
+          minZoom={13}
+          style={{ height: '100%', width: '100%' }}
+          ref={mapRef}
+        >
+          <ZoomTracker setZoom={setZoom} />
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>'
+          />
+          <HeatmapLayer heatPoints={heatPoints} showHeatmap={showHeatmap} />
 
-        {/* Cluster Markers (shown when zoomed out) */}
-        {showClusters && zoom <= 15 && clusters.map((cluster) => {
-          const center = parseGeometry(cluster.center)
-          if (!center) return null
+          {/* Cluster Markers (shown when zoomed out) */}
+          {showClusters && zoom <= 15 && clusters.map((cluster) => {
+            const center = parseGeometry(cluster.center)
+            if (!center) return null
 
-          console.log('Rendering cluster marker:', cluster.id, 'zoom:', zoom)
-          return (
-            <Marker
-              key={cluster.id}
-              position={center}
-              icon={createClusterIcon(cluster)}
-            >
-              <Popup>
-                <div className="p-2">
-                  <strong className="block text-sm">Cluster</strong>
-                  <p className="text-xs text-gray-600 mt-1">
-                    {cluster.report_count} reports
-                  </p>
-                  <p className="text-xs text-gray-600">
-                    Severity: <span className={`font-semibold ${
-                      cluster.severity === 'high' ? 'text-red-600' :
-                      cluster.severity === 'medium' ? 'text-orange-600' :
-                      'text-blue-600'
-                    }`}>{cluster.severity}</span>
-                  </p>
-                  <p className="text-xs text-gray-600">
-                    Type: {cluster.issue_type}
-                  </p>
-                </div>
-              </Popup>
-            </Marker>
-          )
-        })}
+            console.log('Rendering cluster marker:', cluster.id, 'zoom:', zoom)
+            return (
+              <Marker
+                key={cluster.id}
+                position={center}
+                icon={createClusterIcon(cluster)}
+                eventHandlers={{
+                  mouseover: (e) => {
+                    const marker = e.target
+                    marker.openPopup()
+                  },
+                  mouseout: (e) => {
+                    const marker = e.target
+                    marker.closePopup()
+                  },
+                  click: () => router.push(`/dashboard/clusters/${cluster.id}`)
+                }}
+              >
+                <Popup>
+                  <div className="p-2">
+                    <strong className="block text-sm">Cluster #{cluster.id}</strong>
+                    <p className="text-xs text-gray-600 mt-1">
+                      {cluster.report_count} reports
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      Severity: <span className={`font-semibold ${cluster.severity === 'high' ? 'text-red-600' :
+                        cluster.severity === 'medium' ? 'text-orange-600' :
+                          'text-blue-600'
+                        }`}>{cluster.severity}</span>
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      Type: {cluster.issue_type}
+                    </p>
+                    {center && (
+                      <p className="text-xs text-gray-600">
+                        Location: {center[0].toFixed(4)}, {center[1].toFixed(4)}
+                      </p>
+                    )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        router.push(`/dashboard/clusters/${cluster.id}`)
+                      }}
+                      className="mt-2 w-full text-xs bg-accent-green text-white py-1 rounded hover:bg-accent-green-dark"
+                    >
+                      View All Reports
+                    </button>
+                  </div>
+                </Popup>
+              </Marker>
+            )
+          })}
 
-        {/* Cluster Polygons (shown when zoomed in - connects actual report pins) */}
-        {showClusters && zoom > 15 && clusters.map((cluster) => {
-          const memberReports = clusterReports[cluster.id]
-          console.log('Cluster polygon check:', cluster.id, 'memberReports:', memberReports, 'zoom:', zoom)
-          if (!memberReports || memberReports.length < 2) return null
+          {/* Cluster Polygons (shown when zoomed in - connects actual report pins) */}
+          {showClusters && zoom > 15 && clusters.map((cluster) => {
+            const memberReports = clusterReports[cluster.id]
+            console.log('Cluster polygon check:', cluster.id, 'memberReports:', memberReports, 'zoom:', zoom)
+            if (!memberReports || memberReports.length < 2) return null
 
-          // Get coordinates of all member reports
-          const polygonPoints = memberReports.map(report => {
+            // Get coordinates of all member reports
+            const polygonPoints = memberReports.map(report => {
+              let latitude, longitude
+
+              if (report.latitude && report.longitude) {
+                latitude = report.latitude
+                longitude = report.longitude
+              } else if (report.location) {
+                try {
+                  if (typeof report.location === 'string' && report.location.startsWith('{')) {
+                    const geoJSON = JSON.parse(report.location)
+                    if (geoJSON.type === 'Point' && geoJSON.coordinates) {
+                      longitude = geoJSON.coordinates[0]
+                      latitude = geoJSON.coordinates[1]
+                    }
+                  } else if (typeof report.location === 'string') {
+                    const buffer = Buffer.from(report.location, 'hex')
+                    const geometry = wkx.Geometry.parse(buffer)
+                    if (geometry && geometry.x && geometry.y) {
+                      longitude = geometry.x
+                      latitude = geometry.y
+                    }
+                  }
+                } catch (error) {
+                  console.error('Error parsing location for report', report.id, ':', error)
+                }
+              }
+
+              if (latitude && longitude && !isNaN(latitude) && !isNaN(longitude)) {
+                return [latitude, longitude]
+              }
+              return null
+            }).filter(point => point !== null)
+
+            if (polygonPoints.length < 3) return null
+
+            // Calculate center of points
+            const centerLat = polygonPoints.reduce((sum, p) => sum + p[0], 0) / polygonPoints.length
+            const centerLng = polygonPoints.reduce((sum, p) => sum + p[1], 0) / polygonPoints.length
+
+            // Sort points by angle around center to prevent self-intersection
+            const sortedPoints = [...polygonPoints].sort((a, b) => {
+              const angleA = Math.atan2(a[1] - centerLng, a[0] - centerLat)
+              const angleB = Math.atan2(b[1] - centerLng, b[0] - centerLat)
+              return angleA - angleB
+            })
+
+            return (
+              <Polygon
+                key={`polygon-${cluster.id}`}
+                positions={sortedPoints}
+                color="#EF4444"
+                fillColor="#EF4444"
+                fillOpacity={0.2}
+                weight={2}
+              />
+            )
+          })}
+
+          {/* Report Pins */}
+          {showPins && filteredReports.map((report) => {
+            // Hide individual pins that belong to clusters when zoomed out
+            // Show them when zoomed in
+            if (report.cluster_id && zoom <= 15) {
+              console.log('Hiding cluster member pin:', report.id, 'cluster_id:', report.cluster_id, 'zoom:', zoom)
+              return null
+            }
             let latitude, longitude
 
+            // reports_view has latitude and longitude columns directly
             if (report.latitude && report.longitude) {
               latitude = report.latitude
               longitude = report.longitude
-            } else if (report.location) {
+            }
+            // Fallback to parsing location field
+            else if (report.location) {
               try {
+                // Handle GeoJSON format from reports_view
                 if (typeof report.location === 'string' && report.location.startsWith('{')) {
                   const geoJSON = JSON.parse(report.location)
                   if (geoJSON.type === 'Point' && geoJSON.coordinates) {
                     longitude = geoJSON.coordinates[0]
                     latitude = geoJSON.coordinates[1]
                   }
-                } else if (typeof report.location === 'string') {
+                }
+                // Handle hex string format - convert to Buffer first
+                else if (typeof report.location === 'string') {
                   const buffer = Buffer.from(report.location, 'hex')
                   const geometry = wkx.Geometry.parse(buffer)
+                  if (geometry && geometry.x && geometry.y) {
+                    longitude = geometry.x
+                    latitude = geometry.y
+                  }
+                }
+                // Handle Buffer format
+                else if (Buffer.isBuffer(report.location)) {
+                  const geometry = wkx.Geometry.parse(report.location)
                   if (geometry && geometry.x && geometry.y) {
                     longitude = geometry.x
                     latitude = geometry.y
@@ -357,269 +539,198 @@ export default function EcoPinMap() {
             }
 
             if (latitude && longitude && !isNaN(latitude) && !isNaN(longitude)) {
-              return [latitude, longitude]
-            }
-            return null
-          }).filter(point => point !== null)
+              const isRemoving = removingIds.has(report.id)
 
-          if (polygonPoints.length < 3) return null
-
-          // Calculate center of points
-          const centerLat = polygonPoints.reduce((sum, p) => sum + p[0], 0) / polygonPoints.length
-          const centerLng = polygonPoints.reduce((sum, p) => sum + p[1], 0) / polygonPoints.length
-
-          // Sort points by angle around center to prevent self-intersection
-          const sortedPoints = [...polygonPoints].sort((a, b) => {
-            const angleA = Math.atan2(a[1] - centerLng, a[0] - centerLat)
-            const angleB = Math.atan2(b[1] - centerLng, b[0] - centerLat)
-            return angleA - angleB
-          })
-
-          return (
-            <Polygon
-              key={`polygon-${cluster.id}`}
-              positions={sortedPoints}
-              color="#EF4444"
-              fillColor="#EF4444"
-              fillOpacity={0.2}
-              weight={2}
-            />
-          )
-        })}
-
-        {/* Report Pins */}
-        {showPins && filteredReports.map((report) => {
-          // Hide individual pins that belong to clusters when zoomed out
-          // Show them when zoomed in
-          if (report.cluster_id && zoom <= 15) {
-            console.log('Hiding cluster member pin:', report.id, 'cluster_id:', report.cluster_id, 'zoom:', zoom)
-            return null
-          }
-          let latitude, longitude
-          
-          // reports_view has latitude and longitude columns directly
-          if (report.latitude && report.longitude) {
-            latitude = report.latitude
-            longitude = report.longitude
-          }
-          // Fallback to parsing location field
-          else if (report.location) {
-            try {
-              // Handle GeoJSON format from reports_view
-              if (typeof report.location === 'string' && report.location.startsWith('{')) {
-                const geoJSON = JSON.parse(report.location)
-                if (geoJSON.type === 'Point' && geoJSON.coordinates) {
-                  longitude = geoJSON.coordinates[0]
-                  latitude = geoJSON.coordinates[1]
-                }
-              }
-              // Handle hex string format - convert to Buffer first
-              else if (typeof report.location === 'string') {
-                const buffer = Buffer.from(report.location, 'hex')
-                const geometry = wkx.Geometry.parse(buffer)
-                if (geometry && geometry.x && geometry.y) {
-                  longitude = geometry.x
-                  latitude = geometry.y
-                }
-              }
-              // Handle Buffer format
-              else if (Buffer.isBuffer(report.location)) {
-                const geometry = wkx.Geometry.parse(report.location)
-                if (geometry && geometry.x && geometry.y) {
-                  longitude = geometry.x
-                  latitude = geometry.y
-                }
-              }
-            } catch (error) {
-              console.error('Error parsing location for report', report.id, ':', error)
-            }
-          }
-
-          if (latitude && longitude && !isNaN(latitude) && !isNaN(longitude)) {
-            const isRemoving = removingIds.has(report.id)
-            
-            return (
-              <Marker 
-                key={report.id} 
-                position={[latitude, longitude]} 
-                icon={createIcon(report.status, isRemoving)}
-                eventHandlers={{
-                  mouseover: (e) => {
-                    const marker = e.target
-                    marker.openPopup()
-                  },
-                  mouseout: (e) => {
-                    const marker = e.target
-                    marker.closePopup()
-                  },
-                  click: () => handleMarkerClick(report.id)
-                }}
-              >
-                <Popup>
-                  <div className="p-2">
-                    <strong className="block text-sm">{report.title}</strong>
-                    <p className="text-xs text-gray-600 mt-1">{report.description?.substring(0, 100)}...</p>
-                    <div className="mt-2 flex gap-2">
-                      <span className={`text-xs px-2 py-1 rounded ${
-                        report.status === 'resolved' ? 'bg-green-100 text-green-800' :
-                        report.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {report.status.replace('_', ' ')}
-                      </span>
-                      <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
-                        {report.issue_type}
-                      </span>
+              return (
+                <Marker
+                  key={report.id}
+                  position={[latitude, longitude]}
+                  icon={createIcon(report.status, isRemoving)}
+                  eventHandlers={{
+                    mouseover: (e) => {
+                      const marker = e.target
+                      marker.openPopup()
+                    },
+                    mouseout: (e) => {
+                      const marker = e.target
+                      marker.closePopup()
+                    },
+                    click: () => handleMarkerClick(report.id)
+                  }}
+                >
+                  <Popup>
+                    <div className="p-2">
+                      <strong className="block text-sm">{report.title}</strong>
+                      <p className="text-xs text-gray-600 mt-1">{report.description?.substring(0, 100)}...</p>
+                      <div className="mt-2 flex gap-2">
+                        <span className={`text-xs px-2 py-1 rounded ${report.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                          report.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                          {report.status.replace('_', ' ')}
+                        </span>
+                        <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
+                          {report.issue_type}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => handleMarkerClick(report.id)}
+                        className="mt-2 w-full text-xs bg-accent-green text-white py-1 rounded hover:bg-accent-green-dark"
+                      >
+                        Click to View Details
+                      </button>
                     </div>
-                    <button 
-                      onClick={() => handleMarkerClick(report.id)}
-                      className="mt-2 w-full text-xs bg-accent-green text-white py-1 rounded hover:bg-accent-green-dark"
-                    >
-                      Click to View Details
-                    </button>
-                  </div>
-                </Popup>
-              </Marker>
-            )
-          }
-          return null
-        })}
-      </MapContainer>
+                  </Popup>
+                </Marker>
+              )
+            }
+            return null
+          })}
+        </MapContainer>
 
-      {/* Filter Panel */}
-      <div className="absolute top-4 right-4 w-72 bg-surface-elevated border border-border rounded-lg shadow-lg p-4 max-h-[calc(100vh-2rem)] overflow-y-auto z-[1000]">
-        <h3 className="font-bold text-text-primary mb-4">Map Filters</h3>
-        
-        {/* Map Layers */}
-        <div className="mb-4">
-          <h4 className="text-sm font-semibold text-text-secondary mb-2">MAP LAYERS</h4>
-          <label className="flex items-center gap-2 cursor-pointer mb-2">
-            <input
-              type="checkbox"
-              checked={showPins}
-              onChange={(e) => setShowPins(e.target.checked)}
-              className="w-4 h-4 accent-accent-green"
-            />
-            <span className="text-sm text-text-primary">Report Pins</span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showClusters}
-              onChange={(e) => setShowClusters(e.target.checked)}
-              className="w-4 h-4 accent-accent-green"
-            />
-            <span className="text-sm text-text-primary">Report Clusters</span>
-          </label>
-        </div>
+        {/* Filter Panel */}
+        <div className="absolute top-4 right-4 w-72 bg-surface-elevated border border-border rounded-lg shadow-lg p-4 max-h-[calc(100vh-2rem)] overflow-y-auto z-[1000]">
+          <h3 className="font-bold text-text-primary mb-4">Map Filters</h3>
 
-        {/* Status Filter */}
-        <div className="mb-4">
-          <h4 className="text-sm font-semibold text-text-secondary mb-2">STATUS</h4>
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 cursor-pointer">
+          {/* Map Layers */}
+          <div className="mb-4">
+            <h4 className="text-sm font-semibold text-text-secondary mb-2">MAP LAYERS</h4>
+            <label className="flex items-center gap-2 cursor-pointer mb-2">
               <input
-                type="radio"
-                name="status"
-                value="all"
-                checked={statusFilter === 'all'}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                type="checkbox"
+                checked={showPins}
+                onChange={(e) => setShowPins(e.target.checked)}
                 className="w-4 h-4 accent-accent-green"
               />
-              <span className="text-sm text-text-primary">All</span>
+              <span className="text-sm text-text-primary">Report Pins</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer mb-2">
+              <input
+                type="checkbox"
+                checked={showClusters}
+                onChange={(e) => setShowClusters(e.target.checked)}
+                className="w-4 h-4 accent-accent-green"
+              />
+              <span className="text-sm text-text-primary">Report Clusters</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer">
               <input
-                type="radio"
-                name="status"
-                value="unresolved"
-                checked={statusFilter === 'unresolved'}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                type="checkbox"
+                checked={showHeatmap}
+                onChange={(e) => setShowHeatmap(e.target.checked)}
                 className="w-4 h-4 accent-accent-green"
               />
-              <span className="flex items-center gap-2 text-sm text-text-primary">
-                <span className="w-3 h-3 rounded-full bg-red-500"></span>
-                Unresolved
-              </span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="status"
-                value="in_progress"
-                checked={statusFilter === 'in_progress'}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-4 h-4 accent-accent-green"
-              />
-              <span className="flex items-center gap-2 text-sm text-text-primary">
-                <span className="w-3 h-3 rounded-full bg-orange-500"></span>
-                In Progress
-              </span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="status"
-                value="resolved"
-                checked={statusFilter === 'resolved'}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-4 h-4 accent-accent-green"
-              />
-              <span className="flex items-center gap-2 text-sm text-text-primary">
-                <span className="w-3 h-3 rounded-full bg-green-500"></span>
-                Resolved
-              </span>
+              <span className="text-sm text-text-primary">Heatmap Overlay</span>
             </label>
           </div>
-        </div>
 
-        {/* Issue Type Filter */}
-        <div className="mb-4">
-          <h4 className="text-sm font-semibold text-text-secondary mb-2">ISSUE TYPE</h4>
-          <select
-            value={issueTypeFilter}
-            onChange={(e) => setIssueTypeFilter(e.target.value)}
-            className="w-full input text-sm"
-          >
-            <option value="all">All Types</option>
-            {issueTypes.map(type => (
-              <option key={type} value={type}>{type}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Date Range Filter */}
-        <div className="mb-4">
-          <h4 className="text-sm font-semibold text-text-secondary mb-2">DATE RANGE</h4>
-          <div className="space-y-2">
-            <div>
-              <label className="text-xs text-text-muted block mb-1">FROM</label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full input text-sm"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-text-muted block mb-1">TO</label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full input text-sm"
-              />
+          {/* Status Filter */}
+          <div className="mb-4">
+            <h4 className="text-sm font-semibold text-text-secondary mb-2">STATUS</h4>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="status"
+                  value="all"
+                  checked={statusFilter === 'all'}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="w-4 h-4 accent-accent-green"
+                />
+                <span className="text-sm text-text-primary">All</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="status"
+                  value="unresolved"
+                  checked={statusFilter === 'unresolved'}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="w-4 h-4 accent-accent-green"
+                />
+                <span className="flex items-center gap-2 text-sm text-text-primary">
+                  <span className="w-3 h-3 rounded-full bg-red-500"></span>
+                  Unresolved
+                </span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="status"
+                  value="in_progress"
+                  checked={statusFilter === 'in_progress'}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="w-4 h-4 accent-accent-green"
+                />
+                <span className="flex items-center gap-2 text-sm text-text-primary">
+                  <span className="w-3 h-3 rounded-full bg-orange-500"></span>
+                  In Progress
+                </span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="status"
+                  value="resolved"
+                  checked={statusFilter === 'resolved'}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="w-4 h-4 accent-accent-green"
+                />
+                <span className="flex items-center gap-2 text-sm text-text-primary">
+                  <span className="w-3 h-3 rounded-full bg-green-500"></span>
+                  Resolved
+                </span>
+              </label>
             </div>
           </div>
-        </div>
 
-        {/* Report Count */}
-        <div className="pt-4 border-t border-border">
-          <p className="text-sm text-text-secondary">
-            {loading ? 'Loading...' : `${filteredReports.length} reports, ${clusters.length} clusters displayed`}
-          </p>
+          {/* Issue Type Filter */}
+          <div className="mb-4">
+            <h4 className="text-sm font-semibold text-text-secondary mb-2">ISSUE TYPE</h4>
+            <select
+              value={issueTypeFilter}
+              onChange={(e) => setIssueTypeFilter(e.target.value)}
+              className="w-full input text-sm"
+            >
+              <option value="all">All Types</option>
+              {issueTypes.map(type => (
+                <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Date Range Filter */}
+          <div className="mb-4">
+            <h4 className="text-sm font-semibold text-text-secondary mb-2">DATE RANGE</h4>
+            <div className="space-y-2">
+              <div>
+                <label className="text-xs text-text-muted block mb-1">FROM</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full input text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-text-muted block mb-1">TO</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full input text-sm"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Report Count */}
+          <div className="pt-4 border-t border-border">
+            <p className="text-sm text-text-secondary">
+              {loading ? 'Loading...' : `${filteredReports.length} reports, ${clusters.length} clusters displayed`}
+            </p>
+          </div>
         </div>
-      </div>
       </div>
     </>
   )
