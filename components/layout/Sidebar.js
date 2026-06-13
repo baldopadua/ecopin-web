@@ -6,7 +6,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard' },
   { name: 'Map View', href: '/dashboard/map-view' },
   { name: 'Clusters', href: '/dashboard/clusters' },
-  { name: 'Cleanup Task', href: '/dashboard/cleanup-task' },
+  { name: 'Cleanup Tasks', href: '/dashboard/cleanup-tasks' },
   { name: 'Reports', href: '/dashboard/reports' },
   { name: 'Analytics', href: '/dashboard/analytics' },
 ]
@@ -31,11 +31,10 @@ export default function Sidebar({ user, onLogout }) {
             <Link
               key={item.name}
               href={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                isActive
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${isActive
                   ? 'bg-accent-green text-white'
                   : 'text-text-secondary hover:bg-surface hover:text-text-primary'
-              }`}
+                }`}
             >
               {item.name}
             </Link>
