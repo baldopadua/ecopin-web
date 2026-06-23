@@ -9,6 +9,7 @@ const navigation = [
   { name: 'Cleanup Tasks', href: '/dashboard/cleanup-tasks' },
   { name: 'Reports', href: '/dashboard/reports' },
   { name: 'Analytics', href: '/dashboard/analytics' },
+  { name: 'Profile', href: '/dashboard/profile' },
 ]
 
 export default function Sidebar({ user, onLogout }) {
@@ -44,18 +45,29 @@ export default function Sidebar({ user, onLogout }) {
 
       {/* User Info */}
       <div className="p-4 border-t border-border">
-        <div className="flex items-center justify-between mb-3">
+        <Link
+          href="/dashboard/profile"
+          className="flex items-center justify-between mb-3 hover:opacity-80 transition-opacity"
+        >
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-accent-green flex items-center justify-center text-white font-bold">
-              {user?.full_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
-            </div>
+            {user?.avatar_url ? (
+              <img
+                src={user.avatar_url}
+                alt="Avatar"
+                className="w-8 h-8 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-accent-green flex items-center justify-center text-white font-bold">
+                {user?.full_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-text-primary truncate">
                 {user?.full_name || user?.email || 'User'}
               </p>
             </div>
           </div>
-        </div>
+        </Link>
         <button
           onClick={onLogout}
           className="w-full btn-secondary text-xs py-2"

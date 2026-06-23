@@ -31,6 +31,15 @@ export default function DashboardLayout({ children }) {
         }
 
         const data = await response.json()
+        const userRole = data.user.role || 'citizen'
+
+        // Check if user has authorized role (lgu or admin)
+        if (userRole === 'citizen') {
+          localStorage.removeItem('authToken')
+          router.push('/auth')
+          return
+        }
+
         setUser(data.user)
       } catch (error) {
         console.error('Failed to fetch user data:', error)

@@ -31,6 +31,18 @@ const parseClusterCenter = (cluster) => {
   return null
 }
 
+const calculateCenterFromReports = (reports) => {
+  if (!reports || reports.length === 0) return null
+  
+  const validReports = reports.filter(r => r.latitude && r.longitude)
+  if (validReports.length === 0) return null
+  
+  const avgLat = validReports.reduce((sum, r) => sum + parseFloat(r.latitude), 0) / validReports.length
+  const avgLng = validReports.reduce((sum, r) => sum + parseFloat(r.longitude), 0) / validReports.length
+  
+  return [avgLat, avgLng]
+}
+
 export default function ClusterDetailPage() {
   const [cluster, setCluster] = useState(null)
   const [reports, setReports] = useState([])
@@ -119,7 +131,7 @@ export default function ClusterDetailPage() {
   if (loading) return <div className="p-8"><p>Loading cluster details...</p></div>
   if (!cluster) return <div className="p-8"><p>Cluster not found</p></div>
 
-  const centerCoords = parseClusterCenter(cluster)
+  const centerCoords = parseClusterCenter(cluster) || calculateCenterFromReports(reports)
 
   return (
     <div className="p-8">
@@ -147,7 +159,7 @@ export default function ClusterDetailPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="p-4 border border-border rounded-lg">
             <p className="text-sm text-text-muted">Total Reports</p>
-            <p className="text-2xl font-bold text-text-primary">{cluster.report_count}</p>
+            <p className="text-2xl font-bold text-text-primary">{reports.length}</p>
           </div>
           <div className="p-4 border border-border rounded-lg">
             <p className="text-sm text-text-muted">Severity</p>

@@ -492,9 +492,9 @@ export default function EcoPinMap() {
 
           {/* Report Pins */}
           {showPins && filteredReports.map((report) => {
-            // Hide individual pins that belong to clusters when zoomed out
-            // Show them when zoomed in
-            if (report.cluster_id && zoom <= 15) {
+            // Hide individual pins that belong to clusters when zoomed out AND clusters are enabled
+            // Show them when zoomed in OR when clusters are disabled
+            if (report.cluster_id && showClusters && zoom <= 15) {
               console.log('Hiding cluster member pin:', report.id, 'cluster_id:', report.cluster_id, 'zoom:', zoom)
               return null
             }

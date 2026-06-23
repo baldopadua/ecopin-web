@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { fetchReportById, fetchReportEvidence, updateReportStatus } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
+import Notification from '@/components/ui/Notification'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
 
@@ -23,6 +24,12 @@ export default function ReportDetailPage() {
   const [selectedImage, setSelectedImage] = useState(null)
   const [showStatusDropdown, setShowStatusDropdown] = useState(false)
   const [updatingStatus, setUpdatingStatus] = useState(false)
+  const [uploadingBefore, setUploadingBefore] = useState(false)
+  const [uploadingAfter, setUploadingAfter] = useState(false)
+  const [showNoteInput, setShowNoteInput] = useState(false)
+  const [noteText, setNoteText] = useState('')
+  const [addingNote, setAddingNote] = useState(false)
+  const [notification, setNotification] = useState(null)
 
   useEffect(() => {
     Promise.all([
@@ -108,6 +115,12 @@ export default function ReportDetailPage() {
   }
 
   const handleStatusUpdate = async (newStatus) => {
+    // Check if trying to mark as resolved without photos
+    if (newStatus === 'resolved' && (!report.before_photo_url || !report.after_photo_url)) {
+      setNotification({ message: 'Please upload both before and after photos before marking the report as resolved.', type: 'warning' })
+      return
+    }
+
     setUpdatingStatus(true)
     try {
       await updateReportStatus(reportId, newStatus)
@@ -115,11 +128,125 @@ export default function ReportDetailPage() {
       const updatedReport = await fetchReportById(reportId)
       setReport(updatedReport)
       setShowStatusDropdown(false)
+      setNotification({ message: 'Status updated successfully', type: 'success' })
     } catch (error) {
       console.error('Failed to update status:', error)
-      alert('Failed to update status. Please try again.')
+      setNotification({ message: 'Failed to update status. Please try again.', type: 'error' })
     } finally {
       setUpdatingStatus(false)
+    }
+  }
+
+  const handlePhotoUpload = async (photoType, file) => {
+    if (!file) return
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    if (!validTypes.includes(file.type)) {
+      setNotification({ message: 'Invalid file type. Please upload JPEG, JPG, PNG, or WEBP images.', type: 'error' })
+      return
+    }
+
+    // Validate file size (10MB limit)
+    const maxSize = 10 * 1024 * 1024
+    if (file.size > maxSize) {
+      setNotification({ message: 'File size exceeds 10MB limit. Please upload a smaller image.', type: 'error' })
+      return
+    }
+
+    const setUploading = photoType === 'before' ? setUploadingBefore : setUploadingAfter
+    setUploading(true)
+
+    const token = localStorage.getItem('authToken')
+    const formData = new FormData()
+    formData.append('image', file)
+    formData.append('photo_type', photoType)
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/reports/${reportId}/photo`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || errorData.error || 'Failed to upload photo')
+      }
+
+      const data = await response.json()
+      console.log('Upload response:', data)
+      setReport(data.report)
+      setNotification({ message: 'Photo uploaded successfully', type: 'success' })
+    } catch (error) {
+      console.error('Failed to upload photo:', error)
+      setNotification({ message: error.message || 'Failed to upload photo. Please try again.', type: 'error' })
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handlePhotoDelete = async (photoType) => {
+    if (!confirm('Are you sure you want to delete this photo? This action cannot be undone.')) {
+      return
+    }
+
+    const token = localStorage.getItem('authToken')
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/reports/${reportId}/photo`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ photo_type: photoType }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || errorData.error || 'Failed to delete photo')
+      }
+
+      const data = await response.json()
+      setReport(data.report)
+      setNotification({ message: 'Photo deleted successfully', type: 'success' })
+    } catch (error) {
+      console.error('Failed to delete photo:', error)
+      setNotification({ message: error.message || 'Failed to delete photo. Please try again.', type: 'error' })
+    }
+  }
+
+  const handleAddNote = async () => {
+    if (!noteText.trim()) return
+
+    setAddingNote(true)
+    const token = localStorage.getItem('authToken')
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/reports/${reportId}/notes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ note: noteText }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to add note')
+      }
+
+      setNoteText('')
+      setShowNoteInput(false)
+      setNotification({ message: 'Note added successfully', type: 'success' })
+    } catch (error) {
+      console.error('Failed to add note:', error)
+      setNotification({ message: 'Failed to add note. Please try again.', type: 'error' })
+    } finally {
+      setAddingNote(false)
     }
   }
 
@@ -285,32 +412,62 @@ export default function ReportDetailPage() {
                 ))}
               </div>
             )}
-          </div>
 
-          {/* Before & After (if resolved) */}
-          {report.status === 'resolved' && (
-            <div className="card">
-              <h2 className="text-xl font-bold text-text-primary mb-4">Before & After</h2>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="h-48 bg-surface rounded-lg flex items-center justify-center border border-dashed border-border">
-                  <div className="text-center">
-                    <svg className="w-12 h-12 text-text-muted mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <p className="text-sm text-text-muted">Before</p>
-                  </div>
+            {/* Before & After Photos */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+              <div className="p-4 border border-border rounded-lg">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="font-semibold">Before Photo</h3>
+                  {report.before_photo_url && (
+                    <button
+                      onClick={() => handlePhotoDelete('before')}
+                      className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded transition-colors"
+                    >
+                      Delete
+                    </button>
+                  )}
                 </div>
-                <div className="h-48 bg-surface rounded-lg flex items-center justify-center border border-dashed border-border">
-                  <div className="text-center">
-                    <svg className="w-12 h-12 text-text-muted mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <p className="text-sm text-text-muted">After</p>
-                  </div>
+                {report.before_photo_url ? (
+                  <img src={report.before_photo_url} alt="Before" className="w-full h-48 object-cover rounded-lg" />
+                ) : (
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={uploadingBefore}
+                    onChange={(e) => e.target.files[0] && handlePhotoUpload('before', e.target.files[0])}
+                    className="w-full"
+                  />
+                )}
+                {uploadingBefore && <p className="mt-2 text-sm text-text-muted">Uploading...</p>}
+              </div>
+
+              <div className="p-4 border border-border rounded-lg">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="font-semibold">After Photo</h3>
+                  {report.after_photo_url && (
+                    <button
+                      onClick={() => handlePhotoDelete('after')}
+                      className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded transition-colors"
+                    >
+                      Delete
+                    </button>
+                  )}
                 </div>
+                {report.after_photo_url ? (
+                  <img src={report.after_photo_url} alt="After" className="w-full h-48 object-cover rounded-lg" />
+                ) : (
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={uploadingAfter}
+                    onChange={(e) => e.target.files[0] && handlePhotoUpload('after', e.target.files[0])}
+                    className="w-full"
+                  />
+                )}
+                {uploadingAfter && <p className="mt-2 text-sm text-text-muted">Uploading...</p>}
               </div>
             </div>
-          )}
+          </div>
         </div>
 
         {/* Sidebar */}
@@ -374,7 +531,7 @@ export default function ReportDetailPage() {
             <h2 className="text-lg font-bold text-text-primary mb-4">Actions</h2>
             <div className="space-y-3">
               <div className="relative">
-                <button 
+                <button
                   onClick={() => setShowStatusDropdown(!showStatusDropdown)}
                   disabled={updatingStatus}
                   className="btn-primary w-full"
@@ -422,10 +579,43 @@ export default function ReportDetailPage() {
                   </div>
                 )}
               </div>
-              <button className="btn-secondary w-full">
-                Add Note
-              </button>
-              <button 
+              {showNoteInput ? (
+                <div className="space-y-2">
+                  <textarea
+                    value={noteText}
+                    onChange={(e) => setNoteText(e.target.value)}
+                    placeholder="Enter your note..."
+                    className="w-full p-3 border border-border rounded-lg bg-surface text-text-primary resize-none"
+                    rows={3}
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleAddNote}
+                      disabled={addingNote || !noteText.trim()}
+                      className="btn-primary flex-1"
+                    >
+                      {addingNote ? 'Adding...' : 'Save Note'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowNoteInput(false)
+                        setNoteText('')
+                      }}
+                      className="btn-secondary flex-1"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowNoteInput(true)}
+                  className="btn-secondary w-full"
+                >
+                  Add Note
+                </button>
+              )}
+              <button
                 onClick={() => router.push('/dashboard/map-view')}
                 className="btn-secondary w-full"
               >
@@ -438,7 +628,7 @@ export default function ReportDetailPage() {
 
       {/* Full Image Modal */}
       {selectedImage && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[2000]"
           onClick={() => setSelectedImage(null)}
         >
@@ -456,6 +646,14 @@ export default function ReportDetailPage() {
             />
           </div>
         </div>
+      )}
+
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
       )}
     </div>
   )

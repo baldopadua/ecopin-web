@@ -9,11 +9,12 @@ export default function CleanupTaskDetailPage() {
   const [task, setTask] = useState(null)
   const [reports, setReports] = useState([])
   const [loading, setLoading] = useState(true)
-  const [uploadingBefore, setUploadingBefore] = useState(false)
-  const [uploadingAfter, setUploadingAfter] = useState(false)
   const [markingComplete, setMarkingComplete] = useState(false)
   const [completingReportId, setCompletingReportId] = useState(null)
   const [notification, setNotification] = useState(null)
+  const [expandedReports, setExpandedReports] = useState({})
+  const [uploadingReportPhotos, setUploadingReportPhotos] = useState({})
+  const [lightboxImage, setLightboxImage] = useState(null)
   const router = useRouter()
   const params = useParams()
   const taskId = params.id
@@ -38,26 +39,12 @@ export default function CleanupTaskDetailPage() {
     loadTask()
   }, [taskId])
 
-  const handleFileUpload = async (photoType, file) => {
-    if (!file) return
-
-    const setUpdating = photoType === 'before' ? setUploadingBefore : setUploadingAfter
-    setUpdating(true)
-
-    try {
-      const result = await uploadCleanupPhoto(taskId, photoType, file)
-      setTask(result.task)
-      setNotification({ message: 'Photo uploaded successfully!', type: 'success' })
-    } catch (error) {
-      console.error('Failed to upload photo:', error)
-      setNotification({ message: 'Failed to upload photo. Please try again.', type: 'error' })
-    } finally {
-      setUpdating(false)
-    }
-  }
-
   const handleMarkComplete = async () => {
-    if (!task.before_photo_url || !task.after_photo_url) {
+    // Check if there are both before and after photos
+    const hasBeforePhotos = task.before_photo_url || reports.some(r => r.before_photo_url)
+    const hasAfterPhotos = task.after_photo_url || reports.some(r => r.after_photo_url)
+
+    if (!hasBeforePhotos || !hasAfterPhotos) {
       setNotification({ message: 'Please upload both before and after photos before marking the task as complete.', type: 'warning' })
       return
     }
@@ -93,6 +80,14 @@ export default function CleanupTaskDetailPage() {
   }
 
   const handleMarkReportComplete = async (reportId) => {
+    const report = reports.find(r => r.id === reportId)
+    
+    // Check if the report has both before and after photos
+    if (!report.before_photo_url || !report.after_photo_url) {
+      setNotification({ message: 'Please upload both before and after photos for this report before marking it as complete.', type: 'warning' })
+      return
+    }
+
     setCompletingReportId(reportId)
     try {
       await updateReportStatus(reportId, 'resolved')
@@ -108,6 +103,140 @@ export default function CleanupTaskDetailPage() {
     } finally {
       setCompletingReportId(null)
     }
+  }
+
+  const toggleReportExpansion = (reportId) => {
+    setExpandedReports(prev => ({
+      ...prev,
+      [reportId]: !prev[reportId]
+    }))
+  }
+
+  const handleReportPhotoUpload = async (reportId, photoType, file) => {
+    if (!file) return
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    if (!validTypes.includes(file.type)) {
+      setNotification({ message: 'Invalid file type. Please upload JPEG, JPG, PNG, or WEBP images.', type: 'error' })
+      return
+    }
+
+    // Validate file size (10MB limit)
+    const maxSize = 10 * 1024 * 1024
+    if (file.size > maxSize) {
+      setNotification({ message: 'File size exceeds 10MB limit. Please upload a smaller image.', type: 'error' })
+      return
+    }
+
+    setUploadingReportPhotos(prev => ({
+      ...prev,
+      [`${reportId}-${photoType}`]: true
+    }))
+
+    const token = localStorage.getItem('authToken')
+    const formData = new FormData()
+    formData.append('image', file)
+    formData.append('photo_type', photoType)
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/reports/${reportId}/photo`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || errorData.error || 'Failed to upload photo')
+      }
+
+      const data = await response.json()
+      // Refresh reports to show updated photos
+      if (task.cluster_id) {
+        const reportsData = await fetchReportsByClusterId(task.cluster_id)
+        setReports(reportsData)
+      }
+      setNotification({ message: 'Photo uploaded successfully', type: 'success' })
+    } catch (error) {
+      console.error('Failed to upload photo:', error)
+      setNotification({ message: error.message || 'Failed to upload photo. Please try again.', type: 'error' })
+    } finally {
+      setUploadingReportPhotos(prev => ({
+        ...prev,
+        [`${reportId}-${photoType}`]: false
+      }))
+    }
+  }
+
+  const handleReportPhotoDelete = async (reportId, photoType) => {
+    if (!confirm('Are you sure you want to delete this photo? This action cannot be undone.')) {
+      return
+    }
+
+    const token = localStorage.getItem('authToken')
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/reports/${reportId}/photo`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ photo_type: photoType }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || errorData.error || 'Failed to delete photo')
+      }
+
+      const data = await response.json()
+      // Refresh reports to show updated photos
+      if (task.cluster_id) {
+        const reportsData = await fetchReportsByClusterId(task.cluster_id)
+        setReports(reportsData)
+      }
+      setNotification({ message: 'Photo deleted successfully', type: 'success' })
+    } catch (error) {
+      console.error('Failed to delete photo:', error)
+      setNotification({ message: error.message || 'Failed to delete photo. Please try again.', type: 'error' })
+    }
+  }
+
+  const getPhotosByType = (type) => {
+    const photos = []
+    if (type === 'before' && task.before_photo_url) {
+      photos.push({ url: task.before_photo_url, label: 'Task Before' })
+    }
+    if (type === 'after' && task.after_photo_url) {
+      photos.push({ url: task.after_photo_url, label: 'Task After' })
+    }
+    reports.forEach(report => {
+      if (type === 'before' && report.before_photo_url) {
+        photos.push({ url: report.before_photo_url, label: `Report ${report.id} Before` })
+      }
+      if (type === 'after' && report.after_photo_url) {
+        photos.push({ url: report.after_photo_url, label: `Report ${report.id} After` })
+      }
+    })
+    return photos
+  }
+
+  const handleNextPhoto = () => {
+    if (!lightboxImage) return
+    const photos = getPhotosByType(lightboxImage.type)
+    const nextIndex = (lightboxImage.index + 1) % photos.length
+    setLightboxImage({ ...lightboxImage, url: photos[nextIndex].url, index: nextIndex })
+  }
+
+  const handlePreviousPhoto = () => {
+    if (!lightboxImage) return
+    const photos = getPhotosByType(lightboxImage.type)
+    const prevIndex = (lightboxImage.index - 1 + photos.length) % photos.length
+    setLightboxImage({ ...lightboxImage, url: photos[prevIndex].url, index: prevIndex })
   }
 
   const getStatusColor = (status) => {
@@ -176,77 +305,166 @@ export default function CleanupTaskDetailPage() {
             </div>
             <div className="space-y-3">
               {reports.map((report) => (
-                <div key={report.id} className={`p-4 border rounded-lg ${getReportCardColor(report.status)}`}>
-                  <div className="flex justify-between items-center">
-                    <div className="flex-1 cursor-pointer" onClick={() => router.push(`/dashboard/reports/${report.id}`)}>
-                      <p className="font-medium text-text-primary">{report.title}</p>
-                      <p className="text-sm text-text-muted mt-1">{report.description}</p>
-                      <div className="flex gap-2 mt-2">
-                        <span className="text-xs px-2 py-1 bg-surface-elevated rounded">{report.issue_type}</span>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(report.status)}`}>
-                          {report.status.replace('_', ' ')}
-                        </span>
+                <div key={report.id} className={`border rounded-lg ${getReportCardColor(report.status)}`}>
+                  <div className="p-4">
+                    <div className="flex justify-between items-center">
+                      <div className="flex-1 cursor-pointer" onClick={() => toggleReportExpansion(report.id)}>
+                        <p className="font-medium text-text-primary">{report.title}</p>
+                        <p className="text-sm text-text-muted mt-1">{report.description}</p>
+                        <div className="flex gap-2 mt-2">
+                          <span className="text-xs px-2 py-1 bg-surface-elevated rounded">{report.issue_type}</span>
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(report.status)}`}>
+                            {report.status.replace('_', ' ')}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => toggleReportExpansion(report.id)}
+                          className="p-2 hover:bg-surface-elevated rounded transition-colors"
+                        >
+                          <svg
+                            className={`w-5 h-5 text-text-muted transition-transform ${expandedReports[report.id] ? 'rotate-180' : ''}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                        {report.status !== 'resolved' && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleMarkReportComplete(report.id)
+                            }}
+                            disabled={completingReportId === report.id}
+                            className="px-3 py-1 bg-accent-green text-white text-sm rounded hover:bg-opacity-90 disabled:opacity-50"
+                          >
+                            {completingReportId === report.id ? 'Completing...' : 'Mark Complete'}
+                          </button>
+                        )}
                       </div>
                     </div>
-                    {report.status !== 'resolved' && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleMarkReportComplete(report.id)
-                        }}
-                        disabled={completingReportId === report.id}
-                        className="ml-4 px-3 py-1 bg-accent-green text-white text-sm rounded hover:bg-opacity-90 disabled:opacity-50"
-                      >
-                        {completingReportId === report.id ? 'Completing...' : 'Mark Complete'}
-                      </button>
-                    )}
                   </div>
+
+                  {expandedReports[report.id] && (
+                    <div className="p-4 border-t border-border">
+                      <h4 className="font-semibold mb-3">Before & After Photos</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="p-4 border border-border rounded-lg">
+                          <div className="flex justify-between items-center mb-2">
+                            <h5 className="font-medium">Before Photo</h5>
+                            {report.before_photo_url && (
+                              <button
+                                onClick={() => handleReportPhotoDelete(report.id, 'before')}
+                                className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded transition-colors"
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </div>
+                          {report.before_photo_url ? (
+                            <img src={report.before_photo_url} alt="Before" className="w-full h-48 object-cover rounded-lg" />
+                          ) : (
+                            <input
+                              type="file"
+                              accept="image/*"
+                              disabled={uploadingReportPhotos[`${report.id}-before`]}
+                              onChange={(e) => e.target.files[0] && handleReportPhotoUpload(report.id, 'before', e.target.files[0])}
+                              className="w-full"
+                            />
+                          )}
+                          {uploadingReportPhotos[`${report.id}-before`] && <p className="mt-2 text-sm text-text-muted">Uploading...</p>}
+                        </div>
+
+                        <div className="p-4 border border-border rounded-lg">
+                          <div className="flex justify-between items-center mb-2">
+                            <h5 className="font-medium">After Photo</h5>
+                            {report.after_photo_url && (
+                              <button
+                                onClick={() => handleReportPhotoDelete(report.id, 'after')}
+                                className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded transition-colors"
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </div>
+                          {report.after_photo_url ? (
+                            <img src={report.after_photo_url} alt="After" className="w-full h-48 object-cover rounded-lg" />
+                          ) : (
+                            <input
+                              type="file"
+                              accept="image/*"
+                              disabled={uploadingReportPhotos[`${report.id}-after`]}
+                              onChange={(e) => e.target.files[0] && handleReportPhotoUpload(report.id, 'after', e.target.files[0])}
+                              className="w-full"
+                            />
+                          )}
+                          {uploadingReportPhotos[`${report.id}-after`] && <p className="mt-2 text-sm text-text-muted">Uploading...</p>}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-          <div className="p-4 border border-border rounded-lg">
-            <h3 className="font-semibold mb-3">Before Photo</h3>
-            {task.before_photo_url ? (
-              <div>
-                <img src={task.before_photo_url} alt="Before cleanup" className="w-full h-48 object-cover rounded-lg" />
-              </div>
-            ) : (
-              <div>
-                <label className="block mb-2">Upload Before Photo</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  disabled={uploadingBefore}
-                  onChange={(e) => e.target.files[0] && handleFileUpload('before', e.target.files[0])}
-                  className="w-full"
-                />
-                {uploadingBefore && <p className="mt-2 text-sm text-text-muted">Uploading...</p>}
-              </div>
+        {/* Cleanup Task Photo Gallery */}
+        <div className="mt-6">
+          <h3 className="font-semibold mb-3">Cleanup Task Photo Gallery</h3>
+          
+          {/* Before Photos Section */}
+          <div className="mb-6">
+            <h4 className="font-medium mb-2 text-text-muted">Before Photos</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {task.before_photo_url && (
+                <div className="relative cursor-pointer" onClick={() => setLightboxImage({ url: task.before_photo_url, type: 'before', index: 0 })}>
+                  <img src={task.before_photo_url} alt="Before cleanup" className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity" />
+                  <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">Task Before</span>
+                </div>
+              )}
+              {reports.filter(r => r.before_photo_url).map((report, idx) => (
+                <div 
+                  key={`${report.id}-before`} 
+                  className="relative cursor-pointer"
+                  onClick={() => setLightboxImage({ url: report.before_photo_url, type: 'before', index: (task.before_photo_url ? 1 : 0) + idx })}
+                >
+                  <img src={report.before_photo_url} alt={`Report ${report.id} Before`} className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity" />
+                  <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">Report {report.id} Before</span>
+                </div>
+              ))}
+            </div>
+            {(!task.before_photo_url && !reports.some(r => r.before_photo_url)) && (
+              <p className="text-text-muted text-sm">No before photos uploaded yet</p>
             )}
           </div>
 
-          <div className="p-4 border border-border rounded-lg">
-            <h3 className="font-semibold mb-3">After Photo</h3>
-            {task.after_photo_url ? (
-              <div>
-                <img src={task.after_photo_url} alt="After cleanup" className="w-full h-48 object-cover rounded-lg" />
-              </div>
-            ) : (
-              <div>
-                <label className="block mb-2">Upload After Photo</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  disabled={uploadingAfter}
-                  onChange={(e) => e.target.files[0] && handleFileUpload('after', e.target.files[0])}
-                  className="w-full"
-                />
-                {uploadingAfter && <p className="mt-2 text-sm text-text-muted">Uploading...</p>}
-              </div>
+          {/* After Photos Section */}
+          <div>
+            <h4 className="font-medium mb-2 text-text-muted">After Photos</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {task.after_photo_url && (
+                <div className="relative cursor-pointer" onClick={() => setLightboxImage({ url: task.after_photo_url, type: 'after', index: 0 })}>
+                  <img src={task.after_photo_url} alt="After cleanup" className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity" />
+                  <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">Task After</span>
+                </div>
+              )}
+              {reports.filter(r => r.after_photo_url).map((report, idx) => (
+                <div 
+                  key={`${report.id}-after`} 
+                  className="relative cursor-pointer"
+                  onClick={() => setLightboxImage({ url: report.after_photo_url, type: 'after', index: (task.after_photo_url ? 1 : 0) + idx })}
+                >
+                  <img src={report.after_photo_url} alt={`Report ${report.id} After`} className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity" />
+                  <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">Report {report.id} After</span>
+                </div>
+              ))}
+            </div>
+            {(!task.after_photo_url && !reports.some(r => r.after_photo_url)) && (
+              <p className="text-text-muted text-sm">No after photos uploaded yet</p>
             )}
           </div>
         </div>
@@ -255,7 +473,7 @@ export default function CleanupTaskDetailPage() {
           <div className="mt-6">
             <button
               onClick={handleMarkComplete}
-              disabled={markingComplete || !task.before_photo_url || !task.after_photo_url}
+              disabled={markingComplete}
               className="px-6 py-3 bg-accent-green text-white rounded-lg hover:bg-opacity-90 disabled:opacity-50"
             >
               {markingComplete ? 'Marking Complete...' : 'Mark Task as Complete'}
@@ -270,6 +488,35 @@ export default function CleanupTaskDetailPage() {
           type={notification.type}
           onClose={() => setNotification(null)}
         />
+      )}
+
+      {/* Lightbox Modal */}
+      {lightboxImage && (
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50" onClick={() => setLightboxImage(null)}>
+          <div className="relative max-w-4xl max-h-[90vh] w-full p-4" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setLightboxImage(null)}
+              className="absolute top-4 right-4 text-white text-4xl hover:text-gray-300 z-10"
+            >
+              ×
+            </button>
+            <img src={lightboxImage.url} alt="Full view" className="w-full h-full object-contain" />
+            
+            {/* Navigation Buttons */}
+            <button
+              onClick={handlePreviousPhoto}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-white text-4xl hover:text-gray-300 bg-black/50 rounded-full w-12 h-12 flex items-center justify-center"
+            >
+              ‹
+            </button>
+            <button
+              onClick={handleNextPhoto}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-white text-4xl hover:text-gray-300 bg-black/50 rounded-full w-12 h-12 flex items-center justify-center"
+            >
+              ›
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )

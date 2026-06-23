@@ -30,8 +30,8 @@ export default function Notification({ message, type = 'info', duration = 3000, 
 
   return (
     <div
-      className={`fixed bottom-4 right-4 z-50 transform transition-all duration-300 ${
-        isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+      className={`fixed bottom-4 right-4 z-50 transform transition-all duration-500 ease-out ${
+        isVisible ? 'translate-x-0 opacity-100 scale-100' : 'translate-x-full opacity-0 scale-95'
       }`}
     >
       <div className={`${getBackgroundColor()} text-white px-6 py-4 rounded-lg shadow-lg max-w-md`}>
