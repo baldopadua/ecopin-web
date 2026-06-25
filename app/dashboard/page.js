@@ -2,7 +2,29 @@
 import { useEffect, useState } from 'react'
 import { fetchPublicReports } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { Bar, Pie, Line } from 'react-chartjs-2'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Tooltip,
+  Legend,
+} from 'chart.js'
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Tooltip,
+  Legend
+)
 
 const COLORS = ['#4CAF50', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6', '#EC4899']
 
@@ -99,20 +121,20 @@ export default function DashboardPage() {
   // Prepare data for reports per week bar chart
   const reportsPerWeek = () => {
     const weekMap = {}
-    
+
     reports.forEach(report => {
       if (report.created_at) {
         const date = new Date(report.created_at)
         const weekNumber = getWeekNumber(date)
         const year = date.getFullYear()
         const key = `${year}-W${weekNumber}`
-        
+
         weekMap[key] = (weekMap[key] || 0) + 1
       }
     })
 
     return Object.entries(weekMap)
-      .map(([week, count]) => ({ week, count }))
+      .map(([week, count]) => ({ week: `Week ${week.split('-W')[1]}`, count }))
       .sort((a, b) => a.week.localeCompare(b.week))
       .slice(-8) // Last 8 weeks
   }
@@ -120,14 +142,14 @@ export default function DashboardPage() {
   // Prepare data for resolution rate bar chart (by week)
   const resolutionRateByWeek = () => {
     const weekMap = {}
-    
+
     reports.forEach(report => {
       if (report.created_at) {
         const date = new Date(report.created_at)
         const weekNumber = getWeekNumber(date)
         const year = date.getFullYear()
         const key = `${year}-W${weekNumber}`
-        
+
         if (!weekMap[key]) {
           weekMap[key] = { total: 0, resolved: 0 }
         }
@@ -139,9 +161,9 @@ export default function DashboardPage() {
     })
 
     return Object.entries(weekMap)
-      .map(([week, data]) => ({ 
-        week, 
-        rate: data.total > 0 ? Math.round((data.resolved / data.total) * 100) : 0 
+      .map(([week, data]) => ({
+        week: `Week ${week.split('-W')[1]}`,
+        rate: data.total > 0 ? Math.round((data.resolved / data.total) * 100) : 0
       }))
       .sort((a, b) => a.week.localeCompare(b.week))
       .slice(-8) // Last 8 weeks
@@ -168,6 +190,45 @@ export default function DashboardPage() {
   const pieData = issueTypeData()
 
   console.log('Dashboard chart data:', { chartData, resolutionRateData, pieData })
+  console.log('Loading state:', loading)
+  console.log('Chart data length:', chartData.length)
+  console.log('Reports length:', reports.length)
+  console.log('Chart data values:', JSON.stringify(chartData))
+
+  // Prepare Chart.js data formats
+  const barChartData = {
+    labels: chartData.map(d => d.week),
+    datasets: [
+      {
+        label: 'Reports',
+        data: chartData.map(d => d.count),
+        backgroundColor: '#4CAF50',
+        borderRadius: 4,
+      }
+    ]
+  }
+
+  const resolutionRateChartData = {
+    labels: resolutionRateData.map(d => d.week),
+    datasets: [
+      {
+        label: 'Resolution Rate (%)',
+        data: resolutionRateData.map(d => d.rate),
+        backgroundColor: '#3B82F6',
+        borderRadius: 4,
+      }
+    ]
+  }
+
+  const pieChartData = {
+    labels: pieData.map(d => d.name),
+    datasets: [
+      {
+        data: pieData.map(d => d.value),
+        backgroundColor: COLORS.slice(0, pieData.length),
+      }
+    ]
+  }
 
   return (
     <div className="p-8">
@@ -231,79 +292,45 @@ export default function DashboardPage() {
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', marginBottom: '32px' }}>
         {/* Reports per Week Bar Chart */}
-        <div className="card p-4">
-          <h2 className="text-xl font-bold text-text-primary mb-4">Reports per Week</h2>
-          <div className="h-80 w-full">
+        <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '16px', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827', marginBottom: '16px' }}>Reports per Week</h2>
+          <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
-              <p className="text-text-muted">Loading chart data...</p>
+              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>Loading chart data...</div>
             ) : chartData.length === 0 ? (
-              <p className="text-text-muted">No data available for the selected period</p>
+              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>No data available for the selected period</div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="week" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="count" fill="#4CAF50" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <Bar data={barChartData} options={{ maintainAspectRatio: false }} />
             )}
           </div>
         </div>
 
         {/* Resolution Rate Bar Chart */}
-        <div className="card p-4">
-          <h2 className="text-xl font-bold text-text-primary mb-4">Resolution Rate (%)</h2>
-          <div className="h-80 w-full">
+        <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '16px', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827', marginBottom: '16px' }}>Resolution Rate (%)</h2>
+          <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
-              <p className="text-text-muted">Loading chart data...</p>
+              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>Loading chart data...</div>
             ) : resolutionRateData.length === 0 ? (
-              <p className="text-text-muted">No data available for the selected period</p>
+              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>No data available for the selected period</div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={resolutionRateData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="week" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="rate" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <Bar data={resolutionRateChartData} options={{ maintainAspectRatio: false }} />
             )}
           </div>
         </div>
 
         {/* Most Active Issue Type Pie Chart */}
-        <div className="card p-4">
-          <h2 className="text-xl font-bold text-text-primary mb-4">Most Active Issue Types</h2>
-          <div className="h-80 w-full">
+        <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '16px', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827', marginBottom: '16px' }}>Most Active Issue Types</h2>
+          <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
-              <p className="text-text-muted">Loading chart data...</p>
+              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>Loading chart data...</div>
             ) : pieData.length === 0 ? (
-              <p className="text-text-muted">No data available</p>
+              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>No data available</div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+              <Pie data={pieChartData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
             )}
           </div>
         </div>

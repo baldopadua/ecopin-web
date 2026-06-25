@@ -2,7 +2,29 @@
 import { useEffect, useState } from 'react'
 import PageHeader from '@/components/layout/PageHeader'
 import { fetchValidatedReports } from '@/lib/api'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts'
+import { Bar, Pie, Line } from 'react-chartjs-2'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Tooltip,
+  Legend,
+} from 'chart.js'
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Tooltip,
+  Legend
+)
 
 const COLORS = ['#4CAF50', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6', '#EC4899']
 
@@ -67,7 +89,7 @@ export default function AnalyticsPage() {
     })
 
     return Object.entries(weekMap)
-      .map(([week, count]) => ({ week, count }))
+      .map(([week, count]) => ({ week: `Week ${week.split('-W')[1]}`, count }))
       .sort((a, b) => a.week.localeCompare(b.week))
       .slice(-12) // Last 12 weeks
   }
@@ -110,9 +132,9 @@ export default function AnalyticsPage() {
     })
 
     return Object.entries(weekMap)
-      .map(([week, data]) => ({ 
-        week, 
-        rate: data.total > 0 ? Math.round((data.resolved / data.total) * 100) : 0 
+      .map(([week, data]) => ({
+        week: `Week ${week.split('-W')[1]}`,
+        rate: data.total > 0 ? Math.round((data.resolved / data.total) * 100) : 0
       }))
       .sort((a, b) => a.week.localeCompare(b.week))
       .slice(-12) // Last 12 weeks
@@ -140,6 +162,52 @@ export default function AnalyticsPage() {
   const mostActiveData = mostActiveIssueType()
 
   console.log('Analytics chart data:', { weeklyVolumeData, issueTypeData, resolutionRateData, mostActiveData })
+
+  // Prepare Chart.js data formats
+  const weeklyVolumeChartData = {
+    labels: weeklyVolumeData.map(d => d.week),
+    datasets: [
+      {
+        label: 'Reports',
+        data: weeklyVolumeData.map(d => d.count),
+        backgroundColor: '#4CAF50',
+        borderRadius: 4,
+      }
+    ]
+  }
+
+  const issueTypeChartData = {
+    labels: issueTypeData.map(d => d.name),
+    datasets: [
+      {
+        data: issueTypeData.map(d => d.value),
+        backgroundColor: COLORS.slice(0, issueTypeData.length),
+      }
+    ]
+  }
+
+  const resolutionRateChartData = {
+    labels: resolutionRateData.map(d => d.week),
+    datasets: [
+      {
+        label: 'Resolution Rate (%)',
+        data: resolutionRateData.map(d => d.rate),
+        borderColor: '#3B82F6',
+        backgroundColor: '#3B82F6',
+        tension: 0.1,
+      }
+    ]
+  }
+
+  const mostActiveChartData = {
+    labels: mostActiveData.map(d => d.name),
+    datasets: [
+      {
+        data: mostActiveData.map(d => d.value),
+        backgroundColor: COLORS.slice(0, mostActiveData.length),
+      }
+    ]
+  }
 
   return (
     <div className="p-8">
@@ -183,111 +251,59 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', marginBottom: '32px' }}>
         {/* Weekly Report Volume Bar Chart */}
-        <div className="card p-4">
-          <h2 className="text-xl font-bold text-text-primary mb-4">Weekly Report Volume</h2>
-          <div className="h-80 w-full">
+        <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '16px', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827', marginBottom: '16px' }}>Weekly Report Volume</h2>
+          <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
-              <p className="text-text-muted">Loading chart data...</p>
+              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>Loading chart data...</div>
             ) : weeklyVolumeData.length === 0 ? (
-              <p className="text-text-muted">No data available for the selected period</p>
+              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>No data available for the selected period</div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={weeklyVolumeData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="week" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="count" fill="#4CAF50" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <Bar data={weeklyVolumeChartData} options={{ maintainAspectRatio: false }} />
             )}
           </div>
         </div>
 
         {/* Reports by Issue Type Pie Chart */}
-        <div className="card p-4">
-          <h2 className="text-xl font-bold text-text-primary mb-4">Reports by Issue Type</h2>
-          <div className="h-80 w-full">
+        <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '16px', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827', marginBottom: '16px' }}>Reports by Issue Type</h2>
+          <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
-              <p className="text-text-muted">Loading chart data...</p>
+              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>Loading chart data...</div>
             ) : issueTypeData.length === 0 ? (
-              <p className="text-text-muted">No data available</p>
+              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>No data available</div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={issueTypeData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {issueTypeData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+              <Pie data={issueTypeChartData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
             )}
           </div>
         </div>
 
         {/* Resolution Rate Over Time Line Chart */}
-        <div className="card p-4">
-          <h2 className="text-xl font-bold text-text-primary mb-4">Resolution Rate Over Time</h2>
-          <div className="h-80 w-full">
+        <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '16px', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827', marginBottom: '16px' }}>Resolution Rate Over Time</h2>
+          <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
-              <p className="text-text-muted">Loading chart data...</p>
+              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>Loading chart data...</div>
             ) : resolutionRateData.length === 0 ? (
-              <p className="text-text-muted">No data available for the selected period</p>
+              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>No data available for the selected period</div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={resolutionRateData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="week" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="rate" stroke="#3B82F6" strokeWidth={2} dot={{ fill: '#3B82F6' }} />
-                </LineChart>
-              </ResponsiveContainer>
+              <Line data={resolutionRateChartData} options={{ maintainAspectRatio: false }} />
             )}
           </div>
         </div>
 
         {/* Most Active Issue Type Pie Chart */}
-        <div className="card p-4">
-          <h2 className="text-xl font-bold text-text-primary mb-4">Most Active Issue Types</h2>
-          <div className="h-80 w-full">
+        <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '16px', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827', marginBottom: '16px' }}>Most Active Issue Types</h2>
+          <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
-              <p className="text-text-muted">Loading chart data...</p>
+              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>Loading chart data...</div>
             ) : mostActiveData.length === 0 ? (
-              <p className="text-text-muted">No data available</p>
+              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>No data available</div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={mostActiveData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {mostActiveData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+              <Pie data={mostActiveChartData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
             )}
           </div>
         </div>
