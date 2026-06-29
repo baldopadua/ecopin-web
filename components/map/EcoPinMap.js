@@ -25,9 +25,9 @@ const PASIG_BOUNDS = [
 ]
 
 const createIcon = (status, isRemoving = false) => {
-  let color = '#EF4444' // unresolved
-  if (status === 'in_progress') color = '#F59E0B' // in_progress
-  if (status === 'resolved') color = '#ADFF2F' // resolved
+  let color = 'var(--error)' // unresolved
+  if (status === 'in_progress') color = 'var(--warning)' // in_progress
+  if (status === 'resolved') color = 'var(--success)' // resolved
 
   const animation = isRemoving ? 'markerBounceOut 0.3s ease-in forwards' : 'markerBounceIn 0.5s ease-out'
 
@@ -43,8 +43,8 @@ const createIcon = (status, isRemoving = false) => {
 
 const createClusterIcon = (cluster) => {
   const severity = cluster.severity
-  let color = '#F59E0B' // medium (default)
-  if (severity === 'high') color = '#EF4444'
+  let color = 'var(--warning)' // medium (default)
+  if (severity === 'high') color = 'var(--error)'
   if (severity === 'low') color = '#3B82F6'
 
   const count = cluster.report_count
@@ -482,8 +482,8 @@ export default function EcoPinMap() {
               <Polygon
                 key={`polygon-${cluster.id}`}
                 positions={sortedPoints}
-                color="#EF4444"
-                fillColor="#EF4444"
+                color="var(--error)"
+                fillColor="var(--error)"
                 fillOpacity={0.2}
                 weight={2}
               />
@@ -649,7 +649,7 @@ export default function EcoPinMap() {
                   className="w-4 h-4 accent-accent-green"
                 />
                 <span className="flex items-center gap-2 text-sm text-text-primary">
-                  <span className="w-3 h-3 rounded-full bg-red-500"></span>
+                  <span className="w-3 h-3 rounded-full" style={{backgroundColor: 'var(--error)'}}></span>
                   Unresolved
                 </span>
               </label>
@@ -663,7 +663,7 @@ export default function EcoPinMap() {
                   className="w-4 h-4 accent-accent-green"
                 />
                 <span className="flex items-center gap-2 text-sm text-text-primary">
-                  <span className="w-3 h-3 rounded-full bg-orange-500"></span>
+                  <span className="w-3 h-3 rounded-full" style={{backgroundColor: 'var(--warning)'}}></span>
                   In Progress
                 </span>
               </label>
@@ -677,7 +677,7 @@ export default function EcoPinMap() {
                   className="w-4 h-4 accent-accent-green"
                 />
                 <span className="flex items-center gap-2 text-sm text-text-primary">
-                  <span className="w-3 h-3 rounded-full bg-green-500"></span>
+                  <span className="w-3 h-3 rounded-full" style={{backgroundColor: 'var(--success)'}}></span>
                   Resolved
                 </span>
               </label>
