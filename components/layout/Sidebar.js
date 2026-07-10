@@ -9,7 +9,6 @@ const navigation = [
   { name: 'Cleanup Tasks', href: '/dashboard/cleanup-tasks' },
   { name: 'Reports', href: '/dashboard/reports' },
   { name: 'Analytics', href: '/dashboard/analytics' },
-  { name: 'Profile', href: '/dashboard/profile' },
 ]
 
 export default function Sidebar({ user, onLogout }) {

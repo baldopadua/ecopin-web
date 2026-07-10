@@ -253,7 +253,7 @@ export default function CleanupTaskDetailPage() {
   const getReportCardColor = (status) => {
     switch (status) {
       case 'resolved':
-        return 'border-green-500/30 bg-green-500/10 dark:border-green-500/30 dark:bg-green-500/10'
+        return 'border-green-500 border-2'
       case 'in_progress':
         return 'border-yellow-500/30 bg-yellow-500/10 dark:border-yellow-500/30 dark:bg-yellow-500/10'
       default:

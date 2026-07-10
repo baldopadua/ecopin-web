@@ -133,11 +133,10 @@ export default function ClustersPage() {
       />
 
       {/* Search and Filters */}
-      <div className="card mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="card mb-6 border-l-4 border-l-[var(--accent-green)] no-hover">
+        <div className="flex flex-wrap items-center gap-4">
           {/* Search */}
-          <div className="md:col-span-2 lg:col-span-3">
-            <label className="block text-sm font-medium text-text-secondary mb-2">Search</label>
+          <div className="flex-1 min-w-[200px]">
             <input
               type="text"
               placeholder="Search by cluster ID or issue type..."
@@ -148,8 +147,7 @@ export default function ClustersPage() {
           </div>
 
           {/* Severity Filter */}
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">Severity</label>
+          <div className="min-w-[150px]">
             <select
               value={severityFilter}
               onChange={(e) => setSeverityFilter(e.target.value)}
@@ -163,8 +161,7 @@ export default function ClustersPage() {
           </div>
 
           {/* Status Filter */}
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-2">Status</label>
+          <div className="min-w-[150px]">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -176,18 +173,30 @@ export default function ClustersPage() {
               <option value="resolved">Resolved</option>
             </select>
           </div>
-        </div>
 
-        {/* Results count */}
-        <div className="mt-4 pt-4 border-t border-border">
-          <p className="text-sm text-text-secondary">
-            {loading ? 'Loading...' : `Showing ${startIndex + 1}-${Math.min(endIndex, filteredClusters.length)} of ${filteredClusters.length} clusters`}
-          </p>
+          {/* Clear Filters Button */}
+          {(searchQuery || severityFilter !== 'all' || statusFilter !== 'all') && (
+            <button
+              onClick={() => {
+                setSearchQuery('')
+                setSeverityFilter('all')
+                setStatusFilter('all')
+              }}
+              className="px-4 py-2 text-sm text-accent-green hover:bg-accent-green/10 rounded-lg transition-colors"
+            >
+              Clear Filters
+            </button>
+          )}
+
+          {/* Results count */}
+          <span className="text-sm text-text-secondary ml-auto">
+            {loading ? 'Loading...' : `${filteredClusters.length} clusters`}
+          </span>
         </div>
       </div>
 
       {/* Clusters List */}
-      <div className="card">
+      <div className="card no-hover">
         <h2 className="text-xl font-bold text-text-primary mb-4">Clusters List</h2>
         {loading ? (
           <p className="text-text-muted">Loading clusters...</p>
@@ -195,45 +204,56 @@ export default function ClustersPage() {
           <p className="text-text-muted">No clusters match your filters</p>
         ) : (
           <>
-            <div className="space-y-4">
-              {paginatedClusters.map((cluster) => {
-                const clusterReports = reports.filter(r => String(r.cluster_id) === String(cluster.id))
-                const clusterStatus = getClusterStatus(cluster.id)
-                return (
-                  <div
-                    key={cluster.id}
-                    className="p-4 border border-border rounded-lg hover:bg-surface cursor-pointer transition-colors"
-                    onClick={() => handleRowClick(cluster.id)}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-text-primary">Cluster #{cluster.id}</h3>
-                        <p className="text-text-secondary mt-1">
-                          {cluster.issue_type ? `Issue type: ${cluster.issue_type}` : 'Similar environmental issues'}
-                        </p>
-                        <div className="mt-2 flex flex-wrap gap-4 text-sm">
-                          <span className="text-text-muted">
-                            {clusterReports.length} reports
+            <div className="overflow-x-auto mb-6">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Cluster ID</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Issue Type</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Reports</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Severity</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedClusters.map((cluster) => {
+                    const clusterReports = reports.filter(r => String(r.cluster_id) === String(cluster.id))
+                    const clusterStatus = getClusterStatus(cluster.id)
+                    return (
+                      <tr
+                        key={cluster.id}
+                        className="border-b border-border cursor-pointer"
+                        onClick={() => handleRowClick(cluster.id)}
+                      >
+                        <td className="py-3 px-4">
+                          <span className="font-medium text-text-primary">#{cluster.id}</span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="text-sm text-text-secondary">{cluster.issue_type || 'Similar environmental issues'}</span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="text-sm text-text-muted">{clusterReports.length}</span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSeverityColor(cluster.severity)}`}>
+                            {cluster.severity}
                           </span>
-                        </div>
-                      </div>
-                      <div className="ml-4 flex flex-col gap-2">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getSeverityColor(cluster.severity)}`}>
-                          {cluster.severity} severity
-                        </span>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(clusterStatus)}`}>
-                          {clusterStatus.replace('_', ' ')}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(clusterStatus)}`}>
+                            {clusterStatus.replace('_', ' ')}
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
             </div>
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="mt-6 flex items-center justify-between">
+              <div className="pt-4 border-t border-border flex items-center justify-between">
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}

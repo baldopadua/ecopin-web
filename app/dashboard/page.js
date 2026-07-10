@@ -202,7 +202,7 @@ export default function DashboardPage() {
       {
         label: 'Reports',
         data: chartData.map(d => d.count),
-        backgroundColor: '#4CAF50',
+        backgroundColor: 'rgba(46, 125, 50, 0.8)',
         borderRadius: 4,
       }
     ]
@@ -214,7 +214,7 @@ export default function DashboardPage() {
       {
         label: 'Resolution Rate (%)',
         data: resolutionRateData.map(d => d.rate),
-        backgroundColor: '#3B82F6',
+        backgroundColor: 'rgba(59, 130, 246, 0.8)',
         borderRadius: 4,
       }
     ]
@@ -247,44 +247,44 @@ export default function DashboardPage() {
       )}
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="card">
-          <div className="mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="card border-l-4 border-l-[var(--accent-green)] hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="mb-2">
             <span className="text-sm text-text-muted">Total Reports</span>
           </div>
           <p className="text-3xl font-bold text-text-primary">{loading ? '...' : stats.total}</p>
         </div>
 
-        <div className="card">
-          <div className="mb-4">
+        <div className="card border-l-4 border-l-[var(--error)] hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="mb-2">
             <span className="text-sm text-text-muted">Unresolved</span>
           </div>
           <p className="text-3xl font-bold text-text-primary">{loading ? '...' : stats.unresolved}</p>
         </div>
 
-        <div className="card">
-          <div className="mb-4">
+        <div className="card border-l-4 border-l-[var(--warning)] hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="mb-2">
             <span className="text-sm text-text-muted">In Progress</span>
           </div>
           <p className="text-3xl font-bold text-text-primary">{loading ? '...' : stats.inProgress}</p>
         </div>
 
-        <div className="card">
-          <div className="mb-4">
+        <div className="card border-l-4 border-l-[var(--success)] hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="mb-2">
             <span className="text-sm text-text-muted">Resolved Today</span>
           </div>
           <p className="text-3xl font-bold text-text-primary">{loading ? '...' : stats.resolvedToday}</p>
         </div>
 
-        <div className="card">
-          <div className="mb-4">
+        <div className="card border-l-4 border-l-[var(--accent-green-dark)] hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="mb-2">
             <span className="text-sm text-text-muted">Avg. Resolution Time</span>
           </div>
           <p className="text-3xl font-bold text-text-primary">{loading ? '...' : stats.avgResolutionTime}</p>
         </div>
 
-        <div className="card">
-          <div className="mb-4">
+        <div className="card border-l-4 border-l-[var(--accent-green)] hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="mb-2">
             <span className="text-sm text-text-muted">Resolution Rate</span>
           </div>
           <p className="text-3xl font-bold text-text-primary">{loading ? '...' : `${stats.resolutionRate}%`}</p>
@@ -292,15 +292,15 @@ export default function DashboardPage() {
       </div>
 
       {/* Charts Section */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', marginBottom: '32px' }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         {/* Reports per Week Bar Chart */}
-        <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '16px', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827', marginBottom: '16px' }}>Reports per Week</h2>
+        <div className="chart-card">
+          <h2>Reports per Week</h2>
           <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
-              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>Loading chart data...</div>
+              <div className="chart-placeholder">Loading chart data...</div>
             ) : chartData.length === 0 ? (
-              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>No data available for the selected period</div>
+              <div className="chart-placeholder">No data available for the selected period</div>
             ) : (
               <Bar data={barChartData} options={{ maintainAspectRatio: false }} />
             )}
@@ -308,13 +308,13 @@ export default function DashboardPage() {
         </div>
 
         {/* Resolution Rate Bar Chart */}
-        <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '16px', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827', marginBottom: '16px' }}>Resolution Rate (%)</h2>
+        <div className="chart-card">
+          <h2>Resolution Rate (%)</h2>
           <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
-              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>Loading chart data...</div>
+              <div className="chart-placeholder">Loading chart data...</div>
             ) : resolutionRateData.length === 0 ? (
-              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>No data available for the selected period</div>
+              <div className="chart-placeholder">No data available for the selected period</div>
             ) : (
               <Bar data={resolutionRateChartData} options={{ maintainAspectRatio: false }} />
             )}
@@ -322,13 +322,13 @@ export default function DashboardPage() {
         </div>
 
         {/* Most Active Issue Type Pie Chart */}
-        <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '16px', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827', marginBottom: '16px' }}>Most Active Issue Types</h2>
+        <div className="chart-card">
+          <h2>Most Active Issue Types</h2>
           <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
-              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>Loading chart data...</div>
+              <div className="chart-placeholder">Loading chart data...</div>
             ) : pieData.length === 0 ? (
-              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>No data available</div>
+              <div className="chart-placeholder">No data available</div>
             ) : (
               <Pie data={pieChartData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
             )}

@@ -1,8 +1,18 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { fetchReportById, fetchReportEvidence, updateReportStatus, updatePropertyOwnerConsent, fetchDisclosureRequests, createDisclosureRequest, respondToDisclosureRequest } from '@/lib/api'
-import { fetchReportById, fetchReportEvidence, updateReportStatus, updateLifecycleStage, acknowledgeComplaint, fetchAgencyResponses } from '@/lib/api'
+import { 
+  fetchReportById, 
+  fetchReportEvidence, 
+  updateReportStatus, 
+  updatePropertyOwnerConsent, 
+  fetchDisclosureRequests, 
+  createDisclosureRequest, 
+  respondToDisclosureRequest,
+  updateLifecycleStage,
+  acknowledgeComplaint,
+  fetchAgencyResponses
+} from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
 import wkx from 'wkx'
@@ -44,23 +54,17 @@ export default function ReportDetailPage() {
     Promise.all([
       fetchReportById(reportId),
       fetchReportEvidence(reportId),
-      fetchDisclosureRequests(reportId).catch(() => [])
-    ]).then(([reportData, evidenceData, disclosureRequestsData]) => {
+      fetchDisclosureRequests(reportId).catch(() => []),
+      fetchAgencyResponses(reportId).catch(() => [])
+    ]).then(([reportData, evidenceData, disclosureRequestsData, responsesData]) => {
       console.log('Report data:', reportData)
       console.log('Evidence data:', evidenceData)
       console.log('Disclosure requests:', disclosureRequestsData)
-      if (reportData) {
-        setReport(reportData)
-        setEvidence(evidenceData)
-        setDisclosureRequests(disclosureRequestsData)
-      fetchAgencyResponses(reportId)
-    ]).then(([reportData, evidenceData, responsesData]) => {
-      console.log('Report data:', reportData)
-      console.log('Evidence data:', evidenceData)
       console.log('Agency responses:', responsesData)
       if (reportData) {
         setReport(reportData)
         setEvidence(evidenceData)
+        setDisclosureRequests(disclosureRequestsData)
         setAgencyResponses(responsesData || [])
       } else {
         setError('Report not found')
@@ -424,19 +428,14 @@ export default function ReportDetailPage() {
         ]}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Status Badges */}
-          <div className="card">
-            <div className="flex justify-between items-start">
-              <button
-                onClick={() => router.back()}
-                className="btn-secondary text-sm"
-              >
-                ← Back
-              </button>
-              <div className="flex gap-3 flex-wrap">
+        <div className="lg:col-span-3 space-y-6">
+          {/* Lifecycle Timeline - Centerpiece */}
+          <div className="card border-2 border-[var(--accent-green)]">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold text-text-primary mb-2">Report Lifecycle</h2>
+              <div className="flex justify-center gap-3 flex-wrap">
                 <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getStatusColor(report.status)}`}>
                   {report.status.replace('_', ' ').toUpperCase()}
                 </span>
@@ -453,6 +452,8 @@ export default function ReportDetailPage() {
                         : 'bg-gray-100 text-gray-800 border-gray-300'
                     }`}>
                     {report.property_owner_consent_status.toUpperCase()}
+                  </span>
+                )}
                 {report.stage && (
                   <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getLifecycleStageColor(report.stage)}`}>
                     {report.stage.replace('_', ' ').toUpperCase()}
@@ -460,52 +461,69 @@ export default function ReportDetailPage() {
                 )}
               </div>
             </div>
+            <div className="flex items-center justify-center gap-2 px-4">
+              {['submitted', 'acknowledged', 'responded', 'resolved', 'closed'].map((stage, index) => {
+                const stages = ['submitted', 'acknowledged', 'responded', 'resolved', 'closed']
+                const currentIndex = stages.indexOf(report.stage)
+                const isCompleted = currentIndex >= index
+                const isCurrent = report.stage === stage
+                return (
+                  <div key={stage} className="flex-1 flex flex-col items-center max-w-[100px]">
+                    <div className={`w-6 h-6 rounded-full ${isCurrent ? 'bg-[var(--success)] ring-4 ring-[var(--success)]/20' : isCompleted ? 'bg-[var(--accent-green)]' : 'bg-gray-300'} transition-all`} />
+                    <span className={`text-xs mt-2 font-medium ${isCurrent ? 'text-[var(--success)]' : isCompleted ? 'text-[var(--accent-green)]' : 'text-text-muted'}`}>
+                      {stage.replace('_', ' ')}
+                    </span>
+                    {index < 4 && <div className={`w-full h-1 mt-2 ${isCurrent ? 'bg-[var(--success)]' : isCompleted ? 'bg-[var(--accent-green)]' : 'bg-gray-300'}`} />}
+                  </div>
+                )
+              })}
+            </div>
+            {report.stage === 'submitted' && (
+              <div className="mt-6 text-center">
+                <button onClick={handleAcknowledgeComplaint} className="btn-primary">
+                  Acknowledge Complaint
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Title and Issue Type */}
+          {/* Report Information */}
           <div className="card">
             <h1 className="text-3xl font-bold text-text-primary mb-2">{report.title}</h1>
-            <p className="text-lg text-text-secondary">Issue: {report.issue_type || 'General'}</p>
-          </div>
-
-          {/* Description */}
-          <div className="card">
-            <h2 className="text-xl font-bold text-text-primary mb-4">Description</h2>
-            <p className="text-text-primary leading-relaxed">
+            <p className="text-lg text-text-secondary mb-6">Issue: {report.issue_type || 'General'}</p>
+            
+            <h2 className="text-lg font-semibold text-text-primary mb-3">Description</h2>
+            <p className="text-text-primary leading-relaxed mb-6">
               {report.description || 'No description provided.'}
             </p>
-          </div>
 
-          {/* Location and Date */}
-          <div className="card">
-            <h2 className="text-xl font-bold text-text-primary mb-4">Location & Date</h2>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-accent-green/10 flex items-center justify-center">
-                  <svg className="w-4 h-4 text-accent-green" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                  </svg>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-surface p-4 rounded-lg border border-border">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 rounded-full bg-accent-green/10 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-accent-green" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-medium text-text-secondary">Location</p>
                 </div>
-                <div>
-                  <p className="text-sm text-text-muted">Coordinates</p>
-                  <p className="text-text-primary font-medium">
-                    {location.latitude && location.longitude
-                      ? `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`
-                      : 'Location not available'
-                    }
-                  </p>
-                </div>
+                <p className="text-text-primary text-sm">
+                  {location.latitude && location.longitude 
+                    ? `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`
+                    : 'Not available'
+                  }
+                </p>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-accent-green/10 flex items-center justify-center">
-                  <svg className="w-4 h-4 text-accent-green" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                  </svg>
+              <div className="bg-surface p-4 rounded-lg border border-border">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 rounded-full bg-accent-green/10 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-accent-green" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <p className="text-sm font-medium text-text-secondary">Submitted</p>
                 </div>
-                <div>
-                  <p className="text-sm text-text-muted">Submitted</p>
-                  <p className="text-text-primary font-medium">{dateStr}</p>
-                </div>
+                <p className="text-text-primary text-sm">{dateStr}</p>
               </div>
             </div>
           </div>
@@ -596,46 +614,57 @@ export default function ReportDetailPage() {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Reporter Info */}
+          {/* Reporter Info & Report Metadata */}
           <div className="card">
-            <h2 className="text-lg font-bold text-text-primary mb-4">Reporter Information</h2>
-            <div className="space-y-3">
+            <h2 className="text-lg font-bold text-text-primary mb-4">Report Information</h2>
+            <div className="space-y-4">
               <div>
-                <p className="text-sm text-text-muted">Name</p>
-                <p className="text-text-primary font-medium">
-                  {report.profiles?.full_name || report.user_full_name || 'Anonymous'}
-                </p>
+                <p className="text-sm font-semibold text-text-secondary mb-2">Reporter</p>
+                <div className="space-y-2">
+                  <div>
+                    <p className="text-xs text-text-muted">Name</p>
+                    <p className="text-text-primary font-medium text-sm">
+                      {report.profiles?.data_consent 
+                        ? (report.profiles?.full_name || report.user_full_name || 'Anonymous')
+                        : 'Information not disclosed'
+                      }
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-text-muted">User ID</p>
+                    <p className="text-text-primary font-medium text-sm">
+                      {report.profiles?.data_consent 
+                        ? (report.user_id || 'N/A')
+                        : 'Information not disclosed'
+                      }
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-text-muted">User ID</p>
-                <p className="text-text-primary font-medium text-sm">{report.user_id || 'N/A'}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Report Metadata */}
-          <div className="card">
-            <h2 className="text-lg font-bold text-text-primary mb-4">Report Details</h2>
-            <div className="space-y-3">
-              <div>
-                <p className="text-sm text-text-muted">Report ID</p>
-                <p className="text-text-primary font-medium text-sm">{report.id}</p>
-              </div>
-              <div>
-                <p className="text-sm text-text-muted">Created</p>
-                <p className="text-text-primary font-medium text-sm">{dateStr}</p>
-              </div>
-              <div>
-                <p className="text-sm text-text-muted">Last Updated</p>
-                <p className="text-text-primary font-medium text-sm">
-                  {new Date(report.updated_at).toLocaleString('en-US', {
-                    month: 'long',
-                    day: 'numeric',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </p>
+              <div className="border-t border-border pt-4">
+                <p className="text-sm font-semibold text-text-secondary mb-2">Report Details</p>
+                <div className="space-y-2">
+                  <div>
+                    <p className="text-xs text-text-muted">Report ID</p>
+                    <p className="text-text-primary font-medium text-sm">{report.id}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-text-muted">Created</p>
+                    <p className="text-text-primary font-medium text-sm">{dateStr}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-text-muted">Last Updated</p>
+                    <p className="text-text-primary font-medium text-sm">
+                      {new Date(report.updated_at).toLocaleString('en-US', {
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -697,7 +726,7 @@ export default function ReportDetailPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                {disclosureRequests.map((req, idx) => (
+               {disclosureRequests.map((req, idx) => (
                   <div key={idx} className="bg-surface p-4 rounded-lg border border-border">
                     <div className="flex justify-between items-start mb-2">
                       <span className={`px-2 py-1 rounded text-xs font-semibold ${req.status === 'approved' ? 'bg-green-100 text-green-800' :
@@ -739,6 +768,10 @@ export default function ReportDetailPage() {
                     )}
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+
           {/* LGU Notes */}
           <div className="card">
             <h2 className="text-lg font-bold text-text-primary mb-4">LGU Notes</h2>
@@ -783,45 +816,6 @@ export default function ReportDetailPage() {
                 <p className="text-sm text-text-primary">{report.notes}</p>
               </div>
             )}
-          </div>
-
-          {/* LGU Notes/Updates */}
-          {/* Lifecycle Progress */}
-          <div className="card">
-            <h2 className="text-lg font-bold text-text-primary mb-4">Report Lifecycle</h2>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-text-secondary">Current Stage</span>
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getLifecycleStageColor(report.stage)}`}>
-                  {report.stage?.replace('_', ' ').toUpperCase() || 'SUBMITTED'}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                {['submitted', 'acknowledged', 'responded', 'resolved', 'closed'].map((stage, index) => {
-                  const stages = ['submitted', 'acknowledged', 'responded', 'resolved', 'closed']
-                  const currentIndex = stages.indexOf(report.stage)
-                  const isCompleted = currentIndex >= index
-                  const isCurrent = report.stage === stage
-                  return (
-                    <div key={stage} className="flex-1 flex flex-col items-center">
-                      <div className={`w-4 h-4 rounded-full ${isCurrent ? 'bg-[var(--success)]' : isCompleted ? 'bg-[var(--accent-green-light)]' : 'bg-gray-300'}`} />
-                      <span className={`text-xs mt-1 ${isCurrent ? 'font-semibold text-[var(--success)]' : 'text-text-muted'}`}>
-                        {stage.replace('_', ' ')}
-                      </span>
-                      {index < 4 && <div className={`w-full h-1 mt-2 ${isCurrent ? 'bg-[var(--success)]' : isCompleted ? 'bg-[var(--accent-green-light)]' : 'bg-gray-300'}`} />}
-                    </div>
-                  )
-                })}
-              </div>
-              {report.stage === 'submitted' && (
-                <button
-                  onClick={handleAcknowledgeComplaint}
-                  className="btn-primary w-full"
-                >
-                  Acknowledge Complaint
-                </button>
-              )}
-            </div>
           </div>
 
           {/* Audit Log */}
@@ -960,13 +954,13 @@ export default function ReportDetailPage() {
                     <button
                       onClick={() => handleStatusUpdate('resolved')}
                       disabled={report.status === 'resolved'}
-                      className={`w-full px-4 py-3 text-left transition-colors ${report.status === 'resolved'
-                        ? 'bg-accent-green/20 text-accent-green font-semibold cursor-not-allowed'
-                        : 'text-text-primary hover:bg-accent-green/10'
-                        }`}
+                      className={`w-full px-4 py-3 text-left transition-colors ${
+                        report.status === 'resolved'
+                          ? 'bg-accent-green/20 text-accent-green font-semibold cursor-not-allowed'
+                          : 'text-text-primary hover:bg-accent-green/10'
+                      }`}
                     >
                       <span className="font-medium">Resolved</span>
-                      {report.status === 'resolved'}
                     </button>
                   </div>
                 )}
