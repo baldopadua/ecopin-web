@@ -16,6 +16,7 @@ export default function ReportsPage() {
   const [typeFilter, setTypeFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [validationFilter, setValidationFilter] = useState('all')
+  const [lifecycleFilter, setLifecycleFilter] = useState('all')
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
@@ -57,9 +58,13 @@ export default function ReportsPage() {
       filtered = filtered.filter(r => r.validation_status === validationFilter)
     }
 
+    if (lifecycleFilter !== 'all') {
+      filtered = filtered.filter(r => r.stage === lifecycleFilter)
+    }
+
     setFilteredReports(filtered)
     setCurrentPage(1) // Reset to page 1 when filters change
-  }, [searchQuery, typeFilter, statusFilter, validationFilter, reports])
+  }, [searchQuery, typeFilter, statusFilter, validationFilter, lifecycleFilter, reports])
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredReports.length / itemsPerPage)
@@ -95,6 +100,23 @@ export default function ReportsPage() {
         return 'bg-gray-100 text-gray-800'
       case 'rejected':
         return 'bg-red-100 text-red-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const getLifecycleStageColor = (stage) => {
+    switch (stage) {
+      case 'submitted':
+        return 'bg-purple-100 text-purple-800'
+      case 'acknowledged':
+        return 'bg-blue-100 text-blue-800'
+      case 'responded':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'resolved':
+        return 'bg-green-100 text-green-800'
+      case 'closed':
+        return 'bg-gray-100 text-gray-800'
       default:
         return 'bg-gray-100 text-gray-800'
     }
@@ -170,6 +192,23 @@ export default function ReportsPage() {
               <option value="rejected">Rejected</option>
             </select>
           </div>
+
+          {/* Lifecycle Stage Filter */}
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-2">Lifecycle Stage</label>
+            <select
+              value={lifecycleFilter}
+              onChange={(e) => setLifecycleFilter(e.target.value)}
+              className="input"
+            >
+              <option value="all">All Stages</option>
+              <option value="submitted">Submitted</option>
+              <option value="acknowledged">Acknowledged</option>
+              <option value="responded">Responded</option>
+              <option value="resolved">Resolved</option>
+              <option value="closed">Closed</option>
+            </select>
+          </div>
         </div>
 
         {/* Results count */}
@@ -214,6 +253,11 @@ export default function ReportsPage() {
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${getValidationColor(report.validation_status)}`}>
                         {report.validation_status}
                       </span>
+                      {report.stage && (
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getLifecycleStageColor(report.stage)}`}>
+                          {report.stage.replace('_', ' ')}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>

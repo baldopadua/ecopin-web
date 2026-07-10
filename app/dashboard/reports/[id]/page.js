@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { fetchReportById, fetchReportEvidence, updateReportStatus, updatePropertyOwnerConsent, fetchDisclosureRequests, createDisclosureRequest, respondToDisclosureRequest } from '@/lib/api'
+import { fetchReportById, fetchReportEvidence, updateReportStatus, updateLifecycleStage, acknowledgeComplaint, fetchAgencyResponses } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
 import wkx from 'wkx'
@@ -35,6 +36,9 @@ export default function ReportDetailPage() {
   const [disclosureRequestType, setDisclosureRequestType] = useState('identity')
   const [disclosureRequestNotes, setDisclosureRequestNotes] = useState('')
   const [notification, setNotification] = useState(null)
+  const [showLifecycleDropdown, setShowLifecycleDropdown] = useState(false)
+  const [updatingLifecycle, setUpdatingLifecycle] = useState(false)
+  const [agencyResponses, setAgencyResponses] = useState([])
 
   useEffect(() => {
     Promise.all([
@@ -49,6 +53,15 @@ export default function ReportDetailPage() {
         setReport(reportData)
         setEvidence(evidenceData)
         setDisclosureRequests(disclosureRequestsData)
+      fetchAgencyResponses(reportId)
+    ]).then(([reportData, evidenceData, responsesData]) => {
+      console.log('Report data:', reportData)
+      console.log('Evidence data:', evidenceData)
+      console.log('Agency responses:', responsesData)
+      if (reportData) {
+        setReport(reportData)
+        setEvidence(evidenceData)
+        setAgencyResponses(responsesData || [])
       } else {
         setError('Report not found')
       }
@@ -122,6 +135,23 @@ export default function ReportDetailPage() {
     }
   }
 
+  const getLifecycleStageColor = (stage) => {
+    switch (stage) {
+      case 'submitted':
+        return 'bg-purple-100 text-purple-800 border-purple-300'
+      case 'acknowledged':
+        return 'bg-blue-100 text-blue-800 border-blue-300'
+      case 'responded':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300'
+      case 'resolved':
+        return 'bg-green-100 text-green-800 border-green-300'
+      case 'closed':
+        return 'bg-gray-100 text-gray-800 border-gray-300'
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-300'
+    }
+  }
+
   const handleStatusUpdate = async (newStatus) => {
     // Check if trying to mark as resolved without photos
     if (newStatus === 'resolved' && (!report.before_photo_url || !report.after_photo_url)) {
@@ -142,6 +172,36 @@ export default function ReportDetailPage() {
       setNotification({ message: 'Failed to update status. Please try again.', type: 'error' })
     } finally {
       setUpdatingStatus(false)
+    }
+  }
+
+  const handleLifecycleStageUpdate = async (newStage) => {
+    setUpdatingLifecycle(true)
+    try {
+      await updateLifecycleStage(reportId, newStage)
+      // Refresh report data
+      const updatedReport = await fetchReportById(reportId)
+      setReport(updatedReport)
+      setShowLifecycleDropdown(false)
+      setNotification({ message: 'Lifecycle stage updated successfully', type: 'success' })
+    } catch (error) {
+      console.error('Failed to update lifecycle stage:', error)
+      setNotification({ message: 'Failed to update lifecycle stage. Please try again.', type: 'error' })
+    } finally {
+      setUpdatingLifecycle(false)
+    }
+  }
+
+  const handleAcknowledgeComplaint = async () => {
+    try {
+      await acknowledgeComplaint(reportId)
+      // Refresh report data
+      const updatedReport = await fetchReportById(reportId)
+      setReport(updatedReport)
+      setNotification({ message: 'Complaint acknowledged successfully', type: 'success' })
+    } catch (error) {
+      console.error('Failed to acknowledge complaint:', error)
+      setNotification({ message: 'Failed to acknowledge complaint. Please try again.', type: 'error' })
     }
   }
 
@@ -393,6 +453,9 @@ export default function ReportDetailPage() {
                         : 'bg-gray-100 text-gray-800 border-gray-300'
                     }`}>
                     {report.property_owner_consent_status.toUpperCase()}
+                {report.stage && (
+                  <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getLifecycleStageColor(report.stage)}`}>
+                    {report.stage.replace('_', ' ').toUpperCase()}
                   </span>
                 )}
               </div>
@@ -676,17 +739,114 @@ export default function ReportDetailPage() {
                     )}
                   </div>
                 ))}
+          {/* LGU Notes */}
+          <div className="card">
+            <h2 className="text-lg font-bold text-text-primary mb-4">LGU Notes</h2>
+            {showNoteInput ? (
+              <div className="space-y-2">
+                <textarea
+                  value={noteText}
+                  onChange={(e) => setNoteText(e.target.value)}
+                  placeholder="Enter your note..."
+                  className="w-full p-3 border border-border rounded-lg bg-surface text-text-primary resize-none"
+                  rows={3}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleAddNote}
+                    disabled={addingNote || !noteText.trim()}
+                    className="btn-primary flex-1"
+                  >
+                    {addingNote ? 'Adding...' : 'Save Note'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowNoteInput(false)
+                      setNoteText('')
+                    }}
+                    className="btn-secondary flex-1"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowNoteInput(true)}
+                className="btn-secondary w-full"
+              >
+                Add Note
+              </button>
+            )}
+            {report.notes && (
+              <div className="mt-4 p-3 bg-surface rounded-lg border border-border">
+                <p className="text-sm text-text-primary">{report.notes}</p>
               </div>
             )}
           </div>
 
           {/* LGU Notes/Updates */}
+          {/* Lifecycle Progress */}
           <div className="card">
-            <h2 className="text-lg font-bold text-text-primary mb-4">LGU Notes & Updates</h2>
-            <div className="bg-surface p-4 rounded-lg border border-border">
-              <p className="text-text-muted text-sm">
-                No LGU notes or updates available for this report yet.
-              </p>
+            <h2 className="text-lg font-bold text-text-primary mb-4">Report Lifecycle</h2>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-text-secondary">Current Stage</span>
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getLifecycleStageColor(report.stage)}`}>
+                  {report.stage?.replace('_', ' ').toUpperCase() || 'SUBMITTED'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                {['submitted', 'acknowledged', 'responded', 'resolved', 'closed'].map((stage, index) => {
+                  const stages = ['submitted', 'acknowledged', 'responded', 'resolved', 'closed']
+                  const currentIndex = stages.indexOf(report.stage)
+                  const isCompleted = currentIndex >= index
+                  const isCurrent = report.stage === stage
+                  return (
+                    <div key={stage} className="flex-1 flex flex-col items-center">
+                      <div className={`w-4 h-4 rounded-full ${isCurrent ? 'bg-[var(--success)]' : isCompleted ? 'bg-[var(--accent-green-light)]' : 'bg-gray-300'}`} />
+                      <span className={`text-xs mt-1 ${isCurrent ? 'font-semibold text-[var(--success)]' : 'text-text-muted'}`}>
+                        {stage.replace('_', ' ')}
+                      </span>
+                      {index < 4 && <div className={`w-full h-1 mt-2 ${isCurrent ? 'bg-[var(--success)]' : isCompleted ? 'bg-[var(--accent-green-light)]' : 'bg-gray-300'}`} />}
+                    </div>
+                  )
+                })}
+              </div>
+              {report.stage === 'submitted' && (
+                <button
+                  onClick={handleAcknowledgeComplaint}
+                  className="btn-primary w-full"
+                >
+                  Acknowledge Complaint
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Audit Log */}
+          <div className="card">
+            <h2 className="text-lg font-bold text-text-primary mb-4">Audit Log</h2>
+            <div className="space-y-3">
+              {agencyResponses && agencyResponses.length > 0 ? (
+                agencyResponses.map((response, index) => (
+                  <div key={index} className="bg-surface p-3 rounded-lg border border-border">
+                    <p className="text-sm font-medium text-text-primary capitalize">
+                      {response.action_type?.replace('_', ' ')}
+                    </p>
+                    <p className="text-sm text-text-secondary mt-1">{response.action_details}</p>
+                    <p className="text-xs text-text-muted mt-2">
+                      {new Date(response.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <div className="bg-surface p-4 rounded-lg border border-border">
+                  <p className="text-text-muted text-sm">
+                    No activity logged for this report yet.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -694,11 +854,82 @@ export default function ReportDetailPage() {
           <div className="card">
             <h2 className="text-lg font-bold text-text-primary mb-4">Actions</h2>
             <div className="space-y-3">
+              {/* Lifecycle Stage Control */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowLifecycleDropdown(!showLifecycleDropdown)}
+                  disabled={updatingLifecycle}
+                  className="btn-primary w-full"
+                >
+                  {updatingLifecycle ? 'Updating...' : 'Update Lifecycle Stage'}
+                </button>
+                {showLifecycleDropdown && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-surface border border-border rounded-lg shadow-lg z-10">
+                    <button
+                      onClick={() => handleLifecycleStageUpdate('submitted')}
+                      disabled={report.stage === 'submitted'}
+                      className={`w-full px-4 py-3 text-left border-b border-border transition-colors ${
+                        report.stage === 'submitted'
+                          ? 'bg-purple-100 text-purple-800 font-semibold cursor-not-allowed'
+                          : 'text-text-primary hover:bg-purple-50'
+                      }`}
+                    >
+                      <span className="font-medium">Submitted</span>
+                    </button>
+                    <button
+                      onClick={() => handleLifecycleStageUpdate('acknowledged')}
+                      disabled={report.stage === 'acknowledged'}
+                      className={`w-full px-4 py-3 text-left border-b border-border transition-colors ${
+                        report.stage === 'acknowledged'
+                          ? 'bg-blue-100 text-blue-800 font-semibold cursor-not-allowed'
+                          : 'text-text-primary hover:bg-blue-50'
+                      }`}
+                    >
+                      <span className="font-medium">Acknowledged</span>
+                    </button>
+                    <button
+                      onClick={() => handleLifecycleStageUpdate('responded')}
+                      disabled={report.stage === 'responded'}
+                      className={`w-full px-4 py-3 text-left border-b border-border transition-colors ${
+                        report.stage === 'responded'
+                          ? 'bg-yellow-100 text-yellow-800 font-semibold cursor-not-allowed'
+                          : 'text-text-primary hover:bg-yellow-50'
+                      }`}
+                    >
+                      <span className="font-medium">Responded</span>
+                    </button>
+                    <button
+                      onClick={() => handleLifecycleStageUpdate('resolved')}
+                      disabled={report.stage === 'resolved'}
+                      className={`w-full px-4 py-3 text-left border-b border-border transition-colors ${
+                        report.stage === 'resolved'
+                          ? 'bg-green-100 text-green-800 font-semibold cursor-not-allowed'
+                          : 'text-text-primary hover:bg-green-50'
+                      }`}
+                    >
+                      <span className="font-medium">Resolved</span>
+                    </button>
+                    <button
+                      onClick={() => handleLifecycleStageUpdate('closed')}
+                      disabled={report.stage === 'closed'}
+                      className={`w-full px-4 py-3 text-left transition-colors ${
+                        report.stage === 'closed'
+                          ? 'bg-gray-100 text-gray-800 font-semibold cursor-not-allowed'
+                          : 'text-text-primary hover:bg-gray-50'
+                      }`}
+                    >
+                      <span className="font-medium">Closed</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Status Control */}
               <div className="relative">
                 <button
                   onClick={() => setShowStatusDropdown(!showStatusDropdown)}
                   disabled={updatingStatus}
-                  className="btn-primary w-full"
+                  className="btn-secondary w-full"
                 >
                   {updatingStatus ? 'Updating...' : 'Update Status'}
                 </button>
@@ -740,42 +971,6 @@ export default function ReportDetailPage() {
                   </div>
                 )}
               </div>
-              {showNoteInput ? (
-                <div className="space-y-2">
-                  <textarea
-                    value={noteText}
-                    onChange={(e) => setNoteText(e.target.value)}
-                    placeholder="Enter your note..."
-                    className="w-full p-3 border border-border rounded-lg bg-surface text-text-primary resize-none"
-                    rows={3}
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleAddNote}
-                      disabled={addingNote || !noteText.trim()}
-                      className="btn-primary flex-1"
-                    >
-                      {addingNote ? 'Adding...' : 'Save Note'}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowNoteInput(false)
-                        setNoteText('')
-                      }}
-                      className="btn-secondary flex-1"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setShowNoteInput(true)}
-                  className="btn-secondary w-full"
-                >
-                  Add Note
-                </button>
-              )}
               <button
                 onClick={() => router.push('/dashboard/map-view')}
                 className="btn-secondary w-full"
