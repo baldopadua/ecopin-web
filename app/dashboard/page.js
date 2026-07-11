@@ -35,9 +35,12 @@ export default function DashboardPage() {
     unresolved: 0,
     inProgress: 0,
     resolved: 0,
+    closed: 0,
+    waitingForFeedback: 0,
     resolvedToday: 0,
     avgResolutionTime: 'N/A',
-    resolutionRate: 0
+    resolutionRate: 0,
+    overdue: 0
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -47,20 +50,23 @@ export default function DashboardPage() {
       try {
         const data = await fetchPublicReports()
         setReports(data)
-        
+
         const total = data.length
         const unresolved = data.filter(r => r.status === 'unresolved').length
         const inProgress = data.filter(r => r.status === 'in_progress').length
         const resolved = data.filter(r => r.status === 'resolved').length
-        
+        const closed = data.filter(r => r.status === 'closed').length
+        const waitingForFeedback = data.filter(r => r.status === 'waiting_for_feedback').length
+        const overdue = data.filter(r => r.is_overdue).length
+
         // Calculate resolved today - check reports that were resolved today
         const today = new Date()
         today.setHours(0, 0, 0, 0)
         const tomorrow = new Date(today)
         tomorrow.setDate(tomorrow.getDate() + 1)
-        
+
         const resolvedToday = data.filter(r => {
-          if (r.status !== 'resolved') return false
+          if (r.status !== 'resolved' && r.status !== 'closed') return false
           // Check updated_at timestamp when report was marked as resolved
           if (r.updated_at) {
             const updatedDate = new Date(r.updated_at)
@@ -89,15 +95,18 @@ export default function DashboardPage() {
 
         // Calculate resolution rate
         const resolutionRate = total > 0 ? Math.round((resolved / total) * 100) : 0
-        
+
         setStats({
           total,
           unresolved,
           inProgress,
           resolved,
+          closed,
+          waitingForFeedback,
           resolvedToday,
           avgResolutionTime,
-          resolutionRate
+          resolutionRate,
+          overdue
         })
       } catch (error) {
         console.error('Failed to load dashboard stats:', error)
@@ -172,7 +181,7 @@ export default function DashboardPage() {
   // Prepare data for most active issue type pie chart
   const issueTypeData = () => {
     const typeMap = {}
-    
+
     reports.forEach(report => {
       if (report.issue_type) {
         typeMap[report.issue_type] = (typeMap[report.issue_type] || 0) + 1
@@ -232,7 +241,7 @@ export default function DashboardPage() {
 
   return (
     <div className="p-8">
-      <PageHeader 
+      <PageHeader
         title="Dashboard Overview"
         subtitle="Welcome to EcoPin Dashboard"
         breadcrumbs={[
@@ -247,7 +256,7 @@ export default function DashboardPage() {
       )}
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
         <div className="card border-l-4 border-l-[var(--accent-green)] hover:shadow-lg transition-shadow cursor-pointer">
           <div className="mb-2">
             <span className="text-sm text-text-muted">Total Reports</span>
@@ -289,6 +298,58 @@ export default function DashboardPage() {
           </div>
           <p className="text-3xl font-bold text-text-primary">{loading ? '...' : `${stats.resolutionRate}%`}</p>
         </div>
+
+        <div className="card border-l-4 border-l-[var(--warning)] hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="mb-2">
+            <span className="text-sm text-text-muted">Waiting for Feedback</span>
+          </div>
+          <p className="text-3xl font-bold text-text-primary">{loading ? '...' : stats.waitingForFeedback}</p>
+        </div>
+
+        <div className="card border-l-4 border-l-[var(--error)] hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="mb-2">
+            <span className="text-sm text-text-muted">Overdue Reports</span>
+          </div>
+          <p className="text-3xl font-bold text-text-primary">{loading ? '...' : stats.overdue}</p>
+        </div>
+      </div>
+
+      {/* Daily Task Monitoring Panel */}
+      <div className="card mb-8">
+        <h2 className="text-xl font-bold text-text-primary mb-4">Daily Task Monitoring - Pending & Overdue Reports</h2>
+        {loading ? (
+          <div className="text-text-muted">Loading tasks...</div>
+        ) : (
+          <div className="space-y-3">
+            {reports.filter(r => ['unresolved', 'in_progress', 'waiting_for_feedback'].includes(r.status) || r.is_overdue).slice(0, 10).map(report => (
+              <div key={report.id} className={`p-4 rounded-lg border ${report.is_overdue ? 'border-red-300 bg-red-50' : 'border-border bg-surface'}`}>
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <h3 className="font-semibold text-text-primary">{report.title}</h3>
+                    <p className="text-sm text-text-muted">{report.issue_type || 'General'}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    {report.is_overdue && (
+                      <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full">OVERDUE</span>
+                    )}
+                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${report.status === 'waiting_for_feedback' ? 'bg-blue-100 text-blue-800' :
+                        report.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                      }`}>
+                      {report.status.replace('_', ' ').toUpperCase()}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-sm text-text-secondary line-clamp-2">{report.description}</p>
+              </div>
+            ))}
+            {reports.filter(r => ['unresolved', 'in_progress', 'waiting_for_feedback'].includes(r.status) || r.is_overdue).length === 0 && (
+              <div className="text-center py-8 text-text-muted">
+                <p>No pending or overdue reports for today!</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Charts Section */}

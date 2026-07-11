@@ -1,14 +1,15 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { 
-  fetchReportById, 
-  fetchReportEvidence, 
-  updateReportStatus, 
+import {
+  fetchReportById,
+  fetchReportEvidence,
+  updateReportStatus,
   updatePropertyOwnerConsent,
   updateLifecycleStage,
   acknowledgeComplaint,
-  fetchAgencyResponses
+  fetchAgencyResponses,
+  lguResolveReport
 } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
@@ -42,6 +43,7 @@ export default function ReportDetailPage() {
   const [showLifecycleDropdown, setShowLifecycleDropdown] = useState(false)
   const [updatingLifecycle, setUpdatingLifecycle] = useState(false)
   const [agencyResponses, setAgencyResponses] = useState([])
+  const [resolvingReport, setResolvingReport] = useState(false)
 
   useEffect(() => {
     Promise.all([
@@ -111,6 +113,10 @@ export default function ReportDetailPage() {
     switch (status) {
       case 'resolved':
         return 'bg-green-100 text-green-800 border-green-300'
+      case 'closed':
+        return 'bg-gray-100 text-gray-800 border-gray-300'
+      case 'waiting_for_feedback':
+        return 'bg-blue-100 text-blue-800 border-blue-300'
       case 'in_progress':
         return 'bg-yellow-100 text-yellow-800 border-yellow-300'
       default:
@@ -145,6 +151,40 @@ export default function ReportDetailPage() {
         return 'bg-gray-100 text-gray-800 border-gray-300'
       default:
         return 'bg-gray-100 text-gray-800 border-gray-300'
+    }
+  }
+
+  const getSatisfactionEmoji = (rating) => {
+    switch (rating) {
+      case 1:
+        return '😢'
+      case 2:
+        return '😕'
+      case 3:
+        return '😐'
+      case 4:
+        return '😊'
+      case 5:
+        return '😄'
+      default:
+        return '😐'
+    }
+  }
+
+  const getSatisfactionLabel = (rating) => {
+    switch (rating) {
+      case 1:
+        return 'Very Dissatisfied'
+      case 2:
+        return 'Dissatisfied'
+      case 3:
+        return 'Neutral'
+      case 4:
+        return 'Satisfied'
+      case 5:
+        return 'Very Satisfied'
+      default:
+        return 'Neutral'
     }
   }
 
@@ -198,6 +238,20 @@ export default function ReportDetailPage() {
     } catch (error) {
       console.error('Failed to acknowledge complaint:', error)
       setNotification({ message: 'Failed to acknowledge complaint. Please try again.', type: 'error' })
+    }
+  }
+
+  const handleResolveReport = async () => {
+    setResolvingReport(true)
+    try {
+      const updatedReport = await lguResolveReport(reportId)
+      setReport(updatedReport)
+      setNotification({ message: 'Report resolved successfully. Waiting for reporter feedback.', type: 'success' })
+    } catch (error) {
+      console.error('Failed to resolve report:', error)
+      setNotification({ message: 'Failed to resolve report. Please try again.', type: 'error' })
+    } finally {
+      setResolvingReport(false)
     }
   }
 
@@ -450,13 +504,29 @@ export default function ReportDetailPage() {
                 </button>
               </div>
             )}
+            {report.status !== 'waiting_for_feedback' && report.status !== 'closed' && (
+              <div className="mt-6 text-center">
+                <button onClick={handleResolveReport} disabled={resolvingReport} className="btn-primary">
+                  {resolvingReport ? 'Resolving...' : 'Mark as Resolved'}
+                </button>
+              </div>
+            )}
+            {report.status === 'closed' && report.satisfaction_rating && (
+              <div className="mt-6 p-4 bg-surface rounded-lg border border-border">
+                <h3 className="font-semibold text-text-primary mb-2">Reporter Satisfaction</h3>
+                <div className="flex items-center gap-2">
+                  <span className="text-4xl">{getSatisfactionEmoji(report.satisfaction_rating)}</span>
+                  <span className="text-lg font-medium">{getSatisfactionLabel(report.satisfaction_rating)}</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Report Information */}
           <div className="card">
             <h1 className="text-3xl font-bold text-text-primary mb-2">{report.title}</h1>
             <p className="text-lg text-text-secondary mb-6">Issue: {report.issue_type || 'General'}</p>
-            
+
             <h2 className="text-lg font-semibold text-text-primary mb-3">Description</h2>
             <p className="text-text-primary leading-relaxed mb-6">
               {report.description || 'No description provided.'}
@@ -473,7 +543,7 @@ export default function ReportDetailPage() {
                   <p className="text-sm font-medium text-text-secondary">Location</p>
                 </div>
                 <p className="text-text-primary text-sm">
-                  {location.latitude && location.longitude 
+                  {location.latitude && location.longitude
                     ? `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`
                     : 'Not available'
                   }
@@ -589,7 +659,7 @@ export default function ReportDetailPage() {
                   <div>
                     <p className="text-xs text-text-muted">Name</p>
                     <p className="text-text-primary font-medium text-sm">
-                      {report.profiles?.data_consent === true 
+                      {report.profiles?.data_consent === true
                         ? (report.profiles?.full_name || report.user_full_name || 'Anonymous')
                         : 'Information not disclosed'
                       }
@@ -598,7 +668,7 @@ export default function ReportDetailPage() {
                   <div>
                     <p className="text-xs text-text-muted">User ID</p>
                     <p className="text-text-primary font-medium text-sm">
-                      {report.profiles?.data_consent === true 
+                      {report.profiles?.data_consent === true
                         ? (report.user_id || 'N/A')
                         : 'Information not disclosed'
                       }
@@ -762,55 +832,50 @@ export default function ReportDetailPage() {
                     <button
                       onClick={() => handleLifecycleStageUpdate('submitted')}
                       disabled={report.stage === 'submitted'}
-                      className={`w-full px-4 py-3 text-left border-b border-border transition-colors ${
-                        report.stage === 'submitted'
-                          ? 'bg-purple-100 text-purple-800 font-semibold cursor-not-allowed'
-                          : 'text-text-primary hover:bg-purple-50'
-                      }`}
+                      className={`w-full px-4 py-3 text-left border-b border-border transition-colors ${report.stage === 'submitted'
+                        ? 'bg-purple-100 text-purple-800 font-semibold cursor-not-allowed'
+                        : 'text-text-primary hover:bg-purple-50'
+                        }`}
                     >
                       <span className="font-medium">Submitted</span>
                     </button>
                     <button
                       onClick={() => handleLifecycleStageUpdate('acknowledged')}
                       disabled={report.stage === 'acknowledged'}
-                      className={`w-full px-4 py-3 text-left border-b border-border transition-colors ${
-                        report.stage === 'acknowledged'
-                          ? 'bg-blue-100 text-blue-800 font-semibold cursor-not-allowed'
-                          : 'text-text-primary hover:bg-blue-50'
-                      }`}
+                      className={`w-full px-4 py-3 text-left border-b border-border transition-colors ${report.stage === 'acknowledged'
+                        ? 'bg-blue-100 text-blue-800 font-semibold cursor-not-allowed'
+                        : 'text-text-primary hover:bg-blue-50'
+                        }`}
                     >
                       <span className="font-medium">Acknowledged</span>
                     </button>
                     <button
                       onClick={() => handleLifecycleStageUpdate('responded')}
                       disabled={report.stage === 'responded'}
-                      className={`w-full px-4 py-3 text-left border-b border-border transition-colors ${
-                        report.stage === 'responded'
-                          ? 'bg-yellow-100 text-yellow-800 font-semibold cursor-not-allowed'
-                          : 'text-text-primary hover:bg-yellow-50'
-                      }`}
+                      className={`w-full px-4 py-3 text-left border-b border-border transition-colors ${report.stage === 'responded'
+                        ? 'bg-yellow-100 text-yellow-800 font-semibold cursor-not-allowed'
+                        : 'text-text-primary hover:bg-yellow-50'
+                        }`}
                     >
                       <span className="font-medium">Responded</span>
                     </button>
                     <button
                       onClick={() => handleLifecycleStageUpdate('resolved')}
                       disabled={report.stage === 'resolved'}
-                      className={`w-full px-4 py-3 text-left border-b border-border transition-colors ${
-                        report.stage === 'resolved'
-                          ? 'bg-green-100 text-green-800 font-semibold cursor-not-allowed'
-                          : 'text-text-primary hover:bg-green-50'
-                      }`}
+                      className={`w-full px-4 py-3 text-left border-b border-border transition-colors ${report.stage === 'resolved'
+                        ? 'bg-green-100 text-green-800 font-semibold cursor-not-allowed'
+                        : 'text-text-primary hover:bg-green-50'
+                        }`}
                     >
                       <span className="font-medium">Resolved</span>
                     </button>
                     <button
                       onClick={() => handleLifecycleStageUpdate('closed')}
                       disabled={report.stage === 'closed'}
-                      className={`w-full px-4 py-3 text-left transition-colors ${
-                        report.stage === 'closed'
-                          ? 'bg-gray-100 text-gray-800 font-semibold cursor-not-allowed'
-                          : 'text-text-primary hover:bg-gray-50'
-                      }`}
+                      className={`w-full px-4 py-3 text-left transition-colors ${report.stage === 'closed'
+                        ? 'bg-gray-100 text-gray-800 font-semibold cursor-not-allowed'
+                        : 'text-text-primary hover:bg-gray-50'
+                        }`}
                     >
                       <span className="font-medium">Closed</span>
                     </button>
@@ -854,11 +919,10 @@ export default function ReportDetailPage() {
                     <button
                       onClick={() => handleStatusUpdate('resolved')}
                       disabled={report.status === 'resolved'}
-                      className={`w-full px-4 py-3 text-left transition-colors ${
-                        report.status === 'resolved'
-                          ? 'bg-accent-green/20 text-accent-green font-semibold cursor-not-allowed'
-                          : 'text-text-primary hover:bg-accent-green/10'
-                      }`}
+                      className={`w-full px-4 py-3 text-left transition-colors ${report.status === 'resolved'
+                        ? 'bg-accent-green/20 text-accent-green font-semibold cursor-not-allowed'
+                        : 'text-text-primary hover:bg-accent-green/10'
+                        }`}
                     >
                       <span className="font-medium">Resolved</span>
                     </button>
