@@ -2,13 +2,28 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-const navigation = [
+const citizenNavigation = [
+  { name: 'Dashboard', href: '/dashboard' },
+  { name: 'Map View', href: '/dashboard/map-view' },
+  { name: 'Reports', href: '/dashboard/reports' },
+  { name: 'Profile', href: '/dashboard/profile' },
+]
+
+const lguNavigation = [
   { name: 'Dashboard', href: '/dashboard' },
   { name: 'Map View', href: '/dashboard/map-view' },
   { name: 'Clusters', href: '/dashboard/clusters' },
   { name: 'Cleanup Tasks', href: '/dashboard/cleanup-tasks' },
   { name: 'Reports', href: '/dashboard/reports' },
+  { name: 'Response Logs', href: '/dashboard/response-logs' },
   { name: 'Analytics', href: '/dashboard/analytics' },
+]
+
+const adminNavigation = [
+  { name: 'Admin Dashboard', href: '/dashboard/admin' },
+  { name: 'User Management', href: '/dashboard/admin/users' },
+  { name: 'System Settings', href: '/dashboard/admin/settings' },
+  { name: 'Audit Logs', href: '/dashboard/admin/audit-logs' },
 ]
 
 export default function Sidebar({ user, onLogout }) {
@@ -25,7 +40,7 @@ export default function Sidebar({ user, onLogout }) {
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1">
-        {navigation.map((item) => {
+        {(user?.role === 'citizen' ? citizenNavigation : user?.role === 'admin' ? adminNavigation : lguNavigation).map((item) => {
           const isActive = pathname === item.href
           return (
             <Link

@@ -5,10 +5,7 @@ import {
   fetchReportById, 
   fetchReportEvidence, 
   updateReportStatus, 
-  updatePropertyOwnerConsent, 
-  fetchDisclosureRequests, 
-  createDisclosureRequest, 
-  respondToDisclosureRequest,
+  updatePropertyOwnerConsent,
   updateLifecycleStage,
   acknowledgeComplaint,
   fetchAgencyResponses
@@ -30,7 +27,6 @@ export default function ReportDetailPage() {
 
   const [report, setReport] = useState(null)
   const [evidence, setEvidence] = useState([])
-  const [disclosureRequests, setDisclosureRequests] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selectedImage, setSelectedImage] = useState(null)
@@ -42,9 +38,6 @@ export default function ReportDetailPage() {
   const [noteText, setNoteText] = useState('')
   const [addingNote, setAddingNote] = useState(false)
   const [updatingConsent, setUpdatingConsent] = useState(false)
-  const [showDisclosureModal, setShowDisclosureModal] = useState(false)
-  const [disclosureRequestType, setDisclosureRequestType] = useState('identity')
-  const [disclosureRequestNotes, setDisclosureRequestNotes] = useState('')
   const [notification, setNotification] = useState(null)
   const [showLifecycleDropdown, setShowLifecycleDropdown] = useState(false)
   const [updatingLifecycle, setUpdatingLifecycle] = useState(false)
@@ -54,17 +47,16 @@ export default function ReportDetailPage() {
     Promise.all([
       fetchReportById(reportId),
       fetchReportEvidence(reportId),
-      fetchDisclosureRequests(reportId).catch(() => []),
       fetchAgencyResponses(reportId).catch(() => [])
-    ]).then(([reportData, evidenceData, disclosureRequestsData, responsesData]) => {
+    ]).then(([reportData, evidenceData, responsesData]) => {
       console.log('Report data:', reportData)
+      console.log('Profiles data:', reportData?.profiles)
+      console.log('Data consent value:', reportData?.profiles?.data_consent)
       console.log('Evidence data:', evidenceData)
-      console.log('Disclosure requests:', disclosureRequestsData)
       console.log('Agency responses:', responsesData)
       if (reportData) {
         setReport(reportData)
         setEvidence(evidenceData)
-        setDisclosureRequests(disclosureRequestsData)
         setAgencyResponses(responsesData || [])
       } else {
         setError('Report not found')
@@ -336,33 +328,6 @@ export default function ReportDetailPage() {
     }
   }
 
-  const handleCreateDisclosureRequest = async () => {
-    const user = JSON.parse(localStorage.getItem('user') || '{}')
-    try {
-      await createDisclosureRequest(reportId, user.id, disclosureRequestType, disclosureRequestNotes)
-      const updatedRequests = await fetchDisclosureRequests(reportId)
-      setDisclosureRequests(updatedRequests)
-      setShowDisclosureModal(false)
-      setDisclosureRequestNotes('')
-      setNotification({ message: 'Disclosure request created', type: 'success' })
-    } catch (error) {
-      console.error('Failed to create disclosure request:', error)
-      setNotification({ message: 'Failed to create disclosure request', type: 'error' })
-    }
-  }
-
-  const handleRespondToDisclosure = async (disclosureRequestId, status, responseText) => {
-    try {
-      await respondToDisclosureRequest(reportId, disclosureRequestId, status, responseText)
-      const updatedRequests = await fetchDisclosureRequests(reportId)
-      setDisclosureRequests(updatedRequests)
-      setNotification({ message: 'Response submitted', type: 'success' })
-    } catch (error) {
-      console.error('Failed to respond to disclosure request:', error)
-      setNotification({ message: 'Failed to submit response', type: 'error' })
-    }
-  }
-
   if (loading) {
     return (
       <div className="p-8">
@@ -624,7 +589,7 @@ export default function ReportDetailPage() {
                   <div>
                     <p className="text-xs text-text-muted">Name</p>
                     <p className="text-text-primary font-medium text-sm">
-                      {report.profiles?.data_consent 
+                      {report.profiles?.data_consent === true 
                         ? (report.profiles?.full_name || report.user_full_name || 'Anonymous')
                         : 'Information not disclosed'
                       }
@@ -633,7 +598,7 @@ export default function ReportDetailPage() {
                   <div>
                     <p className="text-xs text-text-muted">User ID</p>
                     <p className="text-text-primary font-medium text-sm">
-                      {report.profiles?.data_consent 
+                      {report.profiles?.data_consent === true 
                         ? (report.user_id || 'N/A')
                         : 'Information not disclosed'
                       }
@@ -706,71 +671,6 @@ export default function ReportDetailPage() {
               </div>
             </div>
           )}
-
-          {/* Disclosure Requests */}
-          <div className="card">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold text-text-primary">Disclosure Requests</h2>
-              <button
-                onClick={() => setShowDisclosureModal(true)}
-                className="btn-secondary text-sm"
-              >
-                New Request
-              </button>
-            </div>
-            {disclosureRequests.length === 0 ? (
-              <div className="bg-surface p-4 rounded-lg border border-border">
-                <p className="text-text-muted text-sm">
-                  No disclosure requests yet.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-               {disclosureRequests.map((req, idx) => (
-                  <div key={idx} className="bg-surface p-4 rounded-lg border border-border">
-                    <div className="flex justify-between items-start mb-2">
-                      <span className={`px-2 py-1 rounded text-xs font-semibold ${req.status === 'approved' ? 'bg-green-100 text-green-800' :
-                        req.status === 'denied' ? 'bg-red-100 text-red-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
-                        {req.status.toUpperCase()}
-                      </span>
-                      <span className="text-xs text-text-muted">
-                        {new Date(req.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <p className="text-sm font-medium text-text-primary">
-                      {req.request_type.toUpperCase()} Request
-                    </p>
-                    {req.requester_notes && (
-                      <p className="text-sm text-text-secondary mt-1">{req.requester_notes}</p>
-                    )}
-                    {req.status === 'pending' && (
-                      <div className="flex gap-2 mt-3">
-                        <button
-                          onClick={() => handleRespondToDisclosure(req.id, 'approved', '')}
-                          className="btn-primary text-sm py-1 flex-1"
-                        >
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => handleRespondToDisclosure(req.id, 'denied', '')}
-                          className="btn-secondary text-sm py-1 flex-1"
-                        >
-                          Deny
-                        </button>
-                      </div>
-                    )}
-                    {req.reporter_response && (
-                      <p className="text-sm text-text-secondary mt-2 border-t border-border pt-2">
-                        <span className="font-medium">Response:</span> {req.reporter_response}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
 
           {/* LGU Notes */}
           <div className="card">
@@ -994,60 +894,6 @@ export default function ReportDetailPage() {
               alt="Full size evidence"
               className="max-w-full max-h-[90vh] object-contain rounded-lg"
             />
-          </div>
-        </div>
-      )}
-
-      {/* Disclosure Request Modal */}
-      {showDisclosureModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[2000]">
-          <div className="bg-surface rounded-lg p-6 max-w-md w-full mx-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-text-primary">Request Disclosure</h3>
-              <button
-                onClick={() => setShowDisclosureModal(false)}
-                className="text-text-muted hover:text-text-primary text-2xl"
-              >
-                ×
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">Request Type</label>
-                <select
-                  value={disclosureRequestType}
-                  onChange={(e) => setDisclosureRequestType(e.target.value)}
-                  className="w-full p-3 border border-border rounded-lg bg-background text-text-primary"
-                >
-                  <option value="identity">Reporter Identity</option>
-                  <option value="location">Location Details</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">Notes</label>
-                <textarea
-                  value={disclosureRequestNotes}
-                  onChange={(e) => setDisclosureRequestNotes(e.target.value)}
-                  className="w-full p-3 border border-border rounded-lg bg-background text-text-primary"
-                  rows={3}
-                  placeholder="Explain why you need this information..."
-                />
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowDisclosureModal(false)}
-                  className="btn-secondary flex-1"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleCreateDisclosureRequest}
-                  className="btn-primary flex-1"
-                >
-                  Submit Request
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       )}
