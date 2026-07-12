@@ -2,16 +2,18 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
-import { getSystemStats } from '@/lib/api'
+import { getSystemStats, getAuditLogs } from '@/lib/api'
 
 export default function AdminDashboard() {
   const router = useRouter()
   const [stats, setStats] = useState(null)
+  const [recentLogs, setRecentLogs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
     loadStats()
+    loadRecentLogs()
   }, [])
 
   const loadStats = async () => {
@@ -24,6 +26,39 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const loadRecentLogs = async () => {
+    try {
+      const data = await getAuditLogs({ limit: 4 })
+      setRecentLogs(data.logs || [])
+    } catch (err) {
+      console.error('Failed to load recent logs:', err)
+    }
+  }
+
+  const getActionTypeColor = (actionType) => {
+    switch (actionType) {
+      case 'login':
+        return 'bg-green-100 text-green-800'
+      case 'logout':
+        return 'bg-gray-100 text-gray-800'
+      case 'password_change':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'role_change':
+        return 'bg-purple-100 text-purple-800'
+      case 'user_created':
+        return 'bg-blue-100 text-blue-800'
+      case 'user_deleted':
+        return 'bg-red-100 text-red-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A'
+    return new Date(dateString).toLocaleString()
   }
 
   if (loading) {
@@ -167,6 +202,60 @@ export default function AdminDashboard() {
           </div>
           <p className="text-sm text-text-secondary">View system activity and actions</p>
         </button>
+      </div>
+
+      {/* Recent Audit Logs */}
+      <div className="card mt-8">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-text-primary">Recent Audit Logs</h3>
+          <button
+            onClick={() => router.push('/dashboard/admin/audit-logs')}
+            className="text-sm text-accent-green hover:text-accent-green-dark font-medium"
+          >
+            View All
+          </button>
+        </div>
+        {recentLogs.length === 0 ? (
+          <p className="text-text-muted">No recent audit logs</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left py-2 px-3 text-xs font-semibold text-text-primary">Date</th>
+                  <th className="text-left py-2 px-3 text-xs font-semibold text-text-primary">User</th>
+                  <th className="text-left py-2 px-3 text-xs font-semibold text-text-primary">Action</th>
+                  <th className="text-left py-2 px-3 text-xs font-semibold text-text-primary">Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentLogs.map((log) => (
+                  <tr key={log.id} className="border-b border-border">
+                    <td className="py-2 px-3 text-xs text-text-muted">
+                      {formatDate(log.created_at)}
+                    </td>
+                    <td className="py-2 px-3">
+                      <p className="font-medium text-text-primary text-xs">
+                        {log.profiles?.full_name || 'Unknown'}
+                      </p>
+                      <p className="text-xs text-text-muted">
+                        {log.profiles?.email || 'N/A'}
+                      </p>
+                    </td>
+                    <td className="py-2 px-3">
+                      <span className={`px-2 py-1 rounded text-xs font-semibold ${getActionTypeColor(log.action_type)}`}>
+                        {log.action_type.replace(/_/g, ' ').toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="py-2 px-3 text-xs text-text-secondary max-w-xs truncate">
+                      {log.action_details}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   )

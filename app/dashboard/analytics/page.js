@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import PageHeader from '@/components/layout/PageHeader'
-import { fetchValidatedReports, fetchSatisfactionAnalytics } from '@/lib/api'
+import { fetchPublicReports, fetchSatisfactionAnalytics } from '@/lib/api'
 import { Bar, Pie, Line } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -27,7 +27,7 @@ ChartJS.register(
 )
 
 const COLORS = ['#4CAF50', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6', '#EC4899']
-const SATISFACTION_COLORS = ['#EF4444', '#F59E0B', '#EAB308', '#84CC16', '#22C55E'] // 1 (red) to 5 (green)
+const SATISFACTION_COLORS = ['#EF4444', '#F59E0B', '#EAB308', '#84CC16', '#22C55E']
 const SATISFACTION_LABELS = ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied']
 
 export default function AnalyticsPage() {
@@ -35,18 +35,84 @@ export default function AnalyticsPage() {
   const [satisfactionData, setSatisfactionData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [stats, setStats] = useState({
+    total: 0,
+    unresolved: 0,
+    inProgress: 0,
+    resolved: 0,
+    closed: 0,
+    waitingForFeedback: 0,
+    resolvedToday: 0,
+    avgResolutionTime: 'N/A',
+    resolutionRate: 0,
+    overdue: 0
+  })
 
   useEffect(() => {
     const loadData = async () => {
       try {
         console.log('Loading analytics data...')
         const [reportsData, satisfactionDataResult] = await Promise.all([
-          fetchValidatedReports(),
-          fetchSatisfactionAnalytics().catch(() => null) // Don't fail the whole load if satisfaction fails
+          fetchPublicReports(),
+          fetchSatisfactionAnalytics().catch(() => null)
         ])
         console.log('Analytics data loaded:', { reportsData, satisfactionDataResult })
         setReports(reportsData)
         setSatisfactionData(satisfactionDataResult)
+
+        const total = reportsData.length
+        const unresolved = reportsData.filter(r => r.status === 'unresolved').length
+        const inProgress = reportsData.filter(r => r.status === 'in_progress').length
+        const resolved = reportsData.filter(r => r.status === 'resolved').length
+        const closed = reportsData.filter(r => r.status === 'closed').length
+        const waitingForFeedback = reportsData.filter(r => r.status === 'waiting_for_feedback').length
+        const overdue = reportsData.filter(r => r.is_overdue).length
+
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        const tomorrow = new Date(today)
+        tomorrow.setDate(tomorrow.getDate() + 1)
+
+        const resolvedToday = reportsData.filter(r => {
+          if (r.status !== 'resolved' && r.status !== 'closed') return false
+          if (r.updated_at) {
+            const updatedDate = new Date(r.updated_at)
+            return updatedDate >= today && updatedDate < tomorrow
+          }
+          return false
+        }).length
+
+        const resolvedReports = reportsData.filter(r => r.status === 'resolved' && r.created_at && r.updated_at)
+        let avgResolutionTime = 'N/A'
+        if (resolvedReports.length > 0) {
+          const totalHours = resolvedReports.reduce((sum, r) => {
+            const created = new Date(r.created_at)
+            const updated = new Date(r.updated_at)
+            const hours = (updated - created) / (1000 * 60 * 60)
+            return sum + hours
+          }, 0)
+          const avgHours = totalHours / resolvedReports.length
+          if (avgHours < 24) {
+            avgResolutionTime = `${Math.round(avgHours)}h`
+          } else {
+            avgResolutionTime = `${Math.round(avgHours / 24)}d`
+          }
+        }
+
+        const resolutionRate = total > 0 ? Math.round((resolved / total) * 100) : 0
+
+        setStats({
+          total,
+          unresolved,
+          inProgress,
+          resolved,
+          closed,
+          waitingForFeedback,
+          resolvedToday,
+          avgResolutionTime,
+          resolutionRate,
+          overdue
+        })
       } catch (error) {
         console.error('Failed to load analytics data:', error)
         setError('Failed to load analytics data. Please try again.')
@@ -58,16 +124,9 @@ export default function AnalyticsPage() {
     loadData()
   }, [])
 
-  // Calculate total reports
   const totalReports = reports.length
-
-  // Calculate unresolved reports
   const unresolvedReports = reports.filter(r => r.status === 'unresolved').length
-
-  // Calculate in progress reports
   const inProgressReports = reports.filter(r => r.status === 'in_progress').length
-
-  // Calculate resolution rate
   const resolvedReports = reports.filter(r => r.status === 'resolved').length
   const resolutionRate = totalReports > 0 ? Math.round((resolvedReports / totalReports) * 100) : 0
 
@@ -163,12 +222,28 @@ export default function AnalyticsPage() {
       .slice(0, 6) // Top 6 issue types
   }
 
+  // Prepare data for reports by status pie chart
+  const reportsByStatus = () => {
+    const statusMap = {}
+
+    reports.forEach(report => {
+      if (report.status) {
+        statusMap[report.status] = (statusMap[report.status] || 0) + 1
+      }
+    })
+
+    return Object.entries(statusMap)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+  }
+
   const weeklyVolumeData = weeklyReportVolume()
   const issueTypeData = reportsByIssueType()
   const resolutionRateData = resolutionRateOverTime()
   const mostActiveData = mostActiveIssueType()
+  const statusData = reportsByStatus()
 
-  console.log('Analytics chart data:', { weeklyVolumeData, issueTypeData, resolutionRateData, mostActiveData })
+  console.log('Analytics chart data:', { weeklyVolumeData, issueTypeData, resolutionRateData, mostActiveData, statusData })
 
   // Prepare Chart.js data formats
   const weeklyVolumeChartData = {
@@ -226,6 +301,16 @@ export default function AnalyticsPage() {
     ]
   } : null
 
+  const statusChartData = {
+    labels: statusData.map(d => d.name.replace('_', ' ').toUpperCase()),
+    datasets: [
+      {
+        data: statusData.map(d => d.value),
+        backgroundColor: COLORS.slice(0, statusData.length),
+      }
+    ]
+  }
+
   return (
     <div className="p-8">
       <PageHeader
@@ -244,107 +329,146 @@ export default function AnalyticsPage() {
       )}
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="card p-6">
-          <h3 className="text-sm font-medium text-text-muted mb-2">Total Reports</h3>
-          <p className="text-3xl font-bold text-text-primary">
-            {loading ? '...' : totalReports}
-          </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+        <div className="card border-l-4 border-l-[var(--accent-green)] hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="mb-2">
+            <span className="text-sm text-text-muted">Total Reports</span>
+          </div>
+          <p className="text-3xl font-bold text-text-primary">{loading ? '...' : stats.total}</p>
         </div>
 
-        <div className="card p-6">
-          <h3 className="text-sm font-medium text-text-muted mb-2">Unresolved</h3>
-          <p className="text-3xl font-bold text-text-primary">
-            {loading ? '...' : unresolvedReports}
-          </p>
+        <div className="card border-l-4 border-l-[var(--error)] hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="mb-2">
+            <span className="text-sm text-text-muted">Unresolved</span>
+          </div>
+          <p className="text-3xl font-bold text-text-primary">{loading ? '...' : stats.unresolved}</p>
         </div>
 
-        <div className="card p-6">
-          <h3 className="text-sm font-medium text-text-muted mb-2">In Progress</h3>
-          <p className="text-3xl font-bold text-text-primary">
-            {loading ? '...' : inProgressReports}
-          </p>
+        <div className="card border-l-4 border-l-[var(--warning)] hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="mb-2">
+            <span className="text-sm text-text-muted">In Progress</span>
+          </div>
+          <p className="text-3xl font-bold text-text-primary">{loading ? '...' : stats.inProgress}</p>
         </div>
 
-        <div className="card p-6">
-          <h3 className="text-sm font-medium text-text-muted mb-2">Avg Satisfaction</h3>
-          <p className="text-3xl font-bold text-text-primary">
-            {loading || !satisfactionData ? '...' : `${satisfactionData.average.toFixed(1)}/5`}
-          </p>
-          <p className="text-xs text-text-muted mt-1">
-            {loading || !satisfactionData ? '' : `Based on ${satisfactionData.total} ratings`}
-          </p>
+        <div className="card border-l-4 border-l-[var(--success)] hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="mb-2">
+            <span className="text-sm text-text-muted">Resolved Today</span>
+          </div>
+          <p className="text-3xl font-bold text-text-primary">{loading ? '...' : stats.resolvedToday}</p>
+        </div>
+
+        <div className="card border-l-4 border-l-[var(--accent-green-dark)] hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="mb-2">
+            <span className="text-sm text-text-muted">Avg. Resolution Time</span>
+          </div>
+          <p className="text-3xl font-bold text-text-primary">{loading ? '...' : stats.avgResolutionTime}</p>
+        </div>
+
+        <div className="card border-l-4 border-l-[var(--accent-green)] hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="mb-2">
+            <span className="text-sm text-text-muted">Resolution Rate</span>
+          </div>
+          <p className="text-3xl font-bold text-text-primary">{loading ? '...' : `${stats.resolutionRate}%`}</p>
+        </div>
+
+        <div className="card border-l-4 border-l-[var(--warning)] hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="mb-2">
+            <span className="text-sm text-text-muted">Waiting for Feedback</span>
+          </div>
+          <p className="text-3xl font-bold text-text-primary">{loading ? '...' : stats.waitingForFeedback}</p>
+        </div>
+
+        <div className="card border-l-4 border-l-[var(--error)] hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="mb-2">
+            <span className="text-sm text-text-muted">Overdue Reports</span>
+          </div>
+          <p className="text-3xl font-bold text-text-primary">{loading ? '...' : stats.overdue}</p>
         </div>
       </div>
 
       {/* Charts Section */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', marginBottom: '32px' }}>
-        {/* Weekly Report Volume Bar Chart */}
-        <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '16px', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827', marginBottom: '16px' }}>Weekly Report Volume</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        {/* Reports per Week Bar Chart */}
+        <div className="chart-card">
+          <h2>Reports per Week</h2>
           <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
-              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>Loading chart data...</div>
+              <div className="chart-placeholder">Loading chart data...</div>
             ) : weeklyVolumeData.length === 0 ? (
-              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>No data available for the selected period</div>
+              <div className="chart-placeholder">No data available for the selected period</div>
             ) : (
               <Bar data={weeklyVolumeChartData} options={{ maintainAspectRatio: false }} />
             )}
           </div>
         </div>
 
-        {/* Reports by Issue Type Pie Chart */}
-        <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '16px', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827', marginBottom: '16px' }}>Reports by Issue Type</h2>
+        {/* Resolution Rate Bar Chart */}
+        <div className="chart-card">
+          <h2>Resolution Rate (%)</h2>
           <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
-              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>Loading chart data...</div>
-            ) : issueTypeData.length === 0 ? (
-              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>No data available</div>
-            ) : (
-              <Pie data={issueTypeChartData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
-            )}
-          </div>
-        </div>
-
-        {/* Resolution Rate Over Time Line Chart */}
-        <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '16px', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827', marginBottom: '16px' }}>Resolution Rate Over Time</h2>
-          <div style={{ width: '100%', height: '320px' }}>
-            {loading ? (
-              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>Loading chart data...</div>
+              <div className="chart-placeholder">Loading chart data...</div>
             ) : resolutionRateData.length === 0 ? (
-              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>No data available for the selected period</div>
+              <div className="chart-placeholder">No data available for the selected period</div>
             ) : (
-              <Line data={resolutionRateChartData} options={{ maintainAspectRatio: false }} />
+              <Bar data={resolutionRateChartData} options={{ maintainAspectRatio: false }} />
             )}
           </div>
         </div>
 
         {/* Most Active Issue Type Pie Chart */}
-        <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '16px', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827', marginBottom: '16px' }}>Most Active Issue Types</h2>
+        <div className="chart-card">
+          <h2>Most Active Issue Types</h2>
           <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
-              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>Loading chart data...</div>
+              <div className="chart-placeholder">Loading chart data...</div>
             ) : mostActiveData.length === 0 ? (
-              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>No data available</div>
+              <div className="chart-placeholder">No data available</div>
             ) : (
               <Pie data={mostActiveChartData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
             )}
           </div>
         </div>
 
-        {/* Satisfaction Distribution Pie Chart */}
-        <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '16px', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827', marginBottom: '16px' }}>Satisfaction Distribution</h2>
+        {/* Reports by Issue Type Pie Chart */}
+        <div className="chart-card">
+          <h2>Reports by Issue Type</h2>
           <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
-              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>Loading chart data...</div>
+              <div className="chart-placeholder">Loading chart data...</div>
+            ) : issueTypeData.length === 0 ? (
+              <div className="chart-placeholder">No data available</div>
+            ) : (
+              <Pie data={issueTypeChartData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
+            )}
+          </div>
+        </div>
+
+        {/* Satisfaction Distribution Pie Chart */}
+        <div className="chart-card">
+          <h2>Satisfaction Distribution</h2>
+          <div style={{ width: '100%', height: '320px' }}>
+            {loading ? (
+              <div className="chart-placeholder">Loading chart data...</div>
             ) : !satisfactionChartData || satisfactionData.total === 0 ? (
-              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>No ratings available</div>
+              <div className="chart-placeholder">No ratings available</div>
             ) : (
               <Pie data={satisfactionChartData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
+            )}
+          </div>
+        </div>
+
+        {/* Reports by Status Pie Chart */}
+        <div className="chart-card">
+          <h2>Reports by Status</h2>
+          <div style={{ width: '100%', height: '320px' }}>
+            {loading ? (
+              <div className="chart-placeholder">Loading chart data...</div>
+            ) : statusData.length === 0 ? (
+              <div className="chart-placeholder">No data available</div>
+            ) : (
+              <Pie data={statusChartData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
             )}
           </div>
         </div>

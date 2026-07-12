@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
-import { getAllUsers, updateUserRole, deleteUser } from '@/lib/api'
+import { getAllUsers, updateUserRole, deleteUser, createUser } from '@/lib/api'
 
 export default function UserManagement() {
   const router = useRouter()
@@ -15,6 +15,9 @@ export default function UserManagement() {
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 })
   const [updatingRole, setUpdatingRole] = useState(null)
   const [deletingUser, setDeletingUser] = useState(null)
+  const [showCreateForm, setShowCreateForm] = useState(false)
+  const [creatingUser, setCreatingUser] = useState(false)
+  const [newUser, setNewUser] = useState({ email: '', password: '', full_name: '', role: 'lgu' })
 
   useEffect(() => {
     loadUsers()
@@ -75,6 +78,54 @@ export default function UserManagement() {
     }
   }
 
+  const handleCreateUser = async () => {
+    const { email, password, full_name, role } = newUser
+
+    if (!email || !password || !full_name) {
+      setNotification({ message: 'Please fill in all required fields', type: 'error' })
+      return
+    }
+
+    const passwordValidation = validatePassword(password)
+    if (!passwordValidation.allMet) {
+      setNotification({ message: 'Password does not meet all requirements', type: 'error' })
+      return
+    }
+
+    try {
+      setCreatingUser(true)
+      await createUser({ email, password, full_name, role })
+      setNotification({ message: 'User created successfully', type: 'success' })
+      setNewUser({ email: '', password: '', full_name: '', role: 'lgu' })
+      setShowCreateForm(false)
+      loadUsers()
+    } catch (err) {
+      console.error('Failed to create user:', err)
+      setNotification({ message: err.message || 'Failed to create user', type: 'error' })
+    } finally {
+      setCreatingUser(false)
+    }
+  }
+
+  const validatePassword = (password) => {
+    const minLength = 8
+    const hasUpperCase = /[A-Z]/.test(password)
+    const hasLowerCase = /[a-z]/.test(password)
+    const hasNumbers = /\d/.test(password)
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password)
+
+    const requirements = [
+      { met: password.length >= minLength, text: `At least ${minLength} characters long` },
+      { met: hasUpperCase, text: 'At least one uppercase letter' },
+      { met: hasLowerCase, text: 'At least one lowercase letter' },
+      { met: hasNumbers, text: 'At least one number' },
+      { met: hasSpecialChar, text: 'At least one special character' }
+    ]
+
+    const allMet = requirements.every(r => r.met)
+    return { requirements, allMet }
+  }
+
   const getRoleBadgeColor = (role) => {
     switch (role) {
       case 'admin':
@@ -109,29 +160,118 @@ export default function UserManagement() {
 
       {/* Filters */}
       <div className="card mb-6">
-        <div className="flex gap-4 flex-wrap">
-          <div className="flex-1 min-w-[200px]">
-            <input
-              type="text"
-              placeholder="Search by name or email..."
-              value={filters.search}
-              onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-              className="w-full p-3 border border-border rounded-lg bg-surface text-text-primary"
-            />
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex gap-4 flex-wrap flex-1">
+            <div className="w-full max-w-xl">
+              <input
+                type="text"
+                placeholder="Search by name or email..."
+                value={filters.search}
+                onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                className="w-full p-3 border border-border rounded-lg bg-surface text-text-primary"
+              />
+            </div>
+            <div className="min-w-[150px]">
+              <select
+                value={filters.role}
+                onChange={(e) => setFilters(prev => ({ ...prev, role: e.target.value }))}
+                className="w-full p-3 border border-border rounded-lg bg-surface text-text-primary"
+              >
+                <option value="">All Roles</option>
+                <option value="citizen">Citizen</option>
+                <option value="lgu">LGU</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
           </div>
-          <div className="min-w-[150px]">
-            <select
-              value={filters.role}
-              onChange={(e) => setFilters(prev => ({ ...prev, role: e.target.value }))}
-              className="w-full p-3 border border-border rounded-lg bg-surface text-text-primary"
-            >
-              <option value="">All Roles</option>
-              <option value="citizen">Citizen</option>
-              <option value="lgu">LGU</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
+          <button
+            onClick={() => setShowCreateForm(!showCreateForm)}
+            className="btn-primary"
+          >
+            {showCreateForm ? 'Cancel' : 'Create User'}
+          </button>
         </div>
+
+        {showCreateForm && (
+          <div className="border-t border-border pt-4 mt-4">
+            <h3 className="text-lg font-semibold text-text-primary mb-4">Create New User</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-2">Email *</label>
+                <input
+                  type="email"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+                  className="input"
+                  placeholder="user@example.com"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-2">Full Name *</label>
+                <input
+                  type="text"
+                  value={newUser.full_name}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, full_name: e.target.value }))}
+                  className="input"
+                  placeholder="John Doe"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-2">Password *</label>
+                <input
+                  type="password"
+                  value={newUser.password}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
+                  className="input"
+                  placeholder="••••••••"
+                />
+                {newUser.password && (
+                  <div className="mt-2">
+                    <ul className="space-y-1">
+                      {validatePassword(newUser.password).requirements.map((req, idx) => (
+                        <li key={idx} className="text-xs flex items-center gap-2">
+                          <svg
+                            className={`w-4 h-4 ${req.met ? 'text-green-500' : 'text-gray-400'}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            {req.met ? (
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            ) : (
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            )}
+                          </svg>
+                          <span className={req.met ? 'text-green-600' : 'text-text-muted'}>{req.text}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-2">Role *</label>
+                <select
+                  value={newUser.role}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, role: e.target.value }))}
+                  className="input"
+                >
+                  <option value="lgu">LGU</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+            </div>
+            <div className="mt-8 flex justify-end">
+              <button
+                onClick={handleCreateUser}
+                disabled={creatingUser || !validatePassword(newUser.password).allMet}
+                className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {creatingUser ? 'Creating...' : 'Create User'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Users Table */}

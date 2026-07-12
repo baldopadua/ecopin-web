@@ -142,7 +142,7 @@ export default function ProfilePage() {
 
     const token = localStorage.getItem('authToken')
     try {
-      const response = await fetch(`${API_BASE_URL}/profile/password`, {
+      const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -156,7 +156,8 @@ export default function ProfilePage() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.message || 'Failed to change password')
+        console.error('Password change error response:', errorData)
+        throw new Error(errorData.message || errorData.error || 'Failed to change password')
       }
 
       setSuccess('Password changed successfully')

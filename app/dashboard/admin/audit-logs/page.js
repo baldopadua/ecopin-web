@@ -21,7 +21,7 @@ export default function AuditLogs() {
       setLoading(true)
       const data = await getAuditLogs({
         page: pagination.page,
-        limit: 50,
+        limit: 10,
         ...filters
       })
       setLogs(data.logs || [])
@@ -169,7 +169,7 @@ export default function AuditLogs() {
             {pagination.totalPages > 1 && (
               <div className="flex items-center justify-between pt-4 border-t border-border">
                 <p className="text-sm text-text-muted">
-                  Showing {((pagination.page - 1) * 50) + 1} to {Math.min(pagination.page * 50, pagination.total)} of {pagination.total} logs
+                  Showing {((pagination.page - 1) * 10) + 1} to {Math.min(pagination.page * 10, pagination.total)} of {pagination.total} logs
                 </p>
                 <div className="flex gap-2">
                   <button
@@ -179,6 +179,29 @@ export default function AuditLogs() {
                   >
                     Previous
                   </button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                      let pageNum
+                      if (pagination.totalPages <= 5) {
+                        pageNum = i + 1
+                      } else if (pagination.page <= 3) {
+                        pageNum = i + 1
+                      } else if (pagination.page >= pagination.totalPages - 2) {
+                        pageNum = pagination.totalPages - 4 + i
+                      } else {
+                        pageNum = pagination.page - 2 + i
+                      }
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setPagination(prev => ({ ...prev, page: pageNum }))}
+                          className={`px-3 py-2 rounded ${pagination.page === pageNum ? 'btn-primary' : 'btn-secondary'}`}
+                        >
+                          {pageNum}
+                        </button>
+                      )
+                    })}
+                  </div>
                   <button
                     onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
                     disabled={pagination.page === pagination.totalPages}
