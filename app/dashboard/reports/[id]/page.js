@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
   fetchReportById,
@@ -43,6 +43,8 @@ export default function ReportDetailPage() {
   const [notification, setNotification] = useState(null)
   const [showLifecycleDropdown, setShowLifecycleDropdown] = useState(false)
   const [updatingLifecycle, setUpdatingLifecycle] = useState(false)
+  const lifecycleDropdownRef = useRef(null)
+  const statusDropdownRef = useRef(null)
   const [agencyResponses, setAgencyResponses] = useState([])
   const [resolvingReport, setResolvingReport] = useState(false)
   const [activityLogPage, setActivityLogPage] = useState(1)
@@ -79,6 +81,22 @@ export default function ReportDetailPage() {
   useEffect(() => {
     loadReportData()
   }, [reportId])
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (lifecycleDropdownRef.current && !lifecycleDropdownRef.current.contains(event.target)) {
+        setShowLifecycleDropdown(false)
+      }
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target)) {
+        setShowStatusDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
   const parseLocation = (location, latitude, longitude) => {
     // reports_view has latitude and longitude columns directly
@@ -512,11 +530,24 @@ export default function ReportDetailPage() {
                   {(() => {
                     const stages = ['submitted', 'acknowledged', 'responded', 'resolved']
                     const currentIndex = stages.indexOf(report.stage)
-                    const progressWidth = currentIndex >= 0 ? (currentIndex / (stages.length - 1)) * 100 : 0
+                    const totalSegments = stages.length - 1 // 3 segments
+
+                    // The green line starts at the center of the first dot (12px from left edge of the track).
+                    // The total width of the track (gray line) is `calc(100% - 24px)`.
+                    // The width of each segment of the track is `(100% - 24px) / totalSegments`.
+
+                    let lineWidthCalc = '0px'
+                    if (currentIndex === 0) {
+                      lineWidthCalc = '12px' // Line extends to the center of the first dot
+                    } else if (currentIndex > 0) {
+                      // Width = (half of first dot) + (width of completed segments)
+                      lineWidthCalc = `calc(12px + ((100% - 24px) / ${totalSegments}) * ${currentIndex})`
+                    }
+
                     return (
                       <div
                         className="absolute top-3 left-3 h-1 bg-[var(--accent-green)] -z-10 transition-all"
-                        style={{ width: `calc(${progressWidth}% - 12px)` }}
+                        style={{ width: lineWidthCalc }}
                       />
                     )
                   })()}
@@ -886,7 +917,7 @@ export default function ReportDetailPage() {
             </div>
 
             {/* Sidebar - Simplified */}
-            <div className="space-y-6 sticky top-4 self-start">
+            <div className="space-y-6 sticky top-4 self-start z-50">
               {/* Report Metadata */}
               <div className="card">
                 <h2 className="text-lg font-bold text-text-primary mb-4">Report Details</h2>
@@ -966,13 +997,12 @@ export default function ReportDetailPage() {
                 <h2 className="text-lg font-bold text-text-primary mb-4">Actions</h2>
                 <div className="space-y-3">
                   {/* Lifecycle Stage Control */}
-                  <div className="relative">
+                  <div className="relative" ref={lifecycleDropdownRef}>
                     <button
                       onClick={() => {
                         setShowLifecycleDropdown(!showLifecycleDropdown)
                         setShowStatusDropdown(false)
                       }}
-                      disabled={updatingLifecycle}
                       className="btn-primary w-full"
                     >
                       {updatingLifecycle ? 'Updating...' : 'Update Lifecycle Stage'}
@@ -1026,18 +1056,16 @@ export default function ReportDetailPage() {
                         setShowStatusDropdown(!showStatusDropdown)
                         setShowLifecycleDropdown(false)
                       }}
-                      disabled={updatingStatus}
                       className="btn-secondary w-full"
                     >
                       {updatingStatus ? 'Updating...' : 'Update Status'}
                     </button>
                     {showStatusDropdown && (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-surface border border-border rounded-lg shadow-lg z-50">
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-surface border border-border rounded-lg shadow-lg z-[9999] pointer-events-auto">
                         <button
                           onClick={() => handleStatusUpdate('unresolved')}
-                          disabled={report.status === 'unresolved'}
                           className={`w-full px-4 py-3 text-left border-b border-border last:border-b-0 transition-colors ${report.status === 'unresolved'
-                            ? 'bg-accent-green/20 text-accent-green font-semibold cursor-not-allowed'
+                            ? 'bg-accent-green/20 text-accent-green font-semibold'
                             : 'text-text-primary hover:bg-accent-green/10'
                             }`}
                         >
@@ -1046,9 +1074,8 @@ export default function ReportDetailPage() {
                         </button>
                         <button
                           onClick={() => handleStatusUpdate('in_progress')}
-                          disabled={report.status === 'in_progress'}
                           className={`w-full px-4 py-3 text-left border-b border-border last:border-b-0 transition-colors ${report.status === 'in_progress'
-                            ? 'bg-accent-green/20 text-accent-green font-semibold cursor-not-allowed'
+                            ? 'bg-accent-green/20 text-accent-green font-semibold'
                             : 'text-text-primary hover:bg-accent-green/10'
                             }`}
                         >
