@@ -48,7 +48,7 @@ export default function ReportDetailPage() {
   const [agencyResponses, setAgencyResponses] = useState([])
   const [resolvingReport, setResolvingReport] = useState(false)
   const [activityLogPage, setActivityLogPage] = useState(1)
-  const activityLogPerPage = 5
+  const activityLogPerPage = 10
 
   const loadReportData = async () => {
     setLoading(true)
@@ -1097,7 +1097,7 @@ export default function ReportDetailPage() {
                   </div> */}
 
                   <button
-                    onClick={() => router.push('/dashboard/map-view')}
+                    onClick={() => router.push(`/dashboard/map-view?lat=${location.latitude}&lng=${location.longitude}&id=${reportId}&validationStatus=${report.validation_status}&status=${report.status}`)}
                     className="btn-secondary w-full"
                   >
                     View on Map

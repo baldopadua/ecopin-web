@@ -1,5 +1,6 @@
 'use client'
 import dynamic from 'next/dynamic'
+import { useSearchParams } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 
 const EcoPinMap = dynamic(
@@ -8,6 +9,13 @@ const EcoPinMap = dynamic(
 )
 
 export default function MapViewPage() {
+  const searchParams = useSearchParams()
+  const lat = searchParams.get('lat')
+  const lng = searchParams.get('lng')
+  const id = searchParams.get('id')
+  const validationStatus = searchParams.get('validationStatus')
+  const status = searchParams.get('status')
+
   return (
     <div className="h-screen flex flex-col">
       <div className="p-8 pb-0">
@@ -21,7 +29,13 @@ export default function MapViewPage() {
         />
       </div>
       <div className="flex-1">
-        <EcoPinMap />
+        <EcoPinMap 
+          centerLat={lat ? parseFloat(lat) : null} 
+          centerLng={lng ? parseFloat(lng) : null} 
+          focusReportId={id} 
+          initialValidationStatus={validationStatus}
+          initialStatus={status}
+        />
       </div>
     </div>
   )

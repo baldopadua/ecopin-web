@@ -132,7 +132,28 @@ function HeatmapLayer({ heatPoints, showHeatmap }) {
   return null
 }
 
-export default function EcoPinMap() {
+function MapCenter({ centerLat, centerLng }) {
+  const map = useMap()
+  const hasCentered = useRef(false)
+
+  useEffect(() => {
+    if (centerLat && centerLng && !hasCentered.current) {
+      console.log('Centering map on:', centerLat, centerLng)
+      hasCentered.current = true
+      setTimeout(() => {
+        map.flyTo([centerLat, centerLng], 17, {
+          duration: 1.5
+        })
+      }, 500)
+    }
+  }, [centerLat, centerLng, map])
+
+  return null
+}
+
+export default function EcoPinMap({ centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus }) {
+  console.log('EcoPinMap props:', { centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus })
+  
   const [mounted, setMounted] = useState(false)
   const [reports, setReports] = useState([])
   const [filteredReports, setFilteredReports] = useState([])
@@ -149,7 +170,8 @@ export default function EcoPinMap() {
   const [showPins, setShowPins] = useState(true)
   const [showClusters, setShowClusters] = useState(true)
   const [showHeatmap, setShowHeatmap] = useState(false)
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState(initialStatus || 'all')
+  const [validationStatusFilter, setValidationStatusFilter] = useState(initialValidationStatus || 'validated')
   const [issueTypeFilter, setIssueTypeFilter] = useState('all')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
@@ -199,7 +221,7 @@ export default function EcoPinMap() {
 
     // Fetch data when component mounts
     Promise.all([
-      fetchValidatedReports(),
+      fetchValidatedReports({ validationStatus: validationStatusFilter }),
       fetchIssueTypes(),
       fetchClusters()
     ]).then(([reportsData, typesData, clustersData]) => {
@@ -308,6 +330,16 @@ export default function EcoPinMap() {
     }
   }, [statusFilter, issueTypeFilter, startDate, endDate, reports])
 
+  // Refetch reports when validation status filter changes
+  useEffect(() => {
+    if (mounted) {
+      fetchValidatedReports({ validationStatus: validationStatusFilter }).then(reportsData => {
+        setReports(reportsData)
+        setFilteredReports(reportsData)
+      })
+    }
+  }, [validationStatusFilter])
+
   const handleMarkerClick = (reportId) => {
     router.push(`/dashboard/reports/${reportId}`)
   }
@@ -352,9 +384,9 @@ export default function EcoPinMap() {
       `}</style>
       <div className="relative h-full w-full">
         <MapContainer
-          key="ecopin-map"
-          center={PLP_CENTER}
-          zoom={DEFAULT_ZOOM}
+          key={centerLat && centerLng ? `map-${centerLat}-${centerLng}` : 'ecopin-map'}
+          center={centerLat && centerLng ? [centerLat, centerLng] : PLP_CENTER}
+          zoom={centerLat && centerLng ? 17 : DEFAULT_ZOOM}
           maxBounds={PASIG_BOUNDS}
           maxBoundsViscosity={1.0}
           minZoom={13}
@@ -362,6 +394,7 @@ export default function EcoPinMap() {
           ref={mapRef}
         >
           <ZoomTracker setZoom={setZoom} />
+          {centerLat && centerLng && <MapCenter centerLat={centerLat} centerLng={centerLng} />}
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>'
@@ -698,6 +731,46 @@ export default function EcoPinMap() {
                     <span className="w-3 h-3 rounded-full" style={{backgroundColor: 'var(--success)'}}></span>
                     Resolved
                   </span>
+                </label>
+              </div>
+            </div>
+
+            {/* Validation Status Filter */}
+            <div className="mb-4">
+              <h4 className="text-xs font-semibold text-text-secondary mb-2 uppercase tracking-wide">Validation</h4>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="validation"
+                    value="validated"
+                    checked={validationStatusFilter === 'validated'}
+                    onChange={(e) => setValidationStatusFilter(e.target.value)}
+                    className="w-4 h-4 accent-accent-green"
+                  />
+                  <span className="text-sm text-text-primary">Validated</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="validation"
+                    value="manual_review"
+                    checked={validationStatusFilter === 'manual_review'}
+                    onChange={(e) => setValidationStatusFilter(e.target.value)}
+                    className="w-4 h-4 accent-accent-green"
+                  />
+                  <span className="text-sm text-text-primary">Unverified / Manual Review</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="validation"
+                    value="all"
+                    checked={validationStatusFilter === 'all'}
+                    onChange={(e) => setValidationStatusFilter(e.target.value)}
+                    className="w-4 h-4 accent-accent-green"
+                  />
+                  <span className="text-sm text-text-primary">All</span>
                 </label>
               </div>
             </div>
