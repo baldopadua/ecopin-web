@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import PageHeader from '@/components/layout/PageHeader'
-import { fetchValidatedReports } from '@/lib/api'
+import { fetchValidatedReports, fetchSatisfactionAnalytics } from '@/lib/api'
 import { Bar, Pie, Line } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -27,9 +27,12 @@ ChartJS.register(
 )
 
 const COLORS = ['#4CAF50', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6', '#EC4899']
+const SATISFACTION_COLORS = ['#EF4444', '#F59E0B', '#EAB308', '#84CC16', '#22C55E'] // 1 (red) to 5 (green)
+const SATISFACTION_LABELS = ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied']
 
 export default function AnalyticsPage() {
   const [reports, setReports] = useState([])
+  const [satisfactionData, setSatisfactionData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -37,9 +40,13 @@ export default function AnalyticsPage() {
     const loadData = async () => {
       try {
         console.log('Loading analytics data...')
-        const data = await fetchValidatedReports()
-        console.log('Analytics data loaded:', data)
-        setReports(data)
+        const [reportsData, satisfactionDataResult] = await Promise.all([
+          fetchValidatedReports(),
+          fetchSatisfactionAnalytics().catch(() => null) // Don't fail the whole load if satisfaction fails
+        ])
+        console.log('Analytics data loaded:', { reportsData, satisfactionDataResult })
+        setReports(reportsData)
+        setSatisfactionData(satisfactionDataResult)
       } catch (error) {
         console.error('Failed to load analytics data:', error)
         setError('Failed to load analytics data. Please try again.')
@@ -76,14 +83,14 @@ export default function AnalyticsPage() {
   // Prepare data for weekly report volume bar chart
   const weeklyReportVolume = () => {
     const weekMap = {}
-    
+
     reports.forEach(report => {
       if (report.created_at) {
         const date = new Date(report.created_at)
         const weekNumber = getWeekNumber(date)
         const year = date.getFullYear()
         const key = `${year}-W${weekNumber}`
-        
+
         weekMap[key] = (weekMap[key] || 0) + 1
       }
     })
@@ -97,7 +104,7 @@ export default function AnalyticsPage() {
   // Prepare data for reports by issue type pie chart
   const reportsByIssueType = () => {
     const typeMap = {}
-    
+
     reports.forEach(report => {
       if (report.issue_type) {
         typeMap[report.issue_type] = (typeMap[report.issue_type] || 0) + 1
@@ -113,14 +120,14 @@ export default function AnalyticsPage() {
   // Prepare data for resolution rate over time line chart
   const resolutionRateOverTime = () => {
     const weekMap = {}
-    
+
     reports.forEach(report => {
       if (report.created_at) {
         const date = new Date(report.created_at)
         const weekNumber = getWeekNumber(date)
         const year = date.getFullYear()
         const key = `${year}-W${weekNumber}`
-        
+
         if (!weekMap[key]) {
           weekMap[key] = { total: 0, resolved: 0 }
         }
@@ -143,7 +150,7 @@ export default function AnalyticsPage() {
   // Prepare data for most active issue type pie chart
   const mostActiveIssueType = () => {
     const typeMap = {}
-    
+
     reports.forEach(report => {
       if (report.issue_type) {
         typeMap[report.issue_type] = (typeMap[report.issue_type] || 0) + 1
@@ -209,9 +216,19 @@ export default function AnalyticsPage() {
     ]
   }
 
+  const satisfactionChartData = satisfactionData ? {
+    labels: SATISFACTION_LABELS,
+    datasets: [
+      {
+        data: Object.values(satisfactionData.distribution),
+        backgroundColor: SATISFACTION_COLORS,
+      }
+    ]
+  } : null
+
   return (
     <div className="p-8">
-      <PageHeader 
+      <PageHeader
         title="Analytics"
         subtitle="View analytics and insights"
         breadcrumbs={[
@@ -227,7 +244,7 @@ export default function AnalyticsPage() {
       )}
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="card p-6">
           <h3 className="text-sm font-medium text-text-muted mb-2">Total Reports</h3>
           <p className="text-3xl font-bold text-text-primary">
@@ -246,6 +263,16 @@ export default function AnalyticsPage() {
           <h3 className="text-sm font-medium text-text-muted mb-2">In Progress</h3>
           <p className="text-3xl font-bold text-text-primary">
             {loading ? '...' : inProgressReports}
+          </p>
+        </div>
+
+        <div className="card p-6">
+          <h3 className="text-sm font-medium text-text-muted mb-2">Avg Satisfaction</h3>
+          <p className="text-3xl font-bold text-text-primary">
+            {loading || !satisfactionData ? '...' : `${satisfactionData.average.toFixed(1)}/5`}
+          </p>
+          <p className="text-xs text-text-muted mt-1">
+            {loading || !satisfactionData ? '' : `Based on ${satisfactionData.total} ratings`}
           </p>
         </div>
       </div>
@@ -304,6 +331,20 @@ export default function AnalyticsPage() {
               <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>No data available</div>
             ) : (
               <Pie data={mostActiveChartData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
+            )}
+          </div>
+        </div>
+
+        {/* Satisfaction Distribution Pie Chart */}
+        <div style={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '16px', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827', marginBottom: '16px' }}>Satisfaction Distribution</h2>
+          <div style={{ width: '100%', height: '320px' }}>
+            {loading ? (
+              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>Loading chart data...</div>
+            ) : !satisfactionChartData || satisfactionData.total === 0 ? (
+              <div style={{ color: '#6b7280', textAlign: 'center', paddingTop: '140px' }}>No ratings available</div>
+            ) : (
+              <Pie data={satisfactionChartData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
             )}
           </div>
         </div>
