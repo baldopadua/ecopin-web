@@ -44,6 +44,8 @@ export default function ReportDetailPage() {
   const [updatingLifecycle, setUpdatingLifecycle] = useState(false)
   const [agencyResponses, setAgencyResponses] = useState([])
   const [resolvingReport, setResolvingReport] = useState(false)
+  const [activityLogPage, setActivityLogPage] = useState(1)
+  const activityLogPerPage = 5
 
   useEffect(() => {
     Promise.all([
@@ -233,6 +235,14 @@ export default function ReportDetailPage() {
       await acknowledgeComplaint(reportId)
       // Refresh report data
       const updatedReport = await fetchReportById(reportId)
+      
+      // Auto-validate Manual_Review reports
+      if (updatedReport.validation_status === 'Manual_Review') {
+        // Note: This would require a backend API to update validation status
+        // For now, we'll just acknowledge and let the user manually validate
+        console.log('Report requires manual validation')
+      }
+      
       setReport(updatedReport)
       setNotification({ message: 'Complaint acknowledged successfully', type: 'success' })
     } catch (error) {
@@ -436,249 +446,385 @@ export default function ReportDetailPage() {
   })
 
   return (
-    <div className="p-8">
-      <PageHeader
-        title="Report Details"
-        subtitle="View detailed report information"
-        breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Reports', href: '/dashboard/reports' },
-          { label: 'Details' }
-        ]}
-      />
-
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Main Content */}
-        <div className="lg:col-span-3 space-y-6">
-          {/* Lifecycle Timeline - Centerpiece */}
-          <div className="card border-2 border-[var(--accent-green)]">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-text-primary mb-2">Report Lifecycle</h2>
-              <div className="flex justify-center gap-3 flex-wrap">
-                <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getStatusColor(report.status)}`}>
-                  {report.status.replace('_', ' ').toUpperCase()}
-                </span>
-                <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getValidationColor(report.validation_status)}`}>
-                  {report.validation_status === 'validated' ? 'AI VALIDATED' : report.validation_status.toUpperCase()}
-                </span>
-                {report.on_private_property && (
-                  <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${report.property_owner_consent_status === 'obtained'
-                    ? 'bg-green-100 text-green-800 border-green-300'
-                    : report.property_owner_consent_status === 'pending'
-                      ? 'bg-yellow-100 text-yellow-800 border-yellow-300'
-                      : report.property_owner_consent_status === 'denied'
-                        ? 'bg-red-100 text-red-800 border-red-300'
-                        : 'bg-gray-100 text-gray-800 border-gray-300'
-                    }`}>
-                    {report.property_owner_consent_status.toUpperCase()}
-                  </span>
-                )}
-                {report.stage && (
-                  <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getLifecycleStageColor(report.stage)}`}>
-                    {report.stage.replace('_', ' ').toUpperCase()}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center justify-center gap-2 px-4">
-              {['submitted', 'acknowledged', 'responded', 'resolved', 'closed'].map((stage, index) => {
-                const stages = ['submitted', 'acknowledged', 'responded', 'resolved', 'closed']
-                const currentIndex = stages.indexOf(report.stage)
-                const isCompleted = currentIndex >= index
-                const isCurrent = report.stage === stage
-                return (
-                  <div key={stage} className="flex-1 flex flex-col items-center max-w-[100px]">
-                    <div className={`w-6 h-6 rounded-full ${isCurrent ? 'bg-[var(--success)] ring-4 ring-[var(--success)]/20' : isCompleted ? 'bg-[var(--accent-green)]' : 'bg-gray-300'} transition-all`} />
-                    <span className={`text-xs mt-2 font-medium ${isCurrent ? 'text-[var(--success)]' : isCompleted ? 'text-[var(--accent-green)]' : 'text-text-muted'}`}>
-                      {stage.replace('_', ' ')}
-                    </span>
-                    {index < 4 && <div className={`w-full h-1 mt-2 ${isCurrent ? 'bg-[var(--success)]' : isCompleted ? 'bg-[var(--accent-green)]' : 'bg-gray-300'}`} />}
-                  </div>
-                )
-              })}
-            </div>
-            {report.stage === 'submitted' && (
-              <div className="mt-6 text-center">
-                <button onClick={handleAcknowledgeComplaint} className="btn-primary">
-                  Acknowledge Complaint
-                </button>
-              </div>
-            )}
-            {report.status !== 'waiting_for_feedback' && report.status !== 'closed' && (
-              <div className="mt-6 text-center">
-                <button onClick={handleResolveReport} disabled={resolvingReport} className="btn-primary">
-                  {resolvingReport ? 'Resolving...' : 'Mark as Resolved'}
-                </button>
-              </div>
-            )}
-            {report.status === 'closed' && report.satisfaction_rating && (
-              <div className="mt-6 p-4 bg-surface rounded-lg border border-border">
-                <h3 className="font-semibold text-text-primary mb-2">Reporter Satisfaction</h3>
-                <div className="flex items-center gap-2">
-                  <span className="text-4xl">{getSatisfactionEmoji(report.satisfaction_rating)}</span>
-                  <span className="text-lg font-medium">{getSatisfactionLabel(report.satisfaction_rating)}</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Report Information */}
-          <div className="card">
-            <h1 className="text-3xl font-bold text-text-primary mb-2">{report.title}</h1>
-            <p className="text-lg text-text-secondary mb-6">Issue: {report.issue_type || 'General'}</p>
-
-            <h2 className="text-lg font-semibold text-text-primary mb-3">Description</h2>
-            <p className="text-text-primary leading-relaxed mb-6">
-              {report.description || 'No description provided.'}
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-surface p-4 rounded-lg border border-border">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 rounded-full bg-accent-green/10 flex items-center justify-center">
-                    <svg className="w-4 h-4 text-accent-green" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <p className="text-sm font-medium text-text-secondary">Location</p>
-                </div>
-                <p className="text-text-primary text-sm">
-                  {location.latitude && location.longitude
-                    ? `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`
-                    : 'Not available'
-                  }
-                </p>
-              </div>
-              <div className="bg-surface p-4 rounded-lg border border-border">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 rounded-full bg-accent-green/10 flex items-center justify-center">
-                    <svg className="w-4 h-4 text-accent-green" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <p className="text-sm font-medium text-text-secondary">Submitted</p>
-                </div>
-                <p className="text-text-primary text-sm">{dateStr}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Evidence Photos */}
-          <div className="card">
-            <h2 className="text-xl font-bold text-text-primary mb-4">Evidence Photos</h2>
-            {evidence.length === 0 ? (
-              <div className="h-48 bg-surface rounded-lg flex items-center justify-center border border-dashed border-border">
-                <div className="text-center">
-                  <svg className="w-12 h-12 text-text-muted mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <p className="text-text-muted">No evidence images available</p>
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {evidence.map((img, index) => (
-                  <div key={index} className="relative group">
-                    <img
-                      src={img.url}
-                      alt={`Evidence ${index + 1}`}
-                      className="w-full h-48 object-cover rounded-lg border border-border cursor-pointer hover:opacity-90 transition-opacity"
-                      onClick={() => setSelectedImage(img.url)}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Before & After Photos */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-              <div className="p-4 border border-border rounded-lg">
-                <div className="flex justify-between items-center mb-3">
-                  <h3 className="font-semibold">Before Photo</h3>
-                  {report.before_photo_url && (
-                    <button
-                      onClick={() => handlePhotoDelete('before')}
-                      className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded transition-colors"
-                    >
-                      Delete
-                    </button>
-                  )}
-                </div>
-                {report.before_photo_url ? (
-                  <img src={report.before_photo_url} alt="Before" className="w-full h-48 object-cover rounded-lg" />
-                ) : (
-                  <input
-                    type="file"
-                    accept="image/*"
-                    disabled={uploadingBefore}
-                    onChange={(e) => e.target.files[0] && handlePhotoUpload('before', e.target.files[0])}
-                    className="w-full"
-                  />
-                )}
-                {uploadingBefore && <p className="mt-2 text-sm text-text-muted">Uploading...</p>}
-              </div>
-
-              <div className="p-4 border border-border rounded-lg">
-                <div className="flex justify-between items-center mb-3">
-                  <h3 className="font-semibold">After Photo</h3>
-                  {report.after_photo_url && (
-                    <button
-                      onClick={() => handlePhotoDelete('after')}
-                      className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded transition-colors"
-                    >
-                      Delete
-                    </button>
-                  )}
-                </div>
-                {report.after_photo_url ? (
-                  <img src={report.after_photo_url} alt="After" className="w-full h-48 object-cover rounded-lg" />
-                ) : (
-                  <input
-                    type="file"
-                    accept="image/*"
-                    disabled={uploadingAfter}
-                    onChange={(e) => e.target.files[0] && handlePhotoUpload('after', e.target.files[0])}
-                    className="w-full"
-                  />
-                )}
-                {uploadingAfter && <p className="mt-2 text-sm text-text-muted">Uploading...</p>}
-              </div>
-            </div>
-          </div>
+    <div className="flex flex-col h-screen">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-10 bg-background border-b border-border">
+        <div className="p-8 pb-4">
+          <PageHeader
+            title="Report Details"
+            subtitle="View detailed report information"
+            breadcrumbs={[
+              { label: 'Dashboard', href: '/dashboard' },
+              { label: 'Reports', href: '/dashboard/reports' },
+              { label: 'Details' }
+            ]}
+          />
         </div>
+      </div>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Reporter Info & Report Metadata */}
-          <div className="card">
-            <h2 className="text-lg font-bold text-text-primary mb-4">Report Information</h2>
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm font-semibold text-text-secondary mb-2">Reporter</p>
-                <div className="space-y-2">
-                  <div>
-                    <p className="text-xs text-text-muted">Name</p>
-                    <p className="text-text-primary font-medium text-sm">
-                      {report.profiles?.data_consent === true
-                        ? (report.profiles?.full_name || report.user_full_name || 'Anonymous')
-                        : 'Information not disclosed'
+      {/* Main Content */}
+      <div className="flex-1 overflow-auto">
+        <div className="p-8 pt-4">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Main Content */}
+            <div className="lg:col-span-3 space-y-6">
+              {/* Lifecycle Timeline - Centerpiece */}
+              <div className="card border-2 border-[var(--accent-green)]">
+                <div className="text-center mb-6">
+                  <h2 className="text-2xl font-bold text-text-primary mb-2">Report Lifecycle</h2>
+                  <div className="flex justify-center gap-3 flex-wrap">
+                    <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getStatusColor(report.status)}`}>
+                      {report.status.replace('_', ' ').toUpperCase()}
+                    </span>
+                    <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getValidationColor(report.validation_status)}`}>
+                      {report.validation_status === 'validated' ? 'AI VALIDATED' : report.validation_status.toUpperCase()}
+                    </span>
+                    {report.on_private_property && (
+                      <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${report.property_owner_consent_status === 'obtained'
+                        ? 'bg-green-100 text-green-800 border-green-300'
+                        : report.property_owner_consent_status === 'pending'
+                          ? 'bg-yellow-100 text-yellow-800 border-yellow-300'
+                          : report.property_owner_consent_status === 'denied'
+                            ? 'bg-red-100 text-red-800 border-red-300'
+                            : 'bg-gray-100 text-gray-800 border-gray-300'
+                        }`}>
+                        {report.property_owner_consent_status.toUpperCase()}
+                      </span>
+                    )}
+                    {report.stage && (
+                      <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getLifecycleStageColor(report.stage)}`}>
+                        {report.stage.replace('_', ' ').toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center justify-center gap-0 px-4 relative">
+                  {/* Continuous background line */}
+                  <div className="absolute top-3 left-3 right-3 h-1 bg-gray-300 -z-10" />
+                  {/* Colored progress line */}
+                  {(() => {
+                    const stages = ['submitted', 'acknowledged', 'responded', 'resolved']
+                    const currentIndex = stages.indexOf(report.stage)
+                    const progressWidth = currentIndex >= 0 ? (currentIndex / (stages.length - 1)) * 100 : 0
+                    return (
+                      <div 
+                        className="absolute top-3 left-3 h-1 bg-[var(--accent-green)] -z-10 transition-all"
+                        style={{ width: `calc(${progressWidth}% - 12px)` }}
+                      />
+                    )
+                  })()}
+                  {['submitted', 'acknowledged', 'responded', 'resolved'].map((stage, index) => {
+                    const stages = ['submitted', 'acknowledged', 'responded', 'resolved']
+                    const currentIndex = stages.indexOf(report.stage)
+                    const isCompleted = currentIndex >= index
+                    const isCurrent = report.stage === stage
+                    return (
+                      <div key={stage} className="flex-1 flex flex-col items-center z-10">
+                        <div className={`w-6 h-6 rounded-full ${isCurrent ? 'bg-[var(--success)] ring-4 ring-[var(--success)]/20' : isCompleted ? 'bg-[var(--accent-green)]' : 'bg-gray-300'} transition-all relative`} />
+                        <span className={`text-xs mt-2 font-medium ${isCurrent ? 'text-[var(--success)]' : isCompleted ? 'text-[var(--accent-green)]' : 'text-text-muted'}`}>
+                          {stage.replace('_', ' ')}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+                {report.stage === 'submitted' && (
+                  <div className="mt-6 text-center">
+                    <button onClick={handleAcknowledgeComplaint} className="btn-primary">
+                      Acknowledge Complaint
+                    </button>
+                  </div>
+                )}
+                {report.status !== 'waiting_for_feedback' && report.status !== 'closed' && (
+                  <div className="mt-6 text-center">
+                    <button onClick={handleResolveReport} disabled={resolvingReport} className="btn-primary">
+                      {resolvingReport ? 'Resolving...' : 'Mark as Resolved'}
+                    </button>
+                  </div>
+                )}
+                {report.status === 'closed' && report.satisfaction_rating && (
+                  <div className="mt-6 p-4 bg-surface rounded-lg border border-border">
+                    <h3 className="font-semibold text-text-primary mb-2">Reporter Satisfaction</h3>
+                    <div className="flex items-center gap-2">
+                      <span className="text-4xl">{getSatisfactionEmoji(report.satisfaction_rating)}</span>
+                      <span className="text-lg font-medium">{getSatisfactionLabel(report.satisfaction_rating)}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Report Information */}
+              <div className="card">
+                <h1 className="text-3xl font-bold text-text-primary mb-2">{report.title}</h1>
+                <p className="text-lg text-text-secondary mb-6">Issue: {report.issue_type || 'General'}</p>
+                
+                <h2 className="text-lg font-semibold text-text-primary mb-3">Description</h2>
+                <p className="text-text-primary leading-relaxed mb-6">
+                  {report.description || 'No description provided.'}
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-surface p-4 rounded-lg border border-border">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-8 h-8 rounded-full bg-accent-green/10 flex items-center justify-center">
+                        <svg className="w-4 h-4 text-accent-green" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <p className="text-sm font-medium text-text-secondary">Location</p>
+                    </div>
+                    <p className="text-text-primary text-sm">
+                      {location.latitude && location.longitude 
+                        ? `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`
+                        : 'Not available'
                       }
                     </p>
                   </div>
-                  <div>
-                    <p className="text-xs text-text-muted">User ID</p>
-                    <p className="text-text-primary font-medium text-sm">
-                      {report.profiles?.data_consent === true
-                        ? (report.user_id || 'N/A')
-                        : 'Information not disclosed'
-                      }
-                    </p>
+                  <div className="bg-surface p-4 rounded-lg border border-border">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-8 h-8 rounded-full bg-accent-green/10 flex items-center justify-center">
+                        <svg className="w-4 h-4 text-accent-green" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <p className="text-sm font-medium text-text-secondary">Submitted</p>
+                    </div>
+                    <p className="text-text-primary text-sm">{dateStr}</p>
+                  </div>
+                </div>
+
+                {/* Reporter Info - Moved to main content */}
+                <div className="mt-6 pt-6 border-t border-border">
+                  <h3 className="text-lg font-semibold text-text-primary mb-3">Reporter Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-surface p-4 rounded-lg border border-border">
+                      <p className="text-xs text-text-muted mb-1">Name</p>
+                      <p className="text-text-primary font-medium text-sm">
+                        {report.profiles?.data_consent === true 
+                          ? (report.profiles?.full_name || report.user_full_name || 'Anonymous')
+                          : 'Information not disclosed'
+                        }
+                      </p>
+                    </div>
+                    <div className="bg-surface p-4 rounded-lg border border-border">
+                      <p className="text-xs text-text-muted mb-1">User ID</p>
+                      <p className="text-text-primary font-medium text-sm">
+                        {report.profiles?.data_consent === true 
+                          ? (report.user_id || 'N/A')
+                          : 'Information not disclosed'
+                        }
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className="border-t border-border pt-4">
-                <p className="text-sm font-semibold text-text-secondary mb-2">Report Details</p>
-                <div className="space-y-2">
+
+              {/* Evidence Photos */}
+              <div className="card">
+                <h2 className="text-xl font-bold text-text-primary mb-4">Evidence Photos</h2>
+                {evidence.length === 0 ? (
+                  <div className="h-48 bg-surface rounded-lg flex items-center justify-center border border-dashed border-border">
+                    <div className="text-center">
+                      <svg className="w-12 h-12 text-text-muted mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <p className="text-text-muted">No evidence images available</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {evidence.map((img, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={img.url}
+                          alt={`Evidence ${index + 1}`}
+                          className="w-full h-48 object-cover rounded-lg border border-border cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => setSelectedImage(img.url)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Before & After Photos */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                  <div className="p-4 border border-border rounded-lg">
+                    <div className="flex justify-between items-center mb-3">
+                      <h3 className="font-semibold">Before Photo</h3>
+                      {report.before_photo_url && (
+                        <button
+                          onClick={() => handlePhotoDelete('before')}
+                          className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded transition-colors"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                    {report.before_photo_url ? (
+                      <img src={report.before_photo_url} alt="Before" className="w-full h-48 object-cover rounded-lg" />
+                    ) : (
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={uploadingBefore}
+                        onChange={(e) => e.target.files[0] && handlePhotoUpload('before', e.target.files[0])}
+                        className="w-full"
+                      />
+                    )}
+                    {uploadingBefore && <p className="mt-2 text-sm text-text-muted">Uploading...</p>}
+                  </div>
+
+                  <div className="p-4 border border-border rounded-lg">
+                    <div className="flex justify-between items-center mb-3">
+                      <h3 className="font-semibold">After Photo</h3>
+                      {report.after_photo_url && (
+                        <button
+                          onClick={() => handlePhotoDelete('after')}
+                          className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded transition-colors"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                    {report.after_photo_url ? (
+                      <img src={report.after_photo_url} alt="After" className="w-full h-48 object-cover rounded-lg" />
+                    ) : (
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={uploadingAfter}
+                        onChange={(e) => e.target.files[0] && handlePhotoUpload('after', e.target.files[0])}
+                        className="w-full"
+                      />
+                    )}
+                    {uploadingAfter && <p className="mt-2 text-sm text-text-muted">Uploading...</p>}
+                  </div>
+                </div>
+              </div>
+
+              {/* LGU Notes - Moved to main content */}
+              <div className="card">
+                <h2 className="text-xl font-bold text-text-primary mb-4">LGU Notes</h2>
+                {showNoteInput ? (
+                  <div className="space-y-2">
+                    <textarea
+                      value={noteText}
+                      onChange={(e) => setNoteText(e.target.value)}
+                      placeholder="Enter your note..."
+                      className="w-full p-3 border border-border rounded-lg bg-surface text-text-primary resize-none"
+                      rows={3}
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleAddNote}
+                        disabled={addingNote || !noteText.trim()}
+                        className="btn-primary flex-1"
+                      >
+                        {addingNote ? 'Adding...' : 'Save Note'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowNoteInput(false)
+                          setNoteText('')
+                        }}
+                        className="btn-secondary flex-1"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowNoteInput(true)}
+                    className="btn-secondary"
+                  >
+                    Add Note
+                  </button>
+                )}
+                {report.notes && (
+                  <div className="mt-4 p-3 bg-surface rounded-lg border border-border">
+                    <p className="text-sm text-text-primary">{report.notes}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Audit Log - Moved to main content */}
+              <div className="card">
+                <h2 className="text-xl font-bold text-text-primary mb-4">Activity Log</h2>
+                {agencyResponses && agencyResponses.length > 0 ? (
+                  <>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-border">
+                            <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Date</th>
+                            <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Action</th>
+                            <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Details</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {agencyResponses
+                            .slice((activityLogPage - 1) * activityLogPerPage, activityLogPage * activityLogPerPage)
+                            .map((response, index) => (
+                            <tr key={index} className="border-b border-border">
+                              <td className="py-3 px-4 text-sm text-text-muted">
+                                {new Date(response.created_at).toLocaleString()}
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className="px-2 py-1 rounded text-xs font-semibold bg-accent-green/20 text-accent-green border border-accent-green/30">
+                                  {response.action_type?.replace('_', ' ').toUpperCase()}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-sm text-text-secondary">
+                                {response.action_details}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Pagination */}
+                    {Math.ceil(agencyResponses.length / activityLogPerPage) > 1 && (
+                      <div className="flex items-center justify-between pt-4 border-t border-border">
+                        <p className="text-sm text-text-muted">
+                          Showing {((activityLogPage - 1) * activityLogPerPage) + 1} to {Math.min(activityLogPage * activityLogPerPage, agencyResponses.length)} of {agencyResponses.length} activities
+                        </p>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setActivityLogPage(prev => prev - 1)}
+                            disabled={activityLogPage === 1}
+                            className="btn-secondary px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Previous
+                          </button>
+                          <button
+                            onClick={() => setActivityLogPage(prev => prev + 1)}
+                            disabled={activityLogPage === Math.ceil(agencyResponses.length / activityLogPerPage)}
+                            className="btn-secondary px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Next
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="bg-surface p-4 rounded-lg border border-border">
+                    <p className="text-text-muted text-sm">
+                      No activity logged for this report yet.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Sidebar - Simplified */}
+            <div className="space-y-6 sticky top-4 self-start">
+              {/* Report Metadata */}
+              <div className="card">
+                <h2 className="text-lg font-bold text-text-primary mb-4">Report Details</h2>
+                <div className="space-y-3">
                   <div>
                     <p className="text-xs text-text-muted">Report ID</p>
                     <p className="text-text-primary font-medium text-sm">{report.id}</p>
@@ -701,240 +847,169 @@ export default function ReportDetailPage() {
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* Property Owner Consent */}
-          {report.on_private_property && (
-            <div className="card">
-              <h2 className="text-lg font-bold text-text-primary mb-4">Property Owner Consent</h2>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm text-text-muted">Current Status</p>
-                  <p className="text-text-primary font-medium">
-                    {report.property_owner_consent_status.replace('_', ' ').toUpperCase()}
-                  </p>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    onClick={() => handlePropertyOwnerConsent('pending')}
-                    disabled={updatingConsent}
-                    className={`btn-secondary text-sm py-2 ${report.property_owner_consent_status === 'pending' ? 'bg-yellow-100' : ''}`}
-                  >
-                    Pending
-                  </button>
-                  <button
-                    onClick={() => handlePropertyOwnerConsent('obtained')}
-                    disabled={updatingConsent}
-                    className={`btn-primary text-sm py-2 ${report.property_owner_consent_status === 'obtained' ? 'bg-green-600' : ''}`}
-                  >
-                    Obtained
-                  </button>
-                  <button
-                    onClick={() => handlePropertyOwnerConsent('denied')}
-                    disabled={updatingConsent}
-                    className={`btn-secondary text-sm py-2 ${report.property_owner_consent_status === 'denied' ? 'bg-red-100' : ''}`}
-                  >
-                    Denied
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* LGU Notes */}
-          <div className="card">
-            <h2 className="text-lg font-bold text-text-primary mb-4">LGU Notes</h2>
-            {showNoteInput ? (
-              <div className="space-y-2">
-                <textarea
-                  value={noteText}
-                  onChange={(e) => setNoteText(e.target.value)}
-                  placeholder="Enter your note..."
-                  className="w-full p-3 border border-border rounded-lg bg-surface text-text-primary resize-none"
-                  rows={3}
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleAddNote}
-                    disabled={addingNote || !noteText.trim()}
-                    className="btn-primary flex-1"
-                  >
-                    {addingNote ? 'Adding...' : 'Save Note'}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowNoteInput(false)
-                      setNoteText('')
-                    }}
-                    className="btn-secondary flex-1"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button
-                onClick={() => setShowNoteInput(true)}
-                className="btn-secondary w-full"
-              >
-                Add Note
-              </button>
-            )}
-            {report.notes && (
-              <div className="mt-4 p-3 bg-surface rounded-lg border border-border">
-                <p className="text-sm text-text-primary">{report.notes}</p>
-              </div>
-            )}
-          </div>
-
-          {/* Audit Log */}
-          <div className="card">
-            <h2 className="text-lg font-bold text-text-primary mb-4">Audit Log</h2>
-            <div className="space-y-3">
-              {agencyResponses && agencyResponses.length > 0 ? (
-                agencyResponses.map((response, index) => (
-                  <div key={index} className="bg-surface p-3 rounded-lg border border-border">
-                    <p className="text-sm font-medium text-text-primary capitalize">
-                      {response.action_type?.replace('_', ' ')}
-                    </p>
-                    <p className="text-sm text-text-secondary mt-1">{response.action_details}</p>
-                    <p className="text-xs text-text-muted mt-2">
-                      {new Date(response.created_at).toLocaleString()}
-                    </p>
+              {/* Property Owner Consent */}
+              {report.on_private_property && (
+                <div className="card">
+                  <h2 className="text-lg font-bold text-text-primary mb-4">Property Owner Consent</h2>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm text-text-muted">Current Status</p>
+                      <p className="text-text-primary font-medium">
+                        {report.property_owner_consent_status.replace('_', ' ').toUpperCase()}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        onClick={() => handlePropertyOwnerConsent('pending')}
+                        disabled={updatingConsent}
+                        className={`btn-secondary text-sm py-2 ${report.property_owner_consent_status === 'pending' ? 'bg-yellow-100' : ''}`}
+                      >
+                        Pending
+                      </button>
+                      <button
+                        onClick={() => handlePropertyOwnerConsent('obtained')}
+                        disabled={updatingConsent}
+                        className={`btn-primary text-sm py-2 ${report.property_owner_consent_status === 'obtained' ? 'bg-green-600' : ''}`}
+                      >
+                        Obtained
+                      </button>
+                      <button
+                        onClick={() => handlePropertyOwnerConsent('denied')}
+                        disabled={updatingConsent}
+                        className={`btn-secondary text-sm py-2 ${report.property_owner_consent_status === 'denied' ? 'bg-red-100' : ''}`}
+                      >
+                        Denied
+                      </button>
+                    </div>
                   </div>
-                ))
-              ) : (
-                <div className="bg-surface p-4 rounded-lg border border-border">
-                  <p className="text-text-muted text-sm">
-                    No activity logged for this report yet.
-                  </p>
                 </div>
               )}
-            </div>
-          </div>
 
-          {/* Actions */}
-          <div className="card">
-            <h2 className="text-lg font-bold text-text-primary mb-4">Actions</h2>
-            <div className="space-y-3">
-              {/* Lifecycle Stage Control */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowLifecycleDropdown(!showLifecycleDropdown)}
-                  disabled={updatingLifecycle}
-                  className="btn-primary w-full"
-                >
-                  {updatingLifecycle ? 'Updating...' : 'Update Lifecycle Stage'}
-                </button>
-                {showLifecycleDropdown && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-surface border border-border rounded-lg shadow-lg z-10">
+              {/* Actions */}
+              <div className="card">
+                <h2 className="text-lg font-bold text-text-primary mb-4">Actions</h2>
+                <div className="space-y-3">
+                  {/* Lifecycle Stage Control */}
+                  <div className="relative">
                     <button
-                      onClick={() => handleLifecycleStageUpdate('submitted')}
-                      disabled={report.stage === 'submitted'}
-                      className={`w-full px-4 py-3 text-left border-b border-border transition-colors ${report.stage === 'submitted'
-                        ? 'bg-purple-100 text-purple-800 font-semibold cursor-not-allowed'
-                        : 'text-text-primary hover:bg-purple-50'
-                        }`}
+                      onClick={() => {
+                        setShowLifecycleDropdown(!showLifecycleDropdown)
+                        setShowStatusDropdown(false)
+                      }}
+                      disabled={updatingLifecycle}
+                      className="btn-primary w-full"
                     >
-                      <span className="font-medium">Submitted</span>
+                      {updatingLifecycle ? 'Updating...' : 'Update Lifecycle Stage'}
                     </button>
-                    <button
-                      onClick={() => handleLifecycleStageUpdate('acknowledged')}
-                      disabled={report.stage === 'acknowledged'}
-                      className={`w-full px-4 py-3 text-left border-b border-border transition-colors ${report.stage === 'acknowledged'
-                        ? 'bg-blue-100 text-blue-800 font-semibold cursor-not-allowed'
-                        : 'text-text-primary hover:bg-blue-50'
-                        }`}
-                    >
-                      <span className="font-medium">Acknowledged</span>
-                    </button>
-                    <button
-                      onClick={() => handleLifecycleStageUpdate('responded')}
-                      disabled={report.stage === 'responded'}
-                      className={`w-full px-4 py-3 text-left border-b border-border transition-colors ${report.stage === 'responded'
-                        ? 'bg-yellow-100 text-yellow-800 font-semibold cursor-not-allowed'
-                        : 'text-text-primary hover:bg-yellow-50'
-                        }`}
-                    >
-                      <span className="font-medium">Responded</span>
-                    </button>
-                    <button
-                      onClick={() => handleLifecycleStageUpdate('resolved')}
-                      disabled={report.stage === 'resolved'}
-                      className={`w-full px-4 py-3 text-left border-b border-border transition-colors ${report.stage === 'resolved'
-                        ? 'bg-green-100 text-green-800 font-semibold cursor-not-allowed'
-                        : 'text-text-primary hover:bg-green-50'
-                        }`}
-                    >
-                      <span className="font-medium">Resolved</span>
-                    </button>
-                    <button
-                      onClick={() => handleLifecycleStageUpdate('closed')}
-                      disabled={report.stage === 'closed'}
-                      className={`w-full px-4 py-3 text-left transition-colors ${report.stage === 'closed'
-                        ? 'bg-gray-100 text-gray-800 font-semibold cursor-not-allowed'
-                        : 'text-text-primary hover:bg-gray-50'
-                        }`}
-                    >
-                      <span className="font-medium">Closed</span>
-                    </button>
+                    {showLifecycleDropdown && (
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-surface border border-border rounded-lg shadow-lg z-50">
+                        <button
+                          onClick={() => handleLifecycleStageUpdate('submitted')}
+                          disabled={report.stage === 'submitted'}
+                          className={`w-full px-4 py-3 text-left border-b border-border transition-colors ${
+                            report.stage === 'submitted'
+                              ? 'bg-purple-100 text-purple-800 font-semibold cursor-not-allowed'
+                              : 'text-text-primary hover:bg-purple-50'
+                          }`}
+                        >
+                          <span className="font-medium">Submitted</span>
+                        </button>
+                        <button
+                          onClick={() => handleLifecycleStageUpdate('acknowledged')}
+                          disabled={report.stage === 'acknowledged' || report.stage === 'submitted'}
+                          className={`w-full px-4 py-3 text-left border-b border-border transition-colors ${
+                            report.stage === 'acknowledged' || report.stage === 'submitted'
+                              ? 'bg-blue-100 text-blue-800 font-semibold cursor-not-allowed'
+                              : 'text-text-primary hover:bg-blue-50'
+                          }`}
+                        >
+                          <span className="font-medium">Acknowledged</span>
+                        </button>
+                        <button
+                          onClick={() => handleLifecycleStageUpdate('responded')}
+                          disabled={report.stage === 'responded' || report.stage === 'acknowledged' || report.stage === 'submitted'}
+                          className={`w-full px-4 py-3 text-left border-b border-border transition-colors ${
+                            report.stage === 'responded' || report.stage === 'acknowledged' || report.stage === 'submitted'
+                              ? 'bg-yellow-100 text-yellow-800 font-semibold cursor-not-allowed'
+                              : 'text-text-primary hover:bg-yellow-50'
+                          }`}
+                        >
+                          <span className="font-medium">Responded</span>
+                        </button>
+                        <button
+                          onClick={() => handleLifecycleStageUpdate('resolved')}
+                          disabled={report.stage === 'resolved' || report.stage === 'responded' || report.stage === 'acknowledged' || report.stage === 'submitted'}
+                          className={`w-full px-4 py-3 text-left transition-colors ${
+                            report.stage === 'resolved' || report.stage === 'responded' || report.stage === 'acknowledged' || report.stage === 'submitted'
+                              ? 'bg-green-100 text-green-800 font-semibold cursor-not-allowed'
+                              : 'text-text-primary hover:bg-green-50'
+                          }`}
+                        >
+                          <span className="font-medium">Resolved</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              {/* Status Control */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                  disabled={updatingStatus}
-                  className="btn-secondary w-full"
-                >
-                  {updatingStatus ? 'Updating...' : 'Update Status'}
-                </button>
-                {showStatusDropdown && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-surface border border-border rounded-lg shadow-lg z-10">
+                  {/* Status Control */}
+                  <div className="relative">
                     <button
-                      onClick={() => handleStatusUpdate('unresolved')}
-                      disabled={report.status === 'unresolved'}
-                      className={`w-full px-4 py-3 text-left border-b border-border last:border-b-0 transition-colors ${report.status === 'unresolved'
-                        ? 'bg-accent-green/20 text-accent-green font-semibold cursor-not-allowed'
-                        : 'text-text-primary hover:bg-accent-green/10'
-                        }`}
+                      onClick={() => {
+                        setShowStatusDropdown(!showStatusDropdown)
+                        setShowLifecycleDropdown(false)
+                      }}
+                      disabled={updatingStatus}
+                      className="btn-secondary w-full"
                     >
-                      <span className="font-medium">Unresolved</span>
-                      {report.status === 'unresolved'}
+                      {updatingStatus ? 'Updating...' : 'Update Status'}
                     </button>
-                    <button
-                      onClick={() => handleStatusUpdate('in_progress')}
-                      disabled={report.status === 'in_progress'}
-                      className={`w-full px-4 py-3 text-left border-b border-border last:border-b-0 transition-colors ${report.status === 'in_progress'
-                        ? 'bg-accent-green/20 text-accent-green font-semibold cursor-not-allowed'
-                        : 'text-text-primary hover:bg-accent-green/10'
-                        }`}
-                    >
-                      <span className="font-medium">In Progress</span>
-                      {report.status === 'in_progress'}
-                    </button>
-                    <button
-                      onClick={() => handleStatusUpdate('resolved')}
-                      disabled={report.status === 'resolved'}
-                      className={`w-full px-4 py-3 text-left transition-colors ${report.status === 'resolved'
-                        ? 'bg-accent-green/20 text-accent-green font-semibold cursor-not-allowed'
-                        : 'text-text-primary hover:bg-accent-green/10'
-                        }`}
-                    >
-                      <span className="font-medium">Resolved</span>
-                    </button>
+                    {showStatusDropdown && (
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-surface border border-border rounded-lg shadow-lg z-50">
+                        <button
+                          onClick={() => handleStatusUpdate('unresolved')}
+                          disabled={report.status === 'unresolved'}
+                          className={`w-full px-4 py-3 text-left border-b border-border last:border-b-0 transition-colors ${report.status === 'unresolved'
+                            ? 'bg-accent-green/20 text-accent-green font-semibold cursor-not-allowed'
+                            : 'text-text-primary hover:bg-accent-green/10'
+                            }`}
+                        >
+                          <span className="font-medium">Unresolved</span>
+                          {report.status === 'unresolved'}
+                        </button>
+                        <button
+                          onClick={() => handleStatusUpdate('in_progress')}
+                          disabled={report.status === 'in_progress'}
+                          className={`w-full px-4 py-3 text-left border-b border-border last:border-b-0 transition-colors ${report.status === 'in_progress'
+                            ? 'bg-accent-green/20 text-accent-green font-semibold cursor-not-allowed'
+                            : 'text-text-primary hover:bg-accent-green/10'
+                            }`}
+                        >
+                          <span className="font-medium">In Progress</span>
+                          {report.status === 'in_progress'}
+                        </button>
+                        <button
+                          onClick={() => handleStatusUpdate('resolved')}
+                          disabled={report.status === 'resolved'}
+                          className={`w-full px-4 py-3 text-left transition-colors ${
+                            report.status === 'resolved'
+                              ? 'bg-accent-green/20 text-accent-green font-semibold cursor-not-allowed'
+                              : 'text-text-primary hover:bg-accent-green/10'
+                          }`}
+                        >
+                          <span className="font-medium">Resolved</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
-                )}
+                  <button
+                    onClick={() => router.push('/dashboard/map-view')}
+                    className="btn-secondary w-full"
+                  >
+                    View on Map
+                  </button>
+                </div>
               </div>
-              <button
-                onClick={() => router.push('/dashboard/map-view')}
-                className="btn-secondary w-full"
-              >
-                View on Map
-              </button>
             </div>
           </div>
         </div>
