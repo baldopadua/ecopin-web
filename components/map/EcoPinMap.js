@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react'
 import React from 'react'
 import { useRouter } from 'next/navigation'
 import { MapContainer, TileLayer, Marker, Popup, Polygon, Circle, useMapEvents, useMap } from 'react-leaflet'
@@ -24,20 +24,23 @@ const PASIG_BOUNDS = [
   [14.62, 121.12]  // Northeast
 ]
 
-const createIcon = (status, isRemoving = false) => {
+const createIcon = (status, isRemoving = false, isSelected = false) => {
   let color = 'var(--error)' // unresolved
   if (status === 'in_progress') color = 'var(--warning)' // in_progress
   if (status === 'resolved') color = 'var(--success)' // resolved
+
+  // If selected, use a distinct color (purple)
+  if (isSelected) color = '#8B5CF6'
 
   const animation = isRemoving ? 'markerBounceOut 0.3s ease-in forwards' : 'markerBounceIn 0.5s ease-out'
 
   return L.divIcon({
     className: isRemoving ? 'custom-marker removing' : 'custom-marker',
-    html: `<div style="background-color: ${color}; width: 40px; height: 40px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; animation: ${animation};">
-      <img src="/pin-icon.svg" alt="pin" style="width: 20px; height: 20px;" />
+    html: `<div style="background-color: ${color}; width: ${isSelected ? '48px' : '40px'}; height: ${isSelected ? '48px' : '40px'}; border-radius: 50%; border: ${isSelected ? '4px solid white' : '3px solid white'}; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; animation: ${animation};">
+      <img src="/pin-icon.svg" alt="pin" style="width: ${isSelected ? '24px' : '20px'}; height: ${isSelected ? '24px' : '20px'};" />
     </div>`,
-    iconSize: [40, 40],
-    iconAnchor: [20, 20],
+    iconSize: [isSelected ? 48 : 40, isSelected ? 48 : 40],
+    iconAnchor: [isSelected ? 24 : 20, isSelected ? 24 : 20],
   })
 }
 
@@ -151,8 +154,8 @@ function MapCenter({ centerLat, centerLng }) {
   return null
 }
 
-export default function EcoPinMap({ centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus }) {
-  console.log('EcoPinMap props:', { centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus })
+export default function EcoPinMap({ centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode = false, selectedReports = [], onReportSelect, hideFilterPanel = false, onReportClick }) {
+  console.log('EcoPinMap props:', { centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode, hideFilterPanel })
   
   const [mounted, setMounted] = useState(false)
   const [reports, setReports] = useState([])
@@ -166,12 +169,24 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
   const mapRef = useRef(null)
   const router = useRouter()
 
+  // Convert selectedReports array to Set for internal use
+  const selectedReportsSet = useMemo(() => new Set(selectedReports), [selectedReports])
+
   // Filter states
   const [showPins, setShowPins] = useState(true)
   const [showClusters, setShowClusters] = useState(true)
   const [showHeatmap, setShowHeatmap] = useState(false)
   const [statusFilter, setStatusFilter] = useState(initialStatus || 'all')
-  const [validationStatusFilter, setValidationStatusFilter] = useState(initialValidationStatus || 'validated')
+  
+  // Map validation status to filter value - Manual_Review should be treated as manual_review
+  const getValidationFilterValue = (status) => {
+    if (status === 'Manual_Review' || status === 'manual_review') {
+      return 'manual_review'
+    }
+    return status || 'validated'
+  }
+  
+  const [validationStatusFilter, setValidationStatusFilter] = useState(getValidationFilterValue(initialValidationStatus))
   const [issueTypeFilter, setIssueTypeFilter] = useState('all')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
@@ -340,9 +355,19 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
     }
   }, [validationStatusFilter])
 
-  const handleMarkerClick = (reportId) => {
+  const handleMarkerClick = useCallback((reportId) => {
+    if (selectionMode && onReportSelect) {
+      onReportSelect(reportId)
+      return // Don't navigate or call onReportClick in selection mode
+    }
+    
+    if (onReportClick) {
+      onReportClick(reportId)
+      return // Don't navigate if onReportClick is provided
+    }
+    
     router.push(`/dashboard/reports/${reportId}`)
-  }
+  }, [selectionMode, onReportSelect, onReportClick, router])
 
   if (!mounted) return <p>Loading map...</p>
 
@@ -579,7 +604,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                 <Marker
                   key={report.id}
                   position={[latitude, longitude]}
-                  icon={createIcon(report.status, isRemoving)}
+                  icon={createIcon(report.status, isRemoving, selectedReportsSet.has(report.id))}
                   eventHandlers={{
                     mouseover: (e) => {
                       const marker = e.target
@@ -607,12 +632,14 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                           {report.issue_type}
                         </span>
                       </div>
-                      <button
-                        onClick={() => handleMarkerClick(report.id)}
-                        className="mt-2 w-full text-xs bg-accent-green text-white py-1 rounded hover:bg-accent-green-dark"
-                      >
-                        Click to View Details
-                      </button>
+                      {!selectionMode && (
+                        <button
+                          onClick={() => handleMarkerClick(report.id)}
+                          className="mt-2 w-full text-xs bg-accent-green text-white py-1 rounded hover:bg-accent-green-dark"
+                        >
+                          Click to View Details
+                        </button>
+                      )}
                     </div>
                   </Popup>
                 </Marker>
@@ -623,15 +650,17 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
         </MapContainer>
 
         {/* Filter Panel Toggle Button */}
-        <button
-          onClick={() => setShowFilterPanel(!showFilterPanel)}
-          className="absolute top-4 right-4 z-[1001] bg-white/90 backdrop-blur-sm border border-border rounded-lg shadow-lg px-4 py-2 text-sm font-medium text-text-primary hover:bg-white transition-all"
-        >
-          {showFilterPanel ? 'Hide Filters' : 'Show Filters'}
-        </button>
+        {!hideFilterPanel && (
+          <button
+            onClick={() => setShowFilterPanel(!showFilterPanel)}
+            className="absolute top-4 right-4 z-[1001] bg-white/90 backdrop-blur-sm border border-border rounded-lg shadow-lg px-4 py-2 text-sm font-medium text-text-primary hover:bg-white transition-all"
+          >
+            {showFilterPanel ? 'Hide Filters' : 'Show Filters'}
+          </button>
+        )}
 
         {/* Filter Panel */}
-        {showFilterPanel && (
+        {!hideFilterPanel && showFilterPanel && (
           <div className="absolute top-14 right-4 w-72 bg-white/90 backdrop-blur-md border border-border rounded-lg shadow-lg p-4 max-h-[calc(100vh-4rem)] overflow-y-auto z-[1000]">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold text-text-primary">Map Filters</h3>
@@ -759,7 +788,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                     onChange={(e) => setValidationStatusFilter(e.target.value)}
                     className="w-4 h-4 accent-accent-green"
                   />
-                  <span className="text-sm text-text-primary">Unverified / Manual Review</span>
+                  <span className="text-sm text-text-primary">Pending / Manual Review</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input

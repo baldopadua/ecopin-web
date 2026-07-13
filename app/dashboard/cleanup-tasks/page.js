@@ -140,7 +140,15 @@ export default function CleanupTasksPage() {
 
       {/* Tasks List */}
       <div className="card no-hover">
-        <h2 className="text-xl font-bold text-text-primary mb-4">All Cleanup Tasks</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-text-primary">All Cleanup Tasks</h2>
+          <button
+            onClick={() => router.push('/dashboard/cleanup-tasks/create')}
+            className="btn-primary"
+          >
+            Create Custom Task
+          </button>
+        </div>
         {loading ? (
           <p className="text-text-muted">Loading cleanup tasks...</p>
         ) : filteredTasks.length === 0 ? (

@@ -239,6 +239,12 @@ export default function ReportDetailPage() {
   }
 
   const handleLifecycleStageUpdate = async (newStage) => {
+    // Check if trying to mark as resolved without photos
+    if (newStage === 'resolved' && (!report.before_photo_url || !report.after_photo_url)) {
+      setNotification({ message: 'Please upload both before and after photos before marking the report as resolved.', type: 'warning' })
+      return
+    }
+
     setUpdatingLifecycle(true)
     try {
       await updateLifecycleStage(reportId, newStage)
@@ -277,6 +283,12 @@ export default function ReportDetailPage() {
   }
 
   const handleResolveReport = async () => {
+    // Check if trying to resolve without photos
+    if (!report.before_photo_url || !report.after_photo_url) {
+      setNotification({ message: 'Please upload both before and after photos before resolving the report.', type: 'warning' })
+      return
+    }
+
     setResolvingReport(true)
     try {
       const updatedReport = await lguResolveReport(reportId)
@@ -502,7 +514,7 @@ export default function ReportDetailPage() {
                       {report.status.replace('_', ' ').toUpperCase()}
                     </span>
                     <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getValidationColor(report.validation_status)}`}>
-                      {report.validation_status === 'validated' ? 'AI VALIDATED' : report.validation_status.toUpperCase()}
+                      {report.validation_status.toUpperCase()}
                     </span>
                     {report.on_private_property && (
                       <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${report.property_owner_consent_status === 'obtained'
@@ -588,60 +600,6 @@ export default function ReportDetailPage() {
                   {report.description || 'No description provided.'}
                 </p>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-surface p-4 rounded-lg border border-border">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-8 h-8 rounded-full bg-accent-green/10 flex items-center justify-center">
-                        <svg className="w-4 h-4 text-accent-green" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                      <p className="text-sm font-medium text-text-secondary">Location</p>
-                    </div>
-                    <p className="text-text-primary text-sm">
-                      {location.latitude && location.longitude
-                        ? `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`
-                        : 'Not available'
-                      }
-                    </p>
-                  </div>
-                  <div className="bg-surface p-4 rounded-lg border border-border">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-8 h-8 rounded-full bg-accent-green/10 flex items-center justify-center">
-                        <svg className="w-4 h-4 text-accent-green" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                      <p className="text-sm font-medium text-text-secondary">Submitted</p>
-                    </div>
-                    <p className="text-text-primary text-sm">{dateStr}</p>
-                  </div>
-                </div>
-
-                {/* Reporter Info - Moved to main content */}
-                <div className="mt-6 pt-6 border-t border-border">
-                  <h3 className="text-lg font-semibold text-text-primary mb-3">Reporter Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-surface p-4 rounded-lg border border-border">
-                      <p className="text-xs text-text-muted mb-1">Name</p>
-                      <p className="text-text-primary font-medium text-sm">
-                        {report.profiles?.data_consent === true
-                          ? (report.profiles?.full_name || report.user_full_name || 'Anonymous')
-                          : 'Information not disclosed'
-                        }
-                      </p>
-                    </div>
-                    <div className="bg-surface p-4 rounded-lg border border-border">
-                      <p className="text-xs text-text-muted mb-1">User ID</p>
-                      <p className="text-text-primary font-medium text-sm">
-                        {report.profiles?.data_consent === true
-                          ? (report.user_id || 'N/A')
-                          : 'Information not disclosed'
-                        }
-                      </p>
-                    </div>
-                  </div>
-                </div>
               </div>
 
               {/* Evidence Photos */}
@@ -927,7 +885,16 @@ export default function ReportDetailPage() {
                     <p className="text-text-primary font-medium text-sm">{report.id}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-text-muted">Created</p>
+                    <p className="text-xs text-text-muted">Location</p>
+                    <p className="text-text-primary font-medium text-sm">
+                      {location.latitude && location.longitude
+                        ? `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`
+                        : 'Not available'
+                      }
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-text-muted">Submitted</p>
                     <p className="text-text-primary font-medium text-sm">{dateStr}</p>
                   </div>
                   <div>
@@ -942,20 +909,50 @@ export default function ReportDetailPage() {
                       })}
                     </p>
                   </div>
+                  <div className="pt-3 border-t border-border">
+                    <p className="text-xs text-text-muted mb-2">Reporter Information</p>
+                    <div className="space-y-2">
+                      <div>
+                        <p className="text-xs text-text-muted">Name</p>
+                        <p className="text-text-primary font-medium text-sm">
+                          {report.profiles?.data_consent === true
+                            ? (report.profiles?.full_name || report.user_full_name || 'Anonymous')
+                            : 'Information not disclosed'
+                          }
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-text-muted">User ID</p>
+                        <p className="text-text-primary font-medium text-sm">
+                          {report.profiles?.data_consent === true
+                            ? (report.user_id || 'N/A')
+                            : 'Information not disclosed'
+                          }
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {/* Property Owner Consent */}
               {report.on_private_property && (
                 <div className="card">
-                  <h2 className="text-lg font-bold text-text-primary mb-4">Property Owner Consent</h2>
+                  <div className="flex items-start justify-between mb-4">
+                    <h2 className="text-lg font-bold text-text-primary">Property Owner Consent</h2>
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${
+                      report.property_owner_consent_status === 'obtained'
+                        ? 'bg-green-100 text-green-800 border-green-300'
+                        : report.property_owner_consent_status === 'pending'
+                          ? 'bg-yellow-100 text-yellow-800 border-yellow-300'
+                          : report.property_owner_consent_status === 'denied'
+                            ? 'bg-red-100 text-red-800 border-red-300'
+                            : 'bg-gray-100 text-gray-800 border-gray-300'
+                    }`}>
+                      {report.property_owner_consent_status.replace('_', ' ').toUpperCase()}
+                    </span>
+                  </div>
                   <div className="space-y-3">
-                    <div>
-                      <p className="text-sm text-text-muted">Current Status</p>
-                      <p className="text-text-primary font-medium">
-                        {report.property_owner_consent_status.replace('_', ' ').toUpperCase()}
-                      </p>
-                    </div>
                     <div className="grid grid-cols-3 gap-2">
                       <button
                         onClick={() => handlePropertyOwnerConsent('pending')}
@@ -972,7 +969,7 @@ export default function ReportDetailPage() {
                         disabled={updatingConsent}
                         className={`text-sm py-2 rounded-lg border transition-all ${report.property_owner_consent_status === 'obtained'
                           ? 'bg-green-600 text-white border-green-600 font-semibold'
-                          : 'btn-primary'
+                          : 'btn-secondary'
                           }`}
                       >
                         Obtained
@@ -996,6 +993,16 @@ export default function ReportDetailPage() {
               <div className="card">
                 <h2 className="text-lg font-bold text-text-primary mb-4">Actions</h2>
                 <div className="space-y-3">
+                  {/* Create Task for this Report */}
+                  {report.stage === 'acknowledged' && (
+                    <button
+                      onClick={() => router.push(`/dashboard/cleanup-task/create?preselect=${report.id}`)}
+                      className="btn-primary w-full"
+                    >
+                      Create Task for This Report
+                    </button>
+ )}
+
                   {/* Lifecycle Stage Control */}
                   <div className="relative" ref={lifecycleDropdownRef}>
                     <button
@@ -1008,18 +1015,18 @@ export default function ReportDetailPage() {
                       {updatingLifecycle ? 'Updating...' : 'Update Lifecycle Stage'}
                     </button>
                     {showLifecycleDropdown && (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-surface border border-border rounded-lg shadow-lg z-50">
+                      <div className="absolute bottom-full left-0 right-0 mb-2 bg-surface border border-border rounded-lg shadow-lg z-50">
                         <button
-                          onClick={() => handleLifecycleStageUpdate('acknowledged')}
-                          disabled={report.stage !== 'submitted'}
-                          className={`w-full px-4 py-3 text-left border-b border-border transition-colors ${report.stage === 'acknowledged'
-                            ? 'bg-blue-100 text-blue-800 font-semibold cursor-not-allowed'
-                            : report.stage === 'submitted'
-                              ? 'text-text-primary hover:bg-blue-50'
+                          onClick={() => handleLifecycleStageUpdate('resolved')}
+                          disabled={report.stage !== 'responded'}
+                          className={`w-full px-4 py-3 text-left border-b border-border transition-colors ${report.stage === 'resolved'
+                            ? 'bg-green-100 text-green-800 font-semibold cursor-not-allowed'
+                            : report.stage === 'responded'
+                              ? 'text-text-primary hover:bg-green-50'
                               : 'text-gray-400 cursor-not-allowed'
                             }`}
                         >
-                          <span className="font-medium">Acknowledged</span>
+                          <span className="font-medium">Resolved</span>
                         </button>
                         <button
                           onClick={() => handleLifecycleStageUpdate('responded')}
@@ -1034,16 +1041,16 @@ export default function ReportDetailPage() {
                           <span className="font-medium">Responded</span>
                         </button>
                         <button
-                          onClick={() => handleLifecycleStageUpdate('resolved')}
-                          disabled={report.stage !== 'responded'}
-                          className={`w-full px-4 py-3 text-left transition-colors ${report.stage === 'resolved'
-                            ? 'bg-green-100 text-green-800 font-semibold cursor-not-allowed'
-                            : report.stage === 'responded'
-                              ? 'text-text-primary hover:bg-green-50'
+                          onClick={() => handleLifecycleStageUpdate('acknowledged')}
+                          disabled={report.stage !== 'submitted'}
+                          className={`w-full px-4 py-3 text-left transition-colors ${report.stage === 'acknowledged'
+                            ? 'bg-blue-100 text-blue-800 font-semibold cursor-not-allowed'
+                            : report.stage === 'submitted'
+                              ? 'text-text-primary hover:bg-blue-50'
                               : 'text-gray-400 cursor-not-allowed'
                             }`}
                         >
-                          <span className="font-medium">Resolved</span>
+                          <span className="font-medium">Acknowledged</span>
                         </button>
                       </div>
                     )}
