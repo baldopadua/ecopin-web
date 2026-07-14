@@ -351,6 +351,18 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
       fetchValidatedReports({ validationStatus: validationStatusFilter }).then(reportsData => {
         setReports(reportsData)
         setFilteredReports(reportsData)
+
+        // Update clusterReports when validation status filter changes
+        const reportsByCluster = {}
+        reportsData.forEach(report => {
+          if (report.cluster_id) {
+            if (!reportsByCluster[report.cluster_id]) {
+              reportsByCluster[report.cluster_id] = []
+            }
+            reportsByCluster[report.cluster_id].push(report)
+          }
+        })
+        setClusterReports(reportsByCluster)
       })
     }
   }, [validationStatusFilter])
@@ -512,6 +524,12 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                       longitude = geometry.x
                       latitude = geometry.y
                     }
+                  } else if (Buffer.isBuffer(report.location)) {
+                    const geometry = wkx.Geometry.parse(report.location)
+                    if (geometry && geometry.x && geometry.y) {
+                      longitude = geometry.x
+                      latitude = geometry.y
+                    }
                   }
                 } catch (error) {
                   console.error('Error parsing location for report', report.id, ':', error)
@@ -524,6 +542,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
               return null
             }).filter(point => point !== null)
 
+            console.log('Cluster', cluster.id, 'polygon points:', polygonPoints.length)
             if (polygonPoints.length < 3) return null
 
             // Calculate center of points
