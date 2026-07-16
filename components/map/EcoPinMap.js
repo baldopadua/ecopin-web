@@ -672,7 +672,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
         {!hideFilterPanel && (
           <button
             onClick={() => setShowFilterPanel(!showFilterPanel)}
-            className="absolute top-4 right-4 z-[1001] bg-white/90 backdrop-blur-sm border border-border rounded-lg shadow-lg px-4 py-2 text-sm font-medium text-text-primary hover:bg-white transition-all"
+            className="absolute top-4 right-4 z-[1001] bg-white/95 backdrop-blur-sm border border-border/50 rounded-xl shadow-lg px-4 py-2.5 text-sm font-medium text-text-primary hover:bg-white hover:shadow-xl transition-all"
           >
             {showFilterPanel ? 'Hide Filters' : 'Show Filters'}
           </button>
@@ -680,156 +680,119 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
 
         {/* Filter Panel */}
         {!hideFilterPanel && showFilterPanel && (
-          <div className="absolute top-14 right-4 w-72 bg-white/90 backdrop-blur-md border border-border rounded-lg shadow-lg p-4 max-h-[calc(100vh-4rem)] overflow-y-auto z-[1000]">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-text-primary">Map Filters</h3>
-              <button
-                onClick={() => setShowFilterPanel(false)}
-                className="text-text-muted hover:text-text-primary transition-colors"
-              >
-                ✕
-              </button>
+          <div className="absolute top-14 right-4 w-72 bg-white/95 backdrop-blur-md border border-border/50 rounded-2xl shadow-xl max-h-[calc(100%-5rem)] overflow-hidden z-[1000] flex flex-col">
+            <div className="sticky top-0 bg-white/95 backdrop-blur-md px-4 pt-4 pb-3 border-b border-border/50 z-10 rounded-t-2xl">
+              <h3 className="font-bold text-text-primary text-base tracking-tight">Map Filters</h3>
             </div>
+            <div className="p-4 overflow-y-auto flex-1">
 
             {/* Map Layers */}
-            <div className="mb-4">
-              <h4 className="text-xs font-semibold text-text-secondary mb-2 uppercase tracking-wide">Map Layers</h4>
-              <label className="flex items-center gap-2 cursor-pointer mb-2">
-                <input
-                  type="checkbox"
-                  checked={showPins}
-                  onChange={(e) => setShowPins(e.target.checked)}
-                  className="w-4 h-4 accent-accent-green"
-                />
-                <span className="text-sm text-text-primary">Report Pins</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer mb-2">
-                <input
-                  type="checkbox"
-                  checked={showClusters}
-                  onChange={(e) => setShowClusters(e.target.checked)}
-                  className="w-4 h-4 accent-accent-green"
-                />
-                <span className="text-sm text-text-primary">Report Clusters</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={showHeatmap}
-                  onChange={(e) => setShowHeatmap(e.target.checked)}
-                  className="w-4 h-4 accent-accent-green"
-                />
-                <span className="text-sm text-text-primary">Heatmap Overlay</span>
-              </label>
+            <div className="mb-5">
+              <h4 className="text-[11px] font-semibold text-text-muted mb-3 uppercase tracking-widest">Map Layers</h4>
+              <div className="space-y-1">
+                <label className="flex items-center justify-between cursor-pointer py-1.5 px-2 rounded-lg hover:bg-surface/80 transition-colors group">
+                  <span className="text-sm text-text-primary">Report Pins</span>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={showPins}
+                      onChange={(e) => setShowPins(e.target.checked)}
+                      className="sr-only"
+                    />
+                    <div className={`w-10 h-5 rounded-full transition-colors ${showPins ? 'bg-accent-green' : 'bg-gray-200'}`}>
+                      <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${showPins ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                    </div>
+                  </div>
+                </label>
+                <label className="flex items-center justify-between cursor-pointer py-1.5 px-2 rounded-lg hover:bg-surface/80 transition-colors group">
+                  <span className="text-sm text-text-primary">Report Clusters</span>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={showClusters}
+                      onChange={(e) => setShowClusters(e.target.checked)}
+                      className="sr-only"
+                    />
+                    <div className={`w-10 h-5 rounded-full transition-colors ${showClusters ? 'bg-accent-green' : 'bg-gray-200'}`}>
+                      <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${showClusters ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                    </div>
+                  </div>
+                </label>
+                <label className="flex items-center justify-between cursor-pointer py-1.5 px-2 rounded-lg hover:bg-surface/80 transition-colors group">
+                  <span className="text-sm text-text-primary">Heatmap Overlay</span>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={showHeatmap}
+                      onChange={(e) => setShowHeatmap(e.target.checked)}
+                      className="sr-only"
+                    />
+                    <div className={`w-10 h-5 rounded-full transition-colors ${showHeatmap ? 'bg-accent-green' : 'bg-gray-200'}`}>
+                      <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${showHeatmap ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                    </div>
+                  </div>
+                </label>
+              </div>
             </div>
 
             {/* Status Filter */}
-            <div className="mb-4">
-              <h4 className="text-xs font-semibold text-text-secondary mb-2 uppercase tracking-wide">Status</h4>
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="status"
-                    value="all"
-                    checked={statusFilter === 'all'}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="w-4 h-4 accent-accent-green"
-                  />
-                  <span className="text-sm text-text-primary">All</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="status"
-                    value="unresolved"
-                    checked={statusFilter === 'unresolved'}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="w-4 h-4 accent-accent-green"
-                  />
-                  <span className="flex items-center gap-2 text-sm text-text-primary">
-                    <span className="w-3 h-3 rounded-full" style={{backgroundColor: 'var(--error)'}}></span>
-                    Unresolved
-                  </span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="status"
-                    value="in_progress"
-                    checked={statusFilter === 'in_progress'}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="w-4 h-4 accent-accent-green"
-                  />
-                  <span className="flex items-center gap-2 text-sm text-text-primary">
-                    <span className="w-3 h-3 rounded-full" style={{backgroundColor: 'var(--warning)'}}></span>
-                    In Progress
-                  </span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="status"
-                    value="resolved"
-                    checked={statusFilter === 'resolved'}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="w-4 h-4 accent-accent-green"
-                  />
-                  <span className="flex items-center gap-2 text-sm text-text-primary">
-                    <span className="w-3 h-3 rounded-full" style={{backgroundColor: 'var(--success)'}}></span>
-                    Resolved
-                  </span>
-                </label>
+            <div className="mb-5">
+              <h4 className="text-[11px] font-semibold text-text-muted mb-3 uppercase tracking-widest">Status</h4>
+              <div className="space-y-1">
+                {[
+                  { value: 'all', label: 'All', color: null },
+                  { value: 'unresolved', label: 'Unresolved', color: 'var(--error)' },
+                  { value: 'in_progress', label: 'In Progress', color: 'var(--warning)' },
+                  { value: 'resolved', label: 'Resolved', color: 'var(--success)' },
+                ].map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setStatusFilter(opt.value)}
+                    className={`flex items-center gap-2.5 w-full py-2 px-3 rounded-xl text-sm transition-all ${
+                      statusFilter === opt.value
+                        ? 'bg-accent-green/10 text-accent-green font-medium'
+                        : 'text-text-primary hover:bg-surface/80'
+                    }`}
+                  >
+                    {opt.color && <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{backgroundColor: opt.color}}></span>}
+                    {!opt.color && <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 border-2 border-text-muted"></span>}
+                    {opt.label}
+                  </button>
+                ))}
               </div>
             </div>
 
             {/* Validation Status Filter */}
-            <div className="mb-4">
-              <h4 className="text-xs font-semibold text-text-secondary mb-2 uppercase tracking-wide">Validation</h4>
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="validation"
-                    value="validated"
-                    checked={validationStatusFilter === 'validated'}
-                    onChange={(e) => setValidationStatusFilter(e.target.value)}
-                    className="w-4 h-4 accent-accent-green"
-                  />
-                  <span className="text-sm text-text-primary">Validated</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="validation"
-                    value="manual_review"
-                    checked={validationStatusFilter === 'manual_review'}
-                    onChange={(e) => setValidationStatusFilter(e.target.value)}
-                    className="w-4 h-4 accent-accent-green"
-                  />
-                  <span className="text-sm text-text-primary">Pending / Manual Review</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="validation"
-                    value="all"
-                    checked={validationStatusFilter === 'all'}
-                    onChange={(e) => setValidationStatusFilter(e.target.value)}
-                    className="w-4 h-4 accent-accent-green"
-                  />
-                  <span className="text-sm text-text-primary">All</span>
-                </label>
+            <div className="mb-5">
+              <h4 className="text-[11px] font-semibold text-text-muted mb-3 uppercase tracking-widest">Validation</h4>
+              <div className="space-y-1">
+                {[
+                  { value: 'validated', label: 'Validated' },
+                  { value: 'manual_review', label: 'Pending / Manual Review' },
+                  { value: 'all', label: 'All' },
+                ].map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setValidationStatusFilter(opt.value)}
+                    className={`w-full py-2 px-3 rounded-xl text-sm text-left transition-all ${
+                      validationStatusFilter === opt.value
+                        ? 'bg-accent-green/10 text-accent-green font-medium'
+                        : 'text-text-primary hover:bg-surface/80'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
               </div>
             </div>
 
             {/* Issue Type Filter */}
-            <div className="mb-4">
-              <h4 className="text-xs font-semibold text-text-secondary mb-2 uppercase tracking-wide">Issue Type</h4>
+            <div className="mb-5">
+              <h4 className="text-[11px] font-semibold text-text-muted mb-3 uppercase tracking-widest">Issue Type</h4>
               <select
                 value={issueTypeFilter}
                 onChange={(e) => setIssueTypeFilter(e.target.value)}
-                className="w-full input text-sm"
+                className="w-full px-3 py-2 text-sm bg-surface/80 border border-border/50 rounded-xl text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-green/20 focus:border-accent-green/40 transition-all appearance-none cursor-pointer"
               >
                 <option value="all">All Types</option>
                 {issueTypes.map(type => (
@@ -839,25 +802,25 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
             </div>
 
             {/* Date Range Filter */}
-            <div className="mb-4">
-              <h4 className="text-xs font-semibold text-text-secondary mb-2 uppercase tracking-wide">Date Range</h4>
+            <div className="mb-5">
+              <h4 className="text-[11px] font-semibold text-text-muted mb-3 uppercase tracking-widest">Date Range</h4>
               <div className="space-y-2">
                 <div>
-                  <label className="text-xs text-text-muted block mb-1">From</label>
+                  <label className="text-[11px] text-text-muted block mb-1.5 uppercase tracking-wide">From</label>
                   <input
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full input text-sm"
+                    className="w-full px-3 py-2 text-sm bg-surface/80 border border-border/50 rounded-xl text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-green/20 focus:border-accent-green/40 transition-all"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-text-muted block mb-1">To</label>
+                  <label className="text-[11px] text-text-muted block mb-1.5 uppercase tracking-wide">To</label>
                   <input
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full input text-sm"
+                    className="w-full px-3 py-2 text-sm bg-surface/80 border border-border/50 rounded-xl text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-green/20 focus:border-accent-green/40 transition-all"
                   />
                 </div>
               </div>
@@ -872,17 +835,18 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                   setStartDate('')
                   setEndDate('')
                 }}
-                className="w-full px-4 py-2 text-sm text-accent-green hover:bg-accent-green/10 rounded-lg transition-colors mb-4"
+                className="w-full px-4 py-2.5 text-sm font-medium text-accent-green hover:bg-accent-green/10 rounded-xl transition-colors mb-5 border border-accent-green/20"
               >
                 Clear Filters
               </button>
             )}
 
             {/* Report Count */}
-            <div className="pt-4 border-t border-border">
-              <p className="text-sm text-text-secondary">
+            <div className="pt-4 border-t border-border/50">
+              <p className="text-xs text-text-muted text-center">
                 {loading ? 'Loading...' : `${filteredReports.length} reports, ${clusters.length} clusters`}
               </p>
+            </div>
             </div>
           </div>
         )}
