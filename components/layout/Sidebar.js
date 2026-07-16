@@ -3,27 +3,27 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const citizenNavigation = [
-  { name: 'Dashboard', href: '/dashboard' },
-  { name: 'Map View', href: '/dashboard/map-view' },
-  { name: 'Reports', href: '/dashboard/reports' },
+  { name: 'Dashboard', href: '/dashboard', icon: '/icons/dashboard.png' },
+  { name: 'Map View', href: '/dashboard/map-view', icon: '/icons/map.png' },
+  { name: 'Reports', href: '/dashboard/reports', icon: '/icons/reports.png' },
   { name: 'Profile', href: '/dashboard/profile' },
 ]
 
 const lguNavigation = [
-  { name: 'Dashboard', href: '/dashboard' },
-  { name: 'Map View', href: '/dashboard/map-view' },
-  { name: 'Clusters', href: '/dashboard/clusters' },
-  { name: 'Cleanup Tasks', href: '/dashboard/cleanup-tasks' },
-  { name: 'Reports', href: '/dashboard/reports' },
-  { name: 'Response Logs', href: '/dashboard/response-logs' },
-  { name: 'Analytics', href: '/dashboard/analytics' },
+  { name: 'Dashboard', href: '/dashboard', icon: '/icons/dashboard.png' },
+  { name: 'Map View', href: '/dashboard/map-view', icon: '/icons/map.png' },
+  { name: 'Clusters', href: '/dashboard/clusters', icon: '/icons/cluster.png' },
+  { name: 'Cleanup Tasks', href: '/dashboard/cleanup-tasks', icon: '/icons/cleanup task.png' },
+  { name: 'Reports', href: '/dashboard/reports', icon: '/icons/reports.png' },
+  { name: 'Response Logs', href: '/dashboard/response-logs', icon: '/icons/logs.png' },
+  { name: 'Analytics', href: '/dashboard/analytics', icon: '/icons/analytics.png' },
 ]
 
 const adminNavigation = [
-  { name: 'Admin Dashboard', href: '/dashboard/admin' },
+  { name: 'Admin Dashboard', href: '/dashboard/admin', icon: '/icons/dashboard.png' },
   { name: 'User Management', href: '/dashboard/admin/users' },
   { name: 'System Settings', href: '/dashboard/admin/settings' },
-  { name: 'Audit Logs', href: '/dashboard/admin/audit-logs' },
+  { name: 'Audit Logs', href: '/dashboard/admin/audit-logs', icon: '/icons/logs.png' },
 ]
 
 export default function Sidebar({ user, onLogout }) {
@@ -51,6 +51,13 @@ export default function Sidebar({ user, onLogout }) {
                   : 'text-text-secondary hover:bg-surface hover:text-text-primary'
                 }`}
             >
+              {item.icon && (
+                <img
+                  src={item.icon}
+                  alt={item.name}
+                  className="w-5 h-5 sidebar-icon"
+                />
+              )}
               {item.name}
             </Link>
           )

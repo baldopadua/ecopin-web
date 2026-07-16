@@ -171,6 +171,9 @@ export default function ClustersPage() {
               <option value="unresolved">Unresolved</option>
               <option value="in_progress">In Progress</option>
               <option value="resolved">Resolved</option>
+              <option value="closed">Closed</option>
+              <option value="pending_owner_consent">Pending Owner Consent</option>
+              <option value="waiting_for_feedback">Waiting for Feedback</option>
             </select>
           </div>
 

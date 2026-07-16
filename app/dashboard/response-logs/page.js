@@ -83,6 +83,11 @@ export default function ResponseLogs() {
               <option value="lifecycle_stage_update">Lifecycle Stage Update</option>
               <option value="acknowledge_complaint">Acknowledge Complaint</option>
               <option value="manual_note">Manual Note</option>
+              <option value="lgu_resolve">LGU Resolve</option>
+              <option value="citizen_close">Citizen Close</option>
+              <option value="login">Login</option>
+              <option value="password_change">Password Change</option>
+              <option value="user_created">User Created</option>
             </select>
           </div>
           <div className="min-w-[150px]">

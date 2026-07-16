@@ -510,28 +510,43 @@ export default function ReportDetailPage() {
                 <div className="text-center mb-6">
                   <h2 className="text-2xl font-bold text-text-primary mb-2">Report Lifecycle</h2>
                   <div className="flex justify-center gap-3 flex-wrap">
-                    <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getStatusColor(report.status)}`}>
-                      {report.status.replace('_', ' ').toUpperCase()}
-                    </span>
-                    <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getValidationColor(report.validation_status)}`}>
-                      {report.validation_status.toUpperCase()}
-                    </span>
-                    {report.on_private_property && (
-                      <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${report.property_owner_consent_status === 'obtained'
-                        ? 'bg-green-100 text-green-800 border-green-300'
-                        : report.property_owner_consent_status === 'pending'
-                          ? 'bg-yellow-100 text-yellow-800 border-yellow-300'
-                          : report.property_owner_consent_status === 'denied'
-                            ? 'bg-red-100 text-red-800 border-red-300'
-                            : 'bg-gray-100 text-gray-800 border-gray-300'
-                        }`}>
-                        {report.property_owner_consent_status.toUpperCase()}
-                      </span>
-                    )}
-                    {report.stage && (
-                      <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getLifecycleStageColor(report.stage)}`}>
-                        {report.stage.replace('_', ' ').toUpperCase()}
-                      </span>
+                    {report.validation_status === 'rejected' || (report.on_private_property && report.property_owner_consent_status === 'denied') ? (
+                      <>
+                        {report.validation_status === 'rejected' && (
+                          <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getValidationColor(report.validation_status)}`}>
+                            {report.validation_status.toUpperCase()}
+                          </span>
+                        )}
+                        {report.on_private_property && report.property_owner_consent_status === 'denied' && (
+                          <span className={`px-4 py-2 rounded-full text-sm font-semibold border bg-red-100 text-red-800 border-red-300`}>
+                            {report.property_owner_consent_status.toUpperCase()}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getStatusColor(report.status)}`}>
+                          {report.status.replace('_', ' ').toUpperCase()}
+                        </span>
+                        <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getValidationColor(report.validation_status)}`}>
+                          {report.validation_status.toUpperCase()}
+                        </span>
+                        {report.on_private_property && (
+                          <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${report.property_owner_consent_status === 'obtained'
+                            ? 'bg-green-100 text-green-800 border-green-300'
+                            : report.property_owner_consent_status === 'pending'
+                              ? 'bg-yellow-100 text-yellow-800 border-yellow-300'
+                              : 'bg-gray-100 text-gray-800 border-gray-300'
+                            }`}>
+                            {report.property_owner_consent_status.toUpperCase()}
+                          </span>
+                        )}
+                        {report.stage && (
+                          <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getLifecycleStageColor(report.stage)}`}>
+                            {report.stage.replace('_', ' ').toUpperCase()}
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -578,16 +593,6 @@ export default function ReportDetailPage() {
                     )
                   })}
                 </div>
-
-                {report.status === 'closed' && report.satisfaction_rating && (
-                  <div className="mt-6 p-4 bg-surface rounded-lg border border-border">
-                    <h3 className="font-semibold text-text-primary mb-2">Reporter Satisfaction</h3>
-                    <div className="flex items-center gap-2">
-                      <span className="text-4xl">{getSatisfactionEmoji(report.satisfaction_rating)}</span>
-                      <span className="text-lg font-medium">{getSatisfactionLabel(report.satisfaction_rating)}</span>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Report Information */}
@@ -630,7 +635,8 @@ export default function ReportDetailPage() {
                 )}
 
                 {/* Before & After Photos */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                {report.status !== 'closed' && report.status !== 'resolved' && report.validation_status !== 'rejected' && !(report.on_private_property && report.property_owner_consent_status === 'denied') && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                   {/* Before Photo */}
                   <div className="p-4 border border-border rounded-lg">
                     <div className="flex justify-between items-center mb-3">
@@ -743,6 +749,7 @@ export default function ReportDetailPage() {
                     )}
                   </div>
                 </div>
+                )}
               </div>
 
               {/* LGU Notes - Moved to main content */}
@@ -936,7 +943,7 @@ export default function ReportDetailPage() {
               </div>
 
               {/* Property Owner Consent */}
-              {report.on_private_property && (
+              {report.on_private_property && report.status !== 'closed' && report.status !== 'resolved' && report.validation_status !== 'rejected' && report.property_owner_consent_status !== 'denied' && (
                 <div className="card">
                   <div className="flex items-start justify-between mb-4">
                     <h2 className="text-lg font-bold text-text-primary">Property Owner Consent</h2>
@@ -989,10 +996,33 @@ export default function ReportDetailPage() {
                 </div>
               )}
 
+              {/* Client Satisfaction */}
+              {report.status === 'closed' && (
+                <div className="card">
+                  <h2 className="text-lg font-bold text-text-primary mb-4">Client Satisfaction</h2>
+                  {report.satisfaction_rating ? (
+                    <div className="flex items-center gap-4">
+                      <span className="text-5xl">{getSatisfactionEmoji(report.satisfaction_rating)}</span>
+                      <div className="flex-1">
+                        <p className="text-xl font-semibold text-text-primary">
+                          {getSatisfactionLabel(report.satisfaction_rating)}
+                        </p>
+                        <p className="text-sm text-text-muted mt-1">
+                          Rating: {report.satisfaction_rating}/5
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-text-muted text-sm">No satisfaction rating provided</p>
+                  )}
+                </div>
+              )}
+
               {/* Actions */}
-              <div className="card">
-                <h2 className="text-lg font-bold text-text-primary mb-4">Actions</h2>
-                <div className="space-y-3">
+              {report.status !== 'closed' && report.status !== 'resolved' && report.validation_status !== 'rejected' && !(report.on_private_property && report.property_owner_consent_status === 'denied') && (
+                <div className="card">
+                  <h2 className="text-lg font-bold text-text-primary mb-4">Actions</h2>
+                  <div className="space-y-3">
                   {/* Create Task for this Report */}
                   {report.stage === 'acknowledged' && (
                     <button
@@ -1109,8 +1139,9 @@ export default function ReportDetailPage() {
                   >
                     View on Map
                   </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

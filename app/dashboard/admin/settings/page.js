@@ -39,6 +39,20 @@ export default function SystemSettings() {
   const handleSave = async () => {
     try {
       setSaving(true)
+      
+      // Validate session_timeout_minutes before saving
+      if (settings.session_timeout_minutes === '' || isNaN(settings.session_timeout_minutes)) {
+        setNotification({ message: 'Session timeout must be a valid number', type: 'error' })
+        setSaving(false)
+        return
+      }
+      
+      if (settings.session_timeout_minutes < 5) {
+        setNotification({ message: 'Session timeout must be at least 5 minutes', type: 'error' })
+        setSaving(false)
+        return
+      }
+      
       await updateSystemSettings(settings)
       setNotification({ message: 'Settings saved successfully', type: 'success' })
     } catch (err) {
@@ -187,7 +201,7 @@ export default function SystemSettings() {
               min="5"
               max="1440"
               value={settings.session_timeout_minutes}
-              onChange={(e) => handleChange('session_timeout_minutes', parseInt(e.target.value))}
+              onChange={(e) => handleChange('session_timeout_minutes', e.target.value === '' ? '' : parseInt(e.target.value))}
               className="w-full p-3 border border-border rounded-lg bg-surface text-text-primary"
             />
             <p className="text-xs text-text-muted mt-1">

@@ -16,7 +16,6 @@ export default function ReportsPage() {
   const [typeFilter, setTypeFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [validationFilter, setValidationFilter] = useState('all')
-  const [lifecycleFilter, setLifecycleFilter] = useState('all')
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
@@ -67,13 +66,9 @@ export default function ReportsPage() {
       }
     }
 
-    if (lifecycleFilter !== 'all') {
-      filtered = filtered.filter(r => r.stage === lifecycleFilter)
-    }
-
     setFilteredReports(filtered)
     setCurrentPage(1) // Reset to page 1 when filters change
-  }, [searchQuery, typeFilter, statusFilter, validationFilter, lifecycleFilter, reports])
+  }, [searchQuery, typeFilter, statusFilter, validationFilter, reports])
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredReports.length / itemsPerPage)
@@ -181,6 +176,9 @@ export default function ReportsPage() {
               <option value="unresolved">Unresolved</option>
               <option value="in_progress">In Progress</option>
               <option value="resolved">Resolved</option>
+              <option value="closed">Closed</option>
+              <option value="pending_owner_consent">Pending Owner Consent</option>
+              <option value="waiting_for_feedback">Waiting for Feedback</option>
             </select>
           </div>
 
@@ -192,37 +190,21 @@ export default function ReportsPage() {
               className="input"
             >
               <option value="all">All Validation</option>
+              <option value="automatically_valid">Automatically Valid</option>
+              <option value="manual_review">Manual Review</option>
               <option value="validated">Validated</option>
-              <option value="pending">Pending</option>
               <option value="rejected">Rejected</option>
             </select>
           </div>
 
-          {/* Lifecycle Stage Filter */}
-          <div className="min-w-[150px]">
-            <select
-              value={lifecycleFilter}
-              onChange={(e) => setLifecycleFilter(e.target.value)}
-              className="input"
-            >
-              <option value="all">All Stages</option>
-              <option value="submitted">Submitted</option>
-              <option value="acknowledged">Acknowledged</option>
-              <option value="responded">Responded</option>
-              <option value="resolved">Resolved</option>
-              <option value="closed">Closed</option>
-            </select>
-          </div>
-
           {/* Clear Filters Button */}
-          {(searchQuery || typeFilter !== 'all' || statusFilter !== 'all' || validationFilter !== 'all' || lifecycleFilter !== 'all') && (
+          {(searchQuery || typeFilter !== 'all' || statusFilter !== 'all' || validationFilter !== 'all') && (
             <button
               onClick={() => {
                 setSearchQuery('')
                 setTypeFilter('all')
                 setStatusFilter('all')
                 setValidationFilter('all')
-                setLifecycleFilter('all')
               }}
               className="px-4 py-2 text-sm text-accent-green hover:bg-accent-green/10 rounded-lg transition-colors"
             >

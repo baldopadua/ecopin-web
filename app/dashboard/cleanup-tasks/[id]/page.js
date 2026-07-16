@@ -221,21 +221,33 @@ export default function CleanupTaskDetailPage() {
         reportsData = await fetchReportsByClusterId(task.cluster_id)
       }
       setReports(reportsData)
-      
-      // If we're in detail view, ensure the selected report still exists
-      if (viewMode === 'detail' && selectedReportId) {
-        const reportStillExists = reportsData.find(r => r.id === selectedReportId)
-        if (!reportStillExists) {
-          // Report no longer exists, go back to table view
-          setViewMode('table')
-          setSelectedReportId(null)
-        }
-      }
-      
-      setNotification({ message: 'Report validated successfully!', type: 'success' })
+
+      setNotification({ message: 'Report validated successfully', type: 'success' })
     } catch (error) {
       console.error('Failed to validate report:', error)
       setNotification({ message: 'Failed to validate report. Please try again.', type: 'error' })
+    } finally {
+      setValidatingReport(null)
+    }
+  }
+
+  const handleRejectReport = async (reportId) => {
+    setValidatingReport(reportId)
+    try {
+      await updateReportValidation(reportId, 'rejected')
+      // Refresh reports to show updated validation status
+      let reportsData = []
+      if (task.is_custom && task.report_ids) {
+        reportsData = await fetchReportsByIds(task.report_ids)
+      } else if (task.cluster_id) {
+        reportsData = await fetchReportsByClusterId(task.cluster_id)
+      }
+      setReports(reportsData)
+
+      setNotification({ message: 'Report rejected successfully', type: 'success' })
+    } catch (error) {
+      console.error('Failed to reject report:', error)
+      setNotification({ message: 'Failed to reject report. Please try again.', type: 'error' })
     } finally {
       setValidatingReport(null)
     }
@@ -788,16 +800,33 @@ export default function CleanupTaskDetailPage() {
                         <div className="text-center mb-6">
                           <h2 className="text-2xl font-bold text-text-primary mb-2">Report Lifecycle</h2>
                           <div className="flex justify-center gap-3 flex-wrap">
-                            <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getStatusColor(report.status)}`}>
-                              {report.status.replace('_', ' ').toUpperCase()}
-                            </span>
-                            <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getValidationColor(report.validation_status)}`}>
-                              {report.validation_status ? report.validation_status.toUpperCase() : 'N/A'}
-                            </span>
-                            {report.stage && (
-                              <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getLifecycleStageColor(report.stage)}`}>
-                                {report.stage.replace('_', ' ').toUpperCase()}
-                              </span>
+                            {report.validation_status === 'rejected' || (report.on_private_property && report.property_owner_consent_status === 'denied') ? (
+                              <>
+                                {report.validation_status === 'rejected' && (
+                                  <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getValidationColor(report.validation_status)}`}>
+                                    {report.validation_status.toUpperCase()}
+                                  </span>
+                                )}
+                                {report.on_private_property && report.property_owner_consent_status === 'denied' && (
+                                  <span className={`px-4 py-2 rounded-full text-sm font-semibold border bg-red-100 text-red-800 border-red-300`}>
+                                    {report.property_owner_consent_status.toUpperCase()}
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <>
+                                <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getStatusColor(report.status)}`}>
+                                  {report.status.replace('_', ' ').toUpperCase()}
+                                </span>
+                                <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getValidationColor(report.validation_status)}`}>
+                                  {report.validation_status ? report.validation_status.toUpperCase() : 'N/A'}
+                                </span>
+                                {report.stage && (
+                                  <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getLifecycleStageColor(report.stage)}`}>
+                                    {report.stage.replace('_', ' ').toUpperCase()}
+                                  </span>
+                                )}
+                              </>
                             )}
                           </div>
                         </div>
@@ -916,17 +945,19 @@ export default function CleanupTaskDetailPage() {
                       </div>
 
                       {/* Actions */}
-                      <div className="flex gap-3 mb-6 pt-4 border-t border-border">
-                        {report.validation_status !== 'validated' && (
-                          <button
-                            onClick={() => handleValidateReport(report.id)}
-                            disabled={validatingReport === report.id}
-                            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 font-medium"
-                          >
-                            {validatingReport === report.id ? 'Validating...' : 'Validate Report'}
-                          </button>
-                        )}
-                      </div>
+                      {report.status !== 'closed' && report.status !== 'resolved' && report.validation_status !== 'rejected' && !(report.on_private_property && report.property_owner_consent_status === 'denied') && (
+                        <div className="flex gap-3 mb-6 pt-4 border-t border-border">
+                          {report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review' ? (
+                            <button
+                              onClick={() => handleRejectReport(report.id)}
+                              disabled={validatingReport === report.id}
+                              className="px-4 py-2 bg-error text-white rounded-lg hover:bg-error/80 disabled:opacity-50 font-medium"
+                            >
+                              {validatingReport === report.id ? 'Rejecting...' : 'Reject Report'}
+                            </button>
+                          ) : null}
+                        </div>
+                      )}
 
                       {/* Evidence Photos */}
                       <div className="mb-6">
@@ -967,69 +998,71 @@ export default function CleanupTaskDetailPage() {
                       </div>
 
                       {/* Before & After Photos */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                        <div className="p-4 border border-border rounded-lg">
-                          <div className="flex justify-between items-center mb-3">
-                            <h3 className="font-semibold">Before Photo</h3>
-                            {report.before_photo_url && (
-                              <button
-                                onClick={() => handleReportPhotoDelete(report.id, 'before')}
-                                className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded transition-colors"
-                              >
-                                Delete
-                              </button>
+                      {report.status !== 'closed' && report.status !== 'resolved' && report.validation_status !== 'rejected' && !(report.on_private_property && report.property_owner_consent_status === 'denied') && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                          <div className="p-4 border border-border rounded-lg">
+                            <div className="flex justify-between items-center mb-3">
+                              <h3 className="font-semibold">Before Photo</h3>
+                              {report.before_photo_url && (
+                                <button
+                                  onClick={() => handleReportPhotoDelete(report.id, 'before')}
+                                  className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded transition-colors"
+                                >
+                                  Delete
+                                </button>
+                              )}
+                            </div>
+                            {report.before_photo_url ? (
+                              <img 
+                                src={report.before_photo_url} 
+                                alt="Before" 
+                                className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 border border-border"
+                                onClick={() => setLightboxImage({ url: report.before_photo_url, type: 'before', index: 0 })}
+                              />
+                            ) : (
+                              <input
+                                type="file"
+                                accept="image/*"
+                                disabled={uploadingReportPhotos[`${report.id}-before`]}
+                                onChange={(e) => e.target.files[0] && handleReportPhotoUpload(report.id, 'before', e.target.files[0])}
+                                className="w-full"
+                              />
                             )}
+                            {uploadingReportPhotos[`${report.id}-before`] && <p className="mt-2 text-sm text-text-muted">Uploading...</p>}
                           </div>
-                          {report.before_photo_url ? (
-                            <img 
-                              src={report.before_photo_url} 
-                              alt="Before" 
-                              className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 border border-border"
-                              onClick={() => setLightboxImage({ url: report.before_photo_url, type: 'before', index: 0 })}
-                            />
-                          ) : (
-                            <input
-                              type="file"
-                              accept="image/*"
-                              disabled={uploadingReportPhotos[`${report.id}-before`]}
-                              onChange={(e) => e.target.files[0] && handleReportPhotoUpload(report.id, 'before', e.target.files[0])}
-                              className="w-full"
-                            />
-                          )}
-                          {uploadingReportPhotos[`${report.id}-before`] && <p className="mt-2 text-sm text-text-muted">Uploading...</p>}
-                        </div>
 
-                        <div className="p-4 border border-border rounded-lg">
-                          <div className="flex justify-between items-center mb-3">
-                            <h3 className="font-semibold">After Photo</h3>
-                            {report.after_photo_url && (
-                              <button
-                                onClick={() => handleReportPhotoDelete(report.id, 'after')}
-                                className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded transition-colors"
-                              >
-                                Delete
-                              </button>
+                          <div className="p-4 border border-border rounded-lg">
+                            <div className="flex justify-between items-center mb-3">
+                              <h3 className="font-semibold">After Photo</h3>
+                              {report.after_photo_url && (
+                                <button
+                                  onClick={() => handleReportPhotoDelete(report.id, 'after')}
+                                  className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded transition-colors"
+                                >
+                                  Delete
+                                </button>
+                              )}
+                            </div>
+                            {report.after_photo_url ? (
+                              <img 
+                                src={report.after_photo_url} 
+                                alt="After" 
+                                className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 border border-border"
+                                onClick={() => setLightboxImage({ url: report.after_photo_url, type: 'after', index: 0 })}
+                              />
+                            ) : (
+                              <input
+                                type="file"
+                                accept="image/*"
+                                disabled={uploadingReportPhotos[`${report.id}-after`]}
+                                onChange={(e) => e.target.files[0] && handleReportPhotoUpload(report.id, 'after', e.target.files[0])}
+                                className="w-full"
+                              />
                             )}
+                            {uploadingReportPhotos[`${report.id}-after`] && <p className="mt-2 text-sm text-text-muted">Uploading...</p>}
                           </div>
-                          {report.after_photo_url ? (
-                            <img 
-                              src={report.after_photo_url} 
-                              alt="After" 
-                              className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 border border-border"
-                              onClick={() => setLightboxImage({ url: report.after_photo_url, type: 'after', index: 0 })}
-                            />
-                          ) : (
-                            <input
-                              type="file"
-                              accept="image/*"
-                              disabled={uploadingReportPhotos[`${report.id}-after`]}
-                              onChange={(e) => e.target.files[0] && handleReportPhotoUpload(report.id, 'after', e.target.files[0])}
-                              className="w-full"
-                            />
-                          )}
-                          {uploadingReportPhotos[`${report.id}-after`] && <p className="mt-2 text-sm text-text-muted">Uploading...</p>}
                         </div>
-                      </div>
+                      )}
 
                       <button
                         onClick={() => router.push(`/dashboard/reports/${report.id}`)}
