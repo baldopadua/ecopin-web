@@ -496,11 +496,11 @@ export default function ProfilePage() {
               </div>
               <button
                 onClick={() => toggleTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="relative w-12 h-6 rounded-full transition-colors"
-                style={{ backgroundColor: theme === 'dark' ? 'var(--primary)' : 'var(--border)' }}
+                className="relative w-12 h-6 rounded-full transition-colors duration-300 cursor-pointer"
+                style={{ backgroundColor: theme === 'dark' ? 'var(--primary)' : '#9CA3AF' }}
               >
                 <div
-                  className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform"
+                  className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-300"
                   style={{ transform: theme === 'dark' ? 'translateX(26px)' : 'translateX(2px)' }}
                 />
               </button>

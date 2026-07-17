@@ -30,7 +30,7 @@ export default function Sidebar({ user }) {
   const pathname = usePathname()
 
   return (
-    <aside className="w-64 bg-surface dark:bg-[#0a0f08] border-r border-border h-screen flex flex-col">
+    <aside className="w-64 bg-surface dark:bg-[#0a0f08] border-r border-border h-screen flex flex-col transition-colors duration-400">
       {/* Logo */}
       <div className="p-6 border-b border-border">
         <Link href="/" className="text-xl font-bold text-text-primary">
@@ -56,7 +56,7 @@ export default function Sidebar({ user }) {
                 <img
                   src={item.icon}
                   alt={item.name}
-                  className="w-5 h-5 sidebar-icon"
+                  className={`w-5 h-5 sidebar-icon ${isActive ? 'brightness-0 invert dark:invert-0' : ''}`}
                 />
               )}
               {item.name}

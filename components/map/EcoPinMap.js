@@ -209,6 +209,17 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [showFilterPanel, setShowFilterPanel] = useState(true)
+  const [isDark, setIsDark] = useState(false)
+
+  useEffect(() => {
+    const html = document.documentElement
+    setIsDark(html.classList.contains('dark'))
+    const observer = new MutationObserver(() => {
+      setIsDark(html.classList.contains('dark'))
+    })
+    observer.observe(html, { attributes: true, attributeFilter: ['class'] })
+    return () => observer.disconnect()
+  }, [])
 
   // Prepare heat points from filtered reports
   const heatPoints = filteredReports.map(report => {
@@ -436,6 +447,38 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
         .custom-marker.removing div {
           animation: markerBounceOut 0.3s ease-in forwards;
         }
+        html.dark .leaflet-control-zoom a {
+          background-color: #1e1e1e !important;
+          color: #e0e0e0 !important;
+          border-color: #333 !important;
+        }
+        html.dark .leaflet-control-zoom a:hover {
+          background-color: #2a2a2a !important;
+        }
+        html.dark .leaflet-control-zoom {
+          border-color: #333 !important;
+        }
+        html.dark .leaflet-control-attribution {
+          background-color: rgba(0, 0, 0, 0.7) !important;
+          color: #999 !important;
+        }
+        html.dark .leaflet-control-attribution a {
+          color: #aaa !important;
+        }
+        html.dark .leaflet-popup-content-wrapper {
+          background-color: #1e1e1e !important;
+          color: #e0e0e0 !important;
+          box-shadow: 0 3px 14px rgba(0, 0, 0, 0.5) !important;
+        }
+        html.dark .leaflet-popup-tip {
+          background-color: #1e1e1e !important;
+        }
+        html.dark .leaflet-popup-close-button {
+          color: #999 !important;
+        }
+        html.dark .leaflet-popup-close-button:hover {
+          color: #fff !important;
+        }
       `}</style>
       <div className="relative h-full w-full">
         <MapContainer
@@ -448,8 +491,14 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
           <ZoomTracker setZoom={setZoom} />
           {centerLat && centerLng && <MapCenter centerLat={centerLat} centerLng={centerLng} />}
           <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>'
+            url={isDark
+              ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+              : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+            }
+            attribution={isDark
+              ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
+              : '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>'
+            }
           />
           <HeatmapLayer heatPoints={heatPoints} showHeatmap={showHeatmap} />
 
