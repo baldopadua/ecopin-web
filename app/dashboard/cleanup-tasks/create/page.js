@@ -14,7 +14,7 @@ const EcoPinMap = dynamic(() => import('@/components/map/EcoPinMap'), {
 })
 
 // CustomMap component defined outside to prevent re-creation
-function CustomMap({ selectedReports, onReportSelect }) {
+function CustomMap({ selectedReports, onReportSelect, onClusterSelect }) {
   const [mounted, setMounted] = useState(false)
   
   useEffect(() => {
@@ -31,6 +31,7 @@ function CustomMap({ selectedReports, onReportSelect }) {
         selectionMode={true}
         selectedReports={Array.from(selectedReports).sort()}
         onReportSelect={onReportSelect}
+        onClusterSelect={onClusterSelect}
         hideFilterPanel={true}
       />
     </div>
@@ -142,6 +143,13 @@ export default function CreateCustomCleanupTaskPage() {
               <CustomMap 
                 selectedReports={Array.from(selectedReports).sort()}
                 onReportSelect={toggleReportSelection}
+                onClusterSelect={(clusterReportIds) => {
+                  setSelectedReports(prev => {
+                    const next = new Set(prev)
+                    clusterReportIds.forEach(id => next.add(id))
+                    return next
+                  })
+                }}
               />
             )}
           </div>
@@ -170,7 +178,7 @@ export default function CreateCustomCleanupTaskPage() {
                     <tr className="border-b border-border">
                       <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Title</th>
                       <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Issue Type</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Location</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Description</th>
                       <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Remove</th>
                     </tr>
                   </thead>
@@ -184,19 +192,17 @@ export default function CreateCustomCleanupTaskPage() {
                           <span className="text-sm text-text-secondary">{report.issue_type}</span>
                         </td>
                         <td className="py-3 px-4">
-                          <span className="text-sm text-text-muted">
-                            {report.latitude && report.longitude
-                              ? `${report.latitude.toFixed(6)}, ${report.longitude.toFixed(6)}` 
-                              : 'N/A'
-                            }
-                          </span>
+                          <span className="text-sm text-text-muted line-clamp-2 max-w-xs">{report.description || 'N/A'}</span>
                         </td>
                         <td className="py-3 px-4">
                           <button
                             onClick={() => toggleReportSelection(report.id)}
-                            className="text-error hover:text-error/80 text-sm"
+                            className="p-1.5 text-text-muted hover:text-error hover:bg-error/10 rounded-lg transition-colors cursor-pointer"
+                            title="Remove report"
                           >
-                            Remove
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                            </svg>
                           </button>
                         </td>
                       </tr>
@@ -210,6 +216,18 @@ export default function CreateCustomCleanupTaskPage() {
 
         {/* Task Details Section */}
         <div className="space-y-6">
+          {/* Instructions */}
+          <div className="card bg-info/10 border-info/20">
+            <h3 className="font-semibold text-text-primary mb-2">Instructions</h3>
+            <ul className="text-sm text-text-secondary space-y-1">
+              <li>• Click on report pins on the map to select them</li>
+              <li>• Or use the checkboxes in the table below</li>
+              <li>• Select any unresolved reports for the cleanup task</li>
+              <li>• Enter a title for your cleanup task</li>
+              <li>• Click "Create Cleanup Task" to finalize</li>
+            </ul>
+          </div>
+
           <div className="card">
             <h2 className="text-lg font-bold text-text-primary mb-4">Task Details</h2>
             <div className="space-y-4">
@@ -259,18 +277,6 @@ export default function CreateCustomCleanupTaskPage() {
                 Cancel
               </button>
             </div>
-          </div>
-
-          {/* Instructions */}
-          <div className="card bg-info/10 border-info/20">
-            <h3 className="font-semibold text-text-primary mb-2">Instructions</h3>
-            <ul className="text-sm text-text-secondary space-y-1">
-              <li>• Click on report pins on the map to select them</li>
-              <li>• Or use the checkboxes in the table below</li>
-              <li>• Select any unresolved reports for the cleanup task</li>
-              <li>• Enter a title for your cleanup task</li>
-              <li>• Click "Create Cleanup Task" to finalize</li>
-            </ul>
           </div>
         </div>
       </div>

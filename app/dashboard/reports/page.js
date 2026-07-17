@@ -89,17 +89,17 @@ export default function ReportsPage() {
   const getStatusColor = (status) => {
     switch (status) {
       case 'resolved':
-        return 'bg-success/10 text-success'
+        return 'bg-success/20 text-success border-success/30'
       case 'in_progress':
-        return 'bg-warning/10 text-warning'
+        return 'bg-warning/20 text-warning border-warning/30'
       case 'waiting_for_feedback':
-        return 'bg-info/10 text-info'
+        return 'bg-purple/20 text-purple border-purple/30'
       case 'closed':
-        return 'bg-surface text-text-muted'
+        return 'bg-text-muted/20 text-text-muted border-text-muted/30'
       case 'pending_owner_consent':
-        return 'bg-warning/10 text-warning'
+        return 'bg-info/20 text-info border-info/30'
       default:
-        return 'bg-error/10 text-error'
+        return 'bg-error/20 text-error border-error/30'
     }
   }
 
@@ -107,34 +107,34 @@ export default function ReportsPage() {
     switch (status) {
       case 'validated':
       case 'automatically_valid':
-        return 'bg-success/10 text-success'
+        return 'bg-success/20 text-success border-success/30'
       case 'pending':
       case 'pending_ai_validation':
-        return 'bg-warning/10 text-warning'
+        return 'bg-warning/20 text-warning border-warning/30'
       case 'manual_review':
       case 'Manual_Review':
-        return 'bg-info/10 text-info'
+        return 'bg-purple/20 text-purple border-purple/30'
       case 'rejected':
-        return 'bg-error/10 text-error'
+        return 'bg-error/20 text-error border-error/30'
       default:
-        return 'bg-surface text-text-muted'
+        return 'bg-text-muted/20 text-text-muted border-text-muted/30'
     }
   }
 
   const getLifecycleStageColor = (stage) => {
     switch (stage) {
       case 'submitted':
-        return 'bg-purple/10 text-purple'
+        return 'bg-purple/20 text-purple border-purple/30'
       case 'acknowledged':
-        return 'bg-info/10 text-info'
+        return 'bg-info/20 text-info border-info/30'
       case 'responded':
-        return 'bg-warning/10 text-warning'
+        return 'bg-warning/20 text-warning border-warning/30'
       case 'resolved':
-        return 'bg-success/10 text-success'
+        return 'bg-success/20 text-success border-success/30'
       case 'closed':
-        return 'bg-surface text-text-muted'
+        return 'bg-text-muted/20 text-text-muted border-text-muted/30'
       default:
-        return 'bg-surface text-text-muted'
+        return 'bg-text-muted/20 text-text-muted border-text-muted/30'
     }
   }
 
@@ -204,7 +204,7 @@ export default function ReportsPage() {
             ]}
           />
 
-          {/* Clear Filters Button */}
+          {/* Reset Filters Button */}
           {(searchQuery || typeFilter !== 'all' || statusFilter !== 'all' || validationFilter !== 'all') && (
             <button
               onClick={() => {
@@ -213,9 +213,9 @@ export default function ReportsPage() {
                 setStatusFilter('all')
                 setValidationFilter('all')
               }}
-              className="px-4 py-2 text-sm text-accent-green hover:bg-accent-green/10 rounded-lg transition-colors"
+              className="btn-secondary whitespace-nowrap cursor-pointer"
             >
-              Clear Filters
+              Reset Filters
             </button>
           )}
 
@@ -242,9 +242,9 @@ export default function ReportsPage() {
                   <col style={{ width: '22%' }} />
                   <col style={{ width: '12%' }} />
                   <col style={{ width: '12%' }} />
-                  <col style={{ width: '12%' }} />
-                  <col style={{ width: '12%' }} />
-                  <col style={{ width: '12%' }} />
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '16%' }} />
+                  <col style={{ width: '10%' }} />
                 </colgroup>
                 <thead>
                   <tr className="border-b border-border">
@@ -277,19 +277,19 @@ export default function ReportsPage() {
                         <span className="text-sm text-text-muted">{new Date(report.created_at).toLocaleDateString()}</span>
                       </td>
                       <td className="py-3 px-4">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(report.status)}`}>
-                          {report.status.replace('_', ' ')}
+                        <span className={`px-2 py-1 rounded text-xs font-semibold border ${getStatusColor(report.status)}`}>
+                          {report.status.replace(/_/g, ' ').toUpperCase()}
                         </span>
                       </td>
                       <td className="py-3 px-4">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getValidationColor(report.validation_status)}`}>
-                          {report.validation_status}
+                        <span className={`px-2 py-1 rounded text-xs font-semibold border ${getValidationColor(report.validation_status)}`}>
+                          {report.validation_status.replace(/_/g, ' ').toUpperCase()}
                         </span>
                       </td>
                       <td className="py-3 px-4">
                         {report.stage && (
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getLifecycleStageColor(report.stage)}`}>
-                            {report.stage.replace('_', ' ')}
+                          <span className={`px-2 py-1 rounded text-xs font-semibold border ${getLifecycleStageColor(report.stage)}`}>
+                            {report.stage.replace(/_/g, ' ').toUpperCase()}
                           </span>
                         )}
                       </td>

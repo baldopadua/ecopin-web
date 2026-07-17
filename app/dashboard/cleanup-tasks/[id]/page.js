@@ -4,6 +4,51 @@ import { useRouter, useParams } from 'next/navigation'
 import { fetchCleanupTaskById, uploadCleanupPhoto, markCleanupTaskComplete, fetchReportsByClusterId, batchCompleteReportsByCluster, updateReportStatus, fetchReportsByIds, updateReportValidation, fetchReportEvidence, updateLifecycleStage, logAgencyResponse, fetchAgencyResponses } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
+import wkx from 'wkx'
+import { Buffer } from 'buffer'
+
+// Polyfill Buffer for browser environment
+if (typeof window !== 'undefined' && !window.Buffer) {
+  window.Buffer = Buffer
+}
+
+const parseLocation = (location, latitude, longitude) => {
+  // reports_view has latitude and longitude columns directly
+  if (latitude && longitude) {
+    return { latitude, longitude }
+  }
+
+  if (!location) return { latitude: null, longitude: null }
+
+  try {
+    // Handle GeoJSON format from reports_view
+    if (typeof location === 'string' && location.startsWith('{')) {
+      const geoJSON = JSON.parse(location)
+      if (geoJSON.type === 'Point' && geoJSON.coordinates) {
+        return { latitude: geoJSON.coordinates[1], longitude: geoJSON.coordinates[0] }
+      }
+    }
+    // Handle hex string format
+    else if (typeof location === 'string') {
+      const buffer = Buffer.from(location, 'hex')
+      const geometry = wkx.Geometry.parse(buffer)
+      if (geometry && geometry.x && geometry.y) {
+        return { latitude: geometry.y, longitude: geometry.x }
+      }
+    }
+    // Handle Buffer format
+    else if (Buffer.isBuffer(location)) {
+      const geometry = wkx.Geometry.parse(location)
+      if (geometry && geometry.x && geometry.y) {
+        return { latitude: geometry.y, longitude: geometry.x }
+      }
+    }
+  } catch (error) {
+    console.error('Error parsing location:', error)
+  }
+
+  return { latitude: null, longitude: null }
+}
 
 export default function CleanupTaskDetailPage() {
   const [task, setTask] = useState(null)
@@ -116,6 +161,8 @@ export default function CleanupTaskDetailPage() {
         return 'bg-warning/10 text-warning border-warning/30'
       case 'resolved':
         return 'bg-success/10 text-success border-success/30'
+      case 'closed':
+        return 'bg-surface text-text-muted border-border'
       default:
         return 'bg-surface text-text-muted border-border'
     }
@@ -575,27 +622,6 @@ export default function CleanupTaskDetailPage() {
     setLightboxImage({ ...lightboxImage, url: photos[prevIndex].url, index: prevIndex })
   }
 
-  const parseLocation = (location, latitude, longitude) => {
-    if (latitude && longitude) {
-      return { latitude, longitude }
-    }
-
-    if (!location) return { latitude: null, longitude: null }
-
-    try {
-      if (typeof location === 'string' && location.startsWith('{')) {
-        const geoJSON = JSON.parse(location)
-        if (geoJSON.type === 'Point' && geoJSON.coordinates) {
-          return { latitude: geoJSON.coordinates[1], longitude: geoJSON.coordinates[0] }
-        }
-      }
-    } catch (error) {
-      console.error('Error parsing location:', error)
-    }
-
-    return { latitude: null, longitude: null }
-  }
-
   const getStatusColor = (status) => {
     switch (status) {
       case 'resolved':
@@ -645,6 +671,11 @@ export default function CleanupTaskDetailPage() {
   if (loading) return <div className="p-8"><p>Loading cleanup task...</p></div>
   if (!task) return <div className="p-8"><p>Cleanup task not found</p></div>
 
+  const firstReport = reports.find(r => {
+    const loc = parseLocation(r.location, r.latitude, r.longitude);
+    return loc.latitude && loc.longitude;
+  });
+
   return (
     <div className="p-8">
       <PageHeader 
@@ -667,7 +698,7 @@ export default function CleanupTaskDetailPage() {
                       <tr className="border-b border-border">
                         <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Title</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Issue Type</th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Location</th>
+                        <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Description</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Status</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Lifecycle</th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Validation</th>
@@ -684,30 +715,25 @@ export default function CleanupTaskDetailPage() {
                             <span className="text-sm text-text-secondary">{report.issue_type}</span>
                           </td>
                           <td className="py-3 px-4">
-                            <span className="text-sm text-text-muted">
-                              {report.latitude && report.longitude
-                                ? `${report.latitude.toFixed(6)}, ${report.longitude.toFixed(6)}` 
-                                : 'N/A'
-                              }
-                            </span>
+                            <span className="text-sm text-text-muted line-clamp-2 max-w-xs">{report.description || 'N/A'}</span>
                           </td>
                           <td className="py-3 px-4">
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold border whitespace-nowrap ${getStatusColor(report.status)}`}>
-                              {report.status.replace('_', ' ')}
+                            <span className={`px-2 py-1 rounded text-xs font-semibold border ${getStatusColor(report.status)}`}>
+                              {report.status.replace(/_/g, ' ').toUpperCase()}
                             </span>
                           </td>
                           <td className="py-3 px-4">
                             {report.stage ? (
-                              <span className={`px-3 py-1 rounded-full text-xs font-semibold border whitespace-nowrap ${getLifecycleStageColor(report.stage)}`}>
-                                {report.stage.replace('_', ' ')}
+                              <span className={`px-2 py-1 rounded text-xs font-semibold border ${getLifecycleStageColor(report.stage)}`}>
+                                {report.stage.replace(/_/g, ' ').toUpperCase()}
                               </span>
                             ) : (
                               <span className="text-xs text-text-muted">N/A</span>
                             )}
                           </td>
                           <td className="py-3 px-4">
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold border whitespace-nowrap ${getValidationColor(report.validation_status)}`}>
-                              {report.validation_status ? report.validation_status.toUpperCase().replace('_', ' ') : 'N/A'}
+                            <span className={`px-2 py-1 rounded text-xs font-semibold border ${getValidationColor(report.validation_status)}`}>
+                              {report.validation_status ? report.validation_status.toUpperCase().replace(/_/g, ' ') : 'N/A'}
                             </span>
                           </td>
                           <td className="py-3 px-4">
@@ -780,8 +806,8 @@ export default function CleanupTaskDetailPage() {
                     {(!task.after_photo_url && !reports.some(r => r.after_photo_url)) && (
                       <p className="text-text-muted text-sm">No after photos uploaded yet</p>
                     )}
-                  </div>
-                </div>
+                        </div>
+                      </div>
               )}
 
               {/* Report Detail View */}
@@ -821,27 +847,27 @@ export default function CleanupTaskDetailPage() {
                           {report.validation_status === 'rejected' || (report.on_private_property && report.property_owner_consent_status === 'denied') ? (
                             <>
                               {report.validation_status === 'rejected' && (
-                                <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getValidationColor(report.validation_status)}`}>
-                                  {report.validation_status.toUpperCase()}
+                                <span className={`px-2 py-1 rounded text-xs font-semibold border ${getValidationColor(report.validation_status)}`}>
+                                   {report.validation_status.replace(/_/g, ' ').toUpperCase()}
                                 </span>
                               )}
                               {report.on_private_property && report.property_owner_consent_status === 'denied' && (
-                                <span className="px-4 py-2 rounded-full text-sm font-semibold border bg-error/10 text-error border-error/30">
-                                  {report.property_owner_consent_status.toUpperCase()}
+                                <span className="px-2 py-1 rounded text-xs font-semibold border bg-error/10 text-error border-error/30">
+                                   {report.property_owner_consent_status.replace(/_/g, ' ').toUpperCase()}
                                 </span>
                               )}
                             </>
                           ) : (
                             <>
-                              <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getStatusColor(report.status)}`}>
-                                {report.status.replace('_', ' ').toUpperCase()}
+                              <span className={`px-2 py-1 rounded text-xs font-semibold border ${getStatusColor(report.status)}`}>
+                                {report.status.replace(/_/g, ' ').toUpperCase()}
                               </span>
-                              <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getValidationColor(report.validation_status)}`}>
-                                {report.validation_status ? report.validation_status.toUpperCase() : 'N/A'}
+                              <span className={`px-2 py-1 rounded text-xs font-semibold border ${getValidationColor(report.validation_status)}`}>
+                                {report.validation_status ? report.validation_status.replace(/_/g, ' ').toUpperCase() : 'N/A'}
                               </span>
                               {report.stage && (
-                                <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getLifecycleStageColor(report.stage)}`}>
-                                  {report.stage.replace('_', ' ').toUpperCase()}
+                                <span className={`px-2 py-1 rounded text-xs font-semibold border ${getLifecycleStageColor(report.stage)}`}>
+                                  {report.stage.replace(/_/g, ' ').toUpperCase()}
                                 </span>
                               )}
                             </>
@@ -876,7 +902,7 @@ export default function CleanupTaskDetailPage() {
                             <div key={stage} className="flex-1 flex flex-col items-center z-10">
                               <div className={`w-6 h-6 rounded-full ${isCurrent ? 'bg-[var(--success)] ring-4 ring-[var(--success)]/20' : isCompleted ? 'bg-[var(--accent-green)]' : 'bg-border'} transition-all relative`} />
                               <span className={`text-xs mt-2 font-medium ${isCurrent ? 'text-[var(--success)]' : isCompleted ? 'text-[var(--accent-green)]' : 'text-text-muted'}`}>
-                                {stage.replace('_', ' ')}
+                                {stage.replace(/_/g, ' ').toUpperCase()}
                               </span>
                             </div>
                           )
@@ -957,18 +983,6 @@ export default function CleanupTaskDetailPage() {
                       </div>
                     </div>
 
-                    {/* Actions */}
-                    {(report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review') && report.status !== 'closed' && report.status !== 'resolved' && report.validation_status !== 'rejected' && !(report.on_private_property && report.property_owner_consent_status === 'denied') && (
-                      <div className="card">
-                        <button
-                          onClick={() => handleRejectReport(report.id)}
-                          disabled={validatingReport === report.id}
-                          className="px-4 py-2 bg-error text-white rounded-lg hover:bg-error/80 disabled:opacity-50 font-medium"
-                        >
-                          {validatingReport === report.id ? 'Rejecting...' : 'Reject Report'}
-                        </button>
-                      </div>
-                    )}
 
                     {/* Photos */}
                     <div className="card no-hover">
@@ -1017,9 +1031,12 @@ export default function CleanupTaskDetailPage() {
                                 {report.before_photo_url && (
                                   <button
                                     onClick={() => handleReportPhotoDelete(report.id, 'before')}
-                                    className="px-3 py-1 bg-error hover:bg-error/90 text-white text-sm rounded transition-colors"
+                                    className="p-1.5 text-text-muted hover:text-error hover:bg-error/10 rounded-lg transition-colors cursor-pointer"
+                                    title="Delete photo"
                                   >
-                                    Delete
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                    </svg>
                                   </button>
                                 )}
                               </div>
@@ -1048,9 +1065,12 @@ export default function CleanupTaskDetailPage() {
                                 {report.after_photo_url && (
                                   <button
                                     onClick={() => handleReportPhotoDelete(report.id, 'after')}
-                                    className="px-3 py-1 bg-error hover:bg-error/90 text-white text-sm rounded transition-colors"
+                                    className="p-1.5 text-text-muted hover:text-error hover:bg-error/10 rounded-lg transition-colors cursor-pointer"
+                                    title="Delete photo"
                                   >
-                                    Delete
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                    </svg>
                                   </button>
                                 )}
                               </div>
@@ -1075,20 +1095,6 @@ export default function CleanupTaskDetailPage() {
                           </div>
                         </>
                       )}
-
-                      {(() => {
-                        const loc = parseLocation(report.location, report.latitude, report.longitude)
-                        const hasLocation = loc.latitude && loc.longitude
-                        return (
-                          <a
-                            href={hasLocation ? `/dashboard/map-view?lat=${loc.latitude}&lng=${loc.longitude}&id=${report.id}&validationStatus=${report.validation_status}&status=${report.status}` : '#'}
-                            onClick={(e) => { if (!hasLocation) e.preventDefault() }}
-                            className={`btn-secondary w-full mt-6 block text-center ${!hasLocation ? 'opacity-50 pointer-events-none' : ''}`}
-                          >
-                            View on Map
-                          </a>
-                        )
-                      })()}
                     </div>
 
                     {/* LGU Notes */}
@@ -1169,7 +1175,7 @@ export default function CleanupTaskDetailPage() {
                                   </td>
                                   <td className="py-3 px-4">
                                     <span className="px-2 py-1 rounded text-xs font-semibold bg-accent-green/20 text-accent-green border border-accent-green/30">
-                                      {response.action_type?.replace('_', ' ').toUpperCase()}
+                                      {response.action_type?.replace(/_/g, ' ').toUpperCase()}
                                     </span>
                                   </td>
                                   <td className="py-3 px-4 text-sm text-text-secondary">
@@ -1201,7 +1207,7 @@ export default function CleanupTaskDetailPage() {
                   <p className="text-text-muted mt-2">{task.description}</p>
                 </div>
 
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>
+                <span className={`px-2 py-1 rounded text-xs font-semibold border ${getStatusColor(task.status)}`}>
                   {task.status}
                 </span>
 
@@ -1246,6 +1252,20 @@ export default function CleanupTaskDetailPage() {
                   </div>
                 )}
 
+                {firstReport && (() => {
+                  const loc = parseLocation(firstReport.location, firstReport.latitude, firstReport.longitude);
+                  return (
+                    <div className="mt-6 pt-4 border-t border-border">
+                      <button
+                        onClick={() => router.push(`/dashboard/map-view?lat=${loc.latitude}&lng=${loc.longitude}&id=${firstReport.id}&validationStatus=${firstReport.validation_status}&status=${firstReport.status}`)}
+                        className="btn-secondary w-full"
+                      >
+                        View on Map
+                      </button>
+                    </div>
+                  );
+                })()}
+
                 {/* Actions Card - Show in detail view */}
                 {viewMode === 'detail' && selectedReportId && (() => {
                   const report = reports.find(r => r.id === selectedReportId)
@@ -1254,11 +1274,22 @@ export default function CleanupTaskDetailPage() {
                     <div className="mt-6 pt-4 border-t border-border">
                       <h2 className="text-lg font-bold text-text-primary mb-4">Actions</h2>
                       <div className="space-y-3">
+                        {/* Reject Report for Manual Review */}
+                        {(report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review') && report.status !== 'closed' && report.status !== 'resolved' && report.validation_status !== 'rejected' && !(report.on_private_property && report.property_owner_consent_status === 'denied') && (
+                          <button
+                            onClick={() => handleRejectReport(report.id)}
+                            disabled={validatingReport === report.id}
+                            className="w-full px-4 py-2 bg-error text-white rounded-lg hover:bg-error/80 disabled:opacity-50 font-medium"
+                          >
+                            {validatingReport === report.id ? 'Rejecting...' : 'Reject Report'}
+                          </button>
+                        )}
+
                         {/* Lifecycle Stage Control */}
                         <div className="relative" ref={lifecycleDropdownRef}>
                           <button
                             onClick={() => setShowLifecycleDropdown(!showLifecycleDropdown)}
-                            className="btn-primary w-full"
+                            className="w-full px-4 py-2 border-2 border-border text-text-primary rounded-lg hover:bg-surface-elevated font-medium transition-colors"
                           >
                             {updatingLifecycle ? 'Updating...' : 'Update Lifecycle Stage'}
                           </button>
@@ -1303,6 +1334,22 @@ export default function CleanupTaskDetailPage() {
                             </div>
                           )}
                         </div>
+
+                        {/* View on Map Button */}
+                        {(() => {
+                          const loc = parseLocation(report.location, report.latitude, report.longitude);
+                          if (loc.latitude && loc.longitude) {
+                            return (
+                              <button
+                                onClick={() => router.push(`/dashboard/map-view?lat=${loc.latitude}&lng=${loc.longitude}&id=${report.id}&validationStatus=${report.validation_status}&status=${report.status}`)}
+                                className="btn-secondary w-full"
+                              >
+                                View on Map
+                              </button>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
                     </div>
                   )

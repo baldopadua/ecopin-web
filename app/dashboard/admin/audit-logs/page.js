@@ -92,7 +92,7 @@ export default function AuditLogs() {
 
       {/* Filters */}
       <div className="card mb-6 sticky top-[120px] z-10 bg-white/60 dark:bg-black/60  ">
-        <div className="flex gap-4 flex-wrap">
+        <div className="flex gap-4 items-end">
           <div className="flex-1 min-w-[200px]">
             <FilterDropdown
               label="All Actions"
@@ -109,22 +109,33 @@ export default function AuditLogs() {
               ]}
             />
           </div>
-          <div className="min-w-[150px]">
+          <div className="flex-1 min-w-[150px]">
+            <label className="block text-xs font-semibold text-text-muted mb-1">From</label>
             <input
               type="date"
               value={filters.start_date}
               onChange={(e) => setFilters(prev => ({ ...prev, start_date: e.target.value }))}
-              className="w-full p-3 border border-border rounded-lg bg-surface text-text-primary"
+              className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-text-primary"
             />
           </div>
-          <div className="min-w-[150px]">
+          <div className="flex items-end pb-2 text-text-muted">—</div>
+          <div className="flex-1 min-w-[150px]">
+            <label className="block text-xs font-semibold text-text-muted mb-1">To</label>
             <input
               type="date"
               value={filters.end_date}
               onChange={(e) => setFilters(prev => ({ ...prev, end_date: e.target.value }))}
-              className="w-full p-3 border border-border rounded-lg bg-surface text-text-primary"
+              className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-text-primary"
             />
           </div>
+          {(filters.action_type || filters.start_date || filters.end_date) && (
+            <button
+              onClick={() => setFilters({ action_type: '', start_date: '', end_date: '' })}
+              className="btn-secondary whitespace-nowrap cursor-pointer"
+            >
+              Reset Filters
+            </button>
+          )}
         </div>
       </div>
 

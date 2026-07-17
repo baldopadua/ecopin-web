@@ -21,12 +21,12 @@ const lguNavigation = [
 
 const adminNavigation = [
   { name: 'Admin Dashboard', href: '/dashboard/admin', icon: '/icons/dashboard.png' },
-  { name: 'User Management', href: '/dashboard/admin/users' },
-  { name: 'System Settings', href: '/dashboard/admin/settings' },
+  { name: 'User Management', href: '/dashboard/admin/users', icon: '/icons/users.png' },
+  { name: 'System Settings', href: '/dashboard/admin/settings', icon: '/icons/settings.png' },
   { name: 'Audit Logs', href: '/dashboard/admin/audit-logs', icon: '/icons/logs.png' },
 ]
 
-export default function Sidebar({ user, onLogout }) {
+export default function Sidebar({ user }) {
   const pathname = usePathname()
 
   return (
@@ -90,12 +90,6 @@ export default function Sidebar({ user, onLogout }) {
             </div>
           </div>
         </Link>
-        <button
-          onClick={onLogout}
-          className="w-full btn-secondary text-xs py-2"
-        >
-          Logout
-        </button>
       </div>
     </aside>
   )

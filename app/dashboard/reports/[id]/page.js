@@ -10,7 +10,8 @@ import {
   acknowledgeComplaint,
   fetchAgencyResponses,
   lguResolveReport,
-  logAgencyResponse
+  logAgencyResponse,
+  updateReportValidation
 } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
@@ -47,6 +48,7 @@ export default function ReportDetailPage() {
   const statusDropdownRef = useRef(null)
   const [agencyResponses, setAgencyResponses] = useState([])
   const [resolvingReport, setResolvingReport] = useState(false)
+  const [validatingReport, setValidatingReport] = useState(null)
   const [activityLogPage, setActivityLogPage] = useState(1)
   const activityLogPerPage = 10
 
@@ -242,6 +244,20 @@ export default function ReportDetailPage() {
       setNotification({ message: 'Failed to update status. Please try again.', type: 'error' })
     } finally {
       setUpdatingStatus(false)
+    }
+  }
+
+  const handleRejectReport = async () => {
+    setValidatingReport(reportId)
+    try {
+      await updateReportValidation(reportId, 'rejected')
+      setReport({ ...report, validation_status: 'rejected' })
+      setNotification({ message: 'Report rejected successfully', type: 'success' })
+    } catch (error) {
+      console.error('Failed to reject report:', error)
+      setNotification({ message: 'Failed to reject report. Please try again.', type: 'error' })
+    } finally {
+      setValidatingReport(null)
     }
   }
 
@@ -512,22 +528,22 @@ export default function ReportDetailPage() {
                       <>
                         {report.validation_status === 'rejected' && (
                           <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getValidationColor(report.validation_status)}`}>
-                            {report.validation_status.toUpperCase()}
+                            {report.validation_status.replace(/_/g, ' ').toUpperCase()}
                           </span>
                         )}
                         {report.on_private_property && report.property_owner_consent_status === 'denied' && (
                           <span className={`px-4 py-2 rounded-full text-sm font-semibold border bg-error/10 text-error border-error/30`}>
-                            {report.property_owner_consent_status.toUpperCase()}
+                            {report.property_owner_consent_status.replace(/_/g, ' ').toUpperCase()}
                           </span>
                         )}
                       </>
                     ) : (
                       <>
                         <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getStatusColor(report.status)}`}>
-                          {report.status.replace('_', ' ').toUpperCase()}
+                          {report.status.replace(/_/g, ' ').toUpperCase()}
                         </span>
                         <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getValidationColor(report.validation_status)}`}>
-                          {report.validation_status.toUpperCase()}
+                          {report.validation_status.replace(/_/g, ' ').toUpperCase()}
                         </span>
                         {report.on_private_property && (
                           <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${report.property_owner_consent_status === 'obtained'
@@ -536,12 +552,12 @@ export default function ReportDetailPage() {
                               ? 'bg-warning/10 text-warning border-warning/30'
                               : 'bg-surface text-text-muted border-border'
                             }`}>
-                            {report.property_owner_consent_status.toUpperCase()}
+                            {report.property_owner_consent_status.replace(/_/g, ' ').toUpperCase()}
                           </span>
                         )}
                         {report.stage && (
                           <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getLifecycleStageColor(report.stage)}`}>
-                            {report.stage.replace('_', ' ').toUpperCase()}
+                            {report.stage.replace(/_/g, ' ').toUpperCase()}
                           </span>
                         )}
                       </>
@@ -585,7 +601,7 @@ export default function ReportDetailPage() {
                       <div key={stage} className="flex-1 flex flex-col items-center z-10">
                         <div className={`w-6 h-6 rounded-full ${isCurrent ? 'bg-[var(--success)] ring-4 ring-[var(--success)]/20' : isCompleted ? 'bg-[var(--accent-green)]' : 'bg-border'} transition-all relative`} />
                         <span className={`text-xs mt-2 font-medium ${isCurrent ? 'text-[var(--success)]' : isCompleted ? 'text-[var(--accent-green)]' : 'text-text-muted'}`}>
-                          {stage.replace('_', ' ')}
+                          {stage.replace(/_/g, ' ').toUpperCase()}
                         </span>
                       </div>
                     )
@@ -832,7 +848,7 @@ export default function ReportDetailPage() {
                                 </td>
                                 <td className="py-3 px-4">
                                   <span className="px-2 py-1 rounded text-xs font-semibold bg-accent-green/20 text-accent-green border border-accent-green/30">
-                                    {response.action_type?.replace('_', ' ').toUpperCase()}
+                                    {response.action_type?.replace(/_/g, ' ').toUpperCase()}
                                   </span>
                                 </td>
                                 <td className="py-3 px-4 text-sm text-text-secondary">
@@ -954,7 +970,7 @@ export default function ReportDetailPage() {
                             ? 'bg-error/10 text-error border-error/30'
                             : 'bg-surface text-text-muted border-border'
                     }`}>
-                      {report.property_owner_consent_status.replace('_', ' ').toUpperCase()}
+                      {report.property_owner_consent_status.replace(/_/g, ' ').toUpperCase()}
                     </span>
                   </div>
                   <div className="space-y-3">
@@ -1031,6 +1047,17 @@ export default function ReportDetailPage() {
                     </button>
  )}
 
+                  {/* Reject Report for Manual Review */}
+                  {(report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review') && (
+                    <button
+                      onClick={handleRejectReport}
+                      disabled={validatingReport === reportId}
+                      className="w-full px-4 py-2 bg-error text-white rounded-lg hover:bg-error/80 disabled:opacity-50 font-medium"
+                    >
+                      {validatingReport === reportId ? 'Rejecting...' : 'Reject Report'}
+                    </button>
+                  )}
+
                   {/* Lifecycle Stage Control */}
                   <div className="relative" ref={lifecycleDropdownRef}>
                     <button
@@ -1038,7 +1065,7 @@ export default function ReportDetailPage() {
                         setShowLifecycleDropdown(!showLifecycleDropdown)
                         setShowStatusDropdown(false)
                       }}
-                      className="btn-primary w-full"
+                      className="w-full px-4 py-2 border-2 border-border text-text-primary rounded-lg hover:bg-surface-elevated font-medium transition-colors"
                     >
                       {updatingLifecycle ? 'Updating...' : 'Update Lifecycle Stage'}
                     </button>

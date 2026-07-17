@@ -49,16 +49,11 @@ export default function DashboardLayout({ children }) {
     checkAuth()
   }, [pathname])
 
-  async function logout() {
-    localStorage.removeItem('authToken')
-    router.push('/auth')
-  }
-
   if (!user) return <p className="text-center text-text-primary mt-8">Loading...</p>
 
   return (
     <div className="flex h-screen bg-background dark:bg-[#0a0f08]">
-      <Sidebar user={user} onLogout={logout} />
+      <Sidebar user={user} />
       <main className="flex-1 overflow-auto bg-surface dark:bg-[#0a0f08]">
         {children}
       </main>

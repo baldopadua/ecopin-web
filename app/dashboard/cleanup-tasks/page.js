@@ -118,16 +118,16 @@ export default function CleanupTasksPage() {
             ]}
           />
 
-          {/* Clear Filters Button */}
+          {/* Reset Filters Button */}
           {(searchQuery || statusFilter !== 'all') && (
             <button
               onClick={() => {
                 setSearchQuery('')
                 setStatusFilter('all')
               }}
-              className="px-4 py-2 text-sm text-accent-green hover:bg-accent-green/10 rounded-lg transition-colors"
+              className="btn-secondary whitespace-nowrap cursor-pointer"
             >
-              Clear Filters
+              Reset Filters
             </button>
           )}
 
@@ -188,8 +188,8 @@ export default function CleanupTasksPage() {
                         <span className="text-sm text-text-muted">{new Date(task.created_at).toLocaleDateString()}</span>
                       </td>
                       <td className="py-3 px-4">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>
-                          {task.status}
+                        <span className={`px-2 py-1 rounded text-xs font-semibold border ${getStatusColor(task.status)}`}>
+                          {task.status.replace(/_/g, ' ').toUpperCase()}
                         </span>
                       </td>
                     </tr>

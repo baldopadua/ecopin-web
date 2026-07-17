@@ -154,7 +154,7 @@ function MapCenter({ centerLat, centerLng }) {
   return null
 }
 
-export default function EcoPinMap({ centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode = false, selectedReports = [], onReportSelect, hideFilterPanel = false, onReportClick }) {
+export default function EcoPinMap({ centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode = false, selectedReports = [], onReportSelect, hideFilterPanel = false, onReportClick, onClusterSelect }) {
   console.log('EcoPinMap props:', { centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode, hideFilterPanel })
   
   const [mounted, setMounted] = useState(false)
@@ -171,6 +171,24 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
 
   // Convert selectedReports array to Set for internal use
   const selectedReportsSet = useMemo(() => new Set(selectedReports), [selectedReports])
+
+  // Filter clusters to only show those with reports matching current filters
+  const filteredClusters = useMemo(() => {
+    const filteredIds = new Set(filteredReports.filter(r => r.cluster_id).map(r => r.cluster_id))
+    return clusters.filter(c => filteredIds.has(c.id))
+  }, [clusters, filteredReports])
+
+  // Build cluster-to-reports map from filtered reports only
+  const filteredClusterReports = useMemo(() => {
+    const map = {}
+    filteredReports.forEach(report => {
+      if (report.cluster_id) {
+        if (!map[report.cluster_id]) map[report.cluster_id] = []
+        map[report.cluster_id].push(report)
+      }
+    })
+    return map
+  }, [filteredReports])
 
   // Filter states
   const [showPins, setShowPins] = useState(true)
@@ -308,7 +326,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
 
   // Apply filters
   useEffect(() => {
-    let filtered = reports
+    let filtered = reports.filter(r => r.validation_status !== 'rejected')
 
     if (statusFilter !== 'all') {
       filtered = filtered.filter(r => r.status === statusFilter)
@@ -424,9 +442,6 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
           key={centerLat && centerLng ? `map-${centerLat}-${centerLng}` : 'ecopin-map'}
           center={centerLat && centerLng ? [centerLat, centerLng] : PLP_CENTER}
           zoom={centerLat && centerLng ? 17 : DEFAULT_ZOOM}
-          maxBounds={PASIG_BOUNDS}
-          maxBoundsViscosity={1.0}
-          minZoom={13}
           style={{ height: '100%', width: '100%' }}
           ref={mapRef}
         >
@@ -439,7 +454,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
           <HeatmapLayer heatPoints={heatPoints} showHeatmap={showHeatmap} />
 
           {/* Cluster Markers (shown when zoomed out) */}
-          {showClusters && zoom <= 15 && clusters.map((cluster) => {
+          {showClusters && zoom <= 15 && filteredClusters.map((cluster) => {
             const center = parseGeometry(cluster.center)
             if (!center) return null
 
@@ -458,7 +473,16 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                     const marker = e.target
                     marker.closePopup()
                   },
-                  click: () => router.push(`/dashboard/clusters/${cluster.id}`)
+                  click: () => {
+                    if (selectionMode && onClusterSelect) {
+                      const memberReports = filteredClusterReports[cluster.id]
+                      if (memberReports && memberReports.length > 0) {
+                        onClusterSelect(memberReports.map(r => r.id))
+                      }
+                    } else {
+                      router.push(`/dashboard/clusters/${cluster.id}`)
+                    }
+                  }
                 }}
               >
                 <Popup>
@@ -481,15 +505,30 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                         Location: {center[0].toFixed(4)}, {center[1].toFixed(4)}
                       </p>
                     )}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        router.push(`/dashboard/clusters/${cluster.id}`)
-                      }}
-                      className="mt-2 w-full text-xs bg-accent-green text-white py-1 rounded hover:bg-accent-green-dark"
-                    >
-                      View All Reports
-                    </button>
+                    {selectionMode && onClusterSelect ? (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          const memberReports = filteredClusterReports[cluster.id]
+                          if (memberReports && memberReports.length > 0) {
+                            onClusterSelect(memberReports.map(r => r.id))
+                          }
+                        }}
+                        className="mt-2 w-full text-xs bg-accent-green text-white py-1 rounded hover:bg-accent-green-dark"
+                      >
+                        Add All Reports to Task
+                      </button>
+                    ) : (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          router.push(`/dashboard/clusters/${cluster.id}`)
+                        }}
+                        className="mt-2 w-full text-xs bg-accent-green text-white py-1 rounded hover:bg-accent-green-dark"
+                      >
+                        View All Reports
+                      </button>
+                    )}
                   </div>
                 </Popup>
               </Marker>
@@ -497,8 +536,8 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
           })}
 
           {/* Cluster Polygons (shown when zoomed in - connects actual report pins) */}
-          {showClusters && zoom > 15 && clusters.map((cluster) => {
-            const memberReports = clusterReports[cluster.id]
+          {showClusters && zoom > 15 && filteredClusters.map((cluster) => {
+            const memberReports = filteredClusterReports[cluster.id]
             console.log('Cluster polygon check:', cluster.id, 'memberReports:', memberReports, 'zoom:', zoom)
             if (!memberReports || memberReports.length < 2) return null
 
@@ -640,15 +679,30 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                     <div className="p-2">
                       <strong className="block text-sm">{report.title}</strong>
                       <p className="text-xs text-text-muted mt-1">{report.description?.substring(0, 100)}...</p>
-                      <div className="mt-2 flex gap-2">
-                        <span className={`text-xs px-2 py-1 rounded ${report.status === 'resolved' ? 'bg-success/20 text-success' :
-                          report.status === 'in_progress' ? 'bg-warning/20 text-warning' :
-                            'bg-error/20 text-error'
+                      <div className="mt-2 flex gap-2 flex-wrap">
+                        <span className={`text-xs px-2 py-1 rounded font-semibold border ${
+                          report.status === 'resolved' ? 'bg-success/20 text-success border-success/30' :
+                          report.status === 'in_progress' ? 'bg-warning/20 text-warning border-warning/30' :
+                          report.status === 'waiting_for_feedback' ? 'bg-purple/20 text-purple border-purple/30' :
+                          report.status === 'closed' ? 'bg-text-muted/20 text-text-muted border-text-muted/30' :
+                          report.status === 'pending_owner_consent' ? 'bg-info/20 text-info border-info/30' :
+                            'bg-error/20 text-error border-error/30'
                           }`}>
-                          {report.status.replace('_', ' ')}
+                          {report.status?.replace(/_/g, ' ').toUpperCase()}
                         </span>
-                        <span className="text-xs px-2 py-1 rounded bg-info/20 text-info">
-                          {report.issue_type}
+                        <span className={`text-xs px-2 py-1 rounded font-semibold border ${
+                          report.validation_status === 'validated' || report.validation_status === 'automatically_valid'
+                            ? 'bg-success/20 text-success border-success/30'
+                            : report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review'
+                            ? 'bg-purple/20 text-purple border-purple/30'
+                            : report.validation_status === 'rejected'
+                            ? 'bg-error/20 text-error border-error/30'
+                            : 'bg-warning/20 text-warning border-warning/30'
+                          }`}>
+                          {report.validation_status?.replace(/_/g, ' ').toUpperCase()}
+                        </span>
+                        <span className="text-xs px-2 py-1 rounded font-semibold border bg-info/20 text-info border-info/30">
+                          {report.issue_type?.replace(/_/g, ' ').toUpperCase()}
                         </span>
                       </div>
                       {!selectionMode && (
@@ -707,7 +761,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                       onChange={(e) => setShowPins(e.target.checked)}
                       className="sr-only"
                     />
-                    <div className={`w-10 h-5 rounded-full transition-colors ${showPins ? 'bg-accent-green' : 'bg-surface'}`}>
+                    <div className={`w-10 h-5 rounded-full transition-colors ${showPins ? 'bg-accent-green' : 'bg-text-muted/30'}`}>
                       <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white dark:bg-surface-elevated rounded-full shadow-sm transition-transform ${showPins ? 'translate-x-5' : 'translate-x-0'}`}></div>
                     </div>
                   </div>
@@ -721,7 +775,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                       onChange={(e) => setShowClusters(e.target.checked)}
                       className="sr-only"
                     />
-                    <div className={`w-10 h-5 rounded-full transition-colors ${showClusters ? 'bg-accent-green' : 'bg-surface'}`}>
+                    <div className={`w-10 h-5 rounded-full transition-colors ${showClusters ? 'bg-accent-green' : 'bg-text-muted/30'}`}>
                       <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white dark:bg-surface-elevated rounded-full shadow-sm transition-transform ${showClusters ? 'translate-x-5' : 'translate-x-0'}`}></div>
                     </div>
                   </div>
@@ -735,7 +789,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                       onChange={(e) => setShowHeatmap(e.target.checked)}
                       className="sr-only"
                     />
-                    <div className={`w-10 h-5 rounded-full transition-colors ${showHeatmap ? 'bg-accent-green' : 'bg-surface'}`}>
+                    <div className={`w-10 h-5 rounded-full transition-colors ${showHeatmap ? 'bg-accent-green' : 'bg-text-muted/30'}`}>
                       <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white dark:bg-surface-elevated rounded-full shadow-sm transition-transform ${showHeatmap ? 'translate-x-5' : 'translate-x-0'}`}></div>
                     </div>
                   </div>
@@ -834,18 +888,19 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
               </div>
             </div>
 
-            {/* Clear Filters Button */}
-            {(statusFilter !== 'all' || issueTypeFilter !== 'all' || startDate || endDate) && (
+            {/* Reset Filters Button */}
+            {(statusFilter !== 'all' || validationStatusFilter !== 'all' || issueTypeFilter !== 'all' || startDate || endDate) && (
               <button
                 onClick={() => {
                   setStatusFilter('all')
+                  setValidationStatusFilter('all')
                   setIssueTypeFilter('all')
                   setStartDate('')
                   setEndDate('')
                 }}
-                className="w-full px-4 py-2.5 text-sm font-medium text-accent-green hover:bg-accent-green/10 rounded-xl transition-colors mb-5 border border-accent-green/20"
+                className="btn-secondary whitespace-nowrap cursor-pointer"
               >
-                Clear Filters
+                Reset Filters
               </button>
             )}
 

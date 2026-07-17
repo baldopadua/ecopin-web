@@ -27,6 +27,7 @@ export default function ProfilePage() {
   })
   const [changingPassword, setChangingPassword] = useState(false)
   const [theme, setTheme] = useState('light')
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
 
   useEffect(() => {
     const saved = localStorage.getItem('theme')
@@ -45,6 +46,11 @@ export default function ProfilePage() {
     } else {
       document.documentElement.classList.remove('dark')
     }
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('authToken')
+    router.push('/auth')
   }
 
   useEffect(() => {
@@ -281,12 +287,11 @@ export default function ProfilePage() {
         ]}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Avatar Section */}
-        <div className="card p-4">
-          <h2 className="text-lg font-semibold text-text-primary mb-4">Avatar</h2>
-          <div className="flex items-center gap-4">
-            <div className="relative group">
+      <div className="space-y-6 max-w-3xl mx-auto">
+        {/* Profile Card - Avatar + Name + Email */}
+        <div className="card p-6 mt-8">
+          <div className="flex items-center gap-6 mb-6">
+            <div className="relative group flex-shrink-0">
               {formData.avatar_url ? (
                 <img
                   src={formData.avatar_url}
@@ -302,7 +307,7 @@ export default function ProfilePage() {
                 <button
                   onClick={handleRemoveAvatar}
                   disabled={uploadingAvatar}
-                  className="absolute -top-2 -right-2 w-6 h-6 bg-error text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-error/80 disabled:opacity-50"
+                  className="absolute -top-1 -right-1 w-6 h-6 bg-error text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-error/80 disabled:opacity-50"
                   title="Remove avatar"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -311,70 +316,80 @@ export default function ProfilePage() {
                 </button>
               )}
             </div>
-            <div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarUpload}
-                disabled={uploadingAvatar}
-                className="hidden"
-                id="avatar-upload"
-              />
-              <label
-                htmlFor="avatar-upload"
-                className="btn-primary cursor-pointer inline-block text-sm"
-              >
-                {uploadingAvatar ? 'Uploading...' : 'Change Avatar'}
-              </label>
-              <p className="text-xs text-text-secondary mt-1">
-                JPEG, JPG, PNG, WEBP (Max 5MB)
-              </p>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-xl font-bold text-text-primary truncate">{formData.full_name || 'User'}</h2>
+              <p className="text-sm text-text-muted truncate">{formData.email || 'No email provided'}</p>
+              <div className="mt-3">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  disabled={uploadingAvatar}
+                  className="hidden"
+                  id="avatar-upload"
+                />
+                <label
+                  htmlFor="avatar-upload"
+                  className="btn-secondary cursor-pointer inline-block text-xs py-1.5 px-3"
+                >
+                  {uploadingAvatar ? 'Uploading...' : 'Change Avatar'}
+                </label>
+                <span className="text-xs text-text-muted ml-2">JPEG, JPG, PNG, WEBP (Max 5MB)</span>
+              </div>
             </div>
+          </div>
+
+          <div className="border-t border-border pt-4">
+            <label className="block text-sm font-medium text-text-secondary mb-2">
+              Full Name
+            </label>
+            <input
+              type="text"
+              name="full_name"
+              value={formData.full_name}
+              onChange={handleInputChange}
+              className="input"
+              placeholder="Enter your full name"
+            />
+          </div>
+
+          {error && (
+            <div className="mt-4 p-3 bg-error/10 dark:bg-error/20 border border-error/20 dark:border-error/30 rounded-lg">
+              <p className="text-sm text-error">{error}</p>
+            </div>
+          )}
+
+          {success && (
+            <div className="mt-4 p-3 bg-success/10 dark:bg-success/20 border border-success/20 dark:border-success/30 rounded-lg">
+              <p className="text-sm text-success">{success}</p>
+            </div>
+          )}
+
+          <div className="mt-6 flex justify-end">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="btn-primary"
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
           </div>
         </div>
 
-        {/* Email - Read Only */}
-        <div className="card p-4 bg-surface/50 border-border/50">
-          <h2 className="text-lg font-semibold text-text-secondary mb-4">Email</h2>
-          <div className="p-3 bg-surface rounded-lg border border-border">
-            <p className="text-text-muted text-sm">{formData.email || 'No email provided'}</p>
-          </div>
-        </div>
-
-        {/* Profile Information */}
-        <div className="card p-4 md:col-span-2">
-          <h2 className="text-lg font-semibold text-text-primary mb-4">Profile Information</h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">
-                Full Name
-              </label>
-              <input
-                type="text"
-                name="full_name"
-                value={formData.full_name}
-                onChange={handleInputChange}
-                className="input"
-                placeholder="Enter your full name"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">
-                Password
-              </label>
-              <button
-                onClick={() => setShowPasswordForm(!showPasswordForm)}
-                className="btn-secondary w-full"
-              >
-                {showPasswordForm ? 'Cancel' : 'Change Password'}
-              </button>
-            </div>
+        {/* Password Card */}
+        <div className="card p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-text-primary">Password</h2>
+            <button
+              onClick={() => setShowPasswordForm(!showPasswordForm)}
+              className="btn-secondary text-sm py-1.5 px-3"
+            >
+              {showPasswordForm ? 'Cancel' : 'Change Password'}
+            </button>
           </div>
 
           {showPasswordForm && (
-            <div className="mt-4 p-4 bg-surface rounded-lg border border-border space-y-3">
+            <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-text-secondary mb-2">
                   Current Password
@@ -466,49 +481,72 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {error && (
-            <div className="mt-4 p-3 bg-error/10 dark:bg-error/20 border border-error/20 dark:border-error/30 rounded-lg">
-              <p className="text-sm text-error">{error}</p>
-            </div>
+          {!showPasswordForm && (
+            <p className="text-sm text-text-muted">Update your password to keep your account secure.</p>
           )}
-
-          {success && (
-            <div className="mt-4 p-3 bg-success/10 dark:bg-success/20 border border-success/20 dark:border-success/30 rounded-lg">
-              <p className="text-sm text-success dark:text-success">{success}</p>
-            </div>
-          )}
-
-          <div className="mt-4 flex justify-end">
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="btn-primary"
-            >
-              {saving ? 'Saving...' : 'Save Changes'}
-            </button>
-          </div>
         </div>
 
-        {/* Appearance */}
-        <div className="card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-text-primary">Dark Mode</h2>
-              <p className="text-sm text-text-muted mt-1">Switch between light and dark appearance</p>
+        {/* Appearance + Logout Row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="card p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-semibold text-text-primary">Dark Mode</h2>
+                <p className="text-xs text-text-muted mt-1">Switch appearance</p>
+              </div>
+              <button
+                onClick={() => toggleTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="relative w-12 h-6 rounded-full transition-colors"
+                style={{ backgroundColor: theme === 'dark' ? 'var(--primary)' : 'var(--border)' }}
+              >
+                <div
+                  className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform"
+                  style={{ transform: theme === 'dark' ? 'translateX(26px)' : 'translateX(2px)' }}
+                />
+              </button>
             </div>
-            <button
-              onClick={() => toggleTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="relative w-12 h-6 rounded-full transition-colors"
-              style={{ backgroundColor: theme === 'dark' ? 'var(--primary)' : 'var(--border)' }}
-            >
-              <div
-                className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform"
-                style={{ transform: theme === 'dark' ? 'translateX(26px)' : 'translateX(2px)' }}
-              />
-            </button>
+          </div>
+
+          <div className="card p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-semibold text-text-primary">Log Out</h2>
+                <p className="text-xs text-text-muted mt-1">Sign out of your account</p>
+              </div>
+              <button
+                onClick={() => setShowLogoutModal(true)}
+                className="px-4 py-1.5 bg-error/10 text-error border border-error/30 rounded-lg hover:bg-error/20 font-medium text-sm transition-colors cursor-pointer"
+              >
+                Log Out
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-surface border border-border rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4">
+            <h3 className="text-lg font-bold text-text-primary mb-2">Log Out</h3>
+            <p className="text-sm text-text-muted mb-6">Are you sure you want to log out of your account?</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className="flex-1 px-4 py-2 border border-border rounded-lg text-text-primary hover:bg-surface-elevated font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex-1 px-4 py-2 bg-error text-white rounded-lg hover:bg-error/80 font-medium transition-colors"
+              >
+                Log Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

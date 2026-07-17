@@ -205,12 +205,12 @@ export default function AdminDashboard() {
       </div>
 
       {/* Recent Audit Logs */}
-      <div className="card mt-8">
+      <div className="card no-hover mt-8">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-text-primary">Recent Audit Logs</h3>
           <button
             onClick={() => router.push('/dashboard/admin/audit-logs')}
-            className="text-sm text-accent-green hover:text-accent-green-dark font-medium"
+            className="text-sm text-accent-green hover:text-accent-green-dark font-medium cursor-pointer"
           >
             View All
           </button>

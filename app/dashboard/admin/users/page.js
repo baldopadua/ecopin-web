@@ -13,6 +13,7 @@ export default function UserManagement() {
   const [error, setError] = useState(null)
   const [notification, setNotification] = useState(null)
   const [filters, setFilters] = useState({ search: '', role: '' })
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 })
   const [updatingRole, setUpdatingRole] = useState(null)
   const [deletingUser, setDeletingUser] = useState(null)
@@ -20,9 +21,18 @@ export default function UserManagement() {
   const [creatingUser, setCreatingUser] = useState(false)
   const [newUser, setNewUser] = useState({ email: '', password: '', full_name: '', role: 'lgu' })
 
+  // Debounce search input and reset page when filters change
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(filters.search)
+      setPagination(prev => ({ ...prev, page: 1 }))
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [filters.search, filters.role])
+
   useEffect(() => {
     loadUsers()
-  }, [filters, pagination.page])
+  }, [debouncedSearch, filters.role, pagination.page])
 
   const loadUsers = async () => {
     try {
@@ -30,7 +40,7 @@ export default function UserManagement() {
       const data = await getAllUsers({
         page: pagination.page,
         limit: 20,
-        search: filters.search,
+        search: debouncedSearch,
         role: filters.role
       })
       setUsers(data.users || [])
@@ -160,38 +170,46 @@ export default function UserManagement() {
       )}
 
       {/* Filters */}
-      <div className="card mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex gap-4 flex-wrap flex-1">
-            <div className="w-full max-w-xl">
-              <input
-                type="text"
-                placeholder="Search by name or email..."
-                value={filters.search}
-                onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                className="w-full p-3 border border-border rounded-lg bg-surface text-text-primary"
-              />
-            </div>
-            <div className="min-w-[150px]">
-              <FilterDropdown
-                label="All Roles"
-                value={filters.role}
-                onChange={(val) => setFilters(prev => ({ ...prev, role: val }))}
-                options={[
-                  { value: '', label: 'All Roles' },
-                  { value: 'citizen', label: 'Citizen' },
-                  { value: 'lgu', label: 'LGU' },
-                  { value: 'admin', label: 'Admin' }
-                ]}
-              />
-            </div>
+      <div className="card relative z-10 mb-6">
+        <div className="flex gap-4 items-end">
+          <div className="flex-1 min-w-[200px]">
+            <input
+              type="text"
+              placeholder="Search by name or email..."
+              value={filters.search}
+              onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+              className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-text-primary"
+            />
           </div>
-          <button
-            onClick={() => setShowCreateForm(!showCreateForm)}
-            className="btn-primary"
-          >
-            {showCreateForm ? 'Cancel' : 'Create User'}
-          </button>
+          <div className="flex-1 min-w-[150px]">
+            <FilterDropdown
+              label="All Roles"
+              value={filters.role}
+              onChange={(val) => setFilters(prev => ({ ...prev, role: val }))}
+              options={[
+                { value: '', label: 'All Roles' },
+                { value: 'citizen', label: 'Citizen' },
+                { value: 'lgu', label: 'LGU' },
+                { value: 'admin', label: 'Admin' }
+              ]}
+            />
+          </div>
+          {(filters.search || filters.role) && (
+            <button
+              onClick={() => { setFilters({ search: '', role: '' }); setPagination(prev => ({ ...prev, page: 1 })) }}
+              className="btn-secondary whitespace-nowrap cursor-pointer"
+            >
+              Reset Filters
+            </button>
+          )}
+          <div>
+            <button
+              onClick={() => setShowCreateForm(!showCreateForm)}
+              className="btn-primary whitespace-nowrap"
+            >
+              {showCreateForm ? 'Cancel' : 'Create User'}
+            </button>
+          </div>
         </div>
 
         {showCreateForm && (
@@ -278,7 +296,7 @@ export default function UserManagement() {
       </div>
 
       {/* Users Table */}
-      <div className="card">
+      <div className="card no-hover">
         {loading ? (
           <p className="text-text-muted">Loading users...</p>
         ) : error ? (
@@ -346,9 +364,19 @@ export default function UserManagement() {
                         <button
                           onClick={() => handleDeleteUser(user.id)}
                           disabled={deletingUser === user.id}
-                          className="text-error hover:text-error/80 text-sm disabled:opacity-50"
+                          className="text-error hover:text-error/80 disabled:opacity-50 cursor-pointer"
+                          title={deletingUser === user.id ? 'Deleting...' : 'Delete user'}
                         >
-                          {deletingUser === user.id ? 'Deleting...' : 'Delete'}
+                          {deletingUser === user.id ? (
+                            <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                          ) : (
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          )}
                         </button>
                       </td>
                     </tr>

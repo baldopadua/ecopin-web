@@ -11,7 +11,7 @@ export default function ResponseLogs() {
   const [logs, setLogs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [filters, setFilters] = useState({ action_type: '', start_date: '', end_date: '' })
+  const [filters, setFilters] = useState({ search: '', action_type: '', start_date: '', end_date: '' })
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 8
 
@@ -34,6 +34,15 @@ export default function ResponseLogs() {
 
   useEffect(() => {
     let filtered = allLogs
+    if (filters.search) {
+      const term = filters.search.toLowerCase()
+      filtered = filtered.filter(log =>
+        (log.profiles?.full_name || '').toLowerCase().includes(term) ||
+        (log.profiles?.email || '').toLowerCase().includes(term) ||
+        (log.action_details || '').toLowerCase().includes(term) ||
+        (log.reports?.title || '').toLowerCase().includes(term)
+      )
+    }
     if (filters.action_type) {
       filtered = filtered.filter(log => log.action_type === filters.action_type)
     }
@@ -94,7 +103,16 @@ export default function ResponseLogs() {
 
       {/* Filters */}
       <div className="card mb-6 sticky top-[120px] z-10 bg-white/60 dark:bg-black/60  ">
-        <div className="flex gap-4 flex-wrap">
+        <div className="flex gap-4 items-end">
+          <div className="flex-1 min-w-[200px]">
+            <input
+              type="text"
+              placeholder="Search by user, details, or report..."
+              value={filters.search}
+              onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+              className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-text-primary"
+            />
+          </div>
           <div className="flex-1 min-w-[200px]">
             <FilterDropdown
               label="All Actions"
@@ -114,27 +132,38 @@ export default function ResponseLogs() {
               ]}
             />
           </div>
-          <div className="min-w-[150px]">
+          <div className="flex-1 min-w-[150px]">
+            <label className="block text-xs font-semibold text-text-muted mb-1">From</label>
             <input
               type="date"
               value={filters.start_date}
               onChange={(e) => setFilters(prev => ({ ...prev, start_date: e.target.value }))}
-              className="w-full p-3 border border-border rounded-lg bg-surface text-text-primary"
+              className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-text-primary"
             />
           </div>
-          <div className="min-w-[150px]">
+          <div className="flex items-end pb-2 text-text-muted">—</div>
+          <div className="flex-1 min-w-[150px]">
+            <label className="block text-xs font-semibold text-text-muted mb-1">To</label>
             <input
               type="date"
               value={filters.end_date}
               onChange={(e) => setFilters(prev => ({ ...prev, end_date: e.target.value }))}
-              className="w-full p-3 border border-border rounded-lg bg-surface text-text-primary"
+              className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-text-primary"
             />
           </div>
+          {(filters.search || filters.action_type || filters.start_date || filters.end_date) && (
+            <button
+              onClick={() => setFilters({ search: '', action_type: '', start_date: '', end_date: '' })}
+              className="btn-secondary whitespace-nowrap cursor-pointer"
+            >
+              Reset Filters
+            </button>
+          )}
         </div>
       </div>
 
       {/* Logs Table */}
-      <div className="card">
+      <div className="card no-hover">
         {loading ? (
           <p className="text-text-muted">Loading response logs...</p>
         ) : error ? (

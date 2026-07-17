@@ -6,6 +6,11 @@ import PageHeader from '@/components/layout/PageHeader'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
 
+// Polyfill Buffer for browser environment
+if (typeof window !== 'undefined' && !window.Buffer) {
+  window.Buffer = Buffer
+}
+
 const parseClusterCenter = (cluster) => {
   if (cluster.center_lat && cluster.center_lng) {
     return [cluster.center_lat, cluster.center_lng]
@@ -31,16 +36,42 @@ const parseClusterCenter = (cluster) => {
   return null
 }
 
-const calculateCenterFromReports = (reports) => {
-  if (!reports || reports.length === 0) return null
-  
-  const validReports = reports.filter(r => r.latitude && r.longitude)
-  if (validReports.length === 0) return null
-  
-  const avgLat = validReports.reduce((sum, r) => sum + parseFloat(r.latitude), 0) / validReports.length
-  const avgLng = validReports.reduce((sum, r) => sum + parseFloat(r.longitude), 0) / validReports.length
-  
-  return [avgLat, avgLng]
+const parseLocation = (location, latitude, longitude) => {
+  // reports_view has latitude and longitude columns directly
+  if (latitude && longitude) {
+    return { latitude, longitude }
+  }
+
+  if (!location) return { latitude: null, longitude: null }
+
+  try {
+    // Handle GeoJSON format from reports_view
+    if (typeof location === 'string' && location.startsWith('{')) {
+      const geoJSON = JSON.parse(location)
+      if (geoJSON.type === 'Point' && geoJSON.coordinates) {
+        return { latitude: geoJSON.coordinates[1], longitude: geoJSON.coordinates[0] }
+      }
+    }
+    // Handle hex string format
+    else if (typeof location === 'string') {
+      const buffer = Buffer.from(location, 'hex')
+      const geometry = wkx.Geometry.parse(buffer)
+      if (geometry && geometry.x && geometry.y) {
+        return { latitude: geometry.y, longitude: geometry.x }
+      }
+    }
+    // Handle Buffer format
+    else if (Buffer.isBuffer(location)) {
+      const geometry = wkx.Geometry.parse(location)
+      if (geometry && geometry.x && geometry.y) {
+        return { latitude: geometry.y, longitude: geometry.x }
+      }
+    }
+  } catch (error) {
+    console.error('Error parsing location:', error)
+  }
+
+  return { latitude: null, longitude: null }
 }
 
 export default function ClusterDetailPage() {
@@ -107,37 +138,58 @@ export default function ClusterDetailPage() {
   const getStatusColor = (status) => {
     switch (status) {
       case 'resolved':
-        return 'bg-success/10 text-success'
+        return 'bg-success/10 text-success border-success/30'
       case 'in_progress':
-        return 'bg-warning/10 text-warning'
+        return 'bg-warning/10 text-warning border-warning/30'
       case 'waiting_for_feedback':
-        return 'bg-info/10 text-info'
+        return 'bg-info/10 text-info border-info/30'
       case 'closed':
-        return 'bg-surface text-text-muted'
+        return 'bg-surface text-text-muted border-border'
       case 'pending_owner_consent':
-        return 'bg-warning/10 text-warning'
+        return 'bg-warning/10 text-warning border-warning/30'
       default:
-        return 'bg-error/10 text-error'
+        return 'bg-error/10 text-error border-error/30'
     }
   }
 
   const getSeverityColor = (severity) => {
     switch (severity) {
       case 'high':
-        return 'bg-error/10 text-error'
+        return 'bg-error/10 text-error border-error/30'
       case 'medium':
-        return 'bg-orange-100 text-orange-800'
+        return 'bg-warning/10 text-warning border-warning/30'
       case 'low':
-        return 'bg-info/10 text-info'
+        return 'bg-info/10 text-info border-info/30'
       default:
-        return 'bg-surface text-text-muted'
+        return 'bg-surface text-text-muted border-border'
+    }
+  }
+
+  const getValidationColor = (status) => {
+    switch (status) {
+      case 'validated':
+      case 'automatically_valid':
+        return 'bg-success/10 text-success border-success/30'
+      case 'pending':
+      case 'pending_ai_validation':
+        return 'bg-warning/10 text-warning border-warning/30'
+      case 'manual_review':
+      case 'Manual_Review':
+        return 'bg-info/10 text-info border-info/30'
+      case 'rejected':
+        return 'bg-error/10 text-error border-error/30'
+      default:
+        return 'bg-surface text-text-muted border-border'
     }
   }
 
   if (loading) return <div className="p-8"><p>Loading cluster details...</p></div>
   if (!cluster) return <div className="p-8"><p>Cluster not found</p></div>
 
-  const centerCoords = parseClusterCenter(cluster) || calculateCenterFromReports(reports)
+  const firstReport = reports.find(r => {
+    const loc = parseLocation(r.location, r.latitude, r.longitude);
+    return loc.latitude && loc.longitude;
+  });
 
   return (
     <div className="p-8">
@@ -153,83 +205,98 @@ export default function ClusterDetailPage() {
 
       {/* Cluster Summary Card */}
       <div className="card mb-6 no-hover">
-        <div className="flex justify-between items-start">
-          <h2 className="text-xl font-bold text-text-primary mb-4">Cluster Summary</h2>
-          <button
-            onClick={() => setShowCreateTaskModal(true)}
-            className="px-4 py-2 bg-accent-green text-white rounded-lg hover:bg-opacity-90 transition-colors"
-          >
-            Create Batch Cleanup Task
-          </button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <h2 className="text-xl font-bold text-text-primary mb-4">Cluster Summary</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div className="p-4 border border-border rounded-lg">
             <p className="text-sm text-text-muted">Total Reports</p>
             <p className="text-2xl font-bold text-text-primary">{reports.length}</p>
           </div>
           <div className="p-4 border border-border rounded-lg">
             <p className="text-sm text-text-muted">Severity</p>
-            <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getSeverityColor(cluster.severity)}`}>
-              {cluster.severity}
+            <span className={`inline-block px-2 py-1 rounded text-xs font-semibold border ${getSeverityColor(cluster.severity)}`}>
+              {cluster.severity?.toUpperCase()}
             </span>
           </div>
           <div className="p-4 border border-border rounded-lg">
             <p className="text-sm text-text-muted">Issue Type</p>
             <p className="text-lg font-semibold text-text-primary">{cluster.issue_type || 'N/A'}</p>
           </div>
-          <div className="p-4 border border-border rounded-lg">
-            <a
-              href={centerCoords ? `/dashboard/map-view?lat=${centerCoords[0]}&lng=${centerCoords[1]}` : '#'}
-              onClick={(e) => {
-                if (!centerCoords) e.preventDefault()
-              }}
-              className={`btn-secondary w-full block text-center ${!centerCoords ? 'opacity-50 pointer-events-none' : ''}`}
-            >
-              View on Map
-            </a>
-          </div>
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowCreateTaskModal(true)}
+            className="btn-primary"
+          >
+            Create Batch Cleanup Task
+          </button>
+          {firstReport && (() => {
+            const loc = parseLocation(firstReport.location, firstReport.latitude, firstReport.longitude);
+            return (
+              <button
+                onClick={() => router.push(`/dashboard/map-view?lat=${loc.latitude}&lng=${loc.longitude}&id=${firstReport.id}&validationStatus=${firstReport.validation_status}&status=${firstReport.status}`)}
+                className="btn-secondary"
+              >
+                View on Map
+              </button>
+            );
+          })()}
         </div>
       </div>
 
       {/* Reports List */}
-      <div className="card">
+      <div className="card no-hover">
         <h2 className="text-xl font-bold text-text-primary mb-4">Reports in this Cluster</h2>
         {reports.length === 0 ? (
           <p className="text-text-muted">No reports found in this cluster</p>
         ) : (
-          <div className="space-y-4">
-            {reports.map((report) => (
-              <div
-                key={report.id}
-                className="p-4 border border-border rounded-lg hover:bg-surface cursor-pointer transition-colors"
-                onClick={() => handleRowClick(report.id)}
-              >
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-text-primary">{report.title}</h3>
-                    <p className="text-text-secondary mt-1 line-clamp-2">{report.description}</p>
-                    <div className="mt-2 flex flex-wrap gap-4 text-sm">
-                      <span className="text-text-muted">Type: {report.issue_type || 'N/A'}</span>
-                      <span className="text-text-muted">
-                        Date: {new Date(report.created_at).toLocaleDateString()}
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Title</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Issue Type</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Date</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Status</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Validation</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reports.map((report) => (
+                  <tr
+                    key={report.id}
+                    className="border-b border-border cursor-pointer hover:bg-surface transition-colors"
+                    onClick={() => handleRowClick(report.id)}
+                  >
+                    <td className="py-3 px-4">
+                      <span className="font-medium text-text-primary">{report.title}</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-sm text-text-secondary">{report.issue_type || 'N/A'}</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-sm text-text-muted">{new Date(report.created_at).toLocaleDateString()}</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`px-2 py-1 rounded text-xs font-semibold border ${getStatusColor(report.status)}`}>
+                        {report.status.replace(/_/g, ' ').toUpperCase()}
                       </span>
-                    </div>
-                  </div>
-                  <div className="ml-4 flex flex-col gap-2">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(report.status)}`}>
-                      {report.status.replace('_', ' ')}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`px-2 py-1 rounded text-xs font-semibold border ${getValidationColor(report.validation_status)}`}>
+                        {report.validation_status === 'validated' ? 'AI VALIDATED' : report.validation_status.replace(/_/g, ' ').toUpperCase()}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
 
       {/* Create Task Modal */}
       {showCreateTaskModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
           <div className="bg-surface dark:bg-surface-elevated rounded-lg p-6 w-full max-w-md">
             <h3 className="text-xl font-bold mb-4">Create Cleanup Task</h3>
             <div className="mb-4">
@@ -255,14 +322,14 @@ export default function ClusterDetailPage() {
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowCreateTaskModal(false)}
-                className="px-4 py-2 bg-surface text-text-primary rounded-lg hover:bg-surface-elevated"
+                className="btn-secondary"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateTask}
                 disabled={creatingTask || !taskTitle}
-                className="px-4 py-2 bg-accent-green text-white rounded-lg hover:bg-opacity-90 disabled:opacity-50"
+                className="btn-primary"
               >
                 {creatingTask ? 'Creating...' : 'Create Task'}
               </button>

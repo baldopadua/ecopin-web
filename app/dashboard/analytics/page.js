@@ -26,8 +26,8 @@ ChartJS.register(
   Legend
 )
 
-const COLORS = ['#457113', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6', '#EC4899']
-const SATISFACTION_COLORS = ['#EF4444', '#F59E0B', '#EAB308', '#84CC16', '#22C55E']
+const COLORS = ['#6B8F4A', '#D4A843', '#C75050', '#6A9BD8', '#A78BDA', '#D68AB8']
+const SATISFACTION_COLORS = ['#C75050', '#D4A843', '#D4C76A', '#8FBF5A', '#6BBF6B']
 const SATISFACTION_LABELS = ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied']
 
 export default function AnalyticsPage() {
@@ -51,12 +51,10 @@ export default function AnalyticsPage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        console.log('Loading analytics data...')
         const [reportsData, satisfactionDataResult] = await Promise.all([
           fetchPublicReports(),
           fetchSatisfactionAnalytics().catch(() => null)
         ])
-        console.log('Analytics data loaded:', { reportsData, satisfactionDataResult })
         setReports(reportsData)
         setSatisfactionData(satisfactionDataResult)
 
@@ -82,7 +80,7 @@ export default function AnalyticsPage() {
           return false
         }).length
 
-        const resolvedReports = reportsData.filter(r => r.status === 'resolved' && r.created_at && r.updated_at)
+        const resolvedReports = reportsData.filter(r => (r.status === 'resolved' || r.status === 'closed') && r.created_at && r.updated_at)
         let avgResolutionTime = 'N/A'
         if (resolvedReports.length > 0) {
           const totalHours = resolvedReports.reduce((sum, r) => {
@@ -99,7 +97,7 @@ export default function AnalyticsPage() {
           }
         }
 
-        const resolutionRate = total > 0 ? Math.round((resolved / total) * 100) : 0
+        const resolutionRate = total > 0 ? Math.round(((resolved + closed) / total) * 100) : 0
 
         setStats({
           total,
@@ -123,12 +121,6 @@ export default function AnalyticsPage() {
     }
     loadData()
   }, [])
-
-  const totalReports = reports.length
-  const unresolvedReports = reports.filter(r => r.status === 'unresolved').length
-  const inProgressReports = reports.filter(r => r.status === 'in_progress').length
-  const resolvedReports = reports.filter(r => r.status === 'resolved').length
-  const resolutionRate = totalReports > 0 ? Math.round((resolvedReports / totalReports) * 100) : 0
 
   // Helper function to get week number
   function getWeekNumber(d) {
@@ -191,7 +183,7 @@ export default function AnalyticsPage() {
           weekMap[key] = { total: 0, resolved: 0 }
         }
         weekMap[key].total += 1
-        if (report.status === 'resolved') {
+        if (report.status === 'resolved' || report.status === 'closed') {
           weekMap[key].resolved += 1
         }
       }
@@ -204,22 +196,6 @@ export default function AnalyticsPage() {
       }))
       .sort((a, b) => a.week.localeCompare(b.week))
       .slice(-12) // Last 12 weeks
-  }
-
-  // Prepare data for most active issue type pie chart
-  const mostActiveIssueType = () => {
-    const typeMap = {}
-
-    reports.forEach(report => {
-      if (report.issue_type) {
-        typeMap[report.issue_type] = (typeMap[report.issue_type] || 0) + 1
-      }
-    })
-
-    return Object.entries(typeMap)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 6) // Top 6 issue types
   }
 
   // Prepare data for reports by status pie chart
@@ -240,10 +216,7 @@ export default function AnalyticsPage() {
   const weeklyVolumeData = weeklyReportVolume()
   const issueTypeData = reportsByIssueType()
   const resolutionRateData = resolutionRateOverTime()
-  const mostActiveData = mostActiveIssueType()
   const statusData = reportsByStatus()
-
-  console.log('Analytics chart data:', { weeklyVolumeData, issueTypeData, resolutionRateData, mostActiveData, statusData })
 
   // Prepare Chart.js data formats
   const weeklyVolumeChartData = {
@@ -252,7 +225,7 @@ export default function AnalyticsPage() {
       {
         label: 'Reports',
         data: weeklyVolumeData.map(d => d.count),
-        backgroundColor: '#457113',
+        backgroundColor: '#6B8F4A',
         borderRadius: 4,
       }
     ]
@@ -274,19 +247,9 @@ export default function AnalyticsPage() {
       {
         label: 'Resolution Rate (%)',
         data: resolutionRateData.map(d => d.rate),
-        borderColor: '#3B82F6',
-        backgroundColor: '#3B82F6',
+        borderColor: '#6A9BD8',
+        backgroundColor: '#6A9BD8',
         tension: 0.1,
-      }
-    ]
-  }
-
-  const mostActiveChartData = {
-    labels: mostActiveData.map(d => d.name),
-    datasets: [
-      {
-        data: mostActiveData.map(d => d.value),
-        backgroundColor: COLORS.slice(0, mostActiveData.length),
       }
     ]
   }
@@ -388,7 +351,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {/* Reports per Week Bar Chart */}
         <div className="chart-card">
           <h2>Reports per Week</h2>
@@ -413,20 +376,6 @@ export default function AnalyticsPage() {
               <div className="chart-placeholder">No data available for the selected period</div>
             ) : (
               <Bar data={resolutionRateChartData} options={{ maintainAspectRatio: false }} />
-            )}
-          </div>
-        </div>
-
-        {/* Most Active Issue Type Pie Chart */}
-        <div className="chart-card">
-          <h2>Most Active Issue Types</h2>
-          <div style={{ width: '100%', height: '320px' }}>
-            {loading ? (
-              <div className="chart-placeholder">Loading chart data...</div>
-            ) : mostActiveData.length === 0 ? (
-              <div className="chart-placeholder">No data available</div>
-            ) : (
-              <Pie data={mostActiveChartData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
             )}
           </div>
         </div>

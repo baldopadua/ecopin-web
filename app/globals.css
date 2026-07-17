@@ -2,6 +2,10 @@
 
 @variant dark (&:where(.dark, .dark *));
 
+html {
+  scroll-behavior: smooth;
+}
+
 :root {
   /* Light Theme */
   --primary: #457113;
@@ -235,6 +239,14 @@ html.dark .btn-primary {
   line-height: var(--font-body-line-height);
   font-weight: var(--font-body-weight);
   transition: all 0.2s ease;
+}
+
+input[type="date"] {
+  color-scheme: light;
+}
+
+html.dark input[type="date"] {
+  color-scheme: dark;
 }
 
 .input:focus {

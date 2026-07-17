@@ -3,26 +3,29 @@ import { usePathname } from 'next/navigation'
 
 export default function Navbar() {
   const pathname = usePathname()
+  const isHome = pathname === '/'
 
   return (
     <nav className="sticky top-0 z-50 flex items-center px-10 sm:px-16 py-6">
-      <a href="/" className="text-text-primary font-bold text-xl tracking-tight">
+      <a href={isHome ? '#home' : '/'} className="text-text-primary font-bold text-xl tracking-tight">
         EcoPin<span className="text-accent-green">.AI</span>
       </a>
       <div className="hidden sm:flex items-center gap-8 ml-auto">
         <a
-          href="/about"
-          className={`text-sm font-medium transition-colors ${
-            pathname === '/about' ? 'text-text-primary' : 'text-text-muted hover:text-text-primary'
-          }`}
+          href={isHome ? '#home' : '/'}
+          className="text-sm font-medium text-text-muted hover:text-text-primary transition-colors"
+        >
+          Home
+        </a>
+        <a
+          href={isHome ? '#about' : '/#about'}
+          className="text-sm font-medium text-text-muted hover:text-text-primary transition-colors"
         >
           About
         </a>
         <a
-          href="/downloads"
-          className={`text-sm font-medium transition-colors ${
-            pathname === '/downloads' ? 'text-text-primary' : 'text-text-muted hover:text-text-primary'
-          }`}
+          href={isHome ? '#downloads' : '/#downloads'}
+          className="text-sm font-medium text-text-muted hover:text-text-primary transition-colors"
         >
           Downloads
         </a>

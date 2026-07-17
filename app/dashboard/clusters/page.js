@@ -90,13 +90,13 @@ export default function ClustersPage() {
   const getSeverityColor = (severity) => {
     switch (severity) {
       case 'high':
-        return 'bg-error/10 text-error dark:bg-error/20 dark:text-error'
+        return 'bg-error/10 text-error border-error/30'
       case 'medium':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+        return 'bg-warning/10 text-warning border-warning/30'
       case 'low':
-        return 'bg-info/10 text-info dark:bg-info/20 dark:text-info'
+        return 'bg-info/10 text-info border-info/30'
       default:
-        return 'bg-surface text-text-muted dark:bg-surface dark:text-text-muted'
+        return 'bg-surface text-text-muted border-border'
     }
   }
 
@@ -114,17 +114,17 @@ export default function ClustersPage() {
   const getStatusColor = (status) => {
     switch (status) {
       case 'resolved':
-        return 'bg-success/10 text-success'
+        return 'bg-success/10 text-success border-success/30'
       case 'in_progress':
-        return 'bg-warning/10 text-warning'
+        return 'bg-warning/10 text-warning border-warning/30'
       case 'waiting_for_feedback':
-        return 'bg-info/10 text-info'
+        return 'bg-info/10 text-info border-info/30'
       case 'closed':
-        return 'bg-surface text-text-muted'
+        return 'bg-surface text-text-muted border-border'
       case 'pending_owner_consent':
-        return 'bg-warning/10 text-warning'
+        return 'bg-warning/10 text-warning border-warning/30'
       default:
-        return 'bg-error/10 text-error'
+        return 'bg-error/10 text-error border-error/30'
     }
   }
 
@@ -182,7 +182,7 @@ export default function ClustersPage() {
             ]}
           />
 
-          {/* Clear Filters Button */}
+          {/* Reset Filters Button */}
           {(searchQuery || severityFilter !== 'all' || statusFilter !== 'all') && (
             <button
               onClick={() => {
@@ -190,9 +190,9 @@ export default function ClustersPage() {
                 setSeverityFilter('all')
                 setStatusFilter('all')
               }}
-              className="px-4 py-2 text-sm text-accent-green hover:bg-accent-green/10 rounded-lg transition-colors"
+              className="btn-secondary whitespace-nowrap cursor-pointer"
             >
-              Clear Filters
+              Reset Filters
             </button>
           )}
 
@@ -215,11 +215,11 @@ export default function ClustersPage() {
             <div className="overflow-x-auto mb-6">
               <table className="w-full">
                 <colgroup>
+                  <col style={{ width: '40%' }} />
                   <col style={{ width: '30%' }} />
-                  <col style={{ width: '35%' }} />
-                  <col style={{ width: '25%' }} />
-                  <col style={{ width: '30%' }} />
-                  <col style={{ width: '30%' }} />
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '10%' }} />
+                  <col style={{ width: '10%' }} />
                 </colgroup>
                 <thead>
                   <tr className="border-b border-border">
@@ -250,13 +250,13 @@ export default function ClustersPage() {
                           <span className="text-sm text-text-muted">{clusterReports.length}</span>
                         </td>
                         <td className="py-3 px-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSeverityColor(cluster.severity)}`}>
-                            {cluster.severity}
+                          <span className={`px-2 py-1 rounded text-xs font-semibold border ${getSeverityColor(cluster.severity)}`}>
+                            {cluster.severity?.toUpperCase()}
                           </span>
                         </td>
                         <td className="py-3 px-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(clusterStatus)}`}>
-                            {clusterStatus.replace('_', ' ')}
+                          <span className={`px-2 py-1 rounded text-xs font-semibold border ${getStatusColor(clusterStatus)}`}>
+                            {clusterStatus.replace(/_/g, ' ').toUpperCase()}
                           </span>
                         </td>
                       </tr>

@@ -34,25 +34,18 @@ export function SessionProvider({ children }) {
   }, [])
 
   useEffect(() => {
-    // Check for session expiration on mount (only for protected routes)
-    const checkSession = () => {
-      const token = localStorage.getItem('authToken')
-      const pathname = window.location.pathname
-      
-      // Only check auth on protected routes (dashboard)
-      if (!pathname.startsWith('/dashboard') && !pathname.startsWith('/map')) {
-        return true // Allow access to public routes
-      }
-      
-      if (!token) {
-        // No token, redirect to login
-        router.push('/auth')
-        return false
-      }
-      return true
-    }
+    const token = localStorage.getItem('authToken')
+    const pathname = window.location.pathname
+    const isPublicRoute = !pathname.startsWith('/dashboard') && !pathname.startsWith('/map')
 
-    if (!checkSession()) return
+    // Public routes: no session management needed
+    if (isPublicRoute) return
+
+    // Protected route with no token: redirect to login
+    if (!token) {
+      router.push('/auth')
+      return
+    }
 
     // Function to refresh the session
     const refreshSession = async (isInitial = false) => {
@@ -60,7 +53,6 @@ export function SessionProvider({ children }) {
         const storedToken = localStorage.getItem('authToken')
         
         if (!storedToken) {
-          console.log('No token found in localStorage')
           if (!isInitial) {
             handleSessionExpired()
           }
@@ -73,24 +65,18 @@ export function SessionProvider({ children }) {
           const currentTime = Math.floor(Date.now() / 1000)
           
           if (payload.exp && payload.exp < currentTime) {
-            console.log('Token has expired')
             if (!isInitial) {
               handleSessionExpired()
             }
             return
           }
-          
-          console.log('Token is valid, session active')
         } catch (e) {
-          console.error('Error decoding token:', e)
-          // If we can't decode the token, assume it's invalid
           if (!isInitial) {
             handleSessionExpired()
           }
           return
         }
       } catch (error) {
-        console.error('Error refreshing session:', error)
         if (!isInitial) {
           handleSessionExpired()
         }
@@ -99,44 +85,32 @@ export function SessionProvider({ children }) {
 
     // Activity tracking - refresh session on user activity
     const handleUserActivity = () => {
-      // Clear existing timeout
       if (activityTimeoutRef.current) {
         clearTimeout(activityTimeoutRef.current)
       }
-
-      // Set new timeout to refresh session after 30 seconds of inactivity
-      // This ensures we refresh the session while the user is still active
       activityTimeoutRef.current = setTimeout(() => {
         refreshSession(false)
-      }, 30000) // 30 seconds
+      }, 30000)
     }
 
-    // Set up activity listeners
     const activityEvents = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click']
     activityEvents.forEach(event => {
       window.addEventListener(event, handleUserActivity)
     })
 
-    // Initial refresh on mount (with isInitial flag to not trigger expired modal)
     refreshSession(true)
 
-    // Calculate refresh interval based on session timeout (refresh at 80% of timeout)
     const refreshIntervalMs = (sessionTimeoutMinutes * 60 * 1000) * 0.8
-    
-    // Set up periodic refresh as a fallback
     refreshIntervalRef.current = setInterval(() => {
       refreshSession(false)
     }, refreshIntervalMs)
 
-    // Listen for storage events (for multi-tab support)
     const handleStorageChange = (e) => {
       if (e.key === 'authToken' && e.newValue === null) {
-        // Token was removed in another tab
         setShowSessionExpiredModal(true)
       }
     }
 
-    // Listen for custom session expired event
     const handleSessionExpiredEvent = () => {
       localStorage.removeItem('authToken')
       setShowSessionExpiredModal(true)
@@ -146,19 +120,15 @@ export function SessionProvider({ children }) {
     window.addEventListener('session-expired', handleSessionExpiredEvent)
 
     return () => {
-      // Clean up activity listeners
       activityEvents.forEach(event => {
         window.removeEventListener(event, handleUserActivity)
       })
-      
-      // Clear timeouts and intervals
       if (activityTimeoutRef.current) {
         clearTimeout(activityTimeoutRef.current)
       }
       if (refreshIntervalRef.current) {
         clearInterval(refreshIntervalRef.current)
       }
-      
       window.removeEventListener('storage', handleStorageChange)
       window.removeEventListener('session-expired', handleSessionExpiredEvent)
     }
