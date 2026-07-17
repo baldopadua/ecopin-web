@@ -39,7 +39,11 @@ export default function ClustersPage() {
 
   // Apply filters
   useEffect(() => {
-    let filtered = clusters
+    let filtered = clusters.filter(c => {
+      // First filter to only clusters with at least 2 reports
+      const clusterReports = reports.filter(r => String(r.cluster_id) === String(c.id))
+      return clusterReports.length >= 2
+    })
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase()

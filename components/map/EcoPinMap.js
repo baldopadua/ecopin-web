@@ -172,10 +172,15 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
   // Convert selectedReports array to Set for internal use
   const selectedReportsSet = useMemo(() => new Set(selectedReports), [selectedReports])
 
-  // Filter clusters to only show those with reports matching current filters
+  // Filter clusters to only show those with reports matching current filters and at least 2 reports
   const filteredClusters = useMemo(() => {
     const filteredIds = new Set(filteredReports.filter(r => r.cluster_id).map(r => r.cluster_id))
-    return clusters.filter(c => filteredIds.has(c.id))
+    return clusters.filter(c => {
+      if (!filteredIds.has(c.id)) return false
+      // Check both cluster's report_count and actual filtered reports in cluster are >= 2
+      const clusterReportsCount = filteredReports.filter(r => r.cluster_id === c.id).length
+      return c.report_count >= 2 && clusterReportsCount >= 2
+    })
   }, [clusters, filteredReports])
 
   // Build cluster-to-reports map from filtered reports only
