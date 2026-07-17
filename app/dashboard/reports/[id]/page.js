@@ -15,6 +15,7 @@ import {
 } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
+import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
 
@@ -452,8 +453,43 @@ export default function ReportDetailPage() {
             { label: 'Details' }
           ]}
         />
-        <div className="card">
-          <p className="text-text-muted">Loading report details...</p>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-3 space-y-6">
+            <SkeletonCard />
+            <div className="card animate-pulse">
+              <SkeletonLine className="h-7 w-2/3 mb-3" />
+              <SkeletonLine className="h-4 w-1/4 mb-6" />
+              <SkeletonLine className="h-4 w-full mb-2" />
+              <SkeletonLine className="h-4 w-5/6 mb-2" />
+              <SkeletonLine className="h-4 w-3/4" />
+            </div>
+            <div className="card animate-pulse">
+              <SkeletonLine className="h-5 w-1/4 mb-4" />
+              <div className="grid grid-cols-3 gap-4">
+                <SkeletonLine className="h-48 w-full rounded-lg" />
+                <SkeletonLine className="h-48 w-full rounded-lg" />
+                <SkeletonLine className="h-48 w-full rounded-lg" />
+              </div>
+            </div>
+          </div>
+          <div className="space-y-6">
+            <div className="card animate-pulse">
+              <SkeletonLine className="h-5 w-1/3 mb-4" />
+              <div className="space-y-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i}>
+                    <SkeletonLine className="h-3 w-1/4 mb-1" />
+                    <SkeletonLine className="h-4 w-2/3" />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="card animate-pulse">
+              <SkeletonLine className="h-5 w-1/3 mb-4" />
+              <SkeletonLine className="h-10 w-full mb-2" />
+              <SkeletonLine className="h-10 w-full" />
+            </div>
+          </div>
         </div>
       </div>
     )

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import { getResponseLogs } from '@/lib/api'
 import FilterDropdown from '@/components/ui/FilterDropdown'
+import { SkeletonLine } from '@/components/ui/Skeleton'
 
 export default function ResponseLogs() {
   const router = useRouter()
@@ -165,7 +166,42 @@ export default function ResponseLogs() {
       {/* Logs Table */}
       <div className="card no-hover">
         {loading ? (
-          <p className="text-text-muted">Loading response logs...</p>
+          <div className="space-y-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <colgroup>
+                  <col style={{ width: '15%' }} />
+                  <col style={{ width: '20%' }} />
+                  <col style={{ width: '15%' }} />
+                  <col style={{ width: '30%' }} />
+                  <col style={{ width: '20%' }} />
+                </colgroup>
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Date</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">User</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Action</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Details</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Report</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <tr key={i} className="border-b border-border">
+                      <td className="py-3 px-4"><SkeletonLine className="h-4 w-28" /></td>
+                      <td className="py-3 px-4">
+                        <SkeletonLine className="h-4 w-28 mb-1" />
+                        <SkeletonLine className="h-3 w-20" />
+                      </td>
+                      <td className="py-3 px-4"><SkeletonLine className="h-5 w-20" /></td>
+                      <td className="py-3 px-4"><SkeletonLine className="h-4 w-40" /></td>
+                      <td className="py-3 px-4"><SkeletonLine className="h-4 w-32" /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         ) : error ? (
           <p className="text-error">{error}</p>
         ) : logs.length === 0 ? (

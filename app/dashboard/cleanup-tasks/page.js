@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { fetchCleanupTasks } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import FilterDropdown from '@/components/ui/FilterDropdown'
+import { SkeletonLine } from '@/components/ui/Skeleton'
 
 export default function CleanupTasksPage() {
   const [tasks, setTasks] = useState([])
@@ -150,7 +151,36 @@ export default function CleanupTasksPage() {
           </button>
         </div>
         {loading ? (
-          <p className="text-text-muted">Loading cleanup tasks...</p>
+          <div className="space-y-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <colgroup>
+                  <col style={{ width: '25%' }} />
+                  <col style={{ width: '35%' }} />
+                  <col style={{ width: '15%' }} />
+                  <col style={{ width: '25%' }} />
+                </colgroup>
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Title</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Description</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Created</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <tr key={i} className="border-b border-border">
+                      <td className="py-3 px-4"><SkeletonLine className="h-4 w-32" /></td>
+                      <td className="py-3 px-4"><SkeletonLine className="h-4 w-48" /></td>
+                      <td className="py-3 px-4"><SkeletonLine className="h-4 w-24" /></td>
+                      <td className="py-3 px-4"><SkeletonLine className="h-5 w-16" /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         ) : filteredTasks.length === 0 ? (
           <p className="text-text-muted">No cleanup tasks match your filters</p>
         ) : (

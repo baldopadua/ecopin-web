@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import { getAuditLogs } from '@/lib/api'
 import FilterDropdown from '@/components/ui/FilterDropdown'
+import { SkeletonLine } from '@/components/ui/Skeleton'
 
 export default function AuditLogs() {
   const router = useRouter()
@@ -142,7 +143,17 @@ export default function AuditLogs() {
       {/* Logs Table */}
       <div className="card">
         {loading ? (
-          <p className="text-text-muted">Loading audit logs...</p>
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex gap-4">
+                <SkeletonLine className="h-3 w-24" />
+                <SkeletonLine className="h-3 flex-1" />
+                <SkeletonLine className="h-3 w-20" />
+                <SkeletonLine className="h-3 flex-1" />
+                <SkeletonLine className="h-3 w-20" />
+              </div>
+            ))}
+          </div>
         ) : error ? (
           <p className="text-error">{error}</p>
         ) : logs.length === 0 ? (

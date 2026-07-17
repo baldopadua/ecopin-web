@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
 import { getSystemSettings, updateSystemSettings } from '@/lib/api'
+import { SkeletonForm } from '@/components/ui/Skeleton'
 
 export default function SystemSettings() {
   const router = useRouter()
@@ -80,7 +81,7 @@ export default function SystemSettings() {
           ]}
         />
         <div className="card">
-          <p className="text-text-muted">Loading settings...</p>
+          <SkeletonForm fields={6} />
         </div>
       </div>
     )

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { fetchValidatedReports, fetchClusterById, createCleanupTask } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
+import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
 
@@ -183,7 +184,43 @@ export default function ClusterDetailPage() {
     }
   }
 
-  if (loading) return <div className="p-8"><p>Loading cluster details...</p></div>
+  if (loading) return (
+    <div className="p-8">
+      <SkeletonCard className="mb-6" />
+      <div className="card animate-pulse mb-6">
+        <SkeletonLine className="h-6 w-1/4 mb-4" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div className="p-4 border border-border rounded-lg">
+            <SkeletonLine className="h-3 w-1/2 mb-2" />
+            <SkeletonLine className="h-8 w-1/3" />
+          </div>
+          <div className="p-4 border border-border rounded-lg">
+            <SkeletonLine className="h-3 w-1/2 mb-2" />
+            <SkeletonLine className="h-6 w-1/4" />
+          </div>
+          <div className="p-4 border border-border rounded-lg">
+            <SkeletonLine className="h-3 w-1/2 mb-2" />
+            <SkeletonLine className="h-5 w-1/3" />
+          </div>
+        </div>
+        <SkeletonLine className="h-10 w-1/3" />
+      </div>
+      <div className="card animate-pulse">
+        <SkeletonLine className="h-6 w-1/4 mb-4" />
+        <div className="space-y-3">
+          {Array.from({ length: 5 }).map((_, row) => (
+            <div key={row} className="flex gap-4 border-b border-border/50 py-3">
+              <SkeletonLine className="h-3 flex-1" />
+              <SkeletonLine className="h-3 flex-1" />
+              <SkeletonLine className="h-3 flex-1" />
+              <SkeletonLine className="h-3 flex-1" />
+              <SkeletonLine className="h-3 flex-1" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
   if (!cluster) return <div className="p-8"><p>Cluster not found</p></div>
 
   const firstReport = reports.find(r => {

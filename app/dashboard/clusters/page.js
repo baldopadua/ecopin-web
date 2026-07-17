@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { fetchClusters, fetchValidatedReports } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import FilterDropdown from '@/components/ui/FilterDropdown'
+import { SkeletonLine } from '@/components/ui/Skeleton'
 
 export default function ClustersPage() {
   const [clusters, setClusters] = useState([])
@@ -207,7 +208,24 @@ export default function ClustersPage() {
       <div className="card no-hover">
         <h2 className="text-xl font-bold text-text-primary mb-4">Clusters List</h2>
         {loading ? (
-          <p className="text-text-muted">Loading clusters...</p>
+          <div className="space-y-3">
+            <div className="flex gap-4 border-b border-border pb-3">
+              <SkeletonLine className="h-4 flex-1" />
+              <SkeletonLine className="h-4 flex-1" />
+              <SkeletonLine className="h-4 flex-1" />
+              <SkeletonLine className="h-4 flex-1" />
+              <SkeletonLine className="h-4 flex-1" />
+            </div>
+            {Array.from({ length: 8 }).map((_, row) => (
+              <div key={row} className="flex gap-4 border-b border-border/50 py-3">
+                <SkeletonLine className="h-3 flex-1" />
+                <SkeletonLine className="h-3 flex-1" />
+                <SkeletonLine className="h-3 flex-1" />
+                <SkeletonLine className="h-3 flex-1" />
+                <SkeletonLine className="h-3 flex-1" />
+              </div>
+            ))}
+          </div>
         ) : filteredClusters.length === 0 ? (
           <p className="text-text-muted">No clusters match your filters</p>
         ) : (

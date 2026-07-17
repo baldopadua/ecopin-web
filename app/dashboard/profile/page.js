@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
+import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL + '/api'
 
@@ -273,7 +274,18 @@ export default function ProfilePage() {
   }
 
   if (loading) {
-    return <p className="text-center text-text-primary mt-8">Loading...</p>
+    return (
+      <div className="p-8">
+        <div className="space-y-6 max-w-3xl mx-auto">
+          <SkeletonCard />
+          <SkeletonCard />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

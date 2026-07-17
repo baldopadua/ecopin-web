@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { fetchFilteredReports, fetchIssueTypes } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import FilterDropdown from '@/components/ui/FilterDropdown'
+import { SkeletonLine } from '@/components/ui/Skeleton'
 
 export default function ReportsPage() {
   const [reports, setReports] = useState([])
@@ -230,7 +231,28 @@ export default function ReportsPage() {
       <div className="card no-hover">
         <h2 className="text-xl font-bold text-text-primary mb-4">Reports List</h2>
         {loading ? (
-          <p className="text-text-muted">Loading reports...</p>
+          <div className="space-y-3">
+            <div className="flex gap-4 border-b border-border pb-3">
+              <SkeletonLine className="h-4 flex-1" />
+              <SkeletonLine className="h-4 flex-1" />
+              <SkeletonLine className="h-4 flex-1" />
+              <SkeletonLine className="h-4 flex-1" />
+              <SkeletonLine className="h-4 flex-1" />
+              <SkeletonLine className="h-4 flex-1" />
+              <SkeletonLine className="h-4 flex-1" />
+            </div>
+            {Array.from({ length: 8 }).map((_, row) => (
+              <div key={row} className="flex gap-4 border-b border-border/50 py-3">
+                <SkeletonLine className="h-3 flex-1" />
+                <SkeletonLine className="h-3 flex-1" />
+                <SkeletonLine className="h-3 flex-1" />
+                <SkeletonLine className="h-3 flex-1" />
+                <SkeletonLine className="h-3 flex-1" />
+                <SkeletonLine className="h-3 flex-1" />
+                <SkeletonLine className="h-3 flex-1" />
+              </div>
+            ))}
+          </div>
         ) : filteredReports.length === 0 ? (
           <p className="text-text-muted">No reports match your filters</p>
         ) : (

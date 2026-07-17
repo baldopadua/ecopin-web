@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import PageHeader from '@/components/layout/PageHeader'
 import { fetchPublicReports, fetchSatisfactionAnalytics } from '@/lib/api'
+import { SkeletonLine, SkeletonStatCard, SkeletonChartCard } from '@/components/ui/Skeleton'
 import { Bar, Pie, Line } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -292,63 +293,71 @@ export default function AnalyticsPage() {
       )}
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-        <div className="card border-l-4 border-l-[var(--accent-green)] hover:shadow-lg transition-shadow cursor-pointer">
-          <div className="mb-2">
-            <span className="text-sm text-text-muted">Total Reports</span>
-          </div>
-          <p className="text-3xl font-bold text-text-primary">{loading ? '...' : stats.total}</p>
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <SkeletonStatCard key={i} />
+          ))}
         </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="card border-l-4 border-l-[var(--accent-green)] hover:shadow-lg transition-shadow cursor-pointer">
+            <div className="mb-2">
+              <span className="text-sm text-text-muted">Total Reports</span>
+            </div>
+            <p className="text-3xl font-bold text-text-primary">{stats.total}</p>
+          </div>
 
-        <div className="card border-l-4 border-l-[var(--error)] hover:shadow-lg transition-shadow cursor-pointer">
-          <div className="mb-2">
-            <span className="text-sm text-text-muted">Unresolved</span>
+          <div className="card border-l-4 border-l-[var(--error)] hover:shadow-lg transition-shadow cursor-pointer">
+            <div className="mb-2">
+              <span className="text-sm text-text-muted">Unresolved</span>
+            </div>
+            <p className="text-3xl font-bold text-text-primary">{stats.unresolved}</p>
           </div>
-          <p className="text-3xl font-bold text-text-primary">{loading ? '...' : stats.unresolved}</p>
-        </div>
 
-        <div className="card border-l-4 border-l-[var(--warning)] hover:shadow-lg transition-shadow cursor-pointer">
-          <div className="mb-2">
-            <span className="text-sm text-text-muted">In Progress</span>
+          <div className="card border-l-4 border-l-[var(--warning)] hover:shadow-lg transition-shadow cursor-pointer">
+            <div className="mb-2">
+              <span className="text-sm text-text-muted">In Progress</span>
+            </div>
+            <p className="text-3xl font-bold text-text-primary">{stats.inProgress}</p>
           </div>
-          <p className="text-3xl font-bold text-text-primary">{loading ? '...' : stats.inProgress}</p>
-        </div>
 
-        <div className="card border-l-4 border-l-[var(--success)] hover:shadow-lg transition-shadow cursor-pointer">
-          <div className="mb-2">
-            <span className="text-sm text-text-muted">Resolved Today</span>
+          <div className="card border-l-4 border-l-[var(--success)] hover:shadow-lg transition-shadow cursor-pointer">
+            <div className="mb-2">
+              <span className="text-sm text-text-muted">Resolved Today</span>
+            </div>
+            <p className="text-3xl font-bold text-text-primary">{stats.resolvedToday}</p>
           </div>
-          <p className="text-3xl font-bold text-text-primary">{loading ? '...' : stats.resolvedToday}</p>
-        </div>
 
-        <div className="card border-l-4 border-l-[var(--accent-green-dark)] hover:shadow-lg transition-shadow cursor-pointer">
-          <div className="mb-2">
-            <span className="text-sm text-text-muted">Avg. Resolution Time</span>
+          <div className="card border-l-4 border-l-[var(--accent-green-dark)] hover:shadow-lg transition-shadow cursor-pointer">
+            <div className="mb-2">
+              <span className="text-sm text-text-muted">Avg. Resolution Time</span>
+            </div>
+            <p className="text-3xl font-bold text-text-primary">{stats.avgResolutionTime}</p>
           </div>
-          <p className="text-3xl font-bold text-text-primary">{loading ? '...' : stats.avgResolutionTime}</p>
-        </div>
 
-        <div className="card border-l-4 border-l-[var(--accent-green)] hover:shadow-lg transition-shadow cursor-pointer">
-          <div className="mb-2">
-            <span className="text-sm text-text-muted">Resolution Rate</span>
+          <div className="card border-l-4 border-l-[var(--accent-green)] hover:shadow-lg transition-shadow cursor-pointer">
+            <div className="mb-2">
+              <span className="text-sm text-text-muted">Resolution Rate</span>
+            </div>
+            <p className="text-3xl font-bold text-text-primary">{`${stats.resolutionRate}%`}</p>
           </div>
-          <p className="text-3xl font-bold text-text-primary">{loading ? '...' : `${stats.resolutionRate}%`}</p>
-        </div>
 
-        <div className="card border-l-4 border-l-[var(--warning)] hover:shadow-lg transition-shadow cursor-pointer">
-          <div className="mb-2">
-            <span className="text-sm text-text-muted">Waiting for Feedback</span>
+          <div className="card border-l-4 border-l-[var(--warning)] hover:shadow-lg transition-shadow cursor-pointer">
+            <div className="mb-2">
+              <span className="text-sm text-text-muted">Waiting for Feedback</span>
+            </div>
+            <p className="text-3xl font-bold text-text-primary">{stats.waitingForFeedback}</p>
           </div>
-          <p className="text-3xl font-bold text-text-primary">{loading ? '...' : stats.waitingForFeedback}</p>
-        </div>
 
-        <div className="card border-l-4 border-l-[var(--error)] hover:shadow-lg transition-shadow cursor-pointer">
-          <div className="mb-2">
-            <span className="text-sm text-text-muted">Overdue Reports</span>
+          <div className="card border-l-4 border-l-[var(--error)] hover:shadow-lg transition-shadow cursor-pointer">
+            <div className="mb-2">
+              <span className="text-sm text-text-muted">Overdue Reports</span>
+            </div>
+            <p className="text-3xl font-bold text-text-primary">{stats.overdue}</p>
           </div>
-          <p className="text-3xl font-bold text-text-primary">{loading ? '...' : stats.overdue}</p>
         </div>
-      </div>
+      )}
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -357,7 +366,9 @@ export default function AnalyticsPage() {
           <h2>Reports per Week</h2>
           <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
-              <div className="chart-placeholder">Loading chart data...</div>
+              <div className="flex items-center justify-center py-16">
+              <SkeletonChartCard className="w-full" />
+            </div>
             ) : weeklyVolumeData.length === 0 ? (
               <div className="chart-placeholder">No data available for the selected period</div>
             ) : (
@@ -371,7 +382,9 @@ export default function AnalyticsPage() {
           <h2>Resolution Rate (%)</h2>
           <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
-              <div className="chart-placeholder">Loading chart data...</div>
+              <div className="flex items-center justify-center py-16">
+              <SkeletonChartCard className="w-full" />
+            </div>
             ) : resolutionRateData.length === 0 ? (
               <div className="chart-placeholder">No data available for the selected period</div>
             ) : (
@@ -385,7 +398,9 @@ export default function AnalyticsPage() {
           <h2>Reports by Issue Type</h2>
           <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
-              <div className="chart-placeholder">Loading chart data...</div>
+              <div className="flex items-center justify-center py-16">
+              <SkeletonChartCard className="w-full" />
+            </div>
             ) : issueTypeData.length === 0 ? (
               <div className="chart-placeholder">No data available</div>
             ) : (
@@ -399,7 +414,9 @@ export default function AnalyticsPage() {
           <h2>Satisfaction Distribution</h2>
           <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
-              <div className="chart-placeholder">Loading chart data...</div>
+              <div className="flex items-center justify-center py-16">
+              <SkeletonChartCard className="w-full" />
+            </div>
             ) : !satisfactionChartData || satisfactionData.total === 0 ? (
               <div className="chart-placeholder">No ratings available</div>
             ) : (
@@ -413,7 +430,9 @@ export default function AnalyticsPage() {
           <h2>Reports by Status</h2>
           <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
-              <div className="chart-placeholder">Loading chart data...</div>
+              <div className="flex items-center justify-center py-16">
+              <SkeletonChartCard className="w-full" />
+            </div>
             ) : statusData.length === 0 ? (
               <div className="chart-placeholder">No data available</div>
             ) : (

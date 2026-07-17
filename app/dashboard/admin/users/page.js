@@ -5,6 +5,7 @@ import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
 import FilterDropdown from '@/components/ui/FilterDropdown'
 import { getAllUsers, updateUserRole, deleteUser, createUser } from '@/lib/api'
+import { SkeletonLine } from '@/components/ui/Skeleton'
 
 export default function UserManagement() {
   const router = useRouter()
@@ -298,7 +299,18 @@ export default function UserManagement() {
       {/* Users Table */}
       <div className="card no-hover">
         {loading ? (
-          <p className="text-text-muted">Loading users...</p>
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex gap-4 items-center">
+                <SkeletonLine className="h-10 w-10 rounded-full" />
+                <SkeletonLine className="h-4 flex-1" />
+                <SkeletonLine className="h-4 flex-1" />
+                <SkeletonLine className="h-4 w-20" />
+                <SkeletonLine className="h-4 w-24" />
+                <SkeletonLine className="h-4 w-10" />
+              </div>
+            ))}
+          </div>
         ) : error ? (
           <p className="text-error">{error}</p>
         ) : users.length === 0 ? (

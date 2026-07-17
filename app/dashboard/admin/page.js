@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import { getSystemStats, getAuditLogs } from '@/lib/api'
+import { SkeletonLine, SkeletonStatCard, SkeletonTable } from '@/components/ui/Skeleton'
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -72,8 +73,13 @@ export default function AdminDashboard() {
             { label: 'Admin' }
           ]}
         />
-        <div className="card">
-          <p className="text-text-muted">Loading...</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <SkeletonStatCard key={i} />
+          ))}
+        </div>
+        <div className="card no-hover">
+          <SkeletonTable rows={4} cols={4} />
         </div>
       </div>
     )

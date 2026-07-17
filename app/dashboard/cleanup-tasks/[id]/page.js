@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { fetchCleanupTaskById, uploadCleanupPhoto, markCleanupTaskComplete, fetchReportsByClusterId, batchCompleteReportsByCluster, updateReportStatus, fetchReportsByIds, updateReportValidation, fetchReportEvidence, updateLifecycleStage, logAgencyResponse, fetchAgencyResponses } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
+import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
 import Notification from '@/components/ui/Notification'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
@@ -668,7 +669,51 @@ export default function CleanupTaskDetailPage() {
     }
   }
 
-  if (loading) return <div className="p-8"><p>Loading cleanup task...</p></div>
+  if (loading) return (
+    <div className="p-8">
+      <div className="space-y-6">
+        <SkeletonLine className="h-8 w-48" />
+        <SkeletonLine className="h-5 w-64" />
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-3">
+            <div className="space-y-0">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Title</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Issue Type</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Description</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Status</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Lifecycle</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Validation</th>
+                      <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <tr key={i} className="border-b border-border">
+                        <td className="py-3 px-4"><SkeletonLine className="h-4 w-28" /></td>
+                        <td className="py-3 px-4"><SkeletonLine className="h-4 w-20" /></td>
+                        <td className="py-3 px-4"><SkeletonLine className="h-4 w-36" /></td>
+                        <td className="py-3 px-4"><SkeletonLine className="h-5 w-20" /></td>
+                        <td className="py-3 px-4"><SkeletonLine className="h-5 w-20" /></td>
+                        <td className="py-3 px-4"><SkeletonLine className="h-5 w-24" /></td>
+                        <td className="py-3 px-4"><SkeletonLine className="h-6 w-16" /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div className="lg:col-span-1">
+            <SkeletonCard />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
   if (!task) return <div className="p-8"><p>Cleanup task not found</p></div>
 
   const firstReport = reports.find(r => {

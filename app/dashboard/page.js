@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { fetchPublicReports } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
+import { SkeletonLine, SkeletonStatCard } from '@/components/ui/Skeleton'
 import { Bar, Pie, Line } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -314,35 +315,43 @@ export default function DashboardPage() {
       )}
 
       {/* Statistics Cards - Quick Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="card border-l-4 border-l-[var(--accent-green)] hover:shadow-lg transition-shadow cursor-pointer">
-          <div className="mb-2">
-            <span className="text-sm text-text-muted">Total Reports</span>
-          </div>
-          <p className="text-3xl font-bold text-text-primary">{loading ? '...' : stats.total}</p>
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonStatCard key={i} />
+          ))}
         </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="card border-l-4 border-l-[var(--accent-green)] hover:shadow-lg transition-shadow cursor-pointer">
+            <div className="mb-2">
+              <span className="text-sm text-text-muted">Total Reports</span>
+            </div>
+            <p className="text-3xl font-bold text-text-primary">{stats.total}</p>
+          </div>
 
-        <div className="card border-l-4 border-l-[var(--error)] hover:shadow-lg transition-shadow cursor-pointer">
-          <div className="mb-2">
-            <span className="text-sm text-text-muted">Unresolved</span>
+          <div className="card border-l-4 border-l-[var(--error)] hover:shadow-lg transition-shadow cursor-pointer">
+            <div className="mb-2">
+              <span className="text-sm text-text-muted">Unresolved</span>
+            </div>
+            <p className="text-3xl font-bold text-text-primary">{stats.unresolved}</p>
           </div>
-          <p className="text-3xl font-bold text-text-primary">{loading ? '...' : stats.unresolved}</p>
-        </div>
 
-        <div className="card border-l-4 border-l-[var(--warning)] hover:shadow-lg transition-shadow cursor-pointer">
-          <div className="mb-2">
-            <span className="text-sm text-text-muted">In Progress</span>
+          <div className="card border-l-4 border-l-[var(--warning)] hover:shadow-lg transition-shadow cursor-pointer">
+            <div className="mb-2">
+              <span className="text-sm text-text-muted">In Progress</span>
+            </div>
+            <p className="text-3xl font-bold text-text-primary">{stats.inProgress}</p>
           </div>
-          <p className="text-3xl font-bold text-text-primary">{loading ? '...' : stats.inProgress}</p>
-        </div>
 
-        <div className="card border-l-4 border-l-[var(--success)] hover:shadow-lg transition-shadow cursor-pointer">
-          <div className="mb-2">
-            <span className="text-sm text-text-muted">Resolved Today</span>
+          <div className="card border-l-4 border-l-[var(--success)] hover:shadow-lg transition-shadow cursor-pointer">
+            <div className="mb-2">
+              <span className="text-sm text-text-muted">Resolved Today</span>
+            </div>
+            <p className="text-3xl font-bold text-text-primary">{stats.resolvedToday}</p>
           </div>
-          <p className="text-3xl font-bold text-text-primary">{loading ? '...' : stats.resolvedToday}</p>
         </div>
-      </div>
+      )}
 
       <div className="flex justify-end mb-6">
         <button
@@ -357,7 +366,18 @@ export default function DashboardPage() {
       <div className="card no-hover">
         <h2 className="text-xl font-bold text-text-primary mb-6">All Reports</h2>
         {loading ? (
-          <div className="text-center py-8 text-text-muted">Loading reports...</div>
+          <div className="space-y-3 py-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex gap-4">
+                <SkeletonLine className="h-3 flex-1" />
+                <SkeletonLine className="h-3 flex-1" />
+                <SkeletonLine className="h-3 w-20" />
+                <SkeletonLine className="h-3 w-20" />
+                <SkeletonLine className="h-3 w-20" />
+                <SkeletonLine className="h-3 w-16" />
+              </div>
+            ))}
+          </div>
         ) : reports.length === 0 ? (
           <div className="text-center py-8 text-text-muted">No reports available</div>
         ) : (

@@ -49,7 +49,49 @@ export default function DashboardLayout({ children }) {
     checkAuth()
   }, [pathname])
 
-  if (!user) return <p className="text-center text-text-primary mt-8">Loading...</p>
+  if (!user) return (
+    <div className="flex h-screen bg-background dark:bg-[#0a0f08]">
+      <aside className="w-64 bg-surface dark:bg-[#0a0f08] border-r border-border h-screen flex flex-col animate-pulse">
+        <div className="p-6 border-b border-border">
+          <div className="h-6 w-24 rounded bg-border/50" />
+        </div>
+        <nav className="flex-1 p-4 space-y-1">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 px-4 py-3 rounded-xl">
+              <div className="w-5 h-5 rounded bg-border/50" />
+              <div className="h-3 flex-1 rounded bg-border/50" />
+            </div>
+          ))}
+        </nav>
+      </aside>
+      <main className="flex-1 overflow-auto bg-surface dark:bg-[#0a0f08] p-8">
+        <div className="mb-8 animate-pulse">
+          <div className="h-8 w-48 rounded bg-border/50 mb-2" />
+          <div className="h-4 w-64 rounded bg-border/50" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="card animate-pulse">
+              <div className="h-3 w-20 rounded bg-border/50 mb-3" />
+              <div className="h-8 w-12 rounded bg-border/50 mb-2" />
+              <div className="h-3 w-16 rounded bg-border/50" />
+            </div>
+          ))}
+        </div>
+        <div className="card animate-pulse">
+          <div className="h-6 w-32 rounded bg-border/50 mb-4" />
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex gap-4 py-3 border-b border-border/30">
+              <div className="h-3 flex-1 rounded bg-border/50" />
+              <div className="h-3 flex-1 rounded bg-border/50" />
+              <div className="h-3 w-20 rounded bg-border/50" />
+              <div className="h-3 w-20 rounded bg-border/50" />
+            </div>
+          ))}
+        </div>
+      </main>
+    </div>
+  )
 
   return (
     <div className="flex h-screen bg-background dark:bg-[#0a0f08]">
