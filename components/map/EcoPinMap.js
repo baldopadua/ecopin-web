@@ -464,20 +464,20 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                 <Popup>
                   <div className="p-2">
                     <strong className="block text-sm">Cluster #{cluster.id}</strong>
-                    <p className="text-xs text-gray-600 mt-1">
+                    <p className="text-xs text-text-muted mt-1">
                       {cluster.report_count} reports
                     </p>
-                    <p className="text-xs text-gray-600">
-                      Severity: <span className={`font-semibold ${cluster.severity === 'high' ? 'text-red-600' :
-                        cluster.severity === 'medium' ? 'text-orange-600' :
-                          'text-blue-600'
+                    <p className="text-xs text-text-muted">
+                      Severity: <span className={`font-semibold ${cluster.severity === 'high' ? 'text-error' :
+                        cluster.severity === 'medium' ? 'text-warning' :
+                          'text-info'
                         }`}>{cluster.severity}</span>
                     </p>
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-text-muted">
                       Type: {cluster.issue_type}
                     </p>
                     {center && (
-                      <p className="text-xs text-gray-600">
+                      <p className="text-xs text-text-muted">
                         Location: {center[0].toFixed(4)}, {center[1].toFixed(4)}
                       </p>
                     )}
@@ -639,15 +639,15 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                   <Popup>
                     <div className="p-2">
                       <strong className="block text-sm">{report.title}</strong>
-                      <p className="text-xs text-gray-600 mt-1">{report.description?.substring(0, 100)}...</p>
+                      <p className="text-xs text-text-muted mt-1">{report.description?.substring(0, 100)}...</p>
                       <div className="mt-2 flex gap-2">
-                        <span className={`text-xs px-2 py-1 rounded ${report.status === 'resolved' ? 'bg-green-100 text-green-800' :
-                          report.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-red-100 text-red-800'
+                        <span className={`text-xs px-2 py-1 rounded ${report.status === 'resolved' ? 'bg-success/20 text-success' :
+                          report.status === 'in_progress' ? 'bg-warning/20 text-warning' :
+                            'bg-error/20 text-error'
                           }`}>
                           {report.status.replace('_', ' ')}
                         </span>
-                        <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
+                        <span className="text-xs px-2 py-1 rounded bg-info/20 text-info">
                           {report.issue_type}
                         </span>
                       </div>
@@ -669,20 +669,28 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
         </MapContainer>
 
         {/* Filter Panel Toggle Button */}
-        {!hideFilterPanel && (
+        {!hideFilterPanel && !showFilterPanel && (
           <button
-            onClick={() => setShowFilterPanel(!showFilterPanel)}
-            className="absolute top-4 right-4 z-[1001] bg-white/95 backdrop-blur-sm border border-border/50 rounded-xl shadow-lg px-4 py-2.5 text-sm font-medium text-text-primary hover:bg-white hover:shadow-xl transition-all"
+            onClick={() => setShowFilterPanel(true)}
+            className="absolute top-4 right-4 z-[1001] bg-surface/95 backdrop-blur-sm border border-border/50 rounded-xl shadow-lg px-4 py-2.5 text-sm font-medium text-text-primary hover:bg-surface hover:shadow-xl transition-all"
           >
-            {showFilterPanel ? 'Hide Filters' : 'Show Filters'}
+            Show Filters
           </button>
         )}
 
         {/* Filter Panel */}
         {!hideFilterPanel && showFilterPanel && (
-          <div className="absolute top-14 right-4 w-72 bg-white/95 backdrop-blur-md border border-border/50 rounded-2xl shadow-xl max-h-[calc(100%-5rem)] overflow-hidden z-[1000] flex flex-col">
-            <div className="sticky top-0 bg-white/95 backdrop-blur-md px-4 pt-4 pb-3 border-b border-border/50 z-10 rounded-t-2xl">
+          <div className="absolute top-4 right-4 w-72 bg-surface/95 backdrop-blur-md border border-border/50 rounded-2xl shadow-xl max-h-[calc(100%-2rem)] overflow-hidden z-[1000] flex flex-col">
+            <div className="sticky top-0 bg-surface/95 backdrop-blur-md px-4 pt-4 pb-3 border-b border-border/50 z-10 rounded-t-2xl flex justify-between items-center">
               <h3 className="font-bold text-text-primary text-base tracking-tight">Map Filters</h3>
+              <button
+                onClick={() => setShowFilterPanel(false)}
+                className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-surface text-text-muted hover:text-text-primary transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
             <div className="p-4 overflow-y-auto flex-1">
 
@@ -699,8 +707,8 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                       onChange={(e) => setShowPins(e.target.checked)}
                       className="sr-only"
                     />
-                    <div className={`w-10 h-5 rounded-full transition-colors ${showPins ? 'bg-accent-green' : 'bg-gray-200'}`}>
-                      <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${showPins ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                    <div className={`w-10 h-5 rounded-full transition-colors ${showPins ? 'bg-accent-green' : 'bg-surface'}`}>
+                      <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white dark:bg-surface-elevated rounded-full shadow-sm transition-transform ${showPins ? 'translate-x-5' : 'translate-x-0'}`}></div>
                     </div>
                   </div>
                 </label>
@@ -713,8 +721,8 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                       onChange={(e) => setShowClusters(e.target.checked)}
                       className="sr-only"
                     />
-                    <div className={`w-10 h-5 rounded-full transition-colors ${showClusters ? 'bg-accent-green' : 'bg-gray-200'}`}>
-                      <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${showClusters ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                    <div className={`w-10 h-5 rounded-full transition-colors ${showClusters ? 'bg-accent-green' : 'bg-surface'}`}>
+                      <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white dark:bg-surface-elevated rounded-full shadow-sm transition-transform ${showClusters ? 'translate-x-5' : 'translate-x-0'}`}></div>
                     </div>
                   </div>
                 </label>
@@ -727,8 +735,8 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                       onChange={(e) => setShowHeatmap(e.target.checked)}
                       className="sr-only"
                     />
-                    <div className={`w-10 h-5 rounded-full transition-colors ${showHeatmap ? 'bg-accent-green' : 'bg-gray-200'}`}>
-                      <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${showHeatmap ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                    <div className={`w-10 h-5 rounded-full transition-colors ${showHeatmap ? 'bg-accent-green' : 'bg-surface'}`}>
+                      <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white dark:bg-surface-elevated rounded-full shadow-sm transition-transform ${showHeatmap ? 'translate-x-5' : 'translate-x-0'}`}></div>
                     </div>
                   </div>
                 </label>

@@ -1,6 +1,7 @@
 'use client'
 import dynamic from 'next/dynamic'
 import { useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 import PageHeader from '@/components/layout/PageHeader'
 
 const EcoPinMap = dynamic(
@@ -8,7 +9,7 @@ const EcoPinMap = dynamic(
   { ssr: false, loading: () => <div className="h-screen w-full bg-background" /> }
 )
 
-export default function MapViewPage() {
+function MapContent() {
   const searchParams = useSearchParams()
   const lat = searchParams.get('lat')
   const lng = searchParams.get('lng')
@@ -38,5 +39,13 @@ export default function MapViewPage() {
         />
       </div>
     </div>
+  )
+}
+
+export default function MapViewPage() {
+  return (
+    <Suspense fallback={<div className="h-screen w-full bg-background" />}>
+      <MapContent />
+    </Suspense>
   )
 }

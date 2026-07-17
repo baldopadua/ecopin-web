@@ -30,12 +30,12 @@ export default function Sidebar({ user, onLogout }) {
   const pathname = usePathname()
 
   return (
-    <aside className="w-64 bg-surface-elevated border-r border-border h-screen flex flex-col">
+    <aside className="w-64 bg-surface dark:bg-[#0a0f08] border-r border-border h-screen flex flex-col">
       {/* Logo */}
       <div className="p-6 border-b border-border">
-        <h1 className="text-xl font-bold text-text-primary">
-          EcoPin
-        </h1>
+        <Link href="/" className="text-xl font-bold text-text-primary">
+          EcoPin<span className="text-accent-green">.AI</span>
+        </Link>
       </div>
 
       {/* Navigation */}
@@ -46,10 +46,11 @@ export default function Sidebar({ user, onLogout }) {
             <Link
               key={item.name}
               href={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${isActive
-                  ? 'bg-accent-green text-white'
-                  : 'text-text-secondary hover:bg-surface hover:text-text-primary'
-                }`}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                isActive
+                  ? 'bg-primary text-white dark:text-black'
+                  : 'text-text-secondary hover:bg-surface dark:hover:bg-white/5 hover:text-text-primary'
+              }`}
             >
               {item.icon && (
                 <img
@@ -78,7 +79,7 @@ export default function Sidebar({ user, onLogout }) {
                 className="w-8 h-8 rounded-full object-cover"
               />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-accent-green flex items-center justify-center text-white font-bold">
+              <div className="w-8 h-8 rounded-full bg-primary text-white dark:text-black flex items-center justify-center font-bold text-sm">
                 {user?.full_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
               </div>
             )}

@@ -3,33 +3,27 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import { getAuditLogs } from '@/lib/api'
+import FilterDropdown from '@/components/ui/FilterDropdown'
 
 export default function AuditLogs() {
   const router = useRouter()
   const [logs, setLogs] = useState([])
+  const [allLogs, setAllLogs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [filters, setFilters] = useState({ action_type: '', start_date: '', end_date: '' })
-  const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 })
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 8
 
   useEffect(() => {
     loadLogs()
-  }, [filters, pagination.page])
+  }, [])
 
   const loadLogs = async () => {
     try {
       setLoading(true)
-      const data = await getAuditLogs({
-        page: pagination.page,
-        limit: 10,
-        ...filters
-      })
-      setLogs(data.logs || [])
-      setPagination(prev => ({
-        ...prev,
-        totalPages: data.pagination?.totalPages || 1,
-        total: data.pagination?.total || 0
-      }))
+      const data = await getAuditLogs()
+      setAllLogs(data.logs || [])
     } catch (err) {
       console.error('Failed to load audit logs:', err)
       setError('Failed to load audit logs')
@@ -38,22 +32,44 @@ export default function AuditLogs() {
     }
   }
 
+  useEffect(() => {
+    let filtered = allLogs
+    if (filters.action_type) {
+      filtered = filtered.filter(log => log.action_type === filters.action_type)
+    }
+    if (filters.start_date) {
+      filtered = filtered.filter(log => new Date(log.created_at) >= new Date(filters.start_date))
+    }
+    if (filters.end_date) {
+      const endDate = new Date(filters.end_date)
+      endDate.setHours(23, 59, 59, 999)
+      filtered = filtered.filter(log => new Date(log.created_at) <= endDate)
+    }
+    setLogs(filtered)
+    setCurrentPage(1)
+  }, [filters, allLogs])
+
+  const totalPages = Math.ceil(logs.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedLogs = logs.slice(startIndex, endIndex)
+
   const getActionTypeColor = (actionType) => {
     switch (actionType) {
       case 'login':
-        return 'bg-green-100 text-green-800'
+        return 'bg-success/10 text-success'
       case 'logout':
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-surface text-text-muted'
       case 'password_change':
-        return 'bg-yellow-100 text-yellow-800'
+        return 'bg-warning/10 text-warning'
       case 'role_change':
-        return 'bg-purple-100 text-purple-800'
+        return 'bg-purple/10 text-purple'
       case 'user_created':
-        return 'bg-blue-100 text-blue-800'
+        return 'bg-info/10 text-info'
       case 'user_deleted':
-        return 'bg-red-100 text-red-800'
+        return 'bg-error/10 text-error'
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-surface text-text-muted'
     }
   }
 
@@ -75,22 +91,23 @@ export default function AuditLogs() {
       />
 
       {/* Filters */}
-      <div className="card mb-6">
+      <div className="card mb-6 sticky top-[120px] z-10 bg-white/60 dark:bg-black/60  ">
         <div className="flex gap-4 flex-wrap">
           <div className="flex-1 min-w-[200px]">
-            <select
+            <FilterDropdown
+              label="All Actions"
               value={filters.action_type}
-              onChange={(e) => setFilters(prev => ({ ...prev, action_type: e.target.value }))}
-              className="w-full p-3 border border-border rounded-lg bg-surface text-text-primary"
-            >
-              <option value="">All Actions</option>
-              <option value="login">Login</option>
-              <option value="logout">Logout</option>
-              <option value="password_change">Password Change</option>
-              <option value="role_change">Role Change</option>
-              <option value="user_created">User Created</option>
-              <option value="user_deleted">User Deleted</option>
-            </select>
+              onChange={(val) => setFilters(prev => ({ ...prev, action_type: val }))}
+              options={[
+                { value: '', label: 'All Actions' },
+                { value: 'login', label: 'Login' },
+                { value: 'logout', label: 'Logout' },
+                { value: 'password_change', label: 'Password Change' },
+                { value: 'role_change', label: 'Role Change' },
+                { value: 'user_created', label: 'User Created' },
+                { value: 'user_deleted', label: 'User Deleted' }
+              ]}
+            />
           </div>
           <div className="min-w-[150px]">
             <input
@@ -116,13 +133,20 @@ export default function AuditLogs() {
         {loading ? (
           <p className="text-text-muted">Loading audit logs...</p>
         ) : error ? (
-          <p className="text-red-500">{error}</p>
+          <p className="text-error">{error}</p>
         ) : logs.length === 0 ? (
           <p className="text-text-muted">No audit logs found</p>
         ) : (
           <>
             <div className="overflow-x-auto">
               <table className="w-full">
+                <colgroup>
+                  <col style={{ width: '15%' }} />
+                  <col style={{ width: '20%' }} />
+                  <col style={{ width: '15%' }} />
+                  <col style={{ width: '35%' }} />
+                  <col style={{ width: '15%' }} />
+                </colgroup>
                 <thead>
                   <tr className="border-b border-border">
                     <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Date</th>
@@ -133,7 +157,7 @@ export default function AuditLogs() {
                   </tr>
                 </thead>
                 <tbody>
-                  {logs.map((log) => (
+                  {paginatedLogs.map((log) => (
                     <tr key={log.id} className="border-b border-border">
                       <td className="py-3 px-4 text-sm text-text-muted">
                         {formatDate(log.created_at)}
@@ -166,36 +190,36 @@ export default function AuditLogs() {
             </div>
 
             {/* Pagination */}
-            {pagination.totalPages > 1 && (
+            {totalPages > 1 && (
               <div className="flex items-center justify-between pt-4 border-t border-border">
                 <p className="text-sm text-text-muted">
-                  Showing {((pagination.page - 1) * 10) + 1} to {Math.min(pagination.page * 10, pagination.total)} of {pagination.total} logs
+                  Showing {startIndex + 1} to {Math.min(endIndex, logs.length)} of {logs.length} logs
                 </p>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
-                    disabled={pagination.page === 1}
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
                     className="btn-secondary px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Previous
                   </button>
                   <div className="flex items-center gap-1">
-                    {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                       let pageNum
-                      if (pagination.totalPages <= 5) {
+                      if (totalPages <= 5) {
                         pageNum = i + 1
-                      } else if (pagination.page <= 3) {
+                      } else if (currentPage <= 3) {
                         pageNum = i + 1
-                      } else if (pagination.page >= pagination.totalPages - 2) {
-                        pageNum = pagination.totalPages - 4 + i
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i
                       } else {
-                        pageNum = pagination.page - 2 + i
+                        pageNum = currentPage - 2 + i
                       }
                       return (
                         <button
                           key={pageNum}
-                          onClick={() => setPagination(prev => ({ ...prev, page: pageNum }))}
-                          className={`px-3 py-2 rounded ${pagination.page === pageNum ? 'btn-primary' : 'btn-secondary'}`}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`px-3 py-2 rounded ${currentPage === pageNum ? 'btn-primary' : 'btn-secondary'}`}
                         >
                           {pageNum}
                         </button>
@@ -203,8 +227,8 @@ export default function AuditLogs() {
                     })}
                   </div>
                   <button
-                    onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
-                    disabled={pagination.page === pagination.totalPages}
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
                     className="btn-secondary px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Next

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
+import FilterDropdown from '@/components/ui/FilterDropdown'
 import { getAllUsers, updateUserRole, deleteUser, createUser } from '@/lib/api'
 
 export default function UserManagement() {
@@ -129,12 +130,12 @@ export default function UserManagement() {
   const getRoleBadgeColor = (role) => {
     switch (role) {
       case 'admin':
-        return 'bg-purple-100 text-purple-800'
+        return 'bg-purple/10 text-purple'
       case 'lgu':
-        return 'bg-blue-100 text-blue-800'
+        return 'bg-info/10 text-info'
       case 'citizen':
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-surface text-text-muted'
     }
   }
 
@@ -172,16 +173,17 @@ export default function UserManagement() {
               />
             </div>
             <div className="min-w-[150px]">
-              <select
+              <FilterDropdown
+                label="All Roles"
                 value={filters.role}
-                onChange={(e) => setFilters(prev => ({ ...prev, role: e.target.value }))}
-                className="w-full p-3 border border-border rounded-lg bg-surface text-text-primary"
-              >
-                <option value="">All Roles</option>
-                <option value="citizen">Citizen</option>
-                <option value="lgu">LGU</option>
-                <option value="admin">Admin</option>
-              </select>
+                onChange={(val) => setFilters(prev => ({ ...prev, role: val }))}
+                options={[
+                  { value: '', label: 'All Roles' },
+                  { value: 'citizen', label: 'Citizen' },
+                  { value: 'lgu', label: 'LGU' },
+                  { value: 'admin', label: 'Admin' }
+                ]}
+              />
             </div>
           </div>
           <button
@@ -231,7 +233,7 @@ export default function UserManagement() {
                       {validatePassword(newUser.password).requirements.map((req, idx) => (
                         <li key={idx} className="text-xs flex items-center gap-2">
                           <svg
-                            className={`w-4 h-4 ${req.met ? 'text-green-500' : 'text-gray-400'}`}
+                            className={`w-4 h-4 ${req.met ? 'text-success' : 'text-text-muted'}`}
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -242,7 +244,7 @@ export default function UserManagement() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                             )}
                           </svg>
-                          <span className={req.met ? 'text-green-600' : 'text-text-muted'}>{req.text}</span>
+                          <span className={req.met ? 'text-success' : 'text-text-muted'}>{req.text}</span>
                         </li>
                       ))}
                     </ul>
@@ -251,14 +253,15 @@ export default function UserManagement() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-text-secondary mb-2">Role *</label>
-                <select
+                <FilterDropdown
+                  label="Select Role"
                   value={newUser.role}
-                  onChange={(e) => setNewUser(prev => ({ ...prev, role: e.target.value }))}
-                  className="input"
-                >
-                  <option value="lgu">LGU</option>
-                  <option value="admin">Admin</option>
-                </select>
+                  onChange={(val) => setNewUser(prev => ({ ...prev, role: val }))}
+                  options={[
+                    { value: 'lgu', label: 'LGU' },
+                    { value: 'admin', label: 'Admin' }
+                  ]}
+                />
               </div>
             </div>
             <div className="mt-8 flex justify-end">
@@ -279,13 +282,20 @@ export default function UserManagement() {
         {loading ? (
           <p className="text-text-muted">Loading users...</p>
         ) : error ? (
-          <p className="text-red-500">{error}</p>
+          <p className="text-error">{error}</p>
         ) : users.length === 0 ? (
           <p className="text-text-muted">No users found</p>
         ) : (
           <>
             <div className="overflow-x-auto">
               <table className="w-full">
+                <colgroup>
+                  <col style={{ width: '25%' }} />
+                  <col style={{ width: '25%' }} />
+                  <col style={{ width: '15%' }} />
+                  <col style={{ width: '20%' }} />
+                  <col style={{ width: '15%' }} />
+                </colgroup>
                 <thead>
                   <tr className="border-b border-border">
                     <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Name</th>
@@ -318,16 +328,16 @@ export default function UserManagement() {
                       </td>
                       <td className="py-3 px-4 text-sm text-text-secondary">{user.email || 'N/A'}</td>
                       <td className="py-3 px-4">
-                        <select
+                        <FilterDropdown
+                          label={user.role}
                           value={user.role}
-                          onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                          disabled={updatingRole === user.id}
-                          className={`px-2 py-1 rounded text-xs font-medium ${getRoleBadgeColor(user.role)} ${updatingRole === user.id ? 'opacity-50' : ''}`}
-                        >
-                          <option value="citizen">Citizen</option>
-                          <option value="lgu">LGU</option>
-                          <option value="admin">Admin</option>
-                        </select>
+                          onChange={(val) => handleRoleChange(user.id, val)}
+                          options={[
+                            { value: 'citizen', label: 'Citizen' },
+                            { value: 'lgu', label: 'LGU' },
+                            { value: 'admin', label: 'Admin' }
+                          ]}
+                        />
                       </td>
                       <td className="py-3 px-4 text-sm text-text-muted">
                         {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
@@ -336,7 +346,7 @@ export default function UserManagement() {
                         <button
                           onClick={() => handleDeleteUser(user.id)}
                           disabled={deletingUser === user.id}
-                          className="text-red-500 hover:text-red-700 text-sm disabled:opacity-50"
+                          className="text-error hover:text-error/80 text-sm disabled:opacity-50"
                         >
                           {deletingUser === user.id ? 'Deleting...' : 'Delete'}
                         </button>
@@ -361,6 +371,29 @@ export default function UserManagement() {
                   >
                     Previous
                   </button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                      let pageNum
+                      if (pagination.totalPages <= 5) {
+                        pageNum = i + 1
+                      } else if (pagination.page <= 3) {
+                        pageNum = i + 1
+                      } else if (pagination.page >= pagination.totalPages - 2) {
+                        pageNum = pagination.totalPages - 4 + i
+                      } else {
+                        pageNum = pagination.page - 2 + i
+                      }
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setPagination(prev => ({ ...prev, page: pageNum }))}
+                          className={`px-3 py-2 rounded ${pagination.page === pageNum ? 'btn-primary' : 'btn-secondary'}`}
+                        >
+                          {pageNum}
+                        </button>
+                      )
+                    })}
+                  </div>
                   <button
                     onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
                     disabled={pagination.page === pagination.totalPages}

@@ -1,6 +1,7 @@
 'use client'
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import PublicLayout from '@/components/layout/PublicLayout'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL + '/api/auth';
 
@@ -39,7 +40,6 @@ export default function AuthPage() {
 
       console.log('Authentication successful:', data);
 
-      // Check user role before allowing dashboard access
       const userRole = data.user?.role || 'citizen'
       if (userRole === 'citizen') {
         localStorage.removeItem('authToken')
@@ -72,56 +72,61 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="card w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-text-primary mb-2">
-            Welcome Back
-          </h1>
-          <p className="text-sm text-text-secondary">
-            Sign in to access your dashboard
-          </p>
-        </div>
-
-        <div className="space-y-4">
-          <input
-            ref={emailRef}
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            onKeyDown={handleEmailKeyDown}
-            className="input"
-          />
-          <input
-            ref={passwordRef}
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            onKeyDown={handlePasswordKeyDown}
-            className="input"
-          />
-
-          {error && (
-            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-              <p className="text-sm text-error">{error}</p>
+    <PublicLayout>
+      {/* Login Form */}
+      <div className="relative z-10 flex items-center justify-center px-10 sm:px-16 py-20 min-h-[calc(100vh-80px)]">
+        <div className="w-full max-w-lg">
+          <div className="bg-white/60 dark:bg-black/60 backdrop-blur-sm border border-border/50 rounded-2xl shadow-xl p-8">
+            <div className="text-center mb-8">
+              <h1 className="text-2xl font-bold text-text-primary mb-2">
+                Welcome Back
+              </h1>
+              <p className="text-sm text-text-secondary">
+                Sign in to access your dashboard
+              </p>
             </div>
-          )}
 
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="btn-primary w-full"
-          >
-            {loading ? 'Loading...' : 'Sign In'}
-          </button>
+            <div className="space-y-4">
+              <input
+                ref={emailRef}
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                onKeyDown={handleEmailKeyDown}
+                className="input"
+              />
+              <input
+                ref={passwordRef}
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                onKeyDown={handlePasswordKeyDown}
+                className="input"
+              />
 
-          <p className="text-center text-sm text-text-muted">
-            Contact an administrator to create an account
-          </p>
+              {error && (
+                <div className="p-3 bg-error/10 border border-error/30 rounded-lg">
+                  <p className="text-sm text-error">{error}</p>
+                </div>
+              )}
+
+              <button
+                onClick={handleSubmit}
+                disabled={loading}
+                className="btn-primary w-full"
+              >
+                {loading ? 'Loading...' : 'Sign In'}
+              </button>
+
+              <p className="text-center text-sm text-text-muted">
+                Contact an administrator to create an account
+              </p>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </PublicLayout>
   )
 }

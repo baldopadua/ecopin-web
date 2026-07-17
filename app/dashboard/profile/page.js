@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import PageHeader from '@/components/layout/PageHeader'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL + '/api'
 
@@ -25,6 +26,26 @@ export default function ProfilePage() {
     confirm_password: ''
   })
   const [changingPassword, setChangingPassword] = useState(false)
+  const [theme, setTheme] = useState('light')
+
+  useEffect(() => {
+    const saved = localStorage.getItem('theme')
+    if (saved) {
+      setTheme(saved)
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      setTheme('dark')
+    }
+  }, [])
+
+  const toggleTheme = (newTheme) => {
+    setTheme(newTheme)
+    localStorage.setItem('theme', newTheme)
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  }
 
   useEffect(() => {
     loadProfile()
@@ -250,8 +271,15 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold text-text-primary mb-6">Profile</h1>
+    <div className="p-8">
+      <PageHeader
+        title="Profile"
+        subtitle="Manage your account settings"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Profile' }
+        ]}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Avatar Section */}
@@ -274,7 +302,7 @@ export default function ProfilePage() {
                 <button
                   onClick={handleRemoveAvatar}
                   disabled={uploadingAvatar}
-                  className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-red-600 disabled:opacity-50"
+                  className="absolute -top-2 -right-2 w-6 h-6 bg-error text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-error/80 disabled:opacity-50"
                   title="Remove avatar"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -381,9 +409,9 @@ export default function ProfilePage() {
                           className={`h-1 flex-1 rounded ${
                             i <= validatePassword(passwordData.new_password).metCount
                               ? validatePassword(passwordData.new_password).allMet
-                                ? 'bg-green-500'
-                                : 'bg-yellow-500'
-                              : 'bg-gray-300'
+                                ? 'bg-success'
+                                : 'bg-warning'
+                              : 'bg-border'
                           }`}
                         />
                       ))}
@@ -392,7 +420,7 @@ export default function ProfilePage() {
                       {validatePassword(passwordData.new_password).requirements.map((req, idx) => (
                         <li key={idx} className="text-xs flex items-center gap-2">
                           <svg
-                            className={`w-4 h-4 ${req.met ? 'text-green-500' : 'text-gray-400'}`}
+                            className={`w-4 h-4 ${req.met ? 'text-success' : 'text-text-muted'}`}
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -403,7 +431,7 @@ export default function ProfilePage() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                             )}
                           </svg>
-                          <span className={req.met ? 'text-green-600' : 'text-text-muted'}>{req.text}</span>
+                          <span className={req.met ? 'text-success' : 'text-text-muted'}>{req.text}</span>
                         </li>
                       ))}
                     </ul>
@@ -423,7 +451,7 @@ export default function ProfilePage() {
                   placeholder="Confirm new password"
                 />
                 {passwordData.confirm_password && (
-                  <p className={`text-xs mt-1 ${passwordData.new_password === passwordData.confirm_password ? 'text-green-600' : 'text-red-500'}`}>
+                  <p className={`text-xs mt-1 ${passwordData.new_password === passwordData.confirm_password ? 'text-success' : 'text-error'}`}>
                     {passwordData.new_password === passwordData.confirm_password ? 'Passwords match' : 'Passwords do not match'}
                   </p>
                 )}
@@ -439,14 +467,14 @@ export default function ProfilePage() {
           )}
 
           {error && (
-            <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <div className="mt-4 p-3 bg-error/10 dark:bg-error/20 border border-error/20 dark:border-error/30 rounded-lg">
               <p className="text-sm text-error">{error}</p>
             </div>
           )}
 
           {success && (
-            <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-              <p className="text-sm text-green-600 dark:text-green-400">{success}</p>
+            <div className="mt-4 p-3 bg-success/10 dark:bg-success/20 border border-success/20 dark:border-success/30 rounded-lg">
+              <p className="text-sm text-success dark:text-success">{success}</p>
             </div>
           )}
 
@@ -457,6 +485,26 @@ export default function ProfilePage() {
               className="btn-primary"
             >
               {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </div>
+
+        {/* Appearance */}
+        <div className="card p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-text-primary">Dark Mode</h2>
+              <p className="text-sm text-text-muted mt-1">Switch between light and dark appearance</p>
+            </div>
+            <button
+              onClick={() => toggleTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="relative w-12 h-6 rounded-full transition-colors"
+              style={{ backgroundColor: theme === 'dark' ? 'var(--primary)' : 'var(--border)' }}
+            >
+              <div
+                className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform"
+                style={{ transform: theme === 'dark' ? 'translateX(26px)' : 'translateX(2px)' }}
+              />
             </button>
           </div>
         </div>

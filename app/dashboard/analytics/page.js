@@ -26,7 +26,7 @@ ChartJS.register(
   Legend
 )
 
-const COLORS = ['#4CAF50', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6', '#EC4899']
+const COLORS = ['#457113', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6', '#EC4899']
 const SATISFACTION_COLORS = ['#EF4444', '#F59E0B', '#EAB308', '#84CC16', '#22C55E']
 const SATISFACTION_LABELS = ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied']
 
@@ -252,7 +252,7 @@ export default function AnalyticsPage() {
       {
         label: 'Reports',
         data: weeklyVolumeData.map(d => d.count),
-        backgroundColor: '#4CAF50',
+        backgroundColor: '#457113',
         borderRadius: 4,
       }
     ]
@@ -323,7 +323,7 @@ export default function AnalyticsPage() {
       />
 
       {error && (
-        <div className="mb-6 p-4 bg-red-100 border border-red-300 text-red-700 rounded-lg">
+        <div className="mb-6 p-4 bg-error/10 border border-error/30 text-error rounded-lg">
           {error}
         </div>
       )}

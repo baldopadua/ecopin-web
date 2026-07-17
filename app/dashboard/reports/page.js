@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { fetchFilteredReports, fetchIssueTypes } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
+import FilterDropdown from '@/components/ui/FilterDropdown'
 
 export default function ReportsPage() {
   const [reports, setReports] = useState([])
@@ -19,7 +20,7 @@ export default function ReportsPage() {
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 10
+  const itemsPerPage = 8
 
   useEffect(() => {
     Promise.all([
@@ -88,41 +89,52 @@ export default function ReportsPage() {
   const getStatusColor = (status) => {
     switch (status) {
       case 'resolved':
-        return 'bg-green-100 text-green-800'
+        return 'bg-success/10 text-success'
       case 'in_progress':
-        return 'bg-yellow-100 text-yellow-800'
+        return 'bg-warning/10 text-warning'
+      case 'waiting_for_feedback':
+        return 'bg-info/10 text-info'
+      case 'closed':
+        return 'bg-surface text-text-muted'
+      case 'pending_owner_consent':
+        return 'bg-warning/10 text-warning'
       default:
-        return 'bg-red-100 text-red-800'
+        return 'bg-error/10 text-error'
     }
   }
 
   const getValidationColor = (status) => {
     switch (status) {
       case 'validated':
-        return 'bg-blue-100 text-blue-800'
+      case 'automatically_valid':
+        return 'bg-success/10 text-success'
       case 'pending':
-        return 'bg-gray-100 text-gray-800'
+      case 'pending_ai_validation':
+        return 'bg-warning/10 text-warning'
+      case 'manual_review':
+      case 'Manual_Review':
+        return 'bg-info/10 text-info'
       case 'rejected':
-        return 'bg-red-100 text-red-800'
+        return 'bg-error/10 text-error'
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-surface text-text-muted'
     }
   }
 
   const getLifecycleStageColor = (stage) => {
     switch (stage) {
       case 'submitted':
-        return 'bg-purple-100 text-purple-800'
+        return 'bg-purple/10 text-purple'
       case 'acknowledged':
-        return 'bg-blue-100 text-blue-800'
+        return 'bg-info/10 text-info'
       case 'responded':
-        return 'bg-yellow-100 text-yellow-800'
+        return 'bg-warning/10 text-warning'
       case 'resolved':
-        return 'bg-green-100 text-green-800'
+        return 'bg-success/10 text-success'
       case 'closed':
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-surface text-text-muted'
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-surface text-text-muted'
     }
   }
 
@@ -138,7 +150,7 @@ export default function ReportsPage() {
       />
 
       {/* Search and Filters */}
-      <div className="card mb-6 border-l-4 border-l-[var(--accent-green)] no-hover">
+      <div className="card mb-6 sticky top-[120px] z-10 bg-white/60 dark:bg-black/60 border-l-4 border-l-[var(--accent-green)] no-hover">
         <div className="flex flex-wrap items-center gap-4">
           {/* Search */}
           <div className="flex-1 min-w-[200px]">
@@ -152,50 +164,45 @@ export default function ReportsPage() {
           </div>
 
           {/* Type Filter */}
-          <div className="min-w-[150px]">
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="input"
-            >
-              <option value="all">All Types</option>
-              {issueTypes.map(type => (
-                <option key={type} value={type}>{type}</option>
-              ))}
-            </select>
-          </div>
+          <FilterDropdown
+            label="All Types"
+            value={typeFilter}
+            onChange={setTypeFilter}
+            options={[
+              { value: 'all', label: 'All Types' },
+              ...issueTypes.map(type => ({ value: type, label: type }))
+            ]}
+          />
 
           {/* Status Filter */}
-          <div className="min-w-[150px]">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="input"
-            >
-              <option value="all">All Status</option>
-              <option value="unresolved">Unresolved</option>
-              <option value="in_progress">In Progress</option>
-              <option value="resolved">Resolved</option>
-              <option value="closed">Closed</option>
-              <option value="pending_owner_consent">Pending Owner Consent</option>
-              <option value="waiting_for_feedback">Waiting for Feedback</option>
-            </select>
-          </div>
+          <FilterDropdown
+            label="All Status"
+            value={statusFilter}
+            onChange={setStatusFilter}
+            options={[
+              { value: 'all', label: 'All Status' },
+              { value: 'unresolved', label: 'Unresolved' },
+              { value: 'in_progress', label: 'In Progress' },
+              { value: 'resolved', label: 'Resolved' },
+              { value: 'closed', label: 'Closed' },
+              { value: 'pending_owner_consent', label: 'Pending Owner Consent' },
+              { value: 'waiting_for_feedback', label: 'Waiting for Feedback' }
+            ]}
+          />
 
           {/* Validation Filter */}
-          <div className="min-w-[150px]">
-            <select
-              value={validationFilter}
-              onChange={(e) => setValidationFilter(e.target.value)}
-              className="input"
-            >
-              <option value="all">All Validation</option>
-              <option value="automatically_valid">Automatically Valid</option>
-              <option value="manual_review">Manual Review</option>
-              <option value="validated">Validated</option>
-              <option value="rejected">Rejected</option>
-            </select>
-          </div>
+          <FilterDropdown
+            label="All Validation"
+            value={validationFilter}
+            onChange={setValidationFilter}
+            options={[
+              { value: 'all', label: 'All Validation' },
+              { value: 'automatically_valid', label: 'Automatically Valid' },
+              { value: 'manual_review', label: 'Manual Review' },
+              { value: 'validated', label: 'Validated' },
+              { value: 'rejected', label: 'Rejected' }
+            ]}
+          />
 
           {/* Clear Filters Button */}
           {(searchQuery || typeFilter !== 'all' || statusFilter !== 'all' || validationFilter !== 'all') && (
@@ -230,6 +237,15 @@ export default function ReportsPage() {
           <>
             <div className="overflow-x-auto mb-6">
               <table className="w-full">
+                <colgroup>
+                  <col style={{ width: '18%' }} />
+                  <col style={{ width: '22%' }} />
+                  <col style={{ width: '12%' }} />
+                  <col style={{ width: '12%' }} />
+                  <col style={{ width: '12%' }} />
+                  <col style={{ width: '12%' }} />
+                  <col style={{ width: '12%' }} />
+                </colgroup>
                 <thead>
                   <tr className="border-b border-border">
                     <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Title</th>
@@ -285,36 +301,49 @@ export default function ReportsPage() {
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="pt-4 border-t border-border flex items-center justify-between">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="btn-secondary px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Previous
-                </button>
-                <div className="flex items-center gap-2">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <button
-                      key={page}
-                      onClick={() => handlePageChange(page)}
-                      className={`px-3 py-2 rounded-lg ${
-                        currentPage === page
-                          ? 'bg-accent-green text-white'
-                          : 'bg-surface text-text-primary hover:bg-accent-green/10'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
+              <div className="flex items-center justify-between pt-4 border-t border-border">
+                <p className="text-sm text-text-muted">
+                  Showing {startIndex + 1} to {Math.min(endIndex, filteredReports.length)} of {filteredReports.length} reports
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="btn-secondary px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum
+                      if (totalPages <= 5) {
+                        pageNum = i + 1
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i
+                      } else {
+                        pageNum = currentPage - 2 + i
+                      }
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => handlePageChange(pageNum)}
+                          className={`px-3 py-2 rounded ${currentPage === pageNum ? 'btn-primary' : 'btn-secondary'}`}
+                        >
+                          {pageNum}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="btn-secondary px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
                 </div>
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="btn-secondary px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Next
-                </button>
               </div>
             )}
           </>

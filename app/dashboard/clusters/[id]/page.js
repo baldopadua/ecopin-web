@@ -107,24 +107,30 @@ export default function ClusterDetailPage() {
   const getStatusColor = (status) => {
     switch (status) {
       case 'resolved':
-        return 'bg-green-100 text-green-800'
+        return 'bg-success/10 text-success'
       case 'in_progress':
-        return 'bg-yellow-100 text-yellow-800'
+        return 'bg-warning/10 text-warning'
+      case 'waiting_for_feedback':
+        return 'bg-info/10 text-info'
+      case 'closed':
+        return 'bg-surface text-text-muted'
+      case 'pending_owner_consent':
+        return 'bg-warning/10 text-warning'
       default:
-        return 'bg-red-100 text-red-800'
+        return 'bg-error/10 text-error'
     }
   }
 
   const getSeverityColor = (severity) => {
     switch (severity) {
       case 'high':
-        return 'bg-red-100 text-red-800'
+        return 'bg-error/10 text-error'
       case 'medium':
         return 'bg-orange-100 text-orange-800'
       case 'low':
-        return 'bg-blue-100 text-blue-800'
+        return 'bg-info/10 text-info'
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-surface text-text-muted'
     }
   }
 
@@ -146,7 +152,7 @@ export default function ClusterDetailPage() {
       />
 
       {/* Cluster Summary Card */}
-      <div className="card mb-6">
+      <div className="card mb-6 no-hover">
         <div className="flex justify-between items-start">
           <h2 className="text-xl font-bold text-text-primary mb-4">Cluster Summary</h2>
           <button
@@ -172,12 +178,15 @@ export default function ClusterDetailPage() {
             <p className="text-lg font-semibold text-text-primary">{cluster.issue_type || 'N/A'}</p>
           </div>
           <div className="p-4 border border-border rounded-lg">
-            <p className="text-sm text-text-muted">Location</p>
-            <p className="text-lg font-semibold text-text-primary">
-              {centerCoords
-                ? `${centerCoords[0].toFixed(4)}, ${centerCoords[1].toFixed(4)}`
-                : 'N/A'}
-            </p>
+            <a
+              href={centerCoords ? `/dashboard/map-view?lat=${centerCoords[0]}&lng=${centerCoords[1]}` : '#'}
+              onClick={(e) => {
+                if (!centerCoords) e.preventDefault()
+              }}
+              className={`btn-secondary w-full block text-center ${!centerCoords ? 'opacity-50 pointer-events-none' : ''}`}
+            >
+              View on Map
+            </a>
           </div>
         </div>
       </div>
@@ -221,7 +230,7 @@ export default function ClusterDetailPage() {
       {/* Create Task Modal */}
       {showCreateTaskModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+          <div className="bg-surface dark:bg-surface-elevated rounded-lg p-6 w-full max-w-md">
             <h3 className="text-xl font-bold mb-4">Create Cleanup Task</h3>
             <div className="mb-4">
               <label className="block text-sm font-medium mb-2">Task Title</label>
@@ -246,7 +255,7 @@ export default function ClusterDetailPage() {
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowCreateTaskModal(false)}
-                className="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400"
+                className="px-4 py-2 bg-surface text-text-primary rounded-lg hover:bg-surface-elevated"
               >
                 Cancel
               </button>

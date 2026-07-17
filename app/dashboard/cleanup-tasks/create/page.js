@@ -153,7 +153,7 @@ export default function CreateCustomCleanupTaskPage() {
               {selectedReports.size > 0 && (
                 <button
                   onClick={() => setSelectedReports(new Set())}
-                  className="text-sm text-red-600 hover:text-red-700"
+                  className="text-sm text-error hover:text-error/80"
                 >
                   Clear Selection
                 </button>
@@ -194,7 +194,7 @@ export default function CreateCustomCleanupTaskPage() {
                         <td className="py-3 px-4">
                           <button
                             onClick={() => toggleReportSelection(report.id)}
-                            className="text-red-600 hover:text-red-700 text-sm"
+                            className="text-error hover:text-error/80 text-sm"
                           >
                             Remove
                           </button>
@@ -262,7 +262,7 @@ export default function CreateCustomCleanupTaskPage() {
           </div>
 
           {/* Instructions */}
-          <div className="card bg-blue-50 border-blue-200">
+          <div className="card bg-info/10 border-info/20">
             <h3 className="font-semibold text-text-primary mb-2">Instructions</h3>
             <ul className="text-sm text-text-secondary space-y-1">
               <li>• Click on report pins on the map to select them</li>

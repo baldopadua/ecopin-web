@@ -139,45 +139,52 @@ export default function ReportDetailPage() {
   const getStatusColor = (status) => {
     switch (status) {
       case 'resolved':
-        return 'bg-green-100 text-green-800 border-green-300'
+        return 'bg-success/10 text-success border-success/30'
       case 'closed':
-        return 'bg-gray-100 text-gray-800 border-gray-300'
+        return 'bg-surface text-text-muted border-border'
       case 'waiting_for_feedback':
-        return 'bg-blue-100 text-blue-800 border-blue-300'
+        return 'bg-info/10 text-info border-info/30'
       case 'in_progress':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-300'
+        return 'bg-warning/10 text-warning border-warning/30'
+      case 'pending_owner_consent':
+        return 'bg-warning/10 text-warning border-warning/30'
       default:
-        return 'bg-red-100 text-red-800 border-red-300'
+        return 'bg-error/10 text-error border-error/30'
     }
   }
 
   const getValidationColor = (status) => {
     switch (status) {
       case 'validated':
-        return 'bg-blue-100 text-blue-800 border-blue-300'
+      case 'automatically_valid':
+        return 'bg-success/10 text-success border-success/30'
       case 'pending':
-        return 'bg-gray-100 text-gray-800 border-gray-300'
+      case 'pending_ai_validation':
+        return 'bg-warning/10 text-warning border-warning/30'
+      case 'manual_review':
+      case 'Manual_Review':
+        return 'bg-info/10 text-info border-info/30'
       case 'rejected':
-        return 'bg-red-100 text-red-800 border-red-300'
+        return 'bg-error/10 text-error border-error/30'
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-300'
+        return 'bg-surface text-text-muted border-border'
     }
   }
 
   const getLifecycleStageColor = (stage) => {
     switch (stage) {
       case 'submitted':
-        return 'bg-purple-100 text-purple-800 border-purple-300'
+        return 'bg-purple/10 text-purple border-purple/30'
       case 'acknowledged':
-        return 'bg-blue-100 text-blue-800 border-blue-300'
+        return 'bg-info/10 text-info border-info/30'
       case 'responded':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-300'
+        return 'bg-warning/10 text-warning border-warning/30'
       case 'resolved':
-        return 'bg-green-100 text-green-800 border-green-300'
+        return 'bg-success/10 text-success border-success/30'
       case 'closed':
-        return 'bg-gray-100 text-gray-800 border-gray-300'
+        return 'bg-surface text-text-muted border-border'
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-300'
+        return 'bg-surface text-text-muted border-border'
     }
   }
 
@@ -471,38 +478,29 @@ export default function ReportDetailPage() {
   })
 
   return (
-    <div className="flex flex-col h-screen">
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-10 bg-background border-b border-border">
-        <div className="p-8 pb-4">
-          <div className="flex items-center justify-between">
-            <PageHeader
-              title="Report Details"
-              subtitle="View detailed report information"
-              breadcrumbs={[
-                { label: 'Dashboard', href: '/dashboard' },
-                { label: 'Reports', href: '/dashboard/reports' },
-                { label: 'Details' }
-              ]}
-            />
-            <button
-              onClick={loadReportData}
-              disabled={loading}
-              className="btn-secondary flex items-center gap-2"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              {loading ? 'Refreshing...' : 'Refresh'}
-            </button>
-          </div>
-        </div>
-      </div>
+    <div className="p-8">
+      <PageHeader
+        title="Report Details"
+        subtitle="View detailed report information"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Reports', href: '/dashboard/reports' },
+          { label: 'Details' }
+        ]}
+      >
+        <button
+          onClick={loadReportData}
+          disabled={loading}
+          className="btn-secondary flex items-center gap-2 text-sm"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          {loading ? 'Refreshing...' : 'Refresh'}
+        </button>
+      </PageHeader>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        <div className="p-8 pt-4">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-4">
             {/* Main Content */}
             <div className="lg:col-span-3 space-y-6">
               {/* Lifecycle Timeline - Centerpiece */}
@@ -518,7 +516,7 @@ export default function ReportDetailPage() {
                           </span>
                         )}
                         {report.on_private_property && report.property_owner_consent_status === 'denied' && (
-                          <span className={`px-4 py-2 rounded-full text-sm font-semibold border bg-red-100 text-red-800 border-red-300`}>
+                          <span className={`px-4 py-2 rounded-full text-sm font-semibold border bg-error/10 text-error border-error/30`}>
                             {report.property_owner_consent_status.toUpperCase()}
                           </span>
                         )}
@@ -533,10 +531,10 @@ export default function ReportDetailPage() {
                         </span>
                         {report.on_private_property && (
                           <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${report.property_owner_consent_status === 'obtained'
-                            ? 'bg-green-100 text-green-800 border-green-300'
+                            ? 'bg-success/10 text-success border-success/30'
                             : report.property_owner_consent_status === 'pending'
-                              ? 'bg-yellow-100 text-yellow-800 border-yellow-300'
-                              : 'bg-gray-100 text-gray-800 border-gray-300'
+                              ? 'bg-warning/10 text-warning border-warning/30'
+                              : 'bg-surface text-text-muted border-border'
                             }`}>
                             {report.property_owner_consent_status.toUpperCase()}
                           </span>
@@ -552,7 +550,7 @@ export default function ReportDetailPage() {
                 </div>
                 <div className="flex items-center justify-center gap-0 px-4 relative">
                   {/* Continuous background line */}
-                  <div className="absolute top-3 left-3 right-3 h-1 bg-gray-300 -z-10" />
+                  <div className="absolute top-3 left-3 right-3 h-1 bg-border -z-10" />
                   {/* Colored progress line */}
                   {(() => {
                     const stages = ['submitted', 'acknowledged', 'responded', 'resolved']
@@ -585,7 +583,7 @@ export default function ReportDetailPage() {
                     const isCurrent = report.stage === stage
                     return (
                       <div key={stage} className="flex-1 flex flex-col items-center z-10">
-                        <div className={`w-6 h-6 rounded-full ${isCurrent ? 'bg-[var(--success)] ring-4 ring-[var(--success)]/20' : isCompleted ? 'bg-[var(--accent-green)]' : 'bg-gray-300'} transition-all relative`} />
+                        <div className={`w-6 h-6 rounded-full ${isCurrent ? 'bg-[var(--success)] ring-4 ring-[var(--success)]/20' : isCompleted ? 'bg-[var(--accent-green)]' : 'bg-border'} transition-all relative`} />
                         <span className={`text-xs mt-2 font-medium ${isCurrent ? 'text-[var(--success)]' : isCompleted ? 'text-[var(--accent-green)]' : 'text-text-muted'}`}>
                           {stage.replace('_', ' ')}
                         </span>
@@ -644,7 +642,7 @@ export default function ReportDetailPage() {
                       {report.before_photo_url && (
                         <button
                           onClick={() => handlePhotoDelete('before')}
-                          className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded transition-colors"
+                          className="px-3 py-1 bg-error hover:bg-error/90 text-white text-sm rounded transition-colors"
                         >
                           Delete
                         </button>
@@ -654,7 +652,7 @@ export default function ReportDetailPage() {
                       <img src={report.before_photo_url} alt="Before" className="w-full h-48 object-cover rounded-lg" />
                     ) : (
                       <div
-                        className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${uploadingBefore ? 'border-gray-300 bg-gray-50' : 'border-border hover:border-accent-green hover:bg-accent-green/5'
+                        className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${uploadingBefore ? 'border-border bg-surface' : 'border-border hover:border-accent-green hover:bg-accent-green/5'
                           }`}
                         onClick={() => document.getElementById('before-photo-input').click()}
                         onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-accent-green', 'bg-accent-green/10'); }}
@@ -700,7 +698,7 @@ export default function ReportDetailPage() {
                       {report.after_photo_url && (
                         <button
                           onClick={() => handlePhotoDelete('after')}
-                          className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded transition-colors"
+                          className="px-3 py-1 bg-error hover:bg-error/90 text-white text-sm rounded transition-colors"
                         >
                           Delete
                         </button>
@@ -710,7 +708,7 @@ export default function ReportDetailPage() {
                       <img src={report.after_photo_url} alt="After" className="w-full h-48 object-cover rounded-lg" />
                     ) : (
                       <div
-                        className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${uploadingAfter ? 'border-gray-300 bg-gray-50' : 'border-border hover:border-accent-green hover:bg-accent-green/5'
+                        className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${uploadingAfter ? 'border-border bg-surface' : 'border-border hover:border-accent-green hover:bg-accent-green/5'
                           }`}
                         onClick={() => document.getElementById('after-photo-input').click()}
                         onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-accent-green', 'bg-accent-green/10'); }}
@@ -882,7 +880,7 @@ export default function ReportDetailPage() {
             </div>
 
             {/* Sidebar - Simplified */}
-            <div className="space-y-6 sticky top-4 self-start z-50">
+            <div className="space-y-6 sticky top-[160px] self-start">
               {/* Report Metadata */}
               <div className="card">
                 <h2 className="text-lg font-bold text-text-primary mb-4">Report Details</h2>
@@ -949,12 +947,12 @@ export default function ReportDetailPage() {
                     <h2 className="text-lg font-bold text-text-primary">Property Owner Consent</h2>
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${
                       report.property_owner_consent_status === 'obtained'
-                        ? 'bg-green-100 text-green-800 border-green-300'
+                        ? 'bg-success/10 text-success border-success/30'
                         : report.property_owner_consent_status === 'pending'
-                          ? 'bg-yellow-100 text-yellow-800 border-yellow-300'
+                          ? 'bg-warning/10 text-warning border-warning/30'
                           : report.property_owner_consent_status === 'denied'
-                            ? 'bg-red-100 text-red-800 border-red-300'
-                            : 'bg-gray-100 text-gray-800 border-gray-300'
+                            ? 'bg-error/10 text-error border-error/30'
+                            : 'bg-surface text-text-muted border-border'
                     }`}>
                       {report.property_owner_consent_status.replace('_', ' ').toUpperCase()}
                     </span>
@@ -965,7 +963,7 @@ export default function ReportDetailPage() {
                         onClick={() => handlePropertyOwnerConsent('pending')}
                         disabled={updatingConsent}
                         className={`text-sm py-2 rounded-lg border transition-all ${report.property_owner_consent_status === 'pending'
-                          ? 'bg-yellow-100 text-yellow-800 border-yellow-300 font-semibold'
+                          ? 'bg-warning/10 text-warning border-warning/30 font-semibold'
                           : 'btn-secondary'
                           }`}
                       >
@@ -975,7 +973,7 @@ export default function ReportDetailPage() {
                         onClick={() => handlePropertyOwnerConsent('obtained')}
                         disabled={updatingConsent}
                         className={`text-sm py-2 rounded-lg border transition-all ${report.property_owner_consent_status === 'obtained'
-                          ? 'bg-green-600 text-white border-green-600 font-semibold'
+                          ? 'bg-success text-white border-success font-semibold'
                           : 'btn-secondary'
                           }`}
                       >
@@ -985,7 +983,7 @@ export default function ReportDetailPage() {
                         onClick={() => handlePropertyOwnerConsent('denied')}
                         disabled={updatingConsent}
                         className={`text-sm py-2 rounded-lg border transition-all ${report.property_owner_consent_status === 'denied'
-                          ? 'bg-red-100 text-red-800 border-red-300 font-semibold'
+                          ? 'bg-error/10 text-error border-error/30 font-semibold'
                           : 'btn-secondary'
                           }`}
                       >
@@ -1050,10 +1048,10 @@ export default function ReportDetailPage() {
                           onClick={() => handleLifecycleStageUpdate('resolved')}
                           disabled={report.stage !== 'responded'}
                           className={`w-full px-4 py-3 text-left border-b border-border transition-colors ${report.stage === 'resolved'
-                            ? 'bg-green-100 text-green-800 font-semibold cursor-not-allowed'
+                            ? 'bg-success/10 text-success font-semibold cursor-not-allowed'
                             : report.stage === 'responded'
-                              ? 'text-text-primary hover:bg-green-50'
-                              : 'text-gray-400 cursor-not-allowed'
+                              ? 'text-text-primary hover:bg-success/5'
+                              : 'text-text-muted cursor-not-allowed'
                             }`}
                         >
                           <span className="font-medium">Resolved</span>
@@ -1062,10 +1060,10 @@ export default function ReportDetailPage() {
                           onClick={() => handleLifecycleStageUpdate('responded')}
                           disabled={report.stage !== 'acknowledged'}
                           className={`w-full px-4 py-3 text-left border-b border-border transition-colors ${report.stage === 'responded'
-                            ? 'bg-yellow-100 text-yellow-800 font-semibold cursor-not-allowed'
+                            ? 'bg-warning/10 text-warning font-semibold cursor-not-allowed'
                             : report.stage === 'acknowledged'
-                              ? 'text-text-primary hover:bg-yellow-50'
-                              : 'text-gray-400 cursor-not-allowed'
+                              ? 'text-text-primary hover:bg-warning/5'
+                              : 'text-text-muted cursor-not-allowed'
                             }`}
                         >
                           <span className="font-medium">Responded</span>
@@ -1074,10 +1072,10 @@ export default function ReportDetailPage() {
                           onClick={() => handleLifecycleStageUpdate('acknowledged')}
                           disabled={report.stage !== 'submitted'}
                           className={`w-full px-4 py-3 text-left transition-colors ${report.stage === 'acknowledged'
-                            ? 'bg-blue-100 text-blue-800 font-semibold cursor-not-allowed'
+                            ? 'bg-info/10 text-info font-semibold cursor-not-allowed'
                             : report.stage === 'submitted'
-                              ? 'text-text-primary hover:bg-blue-50'
-                              : 'text-gray-400 cursor-not-allowed'
+                              ? 'text-text-primary hover:bg-info/5'
+                              : 'text-text-muted cursor-not-allowed'
                             }`}
                         >
                           <span className="font-medium">Acknowledged</span>
@@ -1144,8 +1142,6 @@ export default function ReportDetailPage() {
               )}
             </div>
           </div>
-        </div>
-      </div>
 
       {/* Full Image Modal */}
       {selectedImage && (

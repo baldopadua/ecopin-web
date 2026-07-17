@@ -18,13 +18,13 @@ export default function Notification({ message, type = 'info', duration = 3000, 
   const getBackgroundColor = () => {
     switch (type) {
       case 'success':
-        return 'bg-green-500'
+        return 'bg-success'
       case 'error':
-        return 'bg-red-500'
+        return 'bg-error'
       case 'warning':
-        return 'bg-yellow-500'
+        return 'bg-warning'
       default:
-        return 'bg-blue-500'
+        return 'bg-info'
     }
   }
 

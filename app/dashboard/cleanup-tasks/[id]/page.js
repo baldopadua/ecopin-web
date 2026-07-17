@@ -109,15 +109,15 @@ export default function CleanupTaskDetailPage() {
   const getLifecycleStageColor = (stage) => {
     switch (stage) {
       case 'submitted':
-        return 'bg-purple-100 text-purple-800 border-purple-300'
+        return 'bg-purple/10 text-purple border-purple/30'
       case 'acknowledged':
-        return 'bg-blue-100 text-blue-800 border-blue-300'
+        return 'bg-info/10 text-info border-info/30'
       case 'responded':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-300'
+        return 'bg-warning/10 text-warning border-warning/30'
       case 'resolved':
-        return 'bg-green-100 text-green-800 border-green-300'
+        return 'bg-success/10 text-success border-success/30'
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-300'
+        return 'bg-surface text-text-muted border-border'
     }
   }
 
@@ -575,28 +575,59 @@ export default function CleanupTaskDetailPage() {
     setLightboxImage({ ...lightboxImage, url: photos[prevIndex].url, index: prevIndex })
   }
 
+  const parseLocation = (location, latitude, longitude) => {
+    if (latitude && longitude) {
+      return { latitude, longitude }
+    }
+
+    if (!location) return { latitude: null, longitude: null }
+
+    try {
+      if (typeof location === 'string' && location.startsWith('{')) {
+        const geoJSON = JSON.parse(location)
+        if (geoJSON.type === 'Point' && geoJSON.coordinates) {
+          return { latitude: geoJSON.coordinates[1], longitude: geoJSON.coordinates[0] }
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing location:', error)
+    }
+
+    return { latitude: null, longitude: null }
+  }
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'resolved':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+        return 'bg-success/10 text-success border-success/30'
       case 'in_progress':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+        return 'bg-warning/10 text-warning border-warning/30'
+      case 'waiting_for_feedback':
+        return 'bg-info/10 text-info border-info/30'
+      case 'closed':
+        return 'bg-surface text-text-muted border-border'
+      case 'pending_owner_consent':
+        return 'bg-warning/10 text-warning border-warning/30'
       default:
-        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+        return 'bg-error/10 text-error border-error/30'
     }
   }
 
   const getValidationColor = (status) => {
     switch (status) {
       case 'validated':
-        return 'bg-blue-100 text-blue-800 border-blue-300'
+      case 'automatically_valid':
+        return 'bg-success/10 text-success border-success/30'
+      case 'pending':
+      case 'pending_ai_validation':
+        return 'bg-warning/10 text-warning border-warning/30'
       case 'manual_review':
       case 'Manual_Review':
-        return 'bg-orange-100 text-orange-800 border-orange-300'
-      case 'pending':
-        return 'bg-gray-100 text-gray-800 border-gray-300'
+        return 'bg-info/10 text-info border-info/30'
+      case 'rejected':
+        return 'bg-error/10 text-error border-error/30'
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-300'
+        return 'bg-surface text-text-muted border-border'
     }
   }
 
@@ -605,7 +636,7 @@ export default function CleanupTaskDetailPage() {
       case 'resolved':
         return 'border-border'
       case 'in_progress':
-        return 'border-yellow-500/30 bg-yellow-500/10 dark:border-yellow-500/30 dark:bg-yellow-500/10'
+        return 'border-warning/30 bg-warning/10 dark:border-warning/30 dark:bg-warning/10'
       default:
         return 'border-border bg-surface-elevated dark:bg-surface-elevated'
     }
@@ -615,27 +646,16 @@ export default function CleanupTaskDetailPage() {
   if (!task) return <div className="p-8"><p>Cleanup task not found</p></div>
 
   return (
-    <div className="flex flex-col h-screen">
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-10 bg-background border-b border-border">
-        <div className="p-8 pb-4">
-          <div className="flex items-center justify-between">
-            <PageHeader 
-              title={`Cleanup Task #${task.id}`}
-              subtitle={task.title}
-              breadcrumbs={[
-                { label: 'Dashboard', href: '/dashboard' },
-                { label: 'Cleanup Tasks', href: '/dashboard/cleanup-tasks' },
-                { label: `Task #${task.id}` }
-              ]}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content Area */}
-      <div className="flex-1 overflow-auto">
-        <div className="p-8 pt-4">
+    <div className="p-8">
+      <PageHeader 
+        title={`Cleanup Task #${task.id}`}
+        subtitle={task.title}
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Cleanup Tasks', href: '/dashboard/cleanup-tasks' },
+          { label: `Task #${task.id}` }
+        ]}
+      />
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Main Content */}
             <div className="lg:col-span-3">
@@ -672,13 +692,13 @@ export default function CleanupTaskDetailPage() {
                             </span>
                           </td>
                           <td className="py-3 px-4">
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(report.status)}`}>
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold border whitespace-nowrap ${getStatusColor(report.status)}`}>
                               {report.status.replace('_', ' ')}
                             </span>
                           </td>
                           <td className="py-3 px-4">
                             {report.stage ? (
-                              <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getLifecycleStageColor(report.stage)}`}>
+                              <span className={`px-3 py-1 rounded-full text-xs font-semibold border whitespace-nowrap ${getLifecycleStageColor(report.stage)}`}>
                                 {report.stage.replace('_', ' ')}
                               </span>
                             ) : (
@@ -686,7 +706,7 @@ export default function CleanupTaskDetailPage() {
                             )}
                           </td>
                           <td className="py-3 px-4">
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getValidationColor(report.validation_status)}`}>
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold border whitespace-nowrap ${getValidationColor(report.validation_status)}`}>
                               {report.validation_status ? report.validation_status.toUpperCase().replace('_', ' ') : 'N/A'}
                             </span>
                           </td>
@@ -771,9 +791,9 @@ export default function CleanupTaskDetailPage() {
                 if (!report) return null
 
                 return (
-                  <div className="mt-6">
+                  <div className="space-y-6">
                     {/* Navigation */}
-                    <div className="flex justify-between items-center mb-4">
+                    <div className="flex justify-between items-center">
                       <button
                         onClick={handlePrevReport}
                         disabled={currentIndex === 0}
@@ -793,287 +813,286 @@ export default function CleanupTaskDetailPage() {
                       </button>
                     </div>
 
-                    {/* Report Detail Card */}
+                    {/* Lifecycle Timeline */}
                     <div className="card">
-                      {/* Lifecycle Timeline */}
-                      <div className="card mb-6">
-                        <div className="text-center mb-6">
-                          <h2 className="text-2xl font-bold text-text-primary mb-2">Report Lifecycle</h2>
-                          <div className="flex justify-center gap-3 flex-wrap">
-                            {report.validation_status === 'rejected' || (report.on_private_property && report.property_owner_consent_status === 'denied') ? (
-                              <>
-                                {report.validation_status === 'rejected' && (
-                                  <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getValidationColor(report.validation_status)}`}>
-                                    {report.validation_status.toUpperCase()}
-                                  </span>
-                                )}
-                                {report.on_private_property && report.property_owner_consent_status === 'denied' && (
-                                  <span className={`px-4 py-2 rounded-full text-sm font-semibold border bg-red-100 text-red-800 border-red-300`}>
-                                    {report.property_owner_consent_status.toUpperCase()}
-                                  </span>
-                                )}
-                              </>
-                            ) : (
-                              <>
-                                <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getStatusColor(report.status)}`}>
-                                  {report.status.replace('_', ' ').toUpperCase()}
-                                </span>
+                      <div className="text-center mb-6">
+                        <h2 className="text-xl font-bold text-text-primary mb-2">Report Lifecycle</h2>
+                        <div className="flex justify-center gap-3 flex-wrap">
+                          {report.validation_status === 'rejected' || (report.on_private_property && report.property_owner_consent_status === 'denied') ? (
+                            <>
+                              {report.validation_status === 'rejected' && (
                                 <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getValidationColor(report.validation_status)}`}>
-                                  {report.validation_status ? report.validation_status.toUpperCase() : 'N/A'}
+                                  {report.validation_status.toUpperCase()}
                                 </span>
-                                {report.stage && (
-                                  <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getLifecycleStageColor(report.stage)}`}>
-                                    {report.stage.replace('_', ' ').toUpperCase()}
-                                  </span>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-center gap-0 px-4 relative">
-                          {/* Continuous background line */}
-                          <div className="absolute top-3 left-3 right-3 h-1 bg-gray-300 -z-10" />
-                          {/* Colored progress line */}
-                          {(() => {
-                            const stages = ['submitted', 'acknowledged', 'responded', 'resolved']
-                            const currentIndex = stages.indexOf(report.stage)
-                            const totalSegments = stages.length - 1
-
-                            let lineWidthCalc = '0px'
-                            if (currentIndex === 0) {
-                              lineWidthCalc = '12px'
-                            } else if (currentIndex > 0) {
-                              lineWidthCalc = `calc(12px + ((100% - 24px) / ${totalSegments}) * ${currentIndex})`
-                            }
-
-                            return (
-                              <div
-                                className="absolute top-3 left-3 h-1 bg-[var(--accent-green)] -z-10 transition-all"
-                                style={{ width: lineWidthCalc }}
-                              />
-                            )
-                          })()}
-                          {['submitted', 'acknowledged', 'responded', 'resolved'].map((stage, index) => {
-                            const stages = ['submitted', 'acknowledged', 'responded', 'resolved']
-                            const currentIndex = stages.indexOf(report.stage)
-                            const isCompleted = currentIndex >= index
-                            const isCurrent = report.stage === stage
-                            return (
-                              <div key={stage} className="flex-1 flex flex-col items-center z-10">
-                                <div className={`w-6 h-6 rounded-full ${isCurrent ? 'bg-[var(--success)] ring-4 ring-[var(--success)]/20' : isCompleted ? 'bg-[var(--accent-green)]' : 'bg-gray-300'} transition-all relative`} />
-                                <span className={`text-xs mt-2 font-medium ${isCurrent ? 'text-[var(--success)]' : isCompleted ? 'text-[var(--accent-green)]' : 'text-text-muted'}`}>
-                                  {stage.replace('_', ' ')}
+                              )}
+                              {report.on_private_property && report.property_owner_consent_status === 'denied' && (
+                                <span className="px-4 py-2 rounded-full text-sm font-semibold border bg-error/10 text-error border-error/30">
+                                  {report.property_owner_consent_status.toUpperCase()}
                                 </span>
-                              </div>
-                            )
-                          })}
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getStatusColor(report.status)}`}>
+                                {report.status.replace('_', ' ').toUpperCase()}
+                              </span>
+                              <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getValidationColor(report.validation_status)}`}>
+                                {report.validation_status ? report.validation_status.toUpperCase() : 'N/A'}
+                              </span>
+                              {report.stage && (
+                                <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getLifecycleStageColor(report.stage)}`}>
+                                  {report.stage.replace('_', ' ').toUpperCase()}
+                                </span>
+                              )}
+                            </>
+                          )}
                         </div>
                       </div>
-
-                      {/* Report Details */}
-                      <div className="card mb-6">
-                        <h2 className="text-xl font-bold text-text-primary mb-4">Report Details</h2>
-                        <div className="space-y-3">
-                          <div>
-                            <p className="text-xs text-text-muted">Report ID</p>
-                            <p className="text-text-primary font-medium text-sm">{report.id}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-text-muted">Location</p>
-                            <p className="text-text-primary font-medium text-sm">
-                              {report.latitude && report.longitude
-                                ? `${report.latitude.toFixed(6)}, ${report.longitude.toFixed(6)}`
-                                : 'Not available'
-                              }
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-text-muted">Submitted</p>
-                            <p className="text-text-primary font-medium text-sm">
-                              {new Date(report.created_at).toLocaleString('en-US', {
-                                month: 'long',
-                                day: 'numeric',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-text-muted">Last Updated</p>
-                            <p className="text-text-primary font-medium text-sm">
-                              {new Date(report.updated_at).toLocaleString('en-US', {
-                                month: 'long',
-                                day: 'numeric',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </p>
-                          </div>
-                          <div className="pt-3 border-t border-border">
-                            <p className="text-xs text-text-muted mb-2">Reporter Information</p>
-                            <div className="space-y-2">
-                              <div>
-                                <p className="text-xs text-text-muted">Name</p>
-                                <p className="text-text-primary font-medium text-sm">
-                                  {report.profiles?.data_consent === true
-                                    ? (report.profiles?.full_name || report.user_full_name || 'Anonymous')
-                                    : 'Information not disclosed'
-                                  }
-                                </p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-text-muted">User ID</p>
-                                <p className="text-text-primary font-medium text-sm">
-                                  {report.profiles?.data_consent === true
-                                    ? (report.user_id || 'N/A')
-                                    : 'Information not disclosed'
-                                  }
-                                </p>
-                              </div>
+                      <div className="flex items-center justify-center gap-0 px-4 relative">
+                        <div className="absolute top-3 left-3 right-3 h-1 bg-border -z-10" />
+                        {(() => {
+                          const stages = ['submitted', 'acknowledged', 'responded', 'resolved']
+                          const currentIndex = stages.indexOf(report.stage)
+                          const totalSegments = stages.length - 1
+                          let lineWidthCalc = '0px'
+                          if (currentIndex === 0) {
+                            lineWidthCalc = '12px'
+                          } else if (currentIndex > 0) {
+                            lineWidthCalc = `calc(12px + ((100% - 24px) / ${totalSegments}) * ${currentIndex})`
+                          }
+                          return (
+                            <div
+                              className="absolute top-3 left-3 h-1 bg-[var(--accent-green)] -z-10 transition-all"
+                              style={{ width: lineWidthCalc }}
+                            />
+                          )
+                        })()}
+                        {['submitted', 'acknowledged', 'responded', 'resolved'].map((stage, index) => {
+                          const stages = ['submitted', 'acknowledged', 'responded', 'resolved']
+                          const currentIndex = stages.indexOf(report.stage)
+                          const isCompleted = currentIndex >= index
+                          const isCurrent = report.stage === stage
+                          return (
+                            <div key={stage} className="flex-1 flex flex-col items-center z-10">
+                              <div className={`w-6 h-6 rounded-full ${isCurrent ? 'bg-[var(--success)] ring-4 ring-[var(--success)]/20' : isCompleted ? 'bg-[var(--accent-green)]' : 'bg-border'} transition-all relative`} />
+                              <span className={`text-xs mt-2 font-medium ${isCurrent ? 'text-[var(--success)]' : isCompleted ? 'text-[var(--accent-green)]' : 'text-text-muted'}`}>
+                                {stage.replace('_', ' ')}
+                              </span>
                             </div>
-                          </div>
-                        </div>
+                          )
+                        })}
                       </div>
+                    </div>
 
-                      <div className="flex justify-between items-start mb-4">
+                    {/* Report Title & Description */}
+                    <div className="card">
+                      <h2 className="text-2xl font-bold text-text-primary">{report.title}</h2>
+                      <p className="text-text-muted mt-2">{report.description}</p>
+                    </div>
+
+                    {/* Report Details */}
+                    <div className="card">
+                      <h2 className="text-xl font-bold text-text-primary mb-4">Report Details</h2>
+                      <div className="space-y-3">
                         <div>
-                          <h2 className="text-2xl font-bold text-text-primary">{report.title}</h2>
-                          <p className="text-text-muted mt-2">{report.description}</p>
+                          <p className="text-xs text-text-muted">Report ID</p>
+                          <p className="text-text-primary font-medium text-sm">{report.id}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-text-muted">Location</p>
+                          <p className="text-text-primary font-medium text-sm">
+                            {report.latitude && report.longitude
+                              ? `${report.latitude.toFixed(6)}, ${report.longitude.toFixed(6)}`
+                              : 'Not available'
+                            }
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-text-muted">Submitted</p>
+                          <p className="text-text-primary font-medium text-sm">
+                            {new Date(report.created_at).toLocaleString('en-US', {
+                              month: 'long',
+                              day: 'numeric',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-text-muted">Last Updated</p>
+                          <p className="text-text-primary font-medium text-sm">
+                            {new Date(report.updated_at).toLocaleString('en-US', {
+                              month: 'long',
+                              day: 'numeric',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
+                        </div>
+                        <div className="pt-3 border-t border-border">
+                          <p className="text-xs text-text-muted mb-2">Reporter Information</p>
+                          <div className="space-y-2">
+                            <div>
+                              <p className="text-xs text-text-muted">Name</p>
+                              <p className="text-text-primary font-medium text-sm">
+                                {report.profiles?.data_consent === true
+                                  ? (report.profiles?.full_name || report.user_full_name || 'Anonymous')
+                                  : 'Information not disclosed'
+                                }
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-text-muted">User ID</p>
+                              <p className="text-text-primary font-medium text-sm">
+                                {report.profiles?.data_consent === true
+                                  ? (report.user_id || 'N/A')
+                                  : 'Information not disclosed'
+                                }
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       </div>
+                    </div>
 
-                      {/* Actions */}
-                      {report.status !== 'closed' && report.status !== 'resolved' && report.validation_status !== 'rejected' && !(report.on_private_property && report.property_owner_consent_status === 'denied') && (
-                        <div className="flex gap-3 mb-6 pt-4 border-t border-border">
-                          {report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review' ? (
-                            <button
-                              onClick={() => handleRejectReport(report.id)}
-                              disabled={validatingReport === report.id}
-                              className="px-4 py-2 bg-error text-white rounded-lg hover:bg-error/80 disabled:opacity-50 font-medium"
-                            >
-                              {validatingReport === report.id ? 'Rejecting...' : 'Reject Report'}
-                            </button>
-                          ) : null}
+                    {/* Actions */}
+                    {(report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review') && report.status !== 'closed' && report.status !== 'resolved' && report.validation_status !== 'rejected' && !(report.on_private_property && report.property_owner_consent_status === 'denied') && (
+                      <div className="card">
+                        <button
+                          onClick={() => handleRejectReport(report.id)}
+                          disabled={validatingReport === report.id}
+                          className="px-4 py-2 bg-error text-white rounded-lg hover:bg-error/80 disabled:opacity-50 font-medium"
+                        >
+                          {validatingReport === report.id ? 'Rejecting...' : 'Reject Report'}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Photos */}
+                    <div className="card no-hover">
+                      <h2 className="text-xl font-bold text-text-primary mb-4">Evidence Photos</h2>
+                      {loadingEvidence[report.id] ? (
+                        <div className="animate-pulse h-48 bg-surface rounded-lg"></div>
+                      ) : evidenceErrors[report.id] ? (
+                        <div className="text-center py-8">
+                          <p className="text-error mb-3">Failed to load evidence</p>
+                          <button
+                            onClick={() => {
+                              setEvidenceErrors(prev => ({ ...prev, [report.id]: null }))
+                              toggleReportExpansion(report.id)
+                            }}
+                            className="px-4 py-2 bg-info text-white rounded hover:bg-info/80"
+                          >
+                            Retry
+                          </button>
+                        </div>
+                      ) : reportsEvidence[report.id] && reportsEvidence[report.id].length > 0 ? (
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          {reportsEvidence[report.id].map((img, index) => (
+                            <div key={index} className="relative group">
+                              <img
+                                src={img.url}
+                                alt={`Evidence ${index + 1}`}
+                                className="w-full h-48 object-cover rounded-lg border border-border cursor-pointer hover:opacity-90 transition-opacity"
+                                onClick={() => setLightboxImage({ url: img.url, type: 'evidence', index })}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="h-48 bg-surface rounded-lg flex items-center justify-center border border-dashed border-border">
+                          <p className="text-text-muted">No evidence images available</p>
                         </div>
                       )}
 
-                      {/* Evidence Photos */}
-                      <div className="mb-6">
-                        <h3 className="text-xl font-bold text-text-primary mb-4">Evidence Photos</h3>
-                        {loadingEvidence[report.id] ? (
-                          <div className="animate-pulse h-48 bg-gray-200 rounded-lg"></div>
-                        ) : evidenceErrors[report.id] ? (
-                          <div className="text-center py-8">
-                            <p className="text-red-500 mb-3">Failed to load evidence</p>
-                            <button
-                              onClick={() => {
-                                setEvidenceErrors(prev => ({ ...prev, [report.id]: null }))
-                                toggleReportExpansion(report.id)
-                              }}
-                              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                            >
-                              Retry
-                            </button>
-                          </div>
-                        ) : reportsEvidence[report.id] && reportsEvidence[report.id].length > 0 ? (
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            {reportsEvidence[report.id].map((img, index) => (
-                              <div key={index} className="relative group">
-                                <img
-                                  src={img.url}
-                                  alt={`Evidence ${index + 1}`}
-                                  className="w-full h-48 object-cover rounded-lg border border-border cursor-pointer hover:opacity-90 transition-opacity"
-                                  onClick={() => setLightboxImage({ url: img.url, type: 'evidence', index })}
-                                />
+                      {report.status !== 'closed' && report.status !== 'resolved' && report.validation_status !== 'rejected' && !(report.on_private_property && report.property_owner_consent_status === 'denied') && (
+                        <>
+                          <h3 className="text-lg font-semibold text-text-primary mt-6 mb-3">Before & After Photos</h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="p-4 border border-border rounded-lg">
+                              <div className="flex justify-between items-center mb-3">
+                                <h4 className="font-semibold">Before Photo</h4>
+                                {report.before_photo_url && (
+                                  <button
+                                    onClick={() => handleReportPhotoDelete(report.id, 'before')}
+                                    className="px-3 py-1 bg-error hover:bg-error/90 text-white text-sm rounded transition-colors"
+                                  >
+                                    Delete
+                                  </button>
+                                )}
                               </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="h-48 bg-surface rounded-lg flex items-center justify-center border border-dashed border-border">
-                            <p className="text-text-muted">No evidence images available</p>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Before & After Photos */}
-                      {report.status !== 'closed' && report.status !== 'resolved' && report.validation_status !== 'rejected' && !(report.on_private_property && report.property_owner_consent_status === 'denied') && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                          <div className="p-4 border border-border rounded-lg">
-                            <div className="flex justify-between items-center mb-3">
-                              <h3 className="font-semibold">Before Photo</h3>
-                              {report.before_photo_url && (
-                                <button
-                                  onClick={() => handleReportPhotoDelete(report.id, 'before')}
-                                  className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded transition-colors"
-                                >
-                                  Delete
-                                </button>
+                              {report.before_photo_url ? (
+                                <img
+                                  src={report.before_photo_url}
+                                  alt="Before"
+                                  className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 border border-border"
+                                  onClick={() => setLightboxImage({ url: report.before_photo_url, type: 'before', index: 0 })}
+                                />
+                              ) : (
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  disabled={uploadingReportPhotos[`${report.id}-before`]}
+                                  onChange={(e) => e.target.files[0] && handleReportPhotoUpload(report.id, 'before', e.target.files[0])}
+                                  className="w-full"
+                                />
                               )}
+                              {uploadingReportPhotos[`${report.id}-before`] && <p className="mt-2 text-sm text-text-muted">Uploading...</p>}
                             </div>
-                            {report.before_photo_url ? (
-                              <img 
-                                src={report.before_photo_url} 
-                                alt="Before" 
-                                className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 border border-border"
-                                onClick={() => setLightboxImage({ url: report.before_photo_url, type: 'before', index: 0 })}
-                              />
-                            ) : (
-                              <input
-                                type="file"
-                                accept="image/*"
-                                disabled={uploadingReportPhotos[`${report.id}-before`]}
-                                onChange={(e) => e.target.files[0] && handleReportPhotoUpload(report.id, 'before', e.target.files[0])}
-                                className="w-full"
-                              />
-                            )}
-                            {uploadingReportPhotos[`${report.id}-before`] && <p className="mt-2 text-sm text-text-muted">Uploading...</p>}
-                          </div>
 
-                          <div className="p-4 border border-border rounded-lg">
-                            <div className="flex justify-between items-center mb-3">
-                              <h3 className="font-semibold">After Photo</h3>
-                              {report.after_photo_url && (
-                                <button
-                                  onClick={() => handleReportPhotoDelete(report.id, 'after')}
-                                  className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded transition-colors"
-                                >
-                                  Delete
-                                </button>
+                            <div className="p-4 border border-border rounded-lg">
+                              <div className="flex justify-between items-center mb-3">
+                                <h4 className="font-semibold">After Photo</h4>
+                                {report.after_photo_url && (
+                                  <button
+                                    onClick={() => handleReportPhotoDelete(report.id, 'after')}
+                                    className="px-3 py-1 bg-error hover:bg-error/90 text-white text-sm rounded transition-colors"
+                                  >
+                                    Delete
+                                  </button>
+                                )}
+                              </div>
+                              {report.after_photo_url ? (
+                                <img
+                                  src={report.after_photo_url}
+                                  alt="After"
+                                  className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 border border-border"
+                                  onClick={() => setLightboxImage({ url: report.after_photo_url, type: 'after', index: 0 })}
+                                />
+                              ) : (
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  disabled={uploadingReportPhotos[`${report.id}-after`]}
+                                  onChange={(e) => e.target.files[0] && handleReportPhotoUpload(report.id, 'after', e.target.files[0])}
+                                  className="w-full"
+                                />
                               )}
+                              {uploadingReportPhotos[`${report.id}-after`] && <p className="mt-2 text-sm text-text-muted">Uploading...</p>}
                             </div>
-                            {report.after_photo_url ? (
-                              <img 
-                                src={report.after_photo_url} 
-                                alt="After" 
-                                className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 border border-border"
-                                onClick={() => setLightboxImage({ url: report.after_photo_url, type: 'after', index: 0 })}
-                              />
-                            ) : (
-                              <input
-                                type="file"
-                                accept="image/*"
-                                disabled={uploadingReportPhotos[`${report.id}-after`]}
-                                onChange={(e) => e.target.files[0] && handleReportPhotoUpload(report.id, 'after', e.target.files[0])}
-                                className="w-full"
-                              />
-                            )}
-                            {uploadingReportPhotos[`${report.id}-after`] && <p className="mt-2 text-sm text-text-muted">Uploading...</p>}
                           </div>
-                        </div>
+                        </>
                       )}
 
-                      <button
-                        onClick={() => router.push(`/dashboard/reports/${report.id}`)}
-                        className="btn-secondary w-full"
-                      >
-                        View Full Report Details
-                      </button>
+                      {(() => {
+                        const loc = parseLocation(report.location, report.latitude, report.longitude)
+                        const hasLocation = loc.latitude && loc.longitude
+                        return (
+                          <a
+                            href={hasLocation ? `/dashboard/map-view?lat=${loc.latitude}&lng=${loc.longitude}&id=${report.id}&validationStatus=${report.validation_status}&status=${report.status}` : '#'}
+                            onClick={(e) => { if (!hasLocation) e.preventDefault() }}
+                            className={`btn-secondary w-full mt-6 block text-center ${!hasLocation ? 'opacity-50 pointer-events-none' : ''}`}
+                          >
+                            View on Map
+                          </a>
+                        )
+                      })()}
                     </div>
 
                     {/* LGU Notes */}
-                    <div className="card mt-6">
+                    <div className="card">
                       <h2 className="text-xl font-bold text-text-primary mb-4">LGU Notes</h2>
                       {showNoteInput ? (
                         <div className="space-y-2 mb-4">
@@ -1130,7 +1149,7 @@ export default function CleanupTaskDetailPage() {
                     </div>
 
                     {/* Activity Log */}
-                    <div className="card mt-6">
+                    <div className="card">
                       <h2 className="text-xl font-bold text-text-primary mb-4">Activity Log</h2>
                       {agencyResponses && agencyResponses.length > 0 ? (
                         <div className="overflow-x-auto">
@@ -1176,7 +1195,7 @@ export default function CleanupTaskDetailPage() {
 
             {/* Sidebar - Task Info */}
             <div className="lg:col-span-1">
-              <div className="card sticky top-4">
+              <div className="card sticky top-[160px] self-start">
                 <div className="mb-4">
                   <h2 className="text-xl font-bold text-text-primary">{task.title}</h2>
                   <p className="text-text-muted mt-2">{task.description}</p>
@@ -1205,7 +1224,7 @@ export default function CleanupTaskDetailPage() {
                           {reports.filter(r => r.stage === 'resolved').length} / {reports.length}
                         </span>
                       </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                       <div className="w-full bg-surface dark:bg-surface-elevated rounded-full h-2.5">
                         <div
                           className="bg-accent-green h-2.5 rounded-full transition-all"
                           style={{ width: `${(reports.filter(r => r.stage === 'resolved').length / reports.length) * 100}%` }}
@@ -1249,10 +1268,10 @@ export default function CleanupTaskDetailPage() {
                                 onClick={() => handleLifecycleStageUpdate(report.id, 'resolved')}
                                 disabled={report.stage !== 'responded'}
                                 className={`w-full px-4 py-3 text-left border-b border-border transition-colors ${report.stage === 'resolved'
-                                  ? 'bg-green-100 text-green-800 font-semibold cursor-not-allowed'
+                                  ? 'bg-success/10 text-success font-semibold cursor-not-allowed'
                                   : report.stage === 'responded'
-                                    ? 'text-text-primary hover:bg-green-50'
-                                    : 'text-gray-400 cursor-not-allowed'
+                                    ? 'text-text-primary hover:bg-success/5'
+                                    : 'text-text-muted cursor-not-allowed'
                                 }`}
                               >
                                 <span className="font-medium">Resolved</span>
@@ -1261,10 +1280,10 @@ export default function CleanupTaskDetailPage() {
                                 onClick={() => handleLifecycleStageUpdate(report.id, 'responded')}
                                 disabled={report.stage !== 'acknowledged'}
                                 className={`w-full px-4 py-3 text-left border-b border-border transition-colors ${report.stage === 'responded'
-                                  ? 'bg-yellow-100 text-yellow-800 font-semibold cursor-not-allowed'
+                                  ? 'bg-warning/10 text-warning font-semibold cursor-not-allowed'
                                   : report.stage === 'acknowledged'
-                                    ? 'text-text-primary hover:bg-yellow-50'
-                                    : 'text-gray-400 cursor-not-allowed'
+                                    ? 'text-text-primary hover:bg-warning/5'
+                                    : 'text-text-muted cursor-not-allowed'
                                 }`}
                               >
                                 <span className="font-medium">Responded</span>
@@ -1273,10 +1292,10 @@ export default function CleanupTaskDetailPage() {
                                 onClick={() => handleLifecycleStageUpdate(report.id, 'acknowledged')}
                                 disabled={report.stage !== 'submitted'}
                                 className={`w-full px-4 py-3 text-left transition-colors ${report.stage === 'acknowledged'
-                                  ? 'bg-blue-100 text-blue-800 font-semibold cursor-not-allowed'
+                                  ? 'bg-info/10 text-info font-semibold cursor-not-allowed'
                                   : report.stage === 'submitted'
-                                    ? 'text-text-primary hover:bg-blue-50'
-                                    : 'text-gray-400 cursor-not-allowed'
+                                    ? 'text-text-primary hover:bg-info/5'
+                                    : 'text-text-muted cursor-not-allowed'
                                 }`}
                               >
                                 <span className="font-medium">Acknowledged</span>
@@ -1291,8 +1310,6 @@ export default function CleanupTaskDetailPage() {
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
       {notification && (
         <Notification
@@ -1308,7 +1325,7 @@ export default function CleanupTaskDetailPage() {
           <div className="relative max-w-4xl max-h-[90vh] w-full p-4" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => setLightboxImage(null)}
-              className="absolute top-4 right-4 text-white text-4xl hover:text-gray-300 z-10"
+               className="absolute top-4 right-4 text-white text-4xl hover:text-text-muted z-10"
             >
               ×
             </button>

@@ -40,19 +40,19 @@ export default function AdminDashboard() {
   const getActionTypeColor = (actionType) => {
     switch (actionType) {
       case 'login':
-        return 'bg-green-100 text-green-800'
+        return 'bg-success/10 text-success'
       case 'logout':
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-surface text-text-muted'
       case 'password_change':
-        return 'bg-yellow-100 text-yellow-800'
+        return 'bg-warning/10 text-warning'
       case 'role_change':
-        return 'bg-purple-100 text-purple-800'
+        return 'bg-purple/10 text-purple'
       case 'user_created':
-        return 'bg-blue-100 text-blue-800'
+        return 'bg-info/10 text-info'
       case 'user_deleted':
-        return 'bg-red-100 text-red-800'
+        return 'bg-error/10 text-error'
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-surface text-text-muted'
     }
   }
 
@@ -91,7 +91,7 @@ export default function AdminDashboard() {
           ]}
         />
         <div className="card">
-          <p className="text-red-500">{error}</p>
+          <p className="text-error">{error}</p>
         </div>
       </div>
     )

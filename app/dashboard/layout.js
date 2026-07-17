@@ -36,7 +36,6 @@ export default function DashboardLayout({ children }) {
 
         setUser(data.user)
 
-        // Redirect admins to admin dashboard
         if (userRole === 'admin' && pathname === '/dashboard') {
           router.push('/dashboard/admin')
         }
@@ -58,9 +57,9 @@ export default function DashboardLayout({ children }) {
   if (!user) return <p className="text-center text-text-primary mt-8">Loading...</p>
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background dark:bg-[#0a0f08]">
       <Sidebar user={user} onLogout={logout} />
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto bg-surface dark:bg-[#0a0f08]">
         {children}
       </main>
     </div>

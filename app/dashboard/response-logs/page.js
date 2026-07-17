@@ -3,33 +3,27 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import { getResponseLogs } from '@/lib/api'
+import FilterDropdown from '@/components/ui/FilterDropdown'
 
 export default function ResponseLogs() {
   const router = useRouter()
+  const [allLogs, setAllLogs] = useState([])
   const [logs, setLogs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [filters, setFilters] = useState({ action_type: '', start_date: '', end_date: '' })
-  const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 })
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 8
 
   useEffect(() => {
     loadLogs()
-  }, [filters, pagination.page])
+  }, [])
 
   const loadLogs = async () => {
     try {
       setLoading(true)
-      const data = await getResponseLogs({
-        page: pagination.page,
-        limit: 50,
-        ...filters
-      })
-      setLogs(data.logs || [])
-      setPagination(prev => ({
-        ...prev,
-        totalPages: data.pagination?.totalPages || 1,
-        total: data.pagination?.total || 0
-      }))
+      const data = await getResponseLogs()
+      setAllLogs(data.logs || [])
     } catch (err) {
       console.error('Failed to load response logs:', err)
       setError('Failed to load response logs')
@@ -38,18 +32,47 @@ export default function ResponseLogs() {
     }
   }
 
+  useEffect(() => {
+    let filtered = allLogs
+    if (filters.action_type) {
+      filtered = filtered.filter(log => log.action_type === filters.action_type)
+    }
+    if (filters.start_date) {
+      filtered = filtered.filter(log => new Date(log.created_at) >= new Date(filters.start_date))
+    }
+    if (filters.end_date) {
+      const endDate = new Date(filters.end_date)
+      endDate.setHours(23, 59, 59, 999)
+      filtered = filtered.filter(log => new Date(log.created_at) <= endDate)
+    }
+    setLogs(filtered)
+    setCurrentPage(1)
+  }, [filters, allLogs])
+
+  const totalPages = Math.ceil(logs.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedLogs = logs.slice(startIndex, endIndex)
+
   const getActionTypeColor = (actionType) => {
     switch (actionType) {
       case 'status_update':
-        return 'bg-blue-100 text-blue-800'
+        return 'bg-info/10 text-info'
       case 'lifecycle_stage_update':
-        return 'bg-purple-100 text-purple-800'
+        return 'bg-purple/10 text-purple'
       case 'acknowledge_complaint':
-        return 'bg-green-100 text-green-800'
+      case 'lgu_resolve':
+        return 'bg-success/10 text-success'
       case 'manual_note':
-        return 'bg-yellow-100 text-yellow-800'
+        return 'bg-warning/10 text-warning'
+      case 'citizen_close':
+        return 'bg-surface text-text-muted'
+      case 'login':
+        return 'bg-success/10 text-success'
+      case 'password_change':
+        return 'bg-warning/10 text-warning'
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-surface text-text-muted'
     }
   }
 
@@ -70,25 +93,26 @@ export default function ResponseLogs() {
       />
 
       {/* Filters */}
-      <div className="card mb-6">
+      <div className="card mb-6 sticky top-[120px] z-10 bg-white/60 dark:bg-black/60  ">
         <div className="flex gap-4 flex-wrap">
           <div className="flex-1 min-w-[200px]">
-            <select
+            <FilterDropdown
+              label="All Actions"
               value={filters.action_type}
-              onChange={(e) => setFilters(prev => ({ ...prev, action_type: e.target.value }))}
-              className="w-full p-3 border border-border rounded-lg bg-surface text-text-primary"
-            >
-              <option value="">All Actions</option>
-              <option value="status_update">Status Update</option>
-              <option value="lifecycle_stage_update">Lifecycle Stage Update</option>
-              <option value="acknowledge_complaint">Acknowledge Complaint</option>
-              <option value="manual_note">Manual Note</option>
-              <option value="lgu_resolve">LGU Resolve</option>
-              <option value="citizen_close">Citizen Close</option>
-              <option value="login">Login</option>
-              <option value="password_change">Password Change</option>
-              <option value="user_created">User Created</option>
-            </select>
+              onChange={(val) => setFilters(prev => ({ ...prev, action_type: val }))}
+              options={[
+                { value: '', label: 'All Actions' },
+                { value: 'status_update', label: 'Status Update' },
+                { value: 'lifecycle_stage_update', label: 'Lifecycle Stage Update' },
+                { value: 'acknowledge_complaint', label: 'Acknowledge Complaint' },
+                { value: 'manual_note', label: 'Manual Note' },
+                { value: 'lgu_resolve', label: 'LGU Resolve' },
+                { value: 'citizen_close', label: 'Citizen Close' },
+                { value: 'login', label: 'Login' },
+                { value: 'password_change', label: 'Password Change' },
+                { value: 'user_created', label: 'User Created' }
+              ]}
+            />
           </div>
           <div className="min-w-[150px]">
             <input
@@ -114,13 +138,20 @@ export default function ResponseLogs() {
         {loading ? (
           <p className="text-text-muted">Loading response logs...</p>
         ) : error ? (
-          <p className="text-red-500">{error}</p>
+          <p className="text-error">{error}</p>
         ) : logs.length === 0 ? (
           <p className="text-text-muted">No response logs found</p>
         ) : (
           <>
             <div className="overflow-x-auto">
               <table className="w-full">
+                <colgroup>
+                  <col style={{ width: '15%' }} />
+                  <col style={{ width: '20%' }} />
+                  <col style={{ width: '15%' }} />
+                  <col style={{ width: '30%' }} />
+                  <col style={{ width: '20%' }} />
+                </colgroup>
                 <thead>
                   <tr className="border-b border-border">
                     <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Date</th>
@@ -131,7 +162,7 @@ export default function ResponseLogs() {
                   </tr>
                 </thead>
                 <tbody>
-                  {logs.map((log) => (
+                  {paginatedLogs.map((log) => (
                     <tr key={log.id} className="border-b border-border">
                       <td className="py-3 px-4 text-sm text-text-muted">
                         {formatDate(log.created_at)}
@@ -164,22 +195,45 @@ export default function ResponseLogs() {
             </div>
 
             {/* Pagination */}
-            {pagination.totalPages > 1 && (
+            {totalPages > 1 && (
               <div className="flex items-center justify-between pt-4 border-t border-border">
                 <p className="text-sm text-text-muted">
-                  Showing {((pagination.page - 1) * 50) + 1} to {Math.min(pagination.page * 50, pagination.total)} of {pagination.total} logs
+                  Showing {startIndex + 1} to {Math.min(endIndex, logs.length)} of {logs.length} logs
                 </p>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
-                    disabled={pagination.page === 1}
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
                     className="btn-secondary px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Previous
                   </button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum
+                      if (totalPages <= 5) {
+                        pageNum = i + 1
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i
+                      } else {
+                        pageNum = currentPage - 2 + i
+                      }
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`px-3 py-2 rounded ${currentPage === pageNum ? 'btn-primary' : 'btn-secondary'}`}
+                        >
+                          {pageNum}
+                        </button>
+                      )
+                    })}
+                  </div>
                   <button
-                    onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
-                    disabled={pagination.page === pagination.totalPages}
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
                     className="btn-secondary px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Next

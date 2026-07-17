@@ -27,7 +27,7 @@ ChartJS.register(
   Legend
 )
 
-const COLORS = ['#4CAF50', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6', '#EC4899']
+const COLORS = ['#457113', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6', '#EC4899']
 const SATISFACTION_COLORS = ['#EF4444', '#F59E0B', '#EAB308', '#84CC16', '#22C55E']
 const SATISFACTION_LABELS = ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied']
 
@@ -51,7 +51,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage] = useState(10)
+  const [itemsPerPage] = useState(5)
   const [satisfactionData, setSatisfactionData] = useState(null)
 
   useEffect(() => {
@@ -235,7 +235,7 @@ export default function DashboardPage() {
       {
         label: 'Reports',
         data: chartData.map(d => d.count),
-        backgroundColor: 'rgba(46, 125, 50, 0.8)',
+        backgroundColor: 'rgba(69, 113, 19, 0.8)',
         borderRadius: 4,
       }
     ]
@@ -275,20 +275,25 @@ export default function DashboardPage() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'resolved': return 'bg-green-100 text-green-800 border-green-300'
-      case 'in_progress': return 'bg-yellow-100 text-yellow-800 border-yellow-300'
-      case 'waiting_for_feedback': return 'bg-blue-100 text-blue-800 border-blue-300'
-      case 'closed': return 'bg-gray-100 text-gray-800 border-gray-300'
-      default: return 'bg-red-100 text-red-800 border-red-300'
+      case 'resolved': return 'bg-success/10 text-success border-success/30'
+      case 'in_progress': return 'bg-warning/10 text-warning border-warning/30'
+      case 'waiting_for_feedback': return 'bg-info/10 text-info border-info/30'
+      case 'closed': return 'bg-surface text-text-muted border-border'
+      case 'pending_owner_consent': return 'bg-warning/10 text-warning border-warning/30'
+      default: return 'bg-error/10 text-error border-error/30'
     }
   }
 
   const getValidationColor = (validationStatus) => {
     switch (validationStatus) {
-      case 'validated': return 'bg-green-100 text-green-800 border-green-300'
-      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-300'
-      case 'rejected': return 'bg-red-100 text-red-800 border-red-300'
-      default: return 'bg-gray-100 text-gray-800 border-gray-300'
+      case 'validated':
+      case 'automatically_valid': return 'bg-success/10 text-success border-success/30'
+      case 'pending':
+      case 'pending_ai_validation': return 'bg-warning/10 text-warning border-warning/30'
+      case 'manual_review':
+      case 'Manual_Review': return 'bg-info/10 text-info border-info/30'
+      case 'rejected': return 'bg-error/10 text-error border-error/30'
+      default: return 'bg-surface text-text-muted border-border'
     }
   }
 
@@ -303,7 +308,7 @@ export default function DashboardPage() {
       />
 
       {error && (
-        <div className="mb-6 p-4 bg-red-100 border border-red-300 text-red-700 rounded-lg">
+        <div className="mb-6 p-4 bg-error/10 border border-error/30 text-error rounded-lg">
           {error}
         </div>
       )}
