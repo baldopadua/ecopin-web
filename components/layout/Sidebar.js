@@ -9,7 +9,7 @@ const citizenNavigation = [
   { name: 'Profile', href: '/dashboard/profile' },
 ]
 
-const lguNavigation = [
+const officerNavigation = [
   { name: 'Dashboard', href: '/dashboard', icon: '/icons/dashboard.png' },
   { name: 'Map View', href: '/dashboard/map-view', icon: '/icons/map.png' },
   { name: 'Clusters', href: '/dashboard/clusters', icon: '/icons/cluster.png' },
@@ -17,6 +17,12 @@ const lguNavigation = [
   { name: 'Reports', href: '/dashboard/reports', icon: '/icons/reports.png' },
   { name: 'Response Logs', href: '/dashboard/response-logs', icon: '/icons/logs.png' },
   { name: 'Analytics', href: '/dashboard/analytics', icon: '/icons/analytics.png' },
+]
+
+const fieldCrewNavigation = [
+  { name: 'Dashboard', href: '/dashboard', icon: '/icons/dashboard.png' },
+  { name: 'Cleanup Tasks', href: '/dashboard/cleanup-tasks', icon: '/icons/cleanup task.png' },
+  { name: 'Reports', href: '/dashboard/reports', icon: '/icons/reports.png' },
 ]
 
 const adminNavigation = [
@@ -40,7 +46,7 @@ export default function Sidebar({ user }) {
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1">
-        {(user?.role === 'citizen' ? citizenNavigation : user?.role === 'admin' ? adminNavigation : lguNavigation).map((item) => {
+        {(user?.role === 'admin' ? adminNavigation : user?.role === 'officer' ? officerNavigation : user?.role === 'field_crew' ? fieldCrewNavigation : citizenNavigation).map((item) => {
           const isActive = pathname === item.href
           return (
             <Link

@@ -125,8 +125,12 @@ export default function AdminDashboard() {
               <span className="text-text-primary font-medium">{stats?.users?.byRole?.citizen || 0}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-text-secondary">LGU</span>
-              <span className="text-text-primary font-medium">{stats?.users?.byRole?.lgu || 0}</span>
+              <span className="text-text-secondary">Officers</span>
+              <span className="text-text-primary font-medium">{stats?.users?.byRole?.officer || 0}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-text-secondary">Field Crew</span>
+              <span className="text-text-primary font-medium">{stats?.users?.byRole?.field_crew || 0}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-text-secondary">Admins</span>

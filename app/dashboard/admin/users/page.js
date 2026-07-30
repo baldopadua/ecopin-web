@@ -20,7 +20,7 @@ export default function UserManagement() {
   const [deletingUser, setDeletingUser] = useState(null)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [creatingUser, setCreatingUser] = useState(false)
-  const [newUser, setNewUser] = useState({ email: '', password: '', full_name: '', role: 'lgu' })
+  const [newUser, setNewUser] = useState({ email: '', password: '', full_name: '', role: 'citizen' })
 
   // Debounce search input and reset page when filters change
   useEffect(() => {
@@ -108,7 +108,7 @@ export default function UserManagement() {
       setCreatingUser(true)
       await createUser({ email, password, full_name, role })
       setNotification({ message: 'User created successfully', type: 'success' })
-      setNewUser({ email: '', password: '', full_name: '', role: 'lgu' })
+      setNewUser({ email: '', password: '', full_name: '', role: 'citizen' })
       setShowCreateForm(false)
       loadUsers()
     } catch (err) {
@@ -142,8 +142,10 @@ export default function UserManagement() {
     switch (role) {
       case 'admin':
         return 'bg-purple/10 text-purple'
-      case 'lgu':
+      case 'officer':
         return 'bg-info/10 text-info'
+      case 'field_crew':
+        return 'bg-warning/10 text-warning'
       case 'citizen':
       default:
         return 'bg-surface text-text-muted'
@@ -190,7 +192,8 @@ export default function UserManagement() {
               options={[
                 { value: '', label: 'All Roles' },
                 { value: 'citizen', label: 'Citizen' },
-                { value: 'lgu', label: 'LGU' },
+                { value: 'officer', label: 'Officer' },
+                { value: 'field_crew', label: 'Field Crew' },
                 { value: 'admin', label: 'Admin' }
               ]}
             />
@@ -277,7 +280,9 @@ export default function UserManagement() {
                   value={newUser.role}
                   onChange={(val) => setNewUser(prev => ({ ...prev, role: val }))}
                   options={[
-                    { value: 'lgu', label: 'LGU' },
+                    { value: 'citizen', label: 'Citizen' },
+                    { value: 'officer', label: 'Officer' },
+                    { value: 'field_crew', label: 'Field Crew' },
                     { value: 'admin', label: 'Admin' }
                   ]}
                 />
@@ -364,7 +369,8 @@ export default function UserManagement() {
                           onChange={(val) => handleRoleChange(user.id, val)}
                           options={[
                             { value: 'citizen', label: 'Citizen' },
-                            { value: 'lgu', label: 'LGU' },
+                            { value: 'officer', label: 'Officer' },
+                            { value: 'field_crew', label: 'Field Crew' },
                             { value: 'admin', label: 'Admin' }
                           ]}
                         />
