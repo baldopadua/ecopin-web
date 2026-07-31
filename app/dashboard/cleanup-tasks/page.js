@@ -76,6 +76,8 @@ export default function CleanupTasksPage() {
         return 'bg-success/10 text-success border-success/30'
       case 'in_progress':
         return 'bg-warning/10 text-warning border-warning/30'
+      case 'pending':
+        return 'bg-info/10 text-info border-info/30'
       default:
         return 'bg-info/10 text-info border-info/30'
     }

@@ -1,9 +1,9 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { fetchPublicReports } from '@/lib/api'
+import { fetchPublicReports, fetchCleanupTasks, fetchReportsByClusterId, fetchReportsByIds } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
-import { SkeletonLine, SkeletonStatCard } from '@/components/ui/Skeleton'
+import { SkeletonLine, SkeletonStatCard, SkeletonCard } from '@/components/ui/Skeleton'
 import { Bar, Pie, Line } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -16,6 +16,13 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js'
+import wkx from 'wkx'
+import { Buffer } from 'buffer'
+
+// Polyfill Buffer for browser environment
+if (typeof window !== 'undefined' && !window.Buffer) {
+  window.Buffer = Buffer
+}
 
 ChartJS.register(
   CategoryScale,
@@ -32,9 +39,47 @@ const COLORS = ['#457113', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6', '#EC4899'
 const SATISFACTION_COLORS = ['#EF4444', '#F59E0B', '#EAB308', '#84CC16', '#22C55E']
 const SATISFACTION_LABELS = ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied']
 
+const parseLocation = (location, latitude, longitude) => {
+  if (latitude && longitude) {
+    return { latitude, longitude }
+  }
+
+  if (!location) return { latitude: null, longitude: null }
+
+  try {
+    if (typeof location === 'string' && location.startsWith('{')) {
+      const geoJSON = JSON.parse(location)
+      if (geoJSON.type === 'Point' && geoJSON.coordinates) {
+        return { latitude: geoJSON.coordinates[1], longitude: geoJSON.coordinates[0] }
+      }
+    }
+    else if (typeof location === 'string') {
+      const buffer = Buffer.from(location, 'hex')
+      const geometry = wkx.Geometry.parse(buffer)
+      if (geometry && geometry.x && geometry.y) {
+        return { latitude: geometry.y, longitude: geometry.x }
+      }
+    }
+    else if (Buffer.isBuffer(location)) {
+      const geometry = wkx.Geometry.parse(location)
+      if (geometry && geometry.x && geometry.y) {
+        return { latitude: geometry.y, longitude: geometry.x }
+      }
+    }
+  } catch (error) {
+    console.error('Error parsing location:', error)
+  }
+
+  return { latitude: null, longitude: null }
+}
+
 export default function DashboardPage() {
   const router = useRouter()
   const [reports, setReports] = useState([])
+  const [cleanupTasks, setCleanupTasks] = useState([])
+  const [completedTasks, setCompletedTasks] = useState([])
+  const [tasksWithReports, setTasksWithReports] = useState([])
+  const [completedTasksWithReports, setCompletedTasksWithReports] = useState([])
   const [stats, setStats] = useState({
     total: 0,
     unresolved: 0,
@@ -50,6 +95,7 @@ export default function DashboardPage() {
     satisfactionTotal: 0
   })
   const [loading, setLoading] = useState(true)
+  const [loadingTasks, setLoadingTasks] = useState(true)
   const [error, setError] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(5)
@@ -61,6 +107,65 @@ export default function DashboardPage() {
         const data = await fetchPublicReports()
         setReports(data)
 
+        // Load cleanup tasks
+        try {
+          const tasksData = await fetchCleanupTasks()
+          const inProgressTasks = tasksData.filter(t => t.status === 'in_progress' || t.status === 'pending')
+          setCleanupTasks(inProgressTasks.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)))
+
+          // Fetch recently completed tasks (last 7 days)
+          const sevenDaysAgo = new Date()
+          sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+          const recentCompletedTasks = tasksData.filter(t => {
+            const isCompleted = t.status === 'completed'
+            if (!isCompleted) return false
+            // Use completed_at if available, otherwise fall back to updated_at or created_at
+            const dateToCheck = t.completed_at || t.updated_at || t.created_at
+            if (dateToCheck) {
+              const checkDate = new Date(dateToCheck)
+              return checkDate >= sevenDaysAgo
+            }
+            return false
+          })
+          setCompletedTasks(recentCompletedTasks.sort((a, b) => {
+            const dateA = new Date(a.completed_at || a.updated_at || a.created_at)
+            const dateB = new Date(b.completed_at || b.updated_at || b.created_at)
+            return dateB - dateA
+          }))
+
+          // Fetch reports for each task to calculate progress
+          const tasksWithReportsData = await Promise.all(
+            inProgressTasks.map(async (task) => {
+              let reportsData = []
+              if (task.is_custom && task.report_ids && task.report_ids.length > 0) {
+                reportsData = await fetchReportsByIds(task.report_ids)
+              } else if (task.cluster_id) {
+                reportsData = await fetchReportsByClusterId(task.cluster_id)
+              }
+              return { ...task, reports: reportsData }
+            })
+          )
+          setTasksWithReports(tasksWithReportsData)
+
+          // Fetch reports for completed tasks
+          const completedTasksWithReportsData = await Promise.all(
+            recentCompletedTasks.map(async (task) => {
+              let reportsData = []
+              if (task.is_custom && task.report_ids && task.report_ids.length > 0) {
+                reportsData = await fetchReportsByIds(task.report_ids)
+              } else if (task.cluster_id) {
+                reportsData = await fetchReportsByClusterId(task.cluster_id)
+              }
+              return { ...task, reports: reportsData }
+            })
+          )
+          setCompletedTasksWithReports(completedTasksWithReportsData)
+        } catch (taskError) {
+          console.error('Failed to load cleanup tasks:', taskError)
+        } finally {
+          setLoadingTasks(false)
+        }
+
         const total = data.length
         const unresolved = data.filter(r => r.status === 'unresolved').length
         const inProgress = data.filter(r => r.status === 'in_progress').length
@@ -69,14 +174,15 @@ export default function DashboardPage() {
         const waitingForFeedback = data.filter(r => r.status === 'waiting_for_feedback').length
         const overdue = data.filter(r => r.is_overdue).length
 
-        // Calculate resolved today - check reports that were resolved today
+        // Calculate resolved today - check reports that were resolved today (by status or stage)
         const today = new Date()
         today.setHours(0, 0, 0, 0)
         const tomorrow = new Date(today)
         tomorrow.setDate(tomorrow.getDate() + 1)
 
         const resolvedToday = data.filter(r => {
-          if (r.status !== 'resolved' && r.status !== 'closed') return false
+          const isResolved = r.status === 'resolved' || r.status === 'closed' || r.stage === 'resolved'
+          if (!isResolved) return false
           if (r.updated_at) {
             const updatedDate = new Date(r.updated_at)
             return updatedDate >= today && updatedDate < tomorrow
@@ -278,6 +384,8 @@ export default function DashboardPage() {
     switch (status) {
       case 'resolved': return 'bg-success/10 text-success border-success/30'
       case 'in_progress': return 'bg-warning/10 text-warning border-warning/30'
+      case 'completed': return 'bg-success/10 text-success border-success/30'
+      case 'pending': return 'bg-info/10 text-info border-info/30'
       case 'waiting_for_feedback': return 'bg-info/10 text-info border-info/30'
       case 'closed': return 'bg-surface text-text-muted border-border'
       case 'pending_owner_consent': return 'bg-warning/10 text-warning border-warning/30'
@@ -352,6 +460,180 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Recently Completed Cleanup Tasks Section */}
+      <div className="card no-hover mb-8">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-text-primary">Recently Completed Tasks (Last 7 Days)</h2>
+          <button
+            onClick={() => router.push('/dashboard/cleanup-tasks')}
+            className="btn-secondary"
+          >
+            View All Tasks
+          </button>
+        </div>
+
+        {loadingTasks ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </div>
+        ) : completedTasksWithReports.length === 0 ? (
+          <div className="text-center py-8 text-text-muted">
+            <p>No recently completed tasks</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {completedTasksWithReports.map((task) => {
+              const firstReport = task.reports[0]
+              const loc = firstReport ? parseLocation(firstReport.location, firstReport.latitude, firstReport.longitude) : { latitude: null, longitude: null }
+              const resolvedCount = task.reports.filter(r => r.stage === 'resolved').length
+              const progressPercentage = task.reports.length > 0 ? (resolvedCount / task.reports.length) * 100 : 0
+
+              return (
+                <div key={task.id} className="card hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push(`/dashboard/cleanup-tasks/${task.id}`)}>
+                  <div className="mb-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-bold text-text-primary text-lg">{task.title}</h3>
+                      <span className={`px-2 py-1 rounded text-xs font-semibold border ${getStatusColor(task.status)}`}>
+                        {task.status.replace(/_/g, ' ').toUpperCase()}
+                      </span>
+                    </div>
+                    <p className="text-sm text-text-muted line-clamp-2">{task.description}</p>
+                  </div>
+
+                  <div className="space-y-3">
+                    {loc.latitude && loc.longitude && (
+                      <div className="text-sm">
+                        <span className="text-text-muted">Location: </span>
+                        <span className="text-text-secondary">
+                          {loc.latitude.toFixed(4)}, {loc.longitude.toFixed(4)}
+                        </span>
+                      </div>
+                    )}
+
+                    {task.reports.length > 0 && (
+                      <div>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-text-muted">Progress</span>
+                          <span className="text-text-secondary">{resolvedCount} / {task.reports.length} resolved</span>
+                        </div>
+                        <div className="w-full bg-surface dark:bg-surface-elevated rounded-full h-2">
+                          <div
+                            className="bg-success h-2 rounded-full transition-all"
+                            style={{ width: `${progressPercentage}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="text-sm text-text-muted">
+                      Completed: {new Date(task.completed_at || task.updated_at || task.created_at).toLocaleDateString()}
+                    </div>
+
+                    <button className="btn-secondary w-full text-sm">
+                      View Details
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* In-Progress Cleanup Tasks Section */}
+      <div className="card no-hover mb-8">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-text-primary">In-Progress Cleanup Tasks</h2>
+          <div className="flex gap-3">
+            <button
+              onClick={() => router.push('/dashboard/cleanup-tasks')}
+              className="btn-secondary"
+            >
+              View All Tasks
+            </button>
+            <button
+              onClick={() => router.push('/dashboard/cleanup-tasks/create')}
+              className="btn-primary"
+            >
+              Create New Task
+            </button>
+          </div>
+        </div>
+
+        {loadingTasks ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </div>
+        ) : tasksWithReports.length === 0 ? (
+          <div className="text-center py-8 text-text-muted">
+            <p>No in-progress cleanup tasks</p>
+            <button
+              onClick={() => router.push('/dashboard/cleanup-tasks/create')}
+              className="btn-primary mt-4"
+            >
+              Create New Task
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {tasksWithReports.map((task) => {
+              const firstReport = task.reports[0]
+              const loc = firstReport ? parseLocation(firstReport.location, firstReport.latitude, firstReport.longitude) : { latitude: null, longitude: null }
+              const resolvedCount = task.reports.filter(r => r.stage === 'resolved').length
+              const progressPercentage = task.reports.length > 0 ? (resolvedCount / task.reports.length) * 100 : 0
+
+              return (
+                <div key={task.id} className="card hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push(`/dashboard/cleanup-tasks/${task.id}`)}>
+                  <div className="mb-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-bold text-text-primary text-lg">{task.title}</h3>
+                      <span className={`px-2 py-1 rounded text-xs font-semibold border ${getStatusColor(task.status)}`}>
+                        {task.status.replace(/_/g, ' ').toUpperCase()}
+                      </span>
+                    </div>
+                    <p className="text-sm text-text-muted line-clamp-2">{task.description}</p>
+                  </div>
+
+                  <div className="space-y-3">
+                    {loc.latitude && loc.longitude && (
+                      <div className="text-sm">
+                        <span className="text-text-muted">Location: </span>
+                        <span className="text-text-secondary">
+                          {loc.latitude.toFixed(4)}, {loc.longitude.toFixed(4)}
+                        </span>
+                      </div>
+                    )}
+
+                    {task.reports.length > 0 && (
+                      <div>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-text-muted">Progress</span>
+                          <span className="text-text-secondary">{resolvedCount} / {task.reports.length} resolved</span>
+                        </div>
+                        <div className="w-full bg-surface dark:bg-surface-elevated rounded-full h-2">
+                          <div
+                            className="bg-accent-green h-2 rounded-full transition-all"
+                            style={{ width: `${progressPercentage}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
+
+                    <button className="btn-secondary w-full text-sm">
+                      View Details
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
 
       <div className="flex justify-end mb-6">
         <button

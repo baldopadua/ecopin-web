@@ -629,6 +629,10 @@ export default function CleanupTaskDetailPage() {
         return 'bg-success/10 text-success border-success/30'
       case 'in_progress':
         return 'bg-warning/10 text-warning border-warning/30'
+      case 'completed':
+        return 'bg-success/10 text-success border-success/30'
+      case 'pending':
+        return 'bg-info/10 text-info border-info/30'
       case 'waiting_for_feedback':
         return 'bg-info/10 text-info border-info/30'
       case 'closed':
@@ -1253,7 +1257,7 @@ export default function CleanupTaskDetailPage() {
                 </div>
 
                 <span className={`px-2 py-1 rounded text-xs font-semibold border ${getStatusColor(task.status)}`}>
-                  {task.status}
+                  {task.status.replace(/_/g, ' ').toUpperCase()}
                 </span>
 
                 {viewMode === 'detail' && (
