@@ -5,6 +5,7 @@ import PageHeader from '@/components/layout/PageHeader'
 import { getResponseLogs } from '@/lib/api'
 import FilterDropdown from '@/components/ui/FilterDropdown'
 import { SkeletonLine } from '@/components/ui/Skeleton'
+import { OfficerGuard } from '@/components/auth/RequireRole'
 
 export default function ResponseLogs() {
   const router = useRouter()
@@ -92,7 +93,8 @@ export default function ResponseLogs() {
   }
 
   return (
-    <div className="p-8">
+    <OfficerGuard>
+      <div className="p-8">
       <PageHeader
         title="Response Logs"
         subtitle="View report response actions and history"
@@ -310,5 +312,6 @@ export default function ResponseLogs() {
         )}
       </div>
     </div>
+    </OfficerGuard>
   )
 }

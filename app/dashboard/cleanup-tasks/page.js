@@ -5,6 +5,7 @@ import { fetchCleanupTasks } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import FilterDropdown from '@/components/ui/FilterDropdown'
 import { SkeletonLine } from '@/components/ui/Skeleton'
+import { OfficerGuard } from '@/components/auth/RequireRole'
 
 export default function CleanupTasksPage() {
   const [tasks, setTasks] = useState([])
@@ -145,12 +146,14 @@ export default function CleanupTasksPage() {
       <div className="card no-hover">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-text-primary">All Cleanup Tasks</h2>
-          <button
-            onClick={() => router.push('/dashboard/cleanup-tasks/create')}
-            className="btn-primary"
-          >
-            Create Custom Task
-          </button>
+          <OfficerGuard>
+            <button
+              onClick={() => router.push('/dashboard/cleanup-tasks/create')}
+              className="btn-primary"
+            >
+              Create Custom Task
+            </button>
+          </OfficerGuard>
         </div>
         {loading ? (
           <div className="space-y-0">

@@ -5,6 +5,7 @@ import { fetchClusters, fetchValidatedReports } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import FilterDropdown from '@/components/ui/FilterDropdown'
 import { SkeletonLine } from '@/components/ui/Skeleton'
+import { OfficerGuard } from '@/components/auth/RequireRole'
 
 export default function ClustersPage() {
   const [clusters, setClusters] = useState([])
@@ -134,7 +135,8 @@ export default function ClustersPage() {
   }
 
   return (
-    <div className="p-8">
+    <OfficerGuard>
+      <div className="p-8">
       <PageHeader
         title="Clusters"
         subtitle="Grouped reports of similar environmental issues"
@@ -339,5 +341,6 @@ export default function ClustersPage() {
         )}
       </div>
     </div>
+    </OfficerGuard>
   )
 }

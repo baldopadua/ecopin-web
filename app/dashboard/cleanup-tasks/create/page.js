@@ -5,6 +5,7 @@ import { fetchFilteredReports } from '@/lib/api'
 import { createCustomCleanupTask } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
+import { OfficerGuard } from '@/components/auth/RequireRole'
 import dynamic from 'next/dynamic'
 
 // Dynamically import EcoPinMap to avoid SSR issues
@@ -119,7 +120,8 @@ export default function CreateCustomCleanupTaskPage() {
   }
 
   return (
-    <div className="p-8">
+    <OfficerGuard>
+      <div className="p-8">
       <PageHeader
         title="Create Custom Cleanup Task"
         subtitle="Select reports on the map to create a custom cleanup task"
@@ -289,5 +291,6 @@ export default function CreateCustomCleanupTaskPage() {
         />
       )}
     </div>
+    </OfficerGuard>
   )
 }

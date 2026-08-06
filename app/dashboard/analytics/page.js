@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import PageHeader from '@/components/layout/PageHeader'
 import { fetchPublicReports, fetchSatisfactionAnalytics } from '@/lib/api'
 import { SkeletonLine, SkeletonStatCard, SkeletonChartCard } from '@/components/ui/Skeleton'
+import { OfficerGuard } from '@/components/auth/RequireRole'
 import { Bar, Pie, Line } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -276,7 +277,8 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="p-8">
+    <OfficerGuard>
+      <div className="p-8">
       <PageHeader
         title="Analytics"
         subtitle="View analytics and insights"
@@ -442,5 +444,6 @@ export default function AnalyticsPage() {
         </div>
       </div>
     </div>
+    </OfficerGuard>
   )
 }

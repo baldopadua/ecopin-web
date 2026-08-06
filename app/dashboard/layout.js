@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Sidebar from '@/components/layout/Sidebar'
+import { UserProvider } from '@/components/auth/UserContext'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL + '/api/auth'
 
@@ -37,7 +38,12 @@ export default function DashboardLayout({ children }) {
         setUser(data.user)
 
         if (userRole === 'admin' && pathname === '/dashboard') {
-          router.push('/dashboard/admin')
+            router.push('/dashboard/admin')
+        } else if (userRole === 'field_crew' && pathname === '/dashboard') {
+            router.push('/dashboard/field-crew')
+        } else if (userRole === 'officer' && pathname === '/dashboard') {
+            // console.log("Officer: ", userRole);
+            router.push('/dashboard/officer')
         }
       } catch (error) {
         console.error('Failed to fetch user data:', error)
@@ -94,11 +100,13 @@ export default function DashboardLayout({ children }) {
   )
 
   return (
-    <div className="flex h-screen bg-background dark:bg-[#0a0f08]">
-      <Sidebar user={user} />
-      <main className="flex-1 overflow-auto bg-surface dark:bg-[#0a0f08]">
-        {children}
-      </main>
-    </div>
+    <UserProvider user={user}>
+      <div className="flex h-screen bg-background dark:bg-[#0a0f08]">
+        <Sidebar />
+        <main className="flex-1 overflow-auto bg-surface dark:bg-[#0a0f08]">
+          {children}
+        </main>
+      </div>
+    </UserProvider>
   )
 }

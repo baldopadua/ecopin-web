@@ -409,8 +409,8 @@ export default function DashboardPage() {
   return (
     <div className="p-8">
       <PageHeader
-        title="Dashboard Overview"
-        subtitle="Welcome to EcoPin Dashboard"
+        title="Officer Dashboard"
+        subtitle="Overview of reports, cleanup tasks, and operations"
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard' }
         ]}

@@ -1,8 +1,8 @@
 'use client'
 import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
 import { getSystemSettings } from '@/lib/api'
+import { getTimeoutMinutes } from '@/lib/api/system'
 
 const SessionContext = createContext(null)
 
@@ -24,9 +24,9 @@ export function SessionProvider({ children }) {
     if (!token) return
 
     const fetchSessionTimeout = async () => {
-      const settings = await getSystemSettings()
-      if (settings && settings.session_timeout_minutes) {
-        setSessionTimeoutMinutes(settings.session_timeout_minutes)
+      const timeout = await getTimeoutMinutes()
+      if (timeout && timeout.session_timeout_minutes) {
+        setSessionTimeoutMinutes(timeout.session_timeout_minutes)
       }
     }
 
