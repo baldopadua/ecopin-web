@@ -15,6 +15,7 @@ import {
 } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
+import StatusBadge from '@/components/ui/StatusBadge'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
@@ -137,58 +138,6 @@ export default function ReportDetailPage() {
     }
 
     return { latitude: null, longitude: null }
-  }
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'resolved':
-        return 'bg-success/10 text-success border-success/30'
-      case 'closed':
-        return 'bg-surface text-text-muted border-border'
-      case 'waiting_for_feedback':
-        return 'bg-info/10 text-info border-info/30'
-      case 'in_progress':
-        return 'bg-warning/10 text-warning border-warning/30'
-      case 'pending_owner_consent':
-        return 'bg-warning/10 text-warning border-warning/30'
-      default:
-        return 'bg-error/10 text-error border-error/30'
-    }
-  }
-
-  const getValidationColor = (status) => {
-    switch (status) {
-      case 'validated':
-      case 'automatically_valid':
-        return 'bg-success/10 text-success border-success/30'
-      case 'pending':
-      case 'pending_ai_validation':
-        return 'bg-warning/10 text-warning border-warning/30'
-      case 'manual_review':
-      case 'Manual_Review':
-        return 'bg-info/10 text-info border-info/30'
-      case 'rejected':
-        return 'bg-error/10 text-error border-error/30'
-      default:
-        return 'bg-surface text-text-muted border-border'
-    }
-  }
-
-  const getLifecycleStageColor = (stage) => {
-    switch (stage) {
-      case 'submitted':
-        return 'bg-purple/10 text-purple border-purple/30'
-      case 'acknowledged':
-        return 'bg-info/10 text-info border-info/30'
-      case 'responded':
-        return 'bg-warning/10 text-warning border-warning/30'
-      case 'resolved':
-        return 'bg-success/10 text-success border-success/30'
-      case 'closed':
-        return 'bg-surface text-text-muted border-border'
-      default:
-        return 'bg-surface text-text-muted border-border'
-    }
   }
 
   const getSatisfactionEmoji = (rating) => {
@@ -563,38 +512,25 @@ export default function ReportDetailPage() {
                     {report.validation_status === 'rejected' || (report.on_private_property && report.property_owner_consent_status === 'denied') ? (
                       <>
                         {report.validation_status === 'rejected' && (
-                          <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getValidationColor(report.validation_status)}`}>
-                            {report.validation_status.replace(/_/g, ' ').toUpperCase()}
-                          </span>
+                          <StatusBadge status={report.validation_status} type="validation" size="large" />
                         )}
                         {report.on_private_property && report.property_owner_consent_status === 'denied' && (
-                          <span className={`px-4 py-2 rounded-full text-sm font-semibold border bg-error/10 text-error border-error/30`}>
-                            {report.property_owner_consent_status.replace(/_/g, ' ').toUpperCase()}
-                          </span>
+                          <StatusBadge status={report.property_owner_consent_status} type="consent" size="large" />
                         )}
                       </>
                     ) : (
                       <>
-                        <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getStatusColor(report.status)}`}>
-                          {report.status.replace(/_/g, ' ').toUpperCase()}
-                        </span>
-                        <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getValidationColor(report.validation_status)}`}>
-                          {report.validation_status.replace(/_/g, ' ').toUpperCase()}
-                        </span>
+                        <StatusBadge status={report.status} type="report" size="large" />
+                        <StatusBadge status={report.validation_status} type="validation" size="large" />
                         {report.on_private_property && (
-                          <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${report.property_owner_consent_status === 'obtained'
-                            ? 'bg-success/10 text-success border-success/30'
-                            : report.property_owner_consent_status === 'pending'
-                              ? 'bg-warning/10 text-warning border-warning/30'
-                              : 'bg-surface text-text-muted border-border'
-                            }`}>
-                            {report.property_owner_consent_status.replace(/_/g, ' ').toUpperCase()}
-                          </span>
+                          <StatusBadge 
+                            status={report.property_owner_consent_status} 
+                            type="consent" 
+                            size="large"
+                          />
                         )}
                         {report.stage && (
-                          <span className={`px-4 py-2 rounded-full text-sm font-semibold border ${getLifecycleStageColor(report.stage)}`}>
-                            {report.stage.replace(/_/g, ' ').toUpperCase()}
-                          </span>
+                          <StatusBadge status={report.stage} type="lifecycle" size="large" />
                         )}
                       </>
                     )}

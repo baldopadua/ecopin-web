@@ -3,7 +3,9 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import { getSystemStats, getAuditLogs } from '@/lib/api'
-import { SkeletonLine, SkeletonStatCard, SkeletonTable } from '@/components/ui/Skeleton'
+import StatsCard from '@/components/ui/StatsCard'
+import DataTable from '@/components/ui/DataTable'
+import StatusBadge from '@/components/ui/StatusBadge'
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -38,29 +40,52 @@ export default function AdminDashboard() {
     }
   }
 
-  const getActionTypeColor = (actionType) => {
-    switch (actionType) {
-      case 'login':
-        return 'bg-success/10 text-success'
-      case 'logout':
-        return 'bg-surface text-text-muted'
-      case 'password_change':
-        return 'bg-warning/10 text-warning'
-      case 'role_change':
-        return 'bg-purple/10 text-purple'
-      case 'user_created':
-        return 'bg-info/10 text-info'
-      case 'user_deleted':
-        return 'bg-error/10 text-error'
-      default:
-        return 'bg-surface text-text-muted'
-    }
-  }
-
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A'
     return new Date(dateString).toLocaleString()
   }
+
+  const tableColumns = [
+    { 
+      key: 'created_at', 
+      label: 'Date', 
+      width: '15%',
+      render: (value) => (
+        <span className="text-sm text-text-muted">{formatDate(value)}</span>
+      )
+    },
+    { 
+      key: 'profiles', 
+      label: 'User', 
+      width: '20%',
+      render: (value) => (
+        <div>
+          <p className="font-medium text-text-primary text-sm">
+            {value?.full_name || 'Unknown'}
+          </p>
+          <p className="text-xs text-text-muted">
+            {value?.email || 'N/A'}
+          </p>
+        </div>
+      )
+    },
+    { 
+      key: 'action_type', 
+      label: 'Action', 
+      width: '15%',
+      render: (value) => (
+        <StatusBadge status={value} type="auditAction" />
+      )
+    },
+    { 
+      key: 'action_details', 
+      label: 'Details', 
+      width: '50%',
+      render: (value) => (
+        <span className="text-sm text-text-secondary">{value}</span>
+      )
+    }
+  ]
 
   if (loading) {
     return (
@@ -75,11 +100,22 @@ export default function AdminDashboard() {
         />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {Array.from({ length: 3 }).map((_, i) => (
-            <SkeletonStatCard key={i} />
+            <div key={i} className="card animate-pulse">
+              <div className="h-3 w-20 rounded bg-border/50 mb-3" />
+              <div className="h-8 w-12 rounded bg-border/50" />
+            </div>
           ))}
         </div>
         <div className="card no-hover">
-          <SkeletonTable rows={4} cols={4} />
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex gap-4">
+                <div className="h-3 w-24 rounded bg-border/50" />
+                <div className="h-3 flex-1 rounded bg-border/50" />
+                <div className="h-3 w-20 rounded bg-border/50" />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     )
@@ -116,9 +152,11 @@ export default function AdminDashboard() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="card">
-          <h3 className="text-lg font-semibold text-text-primary mb-2">Total Users</h3>
-          <p className="text-3xl font-bold text-accent-green">{stats?.users?.total || 0}</p>
+        <StatsCard
+          title="Total Users"
+          value={stats?.users?.total || 0}
+          color="accent"
+        >
           <div className="mt-4 space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-text-secondary">Citizens</span>
@@ -137,11 +175,13 @@ export default function AdminDashboard() {
               <span className="text-text-primary font-medium">{stats?.users?.byRole?.admin || 0}</span>
             </div>
           </div>
-        </div>
+        </StatsCard>
 
-        <div className="card">
-          <h3 className="text-lg font-semibold text-text-primary mb-2">Total Reports</h3>
-          <p className="text-3xl font-bold text-accent-green">{stats?.reports?.total || 0}</p>
+        <StatsCard
+          title="Total Reports"
+          value={stats?.reports?.total || 0}
+          color="accent"
+        >
           <div className="mt-4 space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-text-secondary">Unresolved</span>
@@ -156,17 +196,18 @@ export default function AdminDashboard() {
               <span className="text-text-primary font-medium">{stats?.reports?.byStatus?.pending || 0}</span>
             </div>
           </div>
-        </div>
+        </StatsCard>
 
-        <div className="card">
-          <h3 className="text-lg font-semibold text-text-primary mb-2">Audit Logs</h3>
-          <p className="text-3xl font-bold text-accent-green">{stats?.auditLogs?.total || 0}</p>
-          <p className="text-sm text-text-muted mt-4">Total system actions logged</p>
-        </div>
+        <StatsCard
+          title="Audit Logs"
+          value={stats?.auditLogs?.total || 0}
+          color="accent"
+          subtitle="Total system actions logged"
+        />
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <button
           onClick={() => router.push('/dashboard/admin/users')}
           className="card hover:border-accent-green transition-colors cursor-pointer text-left"
@@ -215,57 +256,13 @@ export default function AdminDashboard() {
       </div>
 
       {/* Recent Audit Logs */}
-      <div className="card no-hover mt-8">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-text-primary">Recent Audit Logs</h3>
-          <button
-            onClick={() => router.push('/dashboard/admin/audit-logs')}
-            className="text-sm text-accent-green hover:text-accent-green-dark font-medium cursor-pointer"
-          >
-            View All
-          </button>
-        </div>
-        {recentLogs.length === 0 ? (
-          <p className="text-text-muted">No recent audit logs</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left py-2 px-3 text-xs font-semibold text-text-primary">Date</th>
-                  <th className="text-left py-2 px-3 text-xs font-semibold text-text-primary">User</th>
-                  <th className="text-left py-2 px-3 text-xs font-semibold text-text-primary">Action</th>
-                  <th className="text-left py-2 px-3 text-xs font-semibold text-text-primary">Details</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentLogs.map((log) => (
-                  <tr key={log.id} className="border-b border-border">
-                    <td className="py-2 px-3 text-xs text-text-muted">
-                      {formatDate(log.created_at)}
-                    </td>
-                    <td className="py-2 px-3">
-                      <p className="font-medium text-text-primary text-xs">
-                        {log.profiles?.full_name || 'Unknown'}
-                      </p>
-                      <p className="text-xs text-text-muted">
-                        {log.profiles?.email || 'N/A'}
-                      </p>
-                    </td>
-                    <td className="py-2 px-3">
-                      <span className={`px-2 py-1 rounded text-xs font-semibold ${getActionTypeColor(log.action_type)}`}>
-                        {log.action_type.replace(/_/g, ' ').toUpperCase()}
-                      </span>
-                    </td>
-                    <td className="py-2 px-3 text-xs text-text-secondary max-w-xs truncate">
-                      {log.action_details}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+      <div className="card no-hover">
+        <h2 className="text-xl font-bold text-text-primary mb-4">Recent Audit Logs</h2>
+        <DataTable
+          columns={tableColumns}
+          data={recentLogs}
+          emptyMessage="No recent activity"
+        />
       </div>
     </div>
   )

@@ -3,9 +3,11 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
-import FilterDropdown from '@/components/ui/FilterDropdown'
+import FilterBar from '@/components/ui/FilterBar'
+import DataTable from '@/components/ui/DataTable'
+import Pagination from '@/components/ui/Pagination'
+import StatusBadge from '@/components/ui/StatusBadge'
 import { getAllUsers, updateUserRole, deleteUser, createUser } from '@/lib/api'
-import { SkeletonLine } from '@/components/ui/Skeleton'
 
 export default function UserManagement() {
   const router = useRouter()
@@ -138,19 +140,73 @@ export default function UserManagement() {
     return { requirements, allMet }
   }
 
-  const getRoleBadgeColor = (role) => {
-    switch (role) {
-      case 'admin':
-        return 'bg-purple/10 text-purple'
-      case 'officer':
-        return 'bg-info/10 text-info'
-      case 'field_crew':
-        return 'bg-warning/10 text-warning'
-      case 'citizen':
-      default:
-        return 'bg-surface text-text-muted'
-    }
+  const handlePageChange = (page) => {
+    setPagination(prev => ({ ...prev, page }))
   }
+
+  const handleResetFilters = () => {
+    setFilters({ search: '', role: '' })
+    setPagination(prev => ({ ...prev, page: 1 }))
+  }
+
+  const tableColumns = [
+    { 
+      key: 'full_name', 
+      label: 'Name', 
+      width: '25%',
+      render: (value) => (
+        <span className="font-medium text-text-primary">{value || 'N/A'}</span>
+      )
+    },
+    { 
+      key: 'email', 
+      label: 'Email', 
+      width: '30%',
+      render: (value) => (
+        <span className="text-sm text-text-secondary">{value}</span>
+      )
+    },
+    { 
+      key: 'role', 
+      label: 'Role', 
+      width: '20%',
+      render: (value, row) => (
+        <select
+          value={value}
+          onChange={(e) => handleRoleChange(row.id, e.target.value)}
+          disabled={updatingRole === row.id}
+          className="input text-sm py-1"
+        >
+          <option value="citizen">Citizen</option>
+          <option value="officer">Officer</option>
+          <option value="field_crew">Field Crew</option>
+          <option value="admin">Admin</option>
+        </select>
+      )
+    },
+    { 
+      key: 'created_at', 
+      label: 'Created', 
+      width: '15%',
+      render: (value) => (
+        <span className="text-sm text-text-muted">{new Date(value).toLocaleDateString()}</span>
+      )
+    },
+    { 
+      key: 'actions', 
+      label: 'Actions', 
+      width: '10%',
+      render: (value, row) => (
+        <button
+          onClick={() => handleDeleteUser(row.id)}
+          disabled={deletingUser === row.id}
+          className="text-error hover:text-error/80 text-sm font-medium disabled:opacity-50"
+        >
+          {deletingUser === row.id ? 'Deleting...' : 'Delete'}
+        </button>
+      )
+    }
+  ]
 
   return (
     <div className="p-8">
@@ -162,7 +218,14 @@ export default function UserManagement() {
           { label: 'Admin', href: '/dashboard/admin' },
           { label: 'Users' }
         ]}
-      />
+      >
+        <button
+          onClick={() => setShowCreateForm(!showCreateForm)}
+          className="btn-primary whitespace-nowrap"
+        >
+          {showCreateForm ? 'Cancel' : 'Create User'}
+        </button>
+      </PageHeader>
 
       {notification && (
         <Notification
@@ -172,287 +235,132 @@ export default function UserManagement() {
         />
       )}
 
-      {/* Filters */}
-      <div className="card relative z-10 mb-6">
-        <div className="flex gap-4 items-end">
-          <div className="flex-1 min-w-[200px]">
-            <input
-              type="text"
-              placeholder="Search by name or email..."
-              value={filters.search}
-              onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-              className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-text-primary"
-            />
+      {/* Create User Form */}
+      {showCreateForm && (
+        <div className="card mb-6">
+          <h3 className="text-lg font-semibold text-text-primary mb-4">Create New User</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-2">Email *</label>
+              <input
+                type="email"
+                value={newUser.email}
+                onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+                className="input"
+                placeholder="user@example.com"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-2">Password *</label>
+              <input
+                type="password"
+                value={newUser.password}
+                onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
+                className="input"
+                placeholder="Password"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-2">Full Name *</label>
+              <input
+                type="text"
+                value={newUser.full_name}
+                onChange={(e) => setNewUser(prev => ({ ...prev, full_name: e.target.value }))}
+                className="input"
+                placeholder="John Doe"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-2">Role *</label>
+              <select
+                value={newUser.role}
+                onChange={(e) => setNewUser(prev => ({ ...prev, role: e.target.value }))}
+                className="input"
+              >
+                <option value="citizen">Citizen</option>
+                <option value="officer">Officer</option>
+                <option value="field_crew">Field Crew</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
           </div>
-          <div className="flex-1 min-w-[150px]">
-            <FilterDropdown
-              label="All Roles"
-              value={filters.role}
-              onChange={(val) => setFilters(prev => ({ ...prev, role: val }))}
-              options={[
-                { value: '', label: 'All Roles' },
-                { value: 'citizen', label: 'Citizen' },
-                { value: 'officer', label: 'Officer' },
-                { value: 'field_crew', label: 'Field Crew' },
-                { value: 'admin', label: 'Admin' }
-              ]}
-            />
-          </div>
-          {(filters.search || filters.role) && (
-            <button
-              onClick={() => { setFilters({ search: '', role: '' }); setPagination(prev => ({ ...prev, page: 1 })) }}
-              className="btn-secondary whitespace-nowrap cursor-pointer"
-            >
-              Reset Filters
-            </button>
+          
+          {newUser.password && (
+            <div className="mt-4">
+              <p className="text-sm font-medium text-text-secondary mb-2">Password Requirements:</p>
+              <ul className="text-sm space-y-1">
+                {validatePassword(newUser.password).requirements.map((req, i) => (
+                  <li key={i} className={`flex items-center gap-2 ${req.met ? 'text-success' : 'text-error'}`}>
+                    <span>{req.met ? '✓' : '✗'}</span>
+                    {req.text}
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
-          <div>
+
+          <div className="mt-6 flex gap-3">
             <button
-              onClick={() => setShowCreateForm(!showCreateForm)}
-              className="btn-primary whitespace-nowrap"
+              onClick={handleCreateUser}
+              disabled={creatingUser}
+              className="btn-primary"
             >
-              {showCreateForm ? 'Cancel' : 'Create User'}
+              {creatingUser ? 'Creating...' : 'Create User'}
+            </button>
+            <button
+              onClick={() => setShowCreateForm(false)}
+              className="btn-secondary"
+            >
+              Cancel
             </button>
           </div>
         </div>
+      )}
 
-        {showCreateForm && (
-          <div className="border-t border-border pt-4 mt-4">
-            <h3 className="text-lg font-semibold text-text-primary mb-4">Create New User</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">Email *</label>
-                <input
-                  type="email"
-                  value={newUser.email}
-                  onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
-                  className="input"
-                  placeholder="user@example.com"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">Full Name *</label>
-                <input
-                  type="text"
-                  value={newUser.full_name}
-                  onChange={(e) => setNewUser(prev => ({ ...prev, full_name: e.target.value }))}
-                  className="input"
-                  placeholder="John Doe"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">Password *</label>
-                <input
-                  type="password"
-                  value={newUser.password}
-                  onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
-                  className="input"
-                  placeholder="••••••••"
-                />
-                {newUser.password && (
-                  <div className="mt-2">
-                    <ul className="space-y-1">
-                      {validatePassword(newUser.password).requirements.map((req, idx) => (
-                        <li key={idx} className="text-xs flex items-center gap-2">
-                          <svg
-                            className={`w-4 h-4 ${req.met ? 'text-success' : 'text-text-muted'}`}
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            {req.met ? (
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            ) : (
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            )}
-                          </svg>
-                          <span className={req.met ? 'text-success' : 'text-text-muted'}>{req.text}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">Role *</label>
-                <FilterDropdown
-                  label="Select Role"
-                  value={newUser.role}
-                  onChange={(val) => setNewUser(prev => ({ ...prev, role: val }))}
-                  options={[
-                    { value: 'citizen', label: 'Citizen' },
-                    { value: 'officer', label: 'Officer' },
-                    { value: 'field_crew', label: 'Field Crew' },
-                    { value: 'admin', label: 'Admin' }
-                  ]}
-                />
-              </div>
-            </div>
-            <div className="mt-8 flex justify-end">
-              <button
-                onClick={handleCreateUser}
-                disabled={creatingUser || !validatePassword(newUser.password).allMet}
-                className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {creatingUser ? 'Creating...' : 'Create User'}
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+      {/* Filters */}
+      <FilterBar
+        searchPlaceholder="Search by name or email..."
+        searchValue={filters.search}
+        onSearchChange={(val) => setFilters(prev => ({ ...prev, search: val }))}
+        filters={[
+          {
+            label: 'All Roles',
+            value: filters.role,
+            onChange: (val) => setFilters(prev => ({ ...prev, role: val })),
+            options: [
+              { value: '', label: 'All Roles' },
+              { value: 'citizen', label: 'Citizen' },
+              { value: 'officer', label: 'Officer' },
+              { value: 'field_crew', label: 'Field Crew' },
+              { value: 'admin', label: 'Admin' }
+            ]
+          }
+        ]}
+        onReset={handleResetFilters}
+        resultsCount={pagination.total}
+        loading={loading}
+        sticky={false}
+      />
 
       {/* Users Table */}
-      <div className="card no-hover">
-        {loading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex gap-4 items-center">
-                <SkeletonLine className="h-10 w-10 rounded-full" />
-                <SkeletonLine className="h-4 flex-1" />
-                <SkeletonLine className="h-4 flex-1" />
-                <SkeletonLine className="h-4 w-20" />
-                <SkeletonLine className="h-4 w-24" />
-                <SkeletonLine className="h-4 w-10" />
-              </div>
-            ))}
-          </div>
-        ) : error ? (
-          <p className="text-error">{error}</p>
-        ) : users.length === 0 ? (
-          <p className="text-text-muted">No users found</p>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <colgroup>
-                  <col style={{ width: '25%' }} />
-                  <col style={{ width: '25%' }} />
-                  <col style={{ width: '15%' }} />
-                  <col style={{ width: '20%' }} />
-                  <col style={{ width: '15%' }} />
-                </colgroup>
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Name</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Email</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Role</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Created</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((user) => (
-                    <tr key={user.id} className="border-b border-border">
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-3">
-                          {user.avatar_url ? (
-                            <img
-                              src={user.avatar_url}
-                              alt={user.full_name}
-                              className="w-10 h-10 rounded-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 rounded-full bg-accent-green/10 flex items-center justify-center">
-                              <span className="text-accent-green font-medium">
-                                {user.full_name?.charAt(0) || 'U'}
-                              </span>
-                            </div>
-                          )}
-                          <span className="font-medium text-text-primary">{user.full_name || 'N/A'}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-sm text-text-secondary">{user.email || 'N/A'}</td>
-                      <td className="py-3 px-4">
-                        <FilterDropdown
-                          label={user.role}
-                          value={user.role}
-                          onChange={(val) => handleRoleChange(user.id, val)}
-                          options={[
-                            { value: 'citizen', label: 'Citizen' },
-                            { value: 'officer', label: 'Officer' },
-                            { value: 'field_crew', label: 'Field Crew' },
-                            { value: 'admin', label: 'Admin' }
-                          ]}
-                        />
-                      </td>
-                      <td className="py-3 px-4 text-sm text-text-muted">
-                        {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
-                      </td>
-                      <td className="py-3 px-4">
-                        <button
-                          onClick={() => handleDeleteUser(user.id)}
-                          disabled={deletingUser === user.id}
-                          className="text-error hover:text-error/80 disabled:opacity-50 cursor-pointer"
-                          title={deletingUser === user.id ? 'Deleting...' : 'Delete user'}
-                        >
-                          {deletingUser === user.id ? (
-                            <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                            </svg>
-                          ) : (
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          )}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+      <DataTable
+        columns={tableColumns}
+        data={users}
+        loading={loading}
+        emptyMessage="No users found"
+      />
 
-            {/* Pagination */}
-            {pagination.totalPages > 1 && (
-              <div className="flex items-center justify-between pt-4 border-t border-border">
-                <p className="text-sm text-text-muted">
-                  Showing {((pagination.page - 1) * 20) + 1} to {Math.min(pagination.page * 20, pagination.total)} of {pagination.total} users
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
-                    disabled={pagination.page === 1}
-                    className="btn-secondary px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Previous
-                  </button>
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                      let pageNum
-                      if (pagination.totalPages <= 5) {
-                        pageNum = i + 1
-                      } else if (pagination.page <= 3) {
-                        pageNum = i + 1
-                      } else if (pagination.page >= pagination.totalPages - 2) {
-                        pageNum = pagination.totalPages - 4 + i
-                      } else {
-                        pageNum = pagination.page - 2 + i
-                      }
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => setPagination(prev => ({ ...prev, page: pageNum }))}
-                          className={`px-3 py-2 rounded ${pagination.page === pageNum ? 'btn-primary' : 'btn-secondary'}`}
-                        >
-                          {pageNum}
-                        </button>
-                      )
-                    })}
-                  </div>
-                  <button
-                    onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
-                    disabled={pagination.page === pagination.totalPages}
-                    className="btn-secondary px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </div>
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <Pagination
+          currentPage={pagination.page}
+          totalPages={pagination.totalPages}
+          onPageChange={handlePageChange}
+          itemsPerPage={20}
+          totalItems={pagination.total}
+          className="mt-6"
+        />
+      )}
     </div>
   )
 }
