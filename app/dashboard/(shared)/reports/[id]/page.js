@@ -1012,7 +1012,7 @@ export default function ReportDetailPage() {
                   {/* Create Task for this Report */}
                   {report.stage === 'acknowledged' && (
                     <button
-                      onClick={() => router.push(`/dashboard/cleanup-task/create?preselect=${report.id}`)}
+                      onClick={() => router.push(`/dashboard/officer/cleanup-tasks/create?preselect=${report.id}`)}
                       className="btn-primary w-full"
                     >
                       Create Task for This Report
