@@ -8,6 +8,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL + '/api/auth';
 export default function AuthPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const router = useRouter()
@@ -143,15 +144,29 @@ export default function AuthPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-text-secondary mb-1.5 ml-1">Password</label>
-                  <input
-                    ref={passwordRef}
-                    type="password"
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    onKeyDown={handlePasswordKeyDown}
-                    className="input"
-                  />
+                  <div className="relative">
+                    <input
+                      ref={passwordRef}
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Enter your password"
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      onKeyDown={handlePasswordKeyDown}
+                      className="input pr-10"
+                      autoComplete="off"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors"
+                    >
+                      {showPassword ? (
+                        <img src="/icons/eye-crossed.svg" alt="Hide password" className="w-5 h-5" />
+                      ) : (
+                        <img src="/icons/eye.svg" alt="Show password" className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 {error && (

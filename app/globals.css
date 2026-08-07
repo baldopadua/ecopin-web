@@ -279,6 +279,41 @@ html.dark .input:not(:placeholder-shown) {
   color: var(--text-muted);
 }
 
+/* Hide browser's built-in password reveal button */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+
+input[type="password"]::-webkit-credentials-auto-fill-button,
+input[type="password"]::-webkit-outer-spin-button,
+input[type="password"]::-webkit-inner-spin-button {
+  display: none;
+  -webkit-appearance: none;
+}
+
+input[type="password"]::-webkit-contacts-auto-fill-button {
+  display: none;
+}
+
+input[type="password"]::-webkit-password-auto-fill-button {
+  display: none;
+}
+
+/* Chrome/Edge specific: hide the eye icon */
+input[type="password"]::-webkit-caps-lock-indicator {
+  display: none;
+}
+
+/* Hide the reveal button in all browsers */
+input[type="password"]::-webkit-reveal-button {
+  display: none;
+}
+
+input[type="password"]::-webkit-textfield-decoration-container {
+  display: none;
+}
+
 select.input {
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238A9180' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
