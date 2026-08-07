@@ -76,7 +76,7 @@ export default function StatusBadge({
   const sizeClasses = {
     small: 'px-2 py-1 rounded text-xs',
     medium: 'px-3 py-1.5 rounded text-sm',
-    large: 'px-4 py-2 rounded-full text-sm'
+    large: 'px-4 py-2 rounded text-sm'
   }
 
   return (

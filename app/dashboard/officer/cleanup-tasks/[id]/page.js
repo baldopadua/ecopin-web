@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { fetchCleanupTaskById, uploadCleanupPhoto, markCleanupTaskComplete, fetchReportsByClusterId, batchCompleteReportsByCluster, updateReportStatus, fetchReportsByIds, updateReportValidation, fetchReportEvidence, updateLifecycleStage, logAgencyResponse, fetchAgencyResponses } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
+import StatusBadge from '@/components/ui/StatusBadge'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
 import Notification from '@/components/ui/Notification'
 import wkx from 'wkx'
@@ -152,22 +153,7 @@ export default function CleanupTaskDetailPage() {
     }
   }
 
-  const getLifecycleStageColor = (stage) => {
-    switch (stage) {
-      case 'submitted':
-        return 'bg-purple/10 text-purple border-purple/30'
-      case 'acknowledged':
-        return 'bg-info/10 text-info border-info/30'
-      case 'responded':
-        return 'bg-warning/10 text-warning border-warning/30'
-      case 'resolved':
-        return 'bg-success/10 text-success border-success/30'
-      case 'closed':
-        return 'bg-surface text-text-muted border-border'
-      default:
-        return 'bg-surface text-text-muted border-border'
-    }
-  }
+
 
   const handleLifecycleStageUpdate = async (reportId, newStage) => {
     const report = reports.find(r => r.id === reportId)
@@ -623,45 +609,6 @@ export default function CleanupTaskDetailPage() {
     setLightboxImage({ ...lightboxImage, url: photos[prevIndex].url, index: prevIndex })
   }
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'resolved':
-        return 'bg-success/10 text-success border-success/30'
-      case 'in_progress':
-        return 'bg-warning/10 text-warning border-warning/30'
-      case 'completed':
-        return 'bg-success/10 text-success border-success/30'
-      case 'pending':
-        return 'bg-info/10 text-info border-info/30'
-      case 'waiting_for_feedback':
-        return 'bg-info/10 text-info border-info/30'
-      case 'closed':
-        return 'bg-surface text-text-muted border-border'
-      case 'pending_owner_consent':
-        return 'bg-warning/10 text-warning border-warning/30'
-      default:
-        return 'bg-error/10 text-error border-error/30'
-    }
-  }
-
-  const getValidationColor = (status) => {
-    switch (status) {
-      case 'validated':
-      case 'automatically_valid':
-        return 'bg-success/10 text-success border-success/30'
-      case 'pending':
-      case 'pending_ai_validation':
-        return 'bg-warning/10 text-warning border-warning/30'
-      case 'manual_review':
-      case 'Manual_Review':
-        return 'bg-info/10 text-info border-info/30'
-      case 'rejected':
-        return 'bg-error/10 text-error border-error/30'
-      default:
-        return 'bg-surface text-text-muted border-border'
-    }
-  }
-
   const getReportCardColor = (status) => {
     switch (status) {
       case 'resolved':
@@ -767,23 +714,17 @@ export default function CleanupTaskDetailPage() {
                             <span className="text-sm text-text-muted line-clamp-2 max-w-xs">{report.description || 'N/A'}</span>
                           </td>
                           <td className="py-3 px-4">
-                            <span className={`px-2 py-1 rounded text-xs font-semibold border ${getStatusColor(report.status)}`}>
-                              {report.status.replace(/_/g, ' ').toUpperCase()}
-                            </span>
+                            <StatusBadge status={report.status} type="report" />
                           </td>
                           <td className="py-3 px-4">
                             {report.stage ? (
-                              <span className={`px-2 py-1 rounded text-xs font-semibold border ${getLifecycleStageColor(report.stage)}`}>
-                                {report.stage.replace(/_/g, ' ').toUpperCase()}
-                              </span>
+                              <StatusBadge status={report.stage} type="lifecycle" />
                             ) : (
                               <span className="text-xs text-text-muted">N/A</span>
                             )}
                           </td>
                           <td className="py-3 px-4">
-                            <span className={`px-2 py-1 rounded text-xs font-semibold border ${getValidationColor(report.validation_status)}`}>
-                              {report.validation_status ? report.validation_status.toUpperCase().replace(/_/g, ' ') : 'N/A'}
-                            </span>
+                            <StatusBadge status={report.validation_status} type="validation" />
                           </td>
                           <td className="py-3 px-4">
                             <button
@@ -896,28 +837,21 @@ export default function CleanupTaskDetailPage() {
                           {report.validation_status === 'rejected' || (report.on_private_property && report.property_owner_consent_status === 'denied') ? (
                             <>
                               {report.validation_status === 'rejected' && (
-                                <span className={`px-2 py-1 rounded text-xs font-semibold border ${getValidationColor(report.validation_status)}`}>
-                                   {report.validation_status.replace(/_/g, ' ').toUpperCase()}
-                                </span>
+                                <StatusBadge status={report.validation_status} type="validation" />
                               )}
                               {report.on_private_property && report.property_owner_consent_status === 'denied' && (
-                                <span className="px-2 py-1 rounded text-xs font-semibold border bg-error/10 text-error border-error/30">
-                                   {report.property_owner_consent_status.replace(/_/g, ' ').toUpperCase()}
-                                </span>
+                                <StatusBadge status={report.property_owner_consent_status} type="consent" />
                               )}
                             </>
                           ) : (
                             <>
-                              <span className={`px-2 py-1 rounded text-xs font-semibold border ${getStatusColor(report.status)}`}>
-                                {report.status.replace(/_/g, ' ').toUpperCase()}
-                              </span>
-                              <span className={`px-2 py-1 rounded text-xs font-semibold border ${getValidationColor(report.validation_status)}`}>
-                                {report.validation_status ? report.validation_status.replace(/_/g, ' ').toUpperCase() : 'N/A'}
-                              </span>
+                              <StatusBadge status={report.status} type="report" />
+                              <StatusBadge status={report.validation_status} type="validation" />
+                              {report.on_private_property && (
+                                <StatusBadge status={report.property_owner_consent_status} type="consent" />
+                              )}
                               {report.stage && (
-                                <span className={`px-2 py-1 rounded text-xs font-semibold border ${getLifecycleStageColor(report.stage)}`}>
-                                  {report.stage.replace(/_/g, ' ').toUpperCase()}
-                                </span>
+                                <StatusBadge status={report.stage} type="lifecycle" />
                               )}
                             </>
                           )}
@@ -1223,9 +1157,7 @@ export default function CleanupTaskDetailPage() {
                                     {new Date(response.created_at).toLocaleString()}
                                   </td>
                                   <td className="py-3 px-4">
-                                    <span className="px-2 py-1 rounded text-xs font-semibold bg-accent-green/20 text-accent-green border border-accent-green/30">
-                                      {response.action_type?.replace(/_/g, ' ').toUpperCase()}
-                                    </span>
+                                    <StatusBadge status={response.action_type} type="responseAction" />
                                   </td>
                                   <td className="py-3 px-4 text-sm text-text-secondary">
                                     {response.action_details}
@@ -1256,9 +1188,7 @@ export default function CleanupTaskDetailPage() {
                   <p className="text-text-muted mt-2">{task.description}</p>
                 </div>
 
-                <span className={`px-2 py-1 rounded text-xs font-semibold border ${getStatusColor(task.status)}`}>
-                  {task.status.replace(/_/g, ' ').toUpperCase()}
-                </span>
+                <StatusBadge status={task.status} type="task" />
 
                 {viewMode === 'detail' && (
                   <button
