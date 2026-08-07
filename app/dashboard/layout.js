@@ -38,12 +38,12 @@ export default function DashboardLayout({ children }) {
         setUser(data.user)
 
         if (userRole === 'admin' && pathname === '/dashboard') {
-            router.push('/dashboard/admin')
+          router.push('/dashboard/admin')
         } else if (userRole === 'field_crew' && pathname === '/dashboard') {
-            router.push('/dashboard/field-crew')
+          router.push('/dashboard/field-crew')
         } else if (userRole === 'officer' && pathname === '/dashboard') {
-            // console.log("Officer: ", userRole);
-            router.push('/dashboard/officer')
+          // console.log("Officer: ", userRole);
+          router.push('/dashboard/officer')
         }
       } catch (error) {
         console.error('Failed to fetch user data:', error)

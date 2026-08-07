@@ -7,7 +7,7 @@ import StatsCard from '@/components/ui/StatsCard'
 import DataTable from '@/components/ui/DataTable'
 import StatusBadge from '@/components/ui/StatusBadge'
 
-export default function AdminDashboard() {
+export default function AdminHomepage() {
   const router = useRouter()
   const [stats, setStats] = useState(null)
   const [recentLogs, setRecentLogs] = useState([])
@@ -46,17 +46,17 @@ export default function AdminDashboard() {
   }
 
   const tableColumns = [
-    { 
-      key: 'created_at', 
-      label: 'Date', 
+    {
+      key: 'created_at',
+      label: 'Date',
       width: '15%',
       render: (value) => (
         <span className="text-sm text-text-muted">{formatDate(value)}</span>
       )
     },
-    { 
-      key: 'profiles', 
-      label: 'User', 
+    {
+      key: 'profiles',
+      label: 'User',
       width: '20%',
       render: (value) => (
         <div>
@@ -69,17 +69,17 @@ export default function AdminDashboard() {
         </div>
       )
     },
-    { 
-      key: 'action_type', 
-      label: 'Action', 
+    {
+      key: 'action_type',
+      label: 'Action',
       width: '15%',
       render: (value) => (
         <StatusBadge status={value} type="auditAction" />
       )
     },
-    { 
-      key: 'action_details', 
-      label: 'Details', 
+    {
+      key: 'action_details',
+      label: 'Details',
       width: '50%',
       render: (value) => (
         <span className="text-sm text-text-secondary">{value}</span>

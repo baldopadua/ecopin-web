@@ -1,7 +1,7 @@
 import { Outfit } from "next/font/google";
 import "./globals.css";
 import 'leaflet/dist/leaflet.css'
-import { SessionProvider } from '@/components/auth/SessionProvider'
+import { SessionProvider } from "@/components/auth/SessionProvider";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -28,7 +28,7 @@ export default function RootLayout({ children }) {
               (function() {
                 var theme = localStorage.getItem('theme');
                 if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                  document.documentElement.classList.add('dark');
+                  document.documentElement.c lassList.add('dark');
                 } else {
                   document.documentElement.classList.remove('dark');
                 }

@@ -8,7 +8,7 @@ import StatusBadge from '@/components/ui/StatusBadge'
 import { useUser } from '@/components/auth/UserContext'
 import { OfficerGuard } from '@/components/auth/RequireRole'
 
-export default function OfficerDashboardPage() {
+export default function OfficerHomepage() {
   const router = useRouter()
   const user = useUser()
   const [tasks, setTasks] = useState([])
@@ -57,25 +57,25 @@ export default function OfficerDashboardPage() {
 
   const completedTaskColumns = [
     { key: 'title', label: 'Title', width: '25%' },
-    { 
-      key: 'description', 
-      label: 'Description', 
+    {
+      key: 'description',
+      label: 'Description',
       width: '35%',
       render: (value) => (
         <span className="text-sm text-text-secondary line-clamp-1 max-w-xs">{value || '—'}</span>
       )
     },
-    { 
-      key: 'updated_at', 
-      label: 'Completed', 
+    {
+      key: 'updated_at',
+      label: 'Completed',
       width: '15%',
       render: (value) => (
         <span className="text-sm text-text-muted">{formatDate(value)}</span>
       )
     },
-    { 
-      key: 'status', 
-      label: 'Status', 
+    {
+      key: 'status',
+      label: 'Status',
       width: '25%',
       render: (value) => (
         <StatusBadge status={value} type="task" />

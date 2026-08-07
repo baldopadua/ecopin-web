@@ -1,7 +1,6 @@
 'use client'
 import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { getSystemSettings } from '@/lib/api'
 import { getTimeoutMinutes } from '@/lib/api/system'
 
 const SessionContext = createContext(null)
@@ -51,7 +50,7 @@ export function SessionProvider({ children }) {
     const refreshSession = async (isInitial = false) => {
       try {
         const storedToken = localStorage.getItem('authToken')
-        
+
         if (!storedToken) {
           if (!isInitial) {
             handleSessionExpired()
@@ -63,7 +62,7 @@ export function SessionProvider({ children }) {
         try {
           const payload = JSON.parse(atob(storedToken.split('.')[1]))
           const currentTime = Math.floor(Date.now() / 1000)
-          
+
           if (payload.exp && payload.exp < currentTime) {
             if (!isInitial) {
               handleSessionExpired()
