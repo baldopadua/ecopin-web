@@ -637,7 +637,7 @@ export default function DashboardPage() {
 
       <div className="flex justify-end mb-6">
         <button
-          onClick={() => router.push('/dashboard/analytics')}
+          onClick={() => router.push('/dashboard/officer/analytics')}
           className="btn-primary"
         >
           View Analytics
