@@ -235,7 +235,7 @@ export default function ClusterDetailPage() {
         subtitle={`Reports grouped by ${cluster.issue_type || 'similar issue'}`}
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Clusters', href: '/dashboard/clusters' },
+          { label: 'Clusters', href: '/dashboard/officer/clusters' },
           { label: `Cluster #${cluster.id}` }
         ]}
       />
