@@ -127,7 +127,7 @@ export default function ClusterDetailPage() {
       setShowCreateTaskModal(false)
       setTaskTitle('')
       setTaskDescription('')
-      router.push(`/dashboard/cleanup-tasks/${result.task.id}`)
+      router.push(`/dashboard/officer/cleanup-tasks/${result.task.id}`)
     } catch (error) {
       console.error('Failed to create cleanup task:', error)
       alert('Failed to create cleanup task. Please try again.')
