@@ -42,7 +42,7 @@ export default function OfficerHomepage() {
   ]
 
   const quickActions = [
-    { label: 'View All Tasks', onClick: () => router.push('/dashboard/cleanup-tasks'), variant: 'primary' },
+    { label: 'View All Tasks', onClick: () => router.push('/dashboard/officer/cleanup-tasks'), variant: 'primary' },
     { label: 'View Reports', onClick: () => router.push('/dashboard/reports'), variant: 'secondary' }
   ]
 
@@ -52,7 +52,7 @@ export default function OfficerHomepage() {
   }
 
   const handleTaskClick = (task) => {
-    router.push(`/dashboard/cleanup-tasks/${task.id}`)
+    router.push(`/dashboard/officer/cleanup-tasks/${task.id}`)
   }
 
   const completedTaskColumns = [
@@ -100,7 +100,7 @@ export default function OfficerHomepage() {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold text-text-primary">Active Tasks</h2>
             <button
-              onClick={() => router.push('/dashboard/cleanup-tasks')}
+              onClick={() => router.push('/dashboard/officer/cleanup-tasks')}
               className="btn-secondary"
             >
               View All
