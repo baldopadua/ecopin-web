@@ -534,7 +534,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                         onClusterSelect(memberReports.map(r => r.id))
                       }
                     } else {
-                      router.push(`/dashboard/clusters/${cluster.id}`)
+                      router.push(`/dashboard/officer/clusters/${cluster.id}`)
                     }
                   }
                 }}
@@ -576,7 +576,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
-                          router.push(`/dashboard/clusters/${cluster.id}`)
+                          router.push(`/dashboard/officer/clusters/${cluster.id}`)
                         }}
                         className="mt-2 w-full text-xs bg-accent-green text-white py-1 rounded hover:bg-accent-green-dark"
                       >
