@@ -69,7 +69,7 @@ export default function CleanupTasksPage() {
   }
 
   const handleRowClick = (task) => {
-    router.push(`/dashboard/cleanup-tasks/${task.id}`)
+    router.push(`/dashboard/officer/cleanup-tasks/${task.id}`)
   }
 
   const handleResetFilters = () => {
@@ -94,7 +94,7 @@ export default function CleanupTasksPage() {
       >
         <OfficerGuard>
           <button
-            onClick={() => router.push('/dashboard/cleanup-tasks/create')}
+            onClick={() => router.push('/dashboard/officer/cleanup-tasks/create')}
             className="btn-primary"
           >
             Create Custom Task

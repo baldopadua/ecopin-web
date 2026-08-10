@@ -109,7 +109,7 @@ export default function CreateCustomCleanupTaskPage() {
       })
       setNotification({ message: 'Custom cleanup task created successfully', type: 'success' })
       setTimeout(() => {
-        router.push('/dashboard/cleanup-tasks')
+        router.push('/dashboard/officer/cleanup-tasks')
       }, 1500)
     } catch (error) {
       console.error('Failed to create task:', error)
@@ -127,7 +127,7 @@ export default function CreateCustomCleanupTaskPage() {
         subtitle="Select reports on the map to create a custom cleanup task"
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Cleanup Tasks', href: '/dashboard/cleanup-tasks' },
+          { label: 'Cleanup Tasks', href: '/dashboard/officer/cleanup-tasks' },
           { label: 'Create Custom Task' }
         ]}
       />

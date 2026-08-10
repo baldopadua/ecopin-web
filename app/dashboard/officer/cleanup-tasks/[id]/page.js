@@ -674,12 +674,12 @@ export default function CleanupTaskDetailPage() {
 
   return (
     <div className="p-8">
-      <PageHeader 
+      <PageHeader
         title={`Cleanup Task #${task.id}`}
         subtitle={task.title}
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Cleanup Tasks', href: '/dashboard/cleanup-tasks' },
+          { label: 'Cleanup Tasks', href: '/dashboard/officer/cleanup-tasks' },
           { label: `Task #${task.id}` }
         ]}
       />

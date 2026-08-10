@@ -466,7 +466,7 @@ export default function DashboardPage() {
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-text-primary">Recently Completed Tasks (Last 7 Days)</h2>
           <button
-            onClick={() => router.push('/dashboard/cleanup-tasks')}
+            onClick={() => router.push('/dashboard/officer/cleanup-tasks')}
             className="btn-secondary"
           >
             View All Tasks
@@ -492,7 +492,7 @@ export default function DashboardPage() {
               const progressPercentage = task.reports.length > 0 ? (resolvedCount / task.reports.length) * 100 : 0
 
               return (
-                <div key={task.id} className="card hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push(`/dashboard/cleanup-tasks/${task.id}`)}>
+                <div key={task.id} className="card hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push(`/dashboard/officer/cleanup-tasks/${task.id}`)}>
                   <div className="mb-4">
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="font-bold text-text-primary text-lg">{task.title}</h3>
@@ -549,13 +549,13 @@ export default function DashboardPage() {
           <h2 className="text-xl font-bold text-text-primary">In-Progress Cleanup Tasks</h2>
           <div className="flex gap-3">
             <button
-              onClick={() => router.push('/dashboard/cleanup-tasks')}
+              onClick={() => router.push('/dashboard/officer/cleanup-tasks')}
               className="btn-secondary"
             >
               View All Tasks
             </button>
             <button
-              onClick={() => router.push('/dashboard/cleanup-tasks/create')}
+              onClick={() => router.push('/dashboard/officer/cleanup-tasks/create')}
               className="btn-primary"
             >
               Create New Task
@@ -573,7 +573,7 @@ export default function DashboardPage() {
           <div className="text-center py-8 text-text-muted">
             <p>No in-progress cleanup tasks</p>
             <button
-              onClick={() => router.push('/dashboard/cleanup-tasks/create')}
+              onClick={() => router.push('/dashboard/officer/cleanup-tasks/create')}
               className="btn-primary mt-4"
             >
               Create New Task
@@ -588,7 +588,7 @@ export default function DashboardPage() {
               const progressPercentage = task.reports.length > 0 ? (resolvedCount / task.reports.length) * 100 : 0
 
               return (
-                <div key={task.id} className="card hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push(`/dashboard/cleanup-tasks/${task.id}`)}>
+                <div key={task.id} className="card hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push(`/dashboard/officer/cleanup-tasks/${task.id}`)}>
                   <div className="mb-4">
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="font-bold text-text-primary text-lg">{task.title}</h3>
