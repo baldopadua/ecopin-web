@@ -43,9 +43,9 @@ export default function Sidebar() {
 
             {/* Logo */}
             <div className="p-6 border-b border-border">
-                <Link href="/" className="text-xl font-bold text-text-primary">
+                <div className="text-xl font-bold text-text-primary">
                     EcoPin<span className="text-accent-green">.AI</span>
-                </Link>
+                </div>
             </div>
 
             {/* Navigation */}
