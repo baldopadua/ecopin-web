@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { fetchValidatedReports, fetchClusterById, createCleanupTask } from '@/lib/api'
+import { fetchValidatedReports, fetchClusterById, createCleanupTask, fetchCleanupTasks } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
 import wkx from 'wkx'
@@ -83,6 +83,8 @@ export default function ClusterDetailPage() {
   const [taskTitle, setTaskTitle] = useState('')
   const [taskDescription, setTaskDescription] = useState('')
   const [creatingTask, setCreatingTask] = useState(false)
+  const [existingTask, setExistingTask] = useState(null)
+  const [loadingTasks, setLoadingTasks] = useState(true)
   const router = useRouter()
   const params = useParams()
   const clusterId = params.id
@@ -90,11 +92,13 @@ export default function ClusterDetailPage() {
   useEffect(() => {
     Promise.all([
       fetchClusterById(clusterId),
-      fetchValidatedReports()
-    ]).then(([clusterData, reportsData]) => {
+      fetchValidatedReports(),
+      fetchCleanupTasks()
+    ]).then(([clusterData, reportsData, tasksData]) => {
       console.log('Cluster data:', clusterData)
       console.log('All reports:', reportsData)
       console.log('Cluster ID from params:', clusterId)
+      console.log('All tasks:', tasksData)
 
       setCluster(clusterData)
       const clusterReports = reportsData.filter(r => {
@@ -104,10 +108,19 @@ export default function ClusterDetailPage() {
 
       console.log('Filtered reports for cluster:', clusterReports)
       setReports(clusterReports)
+
+      // Check if a task already exists for this cluster
+      const clusterTask = tasksData.find(task => String(task.cluster_id) === String(clusterId))
+      if (clusterTask) {
+        console.log('Found existing task for cluster:', clusterTask)
+        setExistingTask(clusterTask)
+      }
+      setLoadingTasks(false)
       setLoading(false)
     }).catch(error => {
       console.error('Error fetching data:', error)
       setLoading(false)
+      setLoadingTasks(false)
     })
   }, [clusterId])
 
@@ -124,6 +137,7 @@ export default function ClusterDetailPage() {
         title: taskTitle,
         description: taskDescription
       })
+      setExistingTask(result.task)
       setShowCreateTaskModal(false)
       setTaskTitle('')
       setTaskDescription('')
@@ -260,12 +274,25 @@ export default function ClusterDetailPage() {
           </div>
         </div>
         <div className="flex gap-3">
-          <button
-            onClick={() => setShowCreateTaskModal(true)}
-            className="btn-primary"
-          >
-            Create Batch Cleanup Task
-          </button>
+          {loadingTasks ? (
+            <button disabled className="btn-primary opacity-50">
+              Loading...
+            </button>
+          ) : existingTask ? (
+            <button
+              onClick={() => router.push(`/dashboard/officer/cleanup-tasks/${existingTask.id}`)}
+              className="btn-primary"
+            >
+              View Task
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowCreateTaskModal(true)}
+              className="btn-primary"
+            >
+              Create Batch Cleanup Task
+            </button>
+          )}
           {firstReport && (() => {
             const loc = parseLocation(firstReport.location, firstReport.latitude, firstReport.longitude);
             return (
