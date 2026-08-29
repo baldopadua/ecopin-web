@@ -452,6 +452,9 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
         .custom-marker.removing div {
           animation: markerBounceOut 0.3s ease-in forwards;
         }
+        .dark-mode-tiles {
+          filter: grayscale(100%) invert(100%) brightness(70%) contrast(95%);
+        }
         html.dark .leaflet-control-zoom a {
           background-color: #1e1e1e !important;
           color: #e0e0e0 !important;
@@ -496,14 +499,9 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
           <ZoomTracker setZoom={setZoom} />
           {centerLat && centerLng && <MapCenter centerLat={centerLat} centerLng={centerLng} />}
           <TileLayer
-            url={isDark
-              ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-              : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-            }
-            attribution={isDark
-              ? '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
-              : '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>'
-            }
+            url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+            attribution='&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
+            className={isDark ? 'dark-mode-tiles' : ''}
           />
           <HeatmapLayer heatPoints={heatPoints} showHeatmap={showHeatmap} />
 
