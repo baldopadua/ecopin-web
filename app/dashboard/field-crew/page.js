@@ -7,6 +7,9 @@ import DataTable from '@/components/ui/DataTable'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { useUser } from '@/components/auth/UserContext'
 import { FieldCrewGuard } from '@/components/auth/RequireRole'
+import OfflineSyncBanner from '@/components/ui/OfflineSyncBanner'
+import PerformanceMetricsCard from '@/components/ui/PerformanceMetricsCard'
+import PriorityTasksCard from '@/components/ui/PriorityTasksCard'
 
 export default function FieldCrewHomepage() {
   const router = useRouter()
@@ -95,6 +98,13 @@ export default function FieldCrewHomepage() {
         quickActions={quickActions}
         loading={loading}
       >
+        {/* Field Crew Widgets */}
+        <div className="space-y-4 mb-8">
+          <OfflineSyncBanner />
+          <PerformanceMetricsCard />
+          <PriorityTasksCard />
+        </div>
+
         {/* Active Tasks */}
         <div className="card no-hover mb-8">
           <div className="flex justify-between items-center mb-6">
