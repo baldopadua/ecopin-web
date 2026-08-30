@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Sidebar from '@/components/layout/Sidebar'
 import { UserProvider } from '@/components/auth/UserContext'
+import { SessionProvider } from '@/components/auth/SessionProvider'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL + '/api/auth'
 
@@ -100,13 +101,15 @@ export default function DashboardLayout({ children }) {
   )
 
   return (
-    <UserProvider user={user}>
-      <div className="flex h-screen bg-background dark:bg-[#0a0f08]">
-        <Sidebar />
-        <main className="flex-1 overflow-auto bg-surface dark:bg-[#0a0f08]">
-          {children}
-        </main>
-      </div>
-    </UserProvider>
+    <SessionProvider>
+      <UserProvider user={user}>
+        <div className="flex h-screen bg-background dark:bg-[#0a0f08]">
+          <Sidebar />
+          <main className="flex-1 overflow-auto bg-surface dark:bg-[#0a0f08]">
+            {children}
+          </main>
+        </div>
+      </UserProvider>
+    </SessionProvider>
   )
 }

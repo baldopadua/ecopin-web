@@ -1,7 +1,6 @@
 import { Outfit } from "next/font/google";
 import "./globals.css";
 import 'leaflet/dist/leaflet.css'
-import { SessionProvider } from "@/components/auth/SessionProvider";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -38,9 +37,7 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="min-h-full flex flex-col">
-        <SessionProvider>
-          {children}
-        </SessionProvider>
+        {children}
       </body>
     </html>
   );
