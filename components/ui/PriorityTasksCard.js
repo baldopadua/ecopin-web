@@ -13,14 +13,14 @@ const TaskStatus = {
   completed: { label: 'Completed', color: 'text-success', bgColor: 'bg-success/15' }
 }
 
-function TaskListItem({ title, location, priority, status, estimatedTime, onTap }) {
+function TaskListItem({ title, location, priority, status, estimatedTime, onTap, taskId }) {
   const priorityInfo = TaskPriority[priority] || TaskPriority.low
   const statusInfo = TaskStatus[status] || TaskStatus.pending
 
   return (
     <div 
       className="p-3 rounded-lg border border-border hover:bg-surface-elevated transition-colors cursor-pointer"
-      onClick={onTap}
+      onClick={() => onTap(taskId)}
     >
       <div className="flex justify-between items-start mb-2">
         <h4 className="font-semibold text-text-primary text-sm flex-1">{title}</h4>
@@ -45,46 +45,12 @@ function TaskListItem({ title, location, priority, status, estimatedTime, onTap 
   )
 }
 
-export default function PriorityTasksCard() {
+export default function PriorityTasksCard({ priorityTasks = [], feasibleTasks = [], onTaskClick = () => {} }) {
   const [isVisible, setIsVisible] = useState(false)
 
   useEffect(() => {
     setIsVisible(true)
   }, [])
-
-  const priorityTasks = [
-    {
-      title: 'Clear Blocked Drainage at Main St.',
-      location: 'Zone A - Main Street Sector 3',
-      priority: 'high',
-      status: 'inProgress',
-      time: '1.5 hrs'
-    },
-    {
-      title: 'Prune Overgrown Branches near Power Lines',
-      location: 'Zone B - Elm Avenue',
-      priority: 'medium',
-      status: 'pending',
-      time: '2.0 hrs'
-    }
-  ]
-
-  const feasibleTasks = [
-    {
-      title: 'Empty Public Waste bins',
-      location: 'Zone A - Public Park',
-      priority: 'low',
-      status: 'pending',
-      time: '1.0 hr'
-    },
-    {
-      title: 'Replace Damaged Signboard',
-      location: 'Zone C - West Highway',
-      priority: 'low',
-      status: 'pending',
-      time: '45 mins'
-    }
-  ]
 
   return (
     <div className="card border-l-4 border-l-[var(--error)]">
@@ -101,29 +67,34 @@ export default function PriorityTasksCard() {
         </div>
       </div>
 
-      {/* Priority Tasks List */}
-      <div className="space-y-2 mb-4">
-        {priorityTasks.map((task, index) => (
-          <div
-            key={index}
-            className="transition-all duration-500"
-            style={{
-              opacity: isVisible ? 1 : 0,
-              transform: isVisible ? 'translateY(0)' : 'translateY(15px)',
-              transitionDelay: `${index * 150}ms`
-            }}
-          >
-            <TaskListItem
-              title={task.title}
-              location={task.location}
-              priority={task.priority}
-              status={task.status}
-              estimatedTime={task.time}
-              onTap={() => {}}
-            />
-          </div>
-        ))}
-      </div>
+        {/* Priority Tasks List */}
+        <div className="space-y-2 mb-4">
+          {priorityTasks.length > 0 ? (
+            priorityTasks.map((task, index) => (
+              <div
+                key={task.id || index}
+                className="transition-all duration-500"
+                style={{
+                  opacity: isVisible ? 1 : 0,
+                  transform: isVisible ? 'translateY(0)' : 'translateY(15px)',
+                  transitionDelay: `${index * 150}ms`
+                }}
+              >
+                <TaskListItem
+                  title={task.title}
+                  location={task.location}
+                  priority={task.priority}
+                  status={task.status}
+                  estimatedTime={task.time}
+                  taskId={task.id}
+                  onTap={onTaskClick}
+                />
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-text-muted text-center py-4">No urgent tasks</p>
+          )}
+        </div>
 
       {/* Feasible Tasks Section */}
       <div className="border-t border-border pt-4">
@@ -136,34 +107,44 @@ export default function PriorityTasksCard() {
         </div>
 
         <div className="space-y-2 mb-3">
-          {feasibleTasks.map((task, index) => (
-            <div
-              key={index}
-              className="transition-all duration-500"
-              style={{
-                opacity: isVisible ? 1 : 0,
-                transform: isVisible ? 'translateY(0)' : 'translateY(15px)',
-                transitionDelay: `${300 + index * 150}ms`
-              }}
-            >
-              <TaskListItem
-                title={task.title}
-                location={task.location}
-                priority={task.priority}
-                status={task.status}
-                estimatedTime={task.time}
-                onTap={() => {}}
-              />
-            </div>
-          ))}
+          {feasibleTasks.length > 0 ? (
+            feasibleTasks.map((task, index) => (
+              <div
+                key={task.id || index}
+                className="transition-all duration-500"
+                style={{
+                  opacity: isVisible ? 1 : 0,
+                  transform: isVisible ? 'translateY(0)' : 'translateY(15px)',
+                  transitionDelay: `${300 + index * 150}ms`
+                }}
+              >
+                <TaskListItem
+                  title={task.title}
+                  location={task.location}
+                  priority={task.priority}
+                  status={task.status}
+                  estimatedTime={task.time}
+                  taskId={task.id}
+                  onTap={onTaskClick}
+                />
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-text-muted text-center py-4">No feasible tasks</p>
+          )}
         </div>
 
         {/* View All Tasks Button */}
-        <div className="text-center">
-          <button className="btn-secondary text-sm">
-            View All Tasks
-          </button>
-        </div>
+        {feasibleTasks.length > 0 && (
+          <div className="text-center">
+            <button 
+              className="btn-secondary text-sm"
+              onClick={() => onTaskClick(null)}
+            >
+              View All Tasks
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

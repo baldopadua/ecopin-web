@@ -37,6 +37,65 @@ export default function FieldCrewHomepage() {
     .sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at))
     .slice(0, 6)
 
+  // Calculate performance metrics
+  const completedTasks = tasks.filter(t => t.status === 'completed').length
+  const totalTasks = tasks.length
+  const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0
+
+  // Calculate 7-day activity
+  const getDailyCounts = () => {
+    const counts = [0, 0, 0, 0, 0, 0, 0]
+    const now = new Date()
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    
+    tasks.forEach(task => {
+      if (task.status === 'completed' && task.updated_at) {
+        const taskDate = new Date(task.updated_at)
+        if (taskDate >= oneWeekAgo && taskDate <= now) {
+          const dayIndex = (taskDate.getDay() + 6) % 7 // Convert to Monday=0
+          counts[dayIndex]++
+        }
+      }
+    })
+    return counts
+  }
+
+  const dailyCounts = getDailyCounts()
+
+  // Determine quality based on completion rate
+  let quality = 'good'
+  if (completionRate >= 90) quality = 'excellent'
+  else if (completionRate >= 75) quality = 'great'
+  else if (completionRate >= 60) quality = 'good'
+  else if (completionRate >= 40) quality = 'fair'
+  else quality = 'poor'
+
+  // Prepare priority tasks (high priority active tasks)
+  const priorityTasks = activeTasks
+    .filter(t => t.priority === 'high' || t.priority === 'urgent')
+    .slice(0, 5)
+    .map(t => ({
+      id: t.id,
+      title: t.title,
+      location: t.location || 'Unknown location',
+      priority: t.priority === 'urgent' ? 'high' : (t.priority || 'medium'),
+      status: t.status === 'in_progress' ? 'inProgress' : 'pending',
+      time: t.estimated_time || '1.0 hr'
+    }))
+
+  // Prepare feasible tasks (low/medium priority active tasks)
+  const feasibleTasks = activeTasks
+    .filter(t => t.priority === 'low' || t.priority === 'medium' || !t.priority)
+    .slice(0, 5)
+    .map(t => ({
+      id: t.id,
+      title: t.title,
+      location: t.location || 'Unknown location',
+      priority: t.priority || 'low',
+      status: t.status === 'in_progress' ? 'inProgress' : 'pending',
+      time: t.estimated_time || '1.0 hr'
+    }))
+
   const stats = [
     { title: 'Total Assigned', value: tasks.length, color: 'accent' },
     { title: 'In Progress', value: tasks.filter(t => t.status === 'in_progress').length, color: 'warning' },
@@ -45,8 +104,8 @@ export default function FieldCrewHomepage() {
   ]
 
   const quickActions = [
-    { label: 'View All Tasks', onClick: () => router.push('/dashboard/officer/cleanup-tasks'), variant: 'primary' },
-    { label: 'View Reports', onClick: () => router.push('/dashboard/reports'), variant: 'secondary' }
+    { label: 'View All Tasks', onClick: () => router.push('/dashboard/field-crew/tasks'), variant: 'primary' },
+    { label: 'View Reports', onClick: () => router.push('/dashboard/field-crew/reports'), variant: 'secondary' }
   ]
 
   const formatDate = (dateString) => {
@@ -55,7 +114,11 @@ export default function FieldCrewHomepage() {
   }
 
   const handleTaskClick = (task) => {
-    router.push(`/dashboard/officer/cleanup-tasks/${task.id}`)
+    router.push(`/dashboard/field-crew/tasks`)
+  }
+
+  const handlePriorityTaskClick = (taskId) => {
+    router.push(`/dashboard/field-crew/tasks`)
   }
 
   const completedTaskColumns = [
@@ -101,8 +164,17 @@ export default function FieldCrewHomepage() {
         {/* Field Crew Widgets */}
         <div className="space-y-4 mb-8">
           <OfflineSyncBanner />
-          <PerformanceMetricsCard />
-          <PriorityTasksCard />
+          <PerformanceMetricsCard
+            completedTasks={completedTasks}
+            totalTasks={totalTasks}
+            quality={quality}
+            dailyCounts={dailyCounts}
+          />
+          <PriorityTasksCard
+            priorityTasks={priorityTasks}
+            feasibleTasks={feasibleTasks}
+            onTaskClick={handlePriorityTaskClick}
+          />
         </div>
 
         {/* Active Tasks */}
@@ -110,7 +182,7 @@ export default function FieldCrewHomepage() {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold text-text-primary">Active Tasks</h2>
             <button
-              onClick={() => router.push('/dashboard/officer/cleanup-tasks')}
+              onClick={() => router.push('/dashboard/field-crew/tasks')}
               className="btn-secondary"
             >
               View All
