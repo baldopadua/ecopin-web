@@ -7,7 +7,6 @@ import DataTable from '@/components/ui/DataTable'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { useUser } from '@/components/auth/UserContext'
 import { FieldCrewGuard } from '@/components/auth/RequireRole'
-import OfflineSyncBanner from '@/components/ui/OfflineSyncBanner'
 import PerformanceMetricsCard from '@/components/ui/PerformanceMetricsCard'
 import PriorityTasksCard from '@/components/ui/PriorityTasksCard'
 
@@ -163,7 +162,6 @@ export default function FieldCrewHomepage() {
       >
         {/* Field Crew Widgets */}
         <div className="space-y-4 mb-8">
-          <OfflineSyncBanner />
           <PerformanceMetricsCard
             completedTasks={completedTasks}
             totalTasks={totalTasks}
