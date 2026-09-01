@@ -19,6 +19,8 @@ export default function FieldCrewReportsPage() {
   // Filter states
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [validationFilter, setValidationFilter] = useState('all')
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
@@ -66,9 +68,26 @@ export default function FieldCrewReportsPage() {
       filtered = filtered.filter(r => r.issue_type === typeFilter)
     }
 
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(r => r.status === statusFilter)
+    }
+
+    if (validationFilter !== 'all') {
+      if (validationFilter === 'pending') {
+        // Include both pending and manual_review when filtering by pending
+        filtered = filtered.filter(r => 
+          r.validation_status === 'pending' || 
+          r.validation_status === 'manual_review' || 
+          r.validation_status === 'Manual_Review'
+        )
+      } else {
+        filtered = filtered.filter(r => r.validation_status === validationFilter)
+      }
+    }
+
     setFilteredReports(filtered)
     setCurrentPage(1)
-  }, [searchQuery, typeFilter, reports])
+  }, [searchQuery, typeFilter, statusFilter, validationFilter, reports])
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredReports.length / itemsPerPage)
@@ -87,6 +106,8 @@ export default function FieldCrewReportsPage() {
   const handleResetFilters = () => {
     setSearchQuery('')
     setTypeFilter('all')
+    setStatusFilter('all')
+    setValidationFilter('all')
   }
 
   const formatDate = (dateString) => {
@@ -95,98 +116,134 @@ export default function FieldCrewReportsPage() {
   }
 
   return (
-    <div className="p-8">
-      <PageHeader
-        title="Available Reports"
-        subtitle="Verified reports ready for cleanup"
-        breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard/field-crew' },
-          { label: 'Reports' }
-        ]}
-      />
-
-      {/* Search and Filters */}
-      <FilterBar
-        searchPlaceholder="Search by title or description..."
-        searchValue={searchQuery}
-        onSearchChange={setSearchQuery}
-        filters={[
-          {
-            label: 'All Types',
-            value: typeFilter,
-            onChange: setTypeFilter,
-            options: [
-              { value: 'all', label: 'All Types' },
-              ...issueTypes.map(type => ({ value: type, label: type }))
-            ]
-          }
-        ]}
-        onReset={handleResetFilters}
-        resultsCount={filteredReports.length}
-        loading={loading}
-      />
-
-      {/* Reports List */}
-      <DataTable
-        columns={[
-          { 
-            key: 'title', 
-            label: 'Title', 
-            width: '30%',
-            render: (value) => (
-              <span className="font-medium text-text-primary">{value}</span>
-            )
-          },
-          { 
-            key: 'issue_type', 
-            label: 'Issue Type', 
-            width: '20%',
-            render: (value) => (
-              <span className="text-sm text-text-secondary">{value || 'N/A'}</span>
-            )
-          },
-          { 
-            key: 'status', 
-            label: 'Status', 
-            width: '15%',
-            render: (value) => (
-              <StatusBadge status={value} type="report" />
-            )
-          },
-          { 
-            key: 'validation_status', 
-            label: 'Validation', 
-            width: '15%',
-            render: (value) => (
-              <StatusBadge status={value} type="validation" />
-            )
-          },
-          { 
-            key: 'created_at', 
-            label: 'Created', 
-            width: '20%',
-            render: (value) => (
-              <span className="text-sm text-text-muted">{formatDate(value)}</span>
-            )
-          }
-        ]}
-        data={paginatedReports}
-        loading={loading}
-        emptyMessage="No available reports match your filters"
-        onRowClick={handleRowClick}
-      />
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-          itemsPerPage={itemsPerPage}
-          totalItems={filteredReports.length}
-          className="mt-6"
+    <FieldCrewGuard>
+      <div className="p-8">
+        <PageHeader
+          title="Reports"
+          subtitle="View and manage environmental reports"
+          breadcrumbs={[
+            { label: 'Dashboard', href: '/dashboard/field-crew' },
+            { label: 'Reports' }
+          ]}
         />
-      )}
-    </div>
+
+        {/* Search and Filters */}
+        <FilterBar
+          searchPlaceholder="Search by title or description..."
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          filters={[
+            {
+              label: 'All Types',
+              value: typeFilter,
+              onChange: setTypeFilter,
+              options: [
+                { value: 'all', label: 'All Types' },
+                ...issueTypes.map(type => ({ value: type, label: type }))
+              ]
+            },
+            {
+              label: 'All Status',
+              value: statusFilter,
+              onChange: setStatusFilter,
+              options: [
+                { value: 'all', label: 'All Status' },
+                { value: 'unresolved', label: 'Unresolved' },
+                { value: 'in_progress', label: 'In Progress' },
+                { value: 'resolved', label: 'Resolved' },
+                { value: 'closed', label: 'Closed' },
+                { value: 'pending_owner_consent', label: 'Pending Owner Consent' },
+                { value: 'waiting_for_feedback', label: 'Waiting for Feedback' }
+              ]
+            },
+            {
+              label: 'All Validation',
+              value: validationFilter,
+              onChange: setValidationFilter,
+              options: [
+                { value: 'all', label: 'All Validation' },
+                { value: 'automatically_valid', label: 'Automatically Valid' },
+                { value: 'manual_review', label: 'Manual Review' },
+                { value: 'validated', label: 'Validated' },
+                { value: 'rejected', label: 'Rejected' }
+              ]
+            }
+          ]}
+          onReset={handleResetFilters}
+          resultsCount={filteredReports.length}
+          loading={loading}
+        />
+
+        {/* Reports List */}
+        <DataTable
+          columns={[
+            { 
+              key: 'title', 
+              label: 'Title', 
+              width: '25%',
+              render: (value) => (
+                <span className="font-medium text-text-primary">{value}</span>
+              )
+            },
+            { 
+              key: 'issue_type', 
+              label: 'Issue Type', 
+              width: '20%',
+              render: (value) => (
+                <span className="text-sm text-text-secondary">{value || 'N/A'}</span>
+              )
+            },
+            { 
+              key: 'status', 
+              label: 'Status', 
+              width: '15%',
+              render: (value) => (
+                <StatusBadge status={value} type="report" />
+              )
+            },
+            { 
+              key: 'validation_status', 
+              label: 'Validation', 
+              width: '15%',
+              render: (value) => (
+                <StatusBadge status={value} type="validation" />
+              )
+            },
+            { 
+              key: 'created_at', 
+              label: 'Created', 
+              width: '15%',
+              render: (value) => (
+                <span className="text-sm text-text-muted">{formatDate(value)}</span>
+              )
+            },
+            { 
+              key: 'stage', 
+              label: 'Stage', 
+              width: '10%',
+              render: (value) => (
+                <StatusBadge status={value} type="lifecycle" />
+              )
+            }
+          ]}
+          data={paginatedReports}
+          loading={loading}
+          emptyMessage="No available reports match your filters"
+          onRowClick={handleRowClick}
+        />
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+            itemsPerPage={itemsPerPage}
+            totalItems={filteredReports.length}
+            className="mt-6"
+          />
+        )}
+      </div>
+    </FieldCrewGuard>
   )
 }
