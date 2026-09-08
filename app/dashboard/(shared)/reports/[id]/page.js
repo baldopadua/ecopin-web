@@ -17,6 +17,7 @@ import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
+import { formatScoreLabel, formatRA9003Label } from '@/lib/helpers/statusHelpers'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
 
@@ -927,6 +928,49 @@ export default function ReportDetailPage() {
                   </div>
                 </div>
               </div>
+
+              {/* ML Analysis Information */}
+              {(report.severity_score || report.urgency_score || report.ra9003_category || report.ml_confidence) && (
+                <div className="card">
+                  <h2 className="text-lg font-bold text-text-primary mb-4">AI Analysis</h2>
+                  <div className="space-y-3">
+                    {report.severity_score && (
+                      <div>
+                        <p className="text-xs text-text-muted">Severity Score</p>
+                        <StatusBadge status={report.severity_score} type="severity" size="small" label={formatScoreLabel(report.severity_score)} />
+                      </div>
+                    )}
+                    {report.urgency_score && (
+                      <div>
+                        <p className="text-xs text-text-muted">Urgency Score</p>
+                        <StatusBadge status={report.urgency_score} type="urgency" size="small" label={formatScoreLabel(report.urgency_score)} />
+                      </div>
+                    )}
+                    {report.ra9003_category && (
+                      <div>
+                        <p className="text-xs text-text-muted">RA 9003 Category</p>
+                        <StatusBadge status={report.ra9003_category} type="ra9003" size="small" label={formatRA9003Label(report.ra9003_category)} />
+                      </div>
+                    )}
+                    {report.ml_confidence && (
+                      <div>
+                        <p className="text-xs text-text-muted">AI Confidence</p>
+                        <p className="text-text-primary font-medium text-sm">
+                          {(report.ml_confidence * 100).toFixed(1)}%
+                        </p>
+                      </div>
+                    )}
+                    {report.ml_predicted_class && (
+                      <div>
+                        <p className="text-xs text-text-muted">Predicted Class</p>
+                        <p className="text-text-primary font-medium text-sm capitalize">
+                          {report.ml_predicted_class.replace(/_/g, ' ')}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Property Owner Consent */}
               {report.on_private_property && report.status !== 'closed' && report.status !== 'resolved' && report.validation_status !== 'rejected' && report.property_owner_consent_status !== 'denied' && (

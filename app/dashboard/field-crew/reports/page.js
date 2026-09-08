@@ -180,7 +180,7 @@ export default function FieldCrewReportsPage() {
             { 
               key: 'title', 
               label: 'Title', 
-              width: '25%',
+              width: '20%',
               render: (value) => (
                 <span className="font-medium text-text-primary">{value}</span>
               )
@@ -188,15 +188,39 @@ export default function FieldCrewReportsPage() {
             { 
               key: 'issue_type', 
               label: 'Issue Type', 
-              width: '20%',
+              width: '12%',
               render: (value) => (
                 <span className="text-sm text-text-secondary">{value || 'N/A'}</span>
               )
             },
             { 
+              key: 'severity_score', 
+              label: 'Severity', 
+              width: '10%',
+              render: (value) => (
+                <StatusBadge status={value} type="severity" size="small" />
+              )
+            },
+            { 
+              key: 'urgency_score', 
+              label: 'Urgency', 
+              width: '10%',
+              render: (value) => (
+                <StatusBadge status={value} type="urgency" size="small" />
+              )
+            },
+            { 
+              key: 'ra9003_category', 
+              label: 'RA 9003', 
+              width: '12%',
+              render: (value) => (
+                <StatusBadge status={value} type="ra9003" size="small" />
+              )
+            },
+            { 
               key: 'status', 
               label: 'Status', 
-              width: '15%',
+              width: '12%',
               render: (value) => (
                 <StatusBadge status={value} type="report" />
               )
@@ -204,7 +228,7 @@ export default function FieldCrewReportsPage() {
             { 
               key: 'validation_status', 
               label: 'Validation', 
-              width: '15%',
+              width: '12%',
               render: (value) => (
                 <StatusBadge status={value} type="validation" />
               )
@@ -212,17 +236,9 @@ export default function FieldCrewReportsPage() {
             { 
               key: 'created_at', 
               label: 'Created', 
-              width: '15%',
+              width: '12%',
               render: (value) => (
                 <span className="text-sm text-text-muted">{formatDate(value)}</span>
-              )
-            },
-            { 
-              key: 'stage', 
-              label: 'Stage', 
-              width: '10%',
-              render: (value) => (
-                <StatusBadge status={value} type="lifecycle" />
               )
             }
           ]}

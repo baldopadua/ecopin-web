@@ -10,8 +10,12 @@ import {
   getResponseActionColor,
   getRoleBadgeColor,
   getConsentStatusColor,
+  getUrgencyColor,
+  getRA9003Color,
   formatStatusLabel,
-  formatActionLabel
+  formatActionLabel,
+  formatScoreLabel,
+  formatRA9003Label
 } from '@/lib/helpers/statusHelpers'
 
 /**
@@ -19,7 +23,7 @@ import {
  */
 export default function StatusBadge({
   status,
-  type = 'report', // report, validation, lifecycle, task, severity, cluster, auditAction, responseAction, role, consent
+  type = 'report', // report, validation, lifecycle, task, severity, urgency, ra9003, cluster, auditAction, responseAction, role, consent
   label,
   size = 'small', // small, medium, large
   className = ''
@@ -46,7 +50,15 @@ export default function StatusBadge({
       break
     case 'severity':
       colorClass = getSeverityColor(status)
-      displayLabel = label || (status ? status.charAt(0).toUpperCase() + status.slice(1) : 'N/A')
+      displayLabel = label || (typeof status === 'number' ? formatScoreLabel(status) : (status ? status.charAt(0).toUpperCase() + status.slice(1) : 'N/A'))
+      break
+    case 'urgency':
+      colorClass = getUrgencyColor(status)
+      displayLabel = label || (typeof status === 'number' ? formatScoreLabel(status) : 'N/A')
+      break
+    case 'ra9003':
+      colorClass = getRA9003Color(status)
+      displayLabel = label || formatRA9003Label(status)
       break
     case 'cluster':
       colorClass = getClusterStatusColor(status)
