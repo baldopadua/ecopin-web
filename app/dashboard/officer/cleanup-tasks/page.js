@@ -128,27 +128,40 @@ export default function CleanupTasksPage() {
       {/* Tasks List */}
       <DataTable
         columns={[
-          { key: 'title', label: 'Title', width: '25%' },
-          { 
-            key: 'description', 
-            label: 'Description', 
-            width: '35%',
+          { key: 'title', label: 'Title', width: '20%' },
+          {
+            key: 'description',
+            label: 'Description',
+            width: '25%',
             render: (value) => (
               <span className="text-sm text-text-secondary line-clamp-2 max-w-xs">{value || '—'}</span>
             )
           },
-          { 
-            key: 'created_at', 
-            label: 'Created', 
+          {
+            key: 'assigned_crew_ids',
+            label: 'Assigned',
+            width: '20%',
+            render: (value) => {
+              const count = value && value.length > 0 ? value.length : 0
+              return (
+                <span className={`text-sm font-medium ${count > 0 ? 'text-accent-green' : 'text-text-muted'}`}>
+                  {count > 0 ? `${count} crew member${count > 1 ? 's' : ''}` : 'Unassigned'}
+                </span>
+              )
+            }
+          },
+          {
+            key: 'created_at',
+            label: 'Created',
             width: '15%',
             render: (value) => (
               <span className="text-sm text-text-muted">{formatDate(value)}</span>
             )
           },
-          { 
-            key: 'status', 
-            label: 'Status', 
-            width: '25%',
+          {
+            key: 'status',
+            label: 'Status',
+            width: '20%',
             render: (value) => (
               <StatusBadge status={value} type="task" />
             )

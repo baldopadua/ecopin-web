@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { fetchFilteredReports } from '@/lib/api'
+import { fetchFilteredReports, fetchAvailableCrew } from '@/lib/api'
 import { createCustomCleanupTask } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
@@ -49,9 +49,12 @@ export default function CreateCustomCleanupTaskPage() {
   const [notification, setNotification] = useState(null)
   const [taskTitle, setTaskTitle] = useState('')
   const [taskDescription, setTaskDescription] = useState('')
+  const [availableCrew, setAvailableCrew] = useState([])
+  const [selectedCrewIds, setSelectedCrewIds] = useState([])
 
   useEffect(() => {
     loadReports()
+    loadAvailableCrew()
   }, [])
 
   useEffect(() => {
@@ -65,15 +68,26 @@ export default function CreateCustomCleanupTaskPage() {
   const loadReports = async () => {
     setLoading(true)
     try {
-      // Fetch all unresolved reports
+      // Fetch all unresolved reports that are approved
       const data = await fetchFilteredReports()
-      const unresolvedReports = data.filter(r => r.status === 'unresolved')
-      setReports(unresolvedReports)
+      const eligibleReports = data.filter(r =>
+        r.status === 'unresolved' && r.validation_status === 'approved'
+      )
+      setReports(eligibleReports)
     } catch (error) {
       console.error('Failed to load reports:', error)
       setNotification({ message: 'Failed to load reports', type: 'error' })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadAvailableCrew = async () => {
+    try {
+      const data = await fetchAvailableCrew()
+      setAvailableCrew(data)
+    } catch (error) {
+      console.error('Failed to load available crew:', error)
     }
   }
 
@@ -100,12 +114,18 @@ export default function CreateCustomCleanupTaskPage() {
       return
     }
 
+    if (selectedCrewIds.length === 0) {
+      setNotification({ message: 'Please assign at least one field crew member', type: 'warning' })
+      return
+    }
+
     setCreating(true)
     try {
       await createCustomCleanupTask({
         report_ids: Array.from(selectedReports),
         title: taskTitle,
-        description: taskDescription
+        description: taskDescription,
+        assigned_crew_ids: selectedCrewIds
       })
       setNotification({ message: 'Custom cleanup task created successfully', type: 'success' })
       setTimeout(() => {
@@ -257,6 +277,47 @@ export default function CreateCustomCleanupTaskPage() {
                   className="w-full input resize-none"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-text-primary mb-2">
+                  Assign to Field Crew *
+                </label>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {availableCrew.length === 0 ? (
+                    <p className="text-sm text-text-muted">No field crew members available</p>
+                  ) : (
+                    availableCrew.map(crew => (
+                      <label key={crew.id} className="flex items-center space-x-3 p-2 hover:bg-surface-elevated rounded-lg cursor-pointer transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={selectedCrewIds.includes(crew.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedCrewIds(prev => [...prev, crew.id])
+                            } else {
+                              setSelectedCrewIds(prev => prev.filter(id => id !== crew.id))
+                            }
+                          }}
+                          className="rounded border-border text-accent-green focus:ring-accent-green"
+                        />
+                        {crew.avatar_url ? (
+                          <img
+                            src={crew.avatar_url}
+                            alt={crew.full_name}
+                            className="w-10 h-10 rounded-full object-cover border border-border"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-surface border border-border flex items-center justify-center text-text-muted font-medium">
+                            {crew.full_name?.[0]?.toUpperCase() || 'U'}
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-text-primary">{crew.full_name}</p>
+                        </div>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </div>
               <div className="pt-4 border-t border-border">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm text-text-muted">Reports Selected</span>
@@ -264,10 +325,16 @@ export default function CreateCustomCleanupTaskPage() {
                     {selectedReports.size}
                   </span>
                 </div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-text-muted">Crew Assigned</span>
+                  <span className="text-sm font-semibold text-text-primary">
+                    {selectedCrewIds.length}
+                  </span>
+                </div>
               </div>
               <button
                 onClick={handleCreateTask}
-                disabled={creating || selectedReports.size === 0 || !taskTitle.trim()}
+                disabled={creating || selectedReports.size === 0 || !taskTitle.trim() || selectedCrewIds.length === 0}
                 className="btn-primary w-full"
               >
                 {creating ? 'Creating Task...' : 'Create Cleanup Task'}

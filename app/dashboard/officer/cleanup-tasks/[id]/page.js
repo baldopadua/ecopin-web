@@ -1,7 +1,7 @@
 'use client'
 import React, { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { fetchCleanupTaskById, uploadCleanupPhoto, markCleanupTaskComplete, fetchReportsByClusterId, batchCompleteReportsByCluster, updateReportStatus, fetchReportsByIds, updateReportValidation, fetchReportEvidence, updateLifecycleStage, logAgencyResponse, fetchAgencyResponses } from '@/lib/api'
+import { fetchCleanupTaskById, uploadCleanupPhoto, markCleanupTaskComplete, fetchReportsByClusterId, batchCompleteReportsByCluster, updateReportStatus, fetchReportsByIds, updateReportValidation, fetchReportEvidence, updateLifecycleStage, logAgencyResponse, fetchAgencyResponses, fetchAvailableCrew, assignCleanupTask } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
@@ -76,6 +76,9 @@ export default function CleanupTaskDetailPage() {
   const [noteText, setNoteText] = useState('')
   const [addingNote, setAddingNote] = useState(false)
   const [agencyResponses, setAgencyResponses] = useState([])
+  const [availableCrew, setAvailableCrew] = useState([])
+  const [showAssignmentModal, setShowAssignmentModal] = useState(false)
+  const [assigning, setAssigning] = useState(false)
   const router = useRouter()
   const params = useParams()
   const taskId = params.id
@@ -110,6 +113,18 @@ export default function CleanupTaskDetailPage() {
   }, [taskId])
 
   useEffect(() => {
+    const loadAvailableCrew = async () => {
+      try {
+        const data = await fetchAvailableCrew()
+        setAvailableCrew(data)
+      } catch (error) {
+        console.error('Failed to load available crew:', error)
+      }
+    }
+    loadAvailableCrew()
+  }, [])
+
+  useEffect(() => {
     const handleClickOutside = (event) => {
       if (lifecycleDropdownRef.current && !lifecycleDropdownRef.current.contains(event.target)) {
         setShowLifecycleDropdown(false)
@@ -131,7 +146,7 @@ export default function CleanupTaskDetailPage() {
 
     // Check if all reports in the cluster are resolved (lifecycle stage)
     if (reports.length > 0) {
-      const unresolvedReports = reports.filter(r => r.stage !== 'resolved')
+      const unresolvedReports = reports.filter(r => r.lifecycle_stage !== 'resolved')
       if (unresolvedReports.length > 0) {
         setNotification({ message: 'Task can only be complete when all reports are resolved', type: 'error' })
         return
@@ -150,6 +165,22 @@ export default function CleanupTaskDetailPage() {
       setNotification({ message: 'Failed to mark task complete. Please try again.', type: 'error' })
     } finally {
       setMarkingComplete(false)
+    }
+  }
+
+  const handleAssignTask = async (selectedCrewIds) => {
+    setAssigning(true)
+    try {
+      await assignCleanupTask(taskId, selectedCrewIds)
+      const updatedTask = await fetchCleanupTaskById(taskId)
+      setTask(updatedTask)
+      setShowAssignmentModal(false)
+      setNotification({ message: 'Task assigned successfully', type: 'success' })
+    } catch (error) {
+      console.error('Failed to assign task:', error)
+      setNotification({ message: 'Failed to assign task. Please try again.', type: 'error' })
+    } finally {
+      setAssigning(false)
     }
   }
 
@@ -1199,6 +1230,31 @@ export default function CleanupTaskDetailPage() {
                   </button>
                 )}
 
+                {/* Assignment Section */}
+                <div className="mt-6 pt-4 border-t border-border">
+                  <h3 className="font-semibold mb-3">Assigned Crew</h3>
+                  {task.assigned_crew_ids && task.assigned_crew_ids.length > 0 ? (
+                    <div className="space-y-2">
+                      <p className="text-sm text-accent-green font-medium">
+                        {task.assigned_crew_ids.length} crew member{task.assigned_crew_ids.length > 1 ? 's' : ''} assigned
+                      </p>
+                      <button
+                        onClick={() => setShowAssignmentModal(true)}
+                        className="btn-secondary w-full text-sm"
+                      >
+                        Reassign Crew
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowAssignmentModal(true)}
+                      className="btn-primary w-full text-sm"
+                    >
+                      Assign Crew
+                    </button>
+                  )}
+                </div>
+
                 {reports.length > 0 && (
                   <>
                     <div className="mt-6 pt-4 border-t border-border">
@@ -1206,13 +1262,13 @@ export default function CleanupTaskDetailPage() {
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-sm text-text-muted">Progress</span>
                         <span className="text-sm text-text-muted">
-                          {reports.filter(r => r.stage === 'resolved').length} / {reports.length}
+                          {reports.filter(r => r.lifecycle_stage === 'resolved').length} / {reports.length}
                         </span>
                       </div>
                        <div className="w-full bg-surface dark:bg-surface-elevated rounded-full h-2.5">
                         <div
                           className="bg-accent-green h-2.5 rounded-full transition-all"
-                          style={{ width: `${(reports.filter(r => r.stage === 'resolved').length / reports.length) * 100}%` }}
+                          style={{ width: `${(reports.filter(r => r.lifecycle_stage === 'resolved').length / reports.length) * 100}%` }}
                         ></div>
                       </div>
                     </div>
@@ -1345,13 +1401,76 @@ export default function CleanupTaskDetailPage() {
         />
       )}
 
+      {/* Assignment Modal */}
+      {showAssignmentModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-surface rounded-lg p-6 max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <h2 className="text-xl font-bold text-text-primary mb-4">Assign Crew</h2>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {availableCrew.length === 0 ? (
+                <p className="text-sm text-text-muted">No field crew members available</p>
+              ) : (
+                availableCrew.map(crew => (
+                  <label key={crew.id} className="flex items-center space-x-3 p-2 hover:bg-surface-elevated rounded-lg cursor-pointer transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={task.assigned_crew_ids?.includes(crew.id) || false}
+                      onChange={(e) => {
+                        const currentIds = task.assigned_crew_ids || []
+                        let newIds
+                        if (e.target.checked) {
+                          newIds = [...currentIds, crew.id]
+                        } else {
+                          newIds = currentIds.filter(id => id !== crew.id)
+                        }
+                        setTask({ ...task, assigned_crew_ids: newIds })
+                      }}
+                      className="rounded border-border text-accent-green focus:ring-accent-green"
+                    />
+                    {crew.avatar_url ? (
+                      <img
+                        src={crew.avatar_url}
+                        alt={crew.full_name}
+                        className="w-10 h-10 rounded-full object-cover border border-border"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-surface border border-border flex items-center justify-center text-text-muted font-medium">
+                        {crew.full_name?.[0]?.toUpperCase() || 'U'}
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-text-primary">{crew.full_name}</p>
+                    </div>
+                  </label>
+                ))
+              )}
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => handleAssignTask(task.assigned_crew_ids || [])}
+                disabled={assigning}
+                className="btn-primary flex-1"
+              >
+                {assigning ? 'Assigning...' : 'Save Assignment'}
+              </button>
+              <button
+                onClick={() => setShowAssignmentModal(false)}
+                className="btn-secondary flex-1"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Lightbox Modal */}
       {lightboxImage && (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50" onClick={() => setLightboxImage(null)}>
           <div className="relative max-w-4xl max-h-[90vh] w-full p-4" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => setLightboxImage(null)}
-               className="absolute top-4 right-4 text-white text-4xl hover:text-text-muted z-10"
+              className="absolute top-4 right-4 text-white text-4xl hover:text-text-muted z-10"
             >
               ×
             </button>

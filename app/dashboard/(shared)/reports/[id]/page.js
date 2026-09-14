@@ -6,11 +6,7 @@ import {
   fetchReportEvidence,
   updateReportStatus,
   updatePropertyOwnerConsent,
-  updateLifecycleStage,
-  acknowledgeComplaint,
-  fetchAgencyResponses,
   lguResolveReport,
-  logAgencyResponse,
   updateReportValidation
 } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
@@ -44,9 +40,6 @@ export default function ReportDetailPage() {
   const [addingNote, setAddingNote] = useState(false)
   const [updatingConsent, setUpdatingConsent] = useState(false)
   const [notification, setNotification] = useState(null)
-  const [showLifecycleDropdown, setShowLifecycleDropdown] = useState(false)
-  const [updatingLifecycle, setUpdatingLifecycle] = useState(false)
-  const lifecycleDropdownRef = useRef(null)
   const statusDropdownRef = useRef(null)
   const [agencyResponses, setAgencyResponses] = useState([])
   const [resolvingReport, setResolvingReport] = useState(false)
@@ -57,20 +50,18 @@ export default function ReportDetailPage() {
   const loadReportData = async () => {
     setLoading(true)
     try {
-      const [reportData, evidenceData, responsesData] = await Promise.all([
+      const [reportData, evidenceData] = await Promise.all([
         fetchReportById(reportId),
-        fetchReportEvidence(reportId),
-        fetchAgencyResponses(reportId).catch(() => [])
+        fetchReportEvidence(reportId)
       ])
       console.log('Report data:', reportData)
       console.log('Profiles data:', reportData?.profiles)
       console.log('Data consent value:', reportData?.profiles?.data_consent)
       console.log('Evidence data:', evidenceData)
-      console.log('Agency responses:', responsesData)
       if (reportData) {
         setReport(reportData)
         setEvidence(evidenceData)
-        setAgencyResponses(responsesData || [])
+        setAgencyResponses([])
       } else {
         setError('Report not found')
       }
@@ -88,9 +79,6 @@ export default function ReportDetailPage() {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (lifecycleDropdownRef.current && !lifecycleDropdownRef.current.contains(event.target)) {
-        setShowLifecycleDropdown(false)
-      }
       if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target)) {
         setShowStatusDropdown(false)
       }
@@ -211,47 +199,17 @@ export default function ReportDetailPage() {
     }
   }
 
-  const handleLifecycleStageUpdate = async (newStage) => {
-    // Check if trying to mark as resolved without photos
-    if (newStage === 'resolved' && (!report.before_photo_url || !report.after_photo_url)) {
-      setNotification({ message: 'Please upload both before and after photos before marking the report as resolved.', type: 'warning' })
-      return
-    }
-
-    setUpdatingLifecycle(true)
+  const handleValidateReport = async () => {
+    setValidatingReport(reportId)
     try {
-      await updateLifecycleStage(reportId, newStage)
-      // Refresh report data
-      const updatedReport = await fetchReportById(reportId)
-      setReport(updatedReport)
-      setShowLifecycleDropdown(false)
-      setNotification({ message: 'Lifecycle stage updated successfully', type: 'success' })
+      await updateReportValidation(reportId, 'approved')
+      setReport({ ...report, validation_status: 'approved' })
+      setNotification({ message: 'Report approved successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to update lifecycle stage:', error)
-      setNotification({ message: 'Failed to update lifecycle stage. Please try again.', type: 'error' })
+      console.error('Failed to approve report:', error)
+      setNotification({ message: 'Failed to approve report. Please try again.', type: 'error' })
     } finally {
-      setUpdatingLifecycle(false)
-    }
-  }
-
-  const handleAcknowledgeComplaint = async () => {
-    try {
-      await acknowledgeComplaint(reportId)
-      // Refresh report data
-      const updatedReport = await fetchReportById(reportId)
-
-      // Auto-validate Manual_Review reports
-      if (updatedReport.validation_status === 'Manual_Review') {
-        // Note: This would require a backend API to update validation status
-        // For now, we'll just acknowledge and let the user manually validate
-        console.log('Report requires manual validation')
-      }
-
-      setReport(updatedReport)
-      setNotification({ message: 'Complaint acknowledged successfully', type: 'success' })
-    } catch (error) {
-      console.error('Failed to acknowledge complaint:', error)
-      setNotification({ message: 'Failed to acknowledge complaint. Please try again.', type: 'error' })
+      setValidatingReport(null)
     }
   }
 
@@ -355,24 +313,6 @@ export default function ReportDetailPage() {
     } catch (error) {
       console.error('Failed to delete photo:', error)
       setNotification({ message: error.message || 'Failed to delete photo. Please try again.', type: 'error' })
-    }
-  }
-
-  const handleAddNote = async () => {
-    if (!noteText.trim()) return
-
-    setAddingNote(true)
-    try {
-      await logAgencyResponse(reportId, { action: noteText })
-      await loadReportData() // Refresh all data
-      setNoteText('')
-      setShowNoteInput(false)
-      setNotification({ message: 'Note added successfully', type: 'success' })
-    } catch (error) {
-      console.error('Failed to add note:', error)
-      setNotification({ message: 'Failed to add note. Please try again.', type: 'error' })
-    } finally {
-      setAddingNote(false)
     }
   }
 
@@ -504,7 +444,7 @@ export default function ReportDetailPage() {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-4">
             {/* Main Content */}
             <div className="lg:col-span-3 space-y-6">
-              {/* Lifecycle Timeline - Centerpiece */}
+              {/* Lifecycle Timeline - Read-only display */}
               <div className="card border-2 border-[var(--accent-green)]">
                 <div className="text-center mb-6">
                   <h2 className="text-2xl font-bold text-text-primary mb-2">Report Lifecycle</h2>
@@ -523,14 +463,14 @@ export default function ReportDetailPage() {
                         <StatusBadge status={report.status} type="report" size="large" />
                         <StatusBadge status={report.validation_status} type="validation" size="large" />
                         {report.on_private_property && (
-                          <StatusBadge 
-                            status={report.property_owner_consent_status} 
-                            type="consent" 
+                          <StatusBadge
+                            status={report.property_owner_consent_status}
+                            type="consent"
                             size="large"
                           />
                         )}
-                        {report.stage && (
-                          <StatusBadge status={report.stage} type="lifecycle" size="large" />
+                        {report.lifecycle_stage && (
+                          <StatusBadge status={report.lifecycle_stage} type="lifecycle" size="large" />
                         )}
                       </>
                     )}
@@ -541,19 +481,14 @@ export default function ReportDetailPage() {
                   <div className="absolute top-3 left-3 right-3 h-1 bg-border -z-10" />
                   {/* Colored progress line */}
                   {(() => {
-                    const stages = ['submitted', 'acknowledged', 'responded', 'resolved']
-                    const currentIndex = stages.indexOf(report.stage)
-                    const totalSegments = stages.length - 1 // 3 segments
-
-                    // The green line starts at the center of the first dot (12px from left edge of the track).
-                    // The total width of the track (gray line) is `calc(100% - 24px)`.
-                    // The width of each segment of the track is `(100% - 24px) / totalSegments`.
+                    const stages = ['submitted', 'verified', 'assigned', 'in_progress', 'resolved', 'closed']
+                    const currentIndex = stages.indexOf(report.lifecycle_stage)
+                    const totalSegments = stages.length - 1
 
                     let lineWidthCalc = '0px'
                     if (currentIndex === 0) {
-                      lineWidthCalc = '12px' // Line extends to the center of the first dot
+                      lineWidthCalc = '12px'
                     } else if (currentIndex > 0) {
-                      // Width = (half of first dot) + (width of completed segments)
                       lineWidthCalc = `calc(12px + ((100% - 24px) / ${totalSegments}) * ${currentIndex})`
                     }
 
@@ -564,11 +499,11 @@ export default function ReportDetailPage() {
                       />
                     )
                   })()}
-                  {['submitted', 'acknowledged', 'responded', 'resolved'].map((stage, index) => {
-                    const stages = ['submitted', 'acknowledged', 'responded', 'resolved']
-                    const currentIndex = stages.indexOf(report.stage)
+                  {['submitted', 'verified', 'assigned', 'in_progress', 'resolved', 'closed'].map((stage, index) => {
+                    const stages = ['submitted', 'verified', 'assigned', 'in_progress', 'resolved', 'closed']
+                    const currentIndex = stages.indexOf(report.lifecycle_stage)
                     const isCompleted = currentIndex >= index
-                    const isCurrent = report.stage === stage
+                    const isCurrent = report.lifecycle_stage === stage
                     return (
                       <div key={stage} className="flex-1 flex flex-col items-center z-10">
                         <div className={`w-6 h-6 rounded-full ${isCurrent ? 'bg-[var(--success)] ring-4 ring-[var(--success)]/20' : isCompleted ? 'bg-[var(--accent-green)]' : 'bg-border'} transition-all relative`} />
@@ -738,132 +673,14 @@ export default function ReportDetailPage() {
                 )}
               </div>
 
-              {/* LGU Notes - Moved to main content */}
-              <div className="card">
-                <h2 className="text-xl font-bold text-text-primary mb-4">LGU Notes</h2>
-                {showNoteInput ? (
-                  <div className="space-y-2 mb-4">
-                    <textarea
-                      value={noteText}
-                      onChange={(e) => setNoteText(e.target.value)}
-                      placeholder="Enter your note..."
-                      className="w-full p-3 border border-border rounded-lg bg-surface text-text-primary resize-none"
-                      rows={3}
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleAddNote}
-                        disabled={addingNote || !noteText.trim()}
-                        className="btn-primary flex-1"
-                      >
-                        {addingNote ? 'Adding...' : 'Save Note'}
-                      </button>
-                      <button
-                        onClick={() => {
-                          setShowNoteInput(false)
-                          setNoteText('')
-                        }}
-                        className="btn-secondary flex-1"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setShowNoteInput(true)}
-                    className="btn-secondary mb-4"
-                  >
-                    Add Note
-                  </button>
-                )}
-                {agencyResponses.filter(r => r.action_type === 'manual_note').length > 0 ? (
-                  <div className="space-y-3">
-                    {agencyResponses
-                      .filter(r => r.action_type === 'manual_note')
-                      .map((response, index) => (
-                        <div key={index} className="p-3 bg-surface rounded-lg border border-border">
-                          <p className="text-sm text-text-primary">{response.action_details}</p>
-                          <p className="text-xs text-text-muted mt-1">
-                            {new Date(response.created_at).toLocaleString()}
-                          </p>
-                        </div>
-                      ))
-                    }
-                  </div>
-                ) : (
-                  <p className="text-text-muted text-sm">No notes yet</p>
-                )}
-              </div>
-
               {/* Audit Log - Moved to main content */}
               <div className="card">
                 <h2 className="text-xl font-bold text-text-primary mb-4">Activity Log</h2>
-                {agencyResponses && agencyResponses.length > 0 ? (
-                  <>
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b border-border">
-                            <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Date</th>
-                            <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Action</th>
-                            <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Details</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {agencyResponses
-                            .slice((activityLogPage - 1) * activityLogPerPage, activityLogPage * activityLogPerPage)
-                            .map((response, index) => (
-                              <tr key={index} className="border-b border-border">
-                                <td className="py-3 px-4 text-sm text-text-muted">
-                                  {new Date(response.created_at).toLocaleString()}
-                                </td>
-                                <td className="py-3 px-4">
-                                  <span className="px-2 py-1 rounded text-xs font-semibold bg-accent-green/20 text-accent-green border border-accent-green/30">
-                                    {response.action_type?.replace(/_/g, ' ').toUpperCase()}
-                                  </span>
-                                </td>
-                                <td className="py-3 px-4 text-sm text-text-secondary">
-                                  {response.action_details}
-                                </td>
-                              </tr>
-                            ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {/* Pagination */}
-                    {Math.ceil(agencyResponses.length / activityLogPerPage) > 1 && (
-                      <div className="flex items-center justify-between pt-4 border-t border-border">
-                        <p className="text-sm text-text-muted">
-                          Showing {((activityLogPage - 1) * activityLogPerPage) + 1} to {Math.min(activityLogPage * activityLogPerPage, agencyResponses.length)} of {agencyResponses.length} activities
-                        </p>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => setActivityLogPage(prev => prev - 1)}
-                            disabled={activityLogPage === 1}
-                            className="btn-secondary px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            Previous
-                          </button>
-                          <button
-                            onClick={() => setActivityLogPage(prev => prev + 1)}
-                            disabled={activityLogPage === Math.ceil(agencyResponses.length / activityLogPerPage)}
-                            className="btn-secondary px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            Next
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="bg-surface p-4 rounded-lg border border-border">
-                    <p className="text-text-muted text-sm">
-                      No activity logged for this report yet.
-                    </p>
-                  </div>
-                )}
+                <div className="bg-surface p-4 rounded-lg border border-border">
+                  <p className="text-text-muted text-sm">
+                    Activity log is now managed through cleanup tasks.
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -1009,126 +826,43 @@ export default function ReportDetailPage() {
                 <div className="card">
                   <h2 className="text-lg font-bold text-text-primary mb-4">Actions</h2>
                   <div className="space-y-3">
-                  {/* Create Task for this Report */}
-                  {report.stage === 'acknowledged' && (
+                  {/* Cleanup Task Link/Create */}
+                  {report.cleanup_task_id ? (
                     <button
-                      onClick={() => router.push(`/dashboard/officer/cleanup-tasks/create?preselect=${report.id}`)}
+                      onClick={() => router.push(`/dashboard/officer/cleanup-tasks/${report.cleanup_task_id}`)}
                       className="btn-primary w-full"
                     >
-                      Create Task for This Report
+                      View Cleanup Task
                     </button>
- )}
-
-                  {/* Reject Report for Manual Review */}
-                  {(report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review') && (
+                  ) : (
                     <button
-                      onClick={handleRejectReport}
-                      disabled={validatingReport === reportId}
-                      className="w-full px-4 py-2 bg-error text-white rounded-lg hover:bg-error/80 disabled:opacity-50 font-medium"
+                      onClick={() => router.push(`/dashboard/officer/cleanup-tasks/create?preselect=${report.id}`)}
+                      disabled={report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review'}
+                      className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {validatingReport === reportId ? 'Rejecting...' : 'Reject Report'}
+                      Create Cleanup Task
                     </button>
                   )}
 
-                  {/* Lifecycle Stage Control */}
-                  <div className="relative" ref={lifecycleDropdownRef}>
-                    <button
-                      onClick={() => {
-                        setShowLifecycleDropdown(!showLifecycleDropdown)
-                        setShowStatusDropdown(false)
-                      }}
-                      className="w-full px-4 py-2 border-2 border-border text-text-primary rounded-lg hover:bg-surface-elevated font-medium transition-colors"
-                    >
-                      {updatingLifecycle ? 'Updating...' : 'Update Lifecycle Stage'}
-                    </button>
-                    {showLifecycleDropdown && (
-                      <div className="absolute bottom-full left-0 right-0 mb-2 bg-surface border border-border rounded-lg shadow-lg z-50">
-                        <button
-                          onClick={() => handleLifecycleStageUpdate('resolved')}
-                          disabled={report.stage !== 'responded'}
-                          className={`w-full px-4 py-3 text-left border-b border-border transition-colors ${report.stage === 'resolved'
-                            ? 'bg-success/10 text-success font-semibold cursor-not-allowed'
-                            : report.stage === 'responded'
-                              ? 'text-text-primary hover:bg-success/5'
-                              : 'text-text-muted cursor-not-allowed'
-                            }`}
-                        >
-                          <span className="font-medium">Resolved</span>
-                        </button>
-                        <button
-                          onClick={() => handleLifecycleStageUpdate('responded')}
-                          disabled={report.stage !== 'acknowledged'}
-                          className={`w-full px-4 py-3 text-left border-b border-border transition-colors ${report.stage === 'responded'
-                            ? 'bg-warning/10 text-warning font-semibold cursor-not-allowed'
-                            : report.stage === 'acknowledged'
-                              ? 'text-text-primary hover:bg-warning/5'
-                              : 'text-text-muted cursor-not-allowed'
-                            }`}
-                        >
-                          <span className="font-medium">Responded</span>
-                        </button>
-                        <button
-                          onClick={() => handleLifecycleStageUpdate('acknowledged')}
-                          disabled={report.stage !== 'submitted'}
-                          className={`w-full px-4 py-3 text-left transition-colors ${report.stage === 'acknowledged'
-                            ? 'bg-info/10 text-info font-semibold cursor-not-allowed'
-                            : report.stage === 'submitted'
-                              ? 'text-text-primary hover:bg-info/5'
-                              : 'text-text-muted cursor-not-allowed'
-                            }`}
-                        >
-                          <span className="font-medium">Acknowledged</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Status Control */}
-                  {/* <div className="relative">
-                    <button
-                      onClick={() => {
-                        setShowStatusDropdown(!showStatusDropdown)
-                        setShowLifecycleDropdown(false)
-                      }}
-                      className="btn-secondary w-full"
-                    >
-                      {updatingStatus ? 'Updating...' : 'Update Status'}
-                    </button>
-                    {showStatusDropdown && (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-surface border border-border rounded-lg shadow-lg z-[9999] pointer-events-auto">
-                        <button
-                          onClick={() => handleStatusUpdate('unresolved')}
-                          className={`w-full px-4 py-3 text-left border-b border-border last:border-b-0 transition-colors ${report.status === 'unresolved'
-                            ? 'bg-accent-green/20 text-accent-green font-semibold'
-                            : 'text-text-primary hover:bg-accent-green/10'
-                            }`}
-                        >
-                          <span className="font-medium">Unresolved</span>
-                          {report.status === 'unresolved'}
-                        </button>
-                        <button
-                          onClick={() => handleStatusUpdate('in_progress')}
-                          className={`w-full px-4 py-3 text-left border-b border-border last:border-b-0 transition-colors ${report.status === 'in_progress'
-                            ? 'bg-accent-green/20 text-accent-green font-semibold'
-                            : 'text-text-primary hover:bg-accent-green/10'
-                            }`}
-                        >
-                          <span className="font-medium">In Progress</span>
-                          {report.status === 'in_progress'}
-                        </button>
-                        <button
-                          onClick={() => handleStatusUpdate('resolved')}
-                          disabled={report.status === 'resolved'}
-                          className={`w-full px-4 py-3 text-left transition-colors ${report.status === 'resolved'
-                            ? 'bg-accent-green/20 text-accent-green font-semibold cursor-not-allowed'
-                            : 'text-text-primary hover:bg-accent-green/10'
-                            }`}
-                        >
-                          <span className="font-medium">Resolved</span>
-                        </button>
-                      </div>
-                    )}
-                  </div> */}
+                  {/* Validate/Reject Report for Manual Review */}
+                  {(report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review') && (
+                    <>
+                      <button
+                        onClick={handleValidateReport}
+                        disabled={validatingReport === reportId}
+                        className="w-full px-4 py-2 bg-success text-white rounded-lg hover:bg-success/80 disabled:opacity-50 font-medium"
+                      >
+                        {validatingReport === reportId ? 'Approving...' : 'Approve Report'}
+                      </button>
+                      <button
+                        onClick={handleRejectReport}
+                        disabled={validatingReport === reportId}
+                        className="w-full px-4 py-2 bg-error text-white rounded-lg hover:bg-error/80 disabled:opacity-50 font-medium"
+                      >
+                        {validatingReport === reportId ? 'Rejecting...' : 'Reject Report'}
+                      </button>
+                    </>
+                  )}
 
                   <button
                     onClick={() => router.push(`/dashboard/map-view?lat=${location.latitude}&lng=${location.longitude}&id=${reportId}&validationStatus=${report.validation_status}&status=${report.status}`)}

@@ -18,10 +18,14 @@ export default function FieldCrewTasksPage() {
   // Filter states
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [assignmentFilter, setAssignmentFilter] = useState('all')
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 8
+
+  // Get current user ID from localStorage
+  const currentUserId = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}').id : null
 
   useEffect(() => {
     const loadTasks = async () => {
@@ -47,16 +51,20 @@ export default function FieldCrewTasksPage() {
       filtered = filtered.filter(t =>
         (t.title && t.title.toLowerCase().includes(query)) ||
         (t.description && t.description.toLowerCase().includes(query))
-      )
+)
     }
 
     if (statusFilter !== 'all') {
       filtered = filtered.filter(t => t.status === statusFilter)
     }
 
+    if (assignmentFilter === 'assigned_to_me') {
+      filtered = filtered.filter(t => t.assigned_crew_ids && t.assigned_crew_ids.includes(currentUserId))
+    }
+
     setFilteredTasks(filtered)
     setCurrentPage(1)
-  }, [searchQuery, statusFilter, tasks])
+  }, [searchQuery, statusFilter, assignmentFilter, tasks, currentUserId])
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredTasks.length / itemsPerPage)
@@ -75,11 +83,16 @@ export default function FieldCrewTasksPage() {
   const handleResetFilters = () => {
     setSearchQuery('')
     setStatusFilter('all')
+    setAssignmentFilter('all')
   }
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A'
     return new Date(dateString).toLocaleDateString()
+  }
+
+  const isAssignedToMe = (task) => {
+    return task.assigned_crew_ids && task.assigned_crew_ids.includes(currentUserId)
   }
 
   return (
@@ -110,6 +123,15 @@ export default function FieldCrewTasksPage() {
                 { value: 'in_progress', label: 'In Progress' },
                 { value: 'completed', label: 'Completed' }
               ]
+            },
+            {
+              label: 'All Tasks',
+              value: assignmentFilter,
+              onChange: setAssignmentFilter,
+              options: [
+                { value: 'all', label: 'All Tasks' },
+                { value: 'assigned_to_me', label: 'Assigned to Me' }
+              ]
             }
           ]}
           onReset={handleResetFilters}
@@ -120,27 +142,40 @@ export default function FieldCrewTasksPage() {
         {/* Tasks List */}
         <DataTable
           columns={[
-            { key: 'title', label: 'Title', width: '25%' },
-            { 
-              key: 'description', 
-              label: 'Description', 
-              width: '35%',
+            { key: 'title', label: 'Title', width: '20%' },
+            {
+              key: 'description',
+              label: 'Description',
+              width: '25%',
               render: (value) => (
                 <span className="text-sm text-text-secondary line-clamp-2 max-w-xs">{value || '—'}</span>
               )
             },
-            { 
-              key: 'created_at', 
-              label: 'Created', 
+            {
+              key: 'assigned_crew_ids',
+              label: 'Assignment',
+              width: '20%',
+              render: (value) => {
+                const assigned = isAssignedToMe({ assigned_crew_ids: value })
+                return (
+                  <span className={`text-sm font-medium ${assigned ? 'text-accent-green' : 'text-text-muted'}`}>
+                    {assigned ? 'Assigned to me' : 'Not assigned'}
+                  </span>
+                )
+              }
+            },
+            {
+              key: 'created_at',
+              label: 'Created',
               width: '15%',
               render: (value) => (
                 <span className="text-sm text-text-muted">{formatDate(value)}</span>
               )
             },
-            { 
-              key: 'status', 
-              label: 'Status', 
-              width: '25%',
+            {
+              key: 'status',
+              label: 'Status',
+              width: '20%',
               render: (value) => (
                 <StatusBadge status={value} type="task" />
               )
