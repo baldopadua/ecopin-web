@@ -156,6 +156,18 @@ export function SessionProvider({ children }) {
     // Handle visibility change specifically
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
+        const lastActivity = localStorage.getItem('lastActivity')
+        const currentTime = Date.now()
+        const timeSinceActivity = lastActivity ? currentTime - parseInt(lastActivity) : 0
+        
+        // Grace period: if away for less than 30 seconds, update activity and continue
+        const gracePeriodMs = 30000 // 30 seconds
+        
+        if (timeSinceActivity < gracePeriodMs) {
+          updateLastActivity()
+          return // Skip session check for short absences
+        }
+        
         // First do client-side check
         checkSessionExpiry()
         
