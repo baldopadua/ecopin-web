@@ -1,8 +1,9 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useSession } from '@/components/auth/SessionProvider'
+import { SessionProvider } from '@/components/auth/SessionProvider'
 
-export default function TestSessionPage() {
+function TestSessionContent() {
   const { validateSessionWithServer } = useSession()
   const [lastActivity, setLastActivity] = useState(null)
   const [sessionTimeout, setSessionTimeout] = useState(60)
@@ -105,5 +106,13 @@ export default function TestSessionPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function TestSessionPage() {
+  return (
+    <SessionProvider>
+      <TestSessionContent />
+    </SessionProvider>
   )
 }
