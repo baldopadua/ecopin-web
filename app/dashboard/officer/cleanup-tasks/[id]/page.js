@@ -1234,10 +1234,27 @@ export default function CleanupTaskDetailPage() {
                 <div className="mt-6 pt-4 border-t border-border">
                   <h3 className="font-semibold mb-3">Assigned Crew</h3>
                   {task.assigned_crew_ids && task.assigned_crew_ids.length > 0 ? (
-                    <div className="space-y-2">
-                      <p className="text-sm text-accent-green font-medium">
-                        {task.assigned_crew_ids.length} crew member{task.assigned_crew_ids.length > 1 ? 's' : ''} assigned
-                      </p>
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        {availableCrew.filter(crew => task.assigned_crew_ids.includes(crew.id)).map(crew => (
+                          <div key={crew.id} className="flex items-center space-x-3 p-2 bg-surface-elevated rounded-lg">
+                            {crew.avatar_url ? (
+                              <img
+                                src={crew.avatar_url}
+                                alt={crew.full_name}
+                                className="w-10 h-10 rounded-full object-cover border border-border"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-surface border border-border flex items-center justify-center text-text-muted font-medium">
+                                {crew.full_name?.[0]?.toUpperCase() || 'U'}
+                              </div>
+                            )}
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-text-primary">{crew.full_name}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                       <button
                         onClick={() => setShowAssignmentModal(true)}
                         className="btn-secondary w-full text-sm"
@@ -1286,20 +1303,6 @@ export default function CleanupTaskDetailPage() {
                     </button>
                   </div>
                 )}
-
-                {firstReport && (() => {
-                  const loc = parseLocation(firstReport.location, firstReport.latitude, firstReport.longitude);
-                  return (
-                    <div className="mt-6 pt-4 border-t border-border">
-                      <button
-                        onClick={() => router.push(`/dashboard/map-view?lat=${loc.latitude}&lng=${loc.longitude}&id=${firstReport.id}&validationStatus=${firstReport.validation_status}&status=${firstReport.status}`)}
-                        className="btn-secondary w-full"
-                      >
-                        View on Map
-                      </button>
-                    </div>
-                  );
-                })()}
 
                 {/* Actions Card - Show in detail view */}
                 {viewMode === 'detail' && selectedReportId && (() => {

@@ -19,7 +19,7 @@ export default function FieldCrewHomepage() {
   useEffect(() => {
     const loadTasks = async () => {
       try {
-        const data = await fetchCleanupTasks()
+        const data = await fetchCleanupTasks(true)
         setTasks(data)
       } catch (error) {
         console.error('Failed to load tasks:', error)

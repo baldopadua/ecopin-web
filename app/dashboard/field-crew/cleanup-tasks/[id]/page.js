@@ -1,7 +1,7 @@
 'use client'
 import React, { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { fetchCleanupTaskById, uploadCleanupPhoto, markCleanupTaskComplete, fetchReportsByClusterId, batchCompleteReportsByCluster, updateReportStatus, fetchReportsByIds, updateReportValidation, fetchReportEvidence, updateLifecycleStage, logAgencyResponse, fetchAgencyResponses } from '@/lib/api'
+import { fetchCleanupTaskById, uploadCleanupPhoto, markCleanupTaskComplete, fetchReportsByClusterId, batchCompleteReportsByCluster, updateReportStatus, fetchReportsByIds, updateReportValidation, fetchReportEvidence, updateLifecycleStage, logAgencyResponse, fetchAgencyResponses, fetchAvailableCrew } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
@@ -77,6 +77,8 @@ export default function FieldCrewCleanupTaskDetailPage() {
   const [noteText, setNoteText] = useState('')
   const [addingNote, setAddingNote] = useState(false)
   const [agencyResponses, setAgencyResponses] = useState([])
+  const [availableCrew, setAvailableCrew] = useState([])
+  const [isAssigned, setIsAssigned] = useState(false)
   const router = useRouter()
   const params = useParams()
   const taskId = params.id
@@ -85,6 +87,12 @@ export default function FieldCrewCleanupTaskDetailPage() {
     const loadTask = async () => {
       try {
         const data = await fetchCleanupTaskById(taskId)
+        
+        // Check if current user is assigned to this task
+        const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : null
+        const assigned = data.assigned_crew_ids && data.assigned_crew_ids.length > 0 && user?.id && data.assigned_crew_ids.includes(user.id)
+        setIsAssigned(assigned)
+        
         setTask(data)
 
         // Fetch reports based on task type
@@ -120,7 +128,24 @@ export default function FieldCrewCleanupTaskDetailPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  useEffect(() => {
+    const loadAvailableCrew = async () => {
+      try {
+        const data = await fetchAvailableCrew()
+        setAvailableCrew(data)
+      } catch (error) {
+        console.error('Failed to load available crew:', error)
+      }
+    }
+    loadAvailableCrew()
+  }, [])
+
   const handleMarkComplete = async () => {
+    if (!isAssigned) {
+      setNotification({ message: 'You are not assigned to this task', type: 'error' })
+      return
+    }
+
     // Check if there are both before and after photos
     const hasBeforePhotos = task.before_photo_url || reports.some(r => r.before_photo_url)
     const hasAfterPhotos = task.after_photo_url || reports.some(r => r.after_photo_url)
@@ -157,6 +182,12 @@ export default function FieldCrewCleanupTaskDetailPage() {
 
 
   const handleLifecycleStageUpdate = async (reportId, newStage) => {
+    if (!isAssigned) {
+      setNotification({ message: 'You are not assigned to this task', type: 'error' })
+      setShowLifecycleDropdown(false)
+      return
+    }
+
     const report = reports.find(r => r.id === reportId)
     
     // Check if trying to mark as resolved without photos
@@ -289,6 +320,11 @@ export default function FieldCrewCleanupTaskDetailPage() {
   }
 
   const handleAddNote = async () => {
+    if (!isAssigned) {
+      setNotification({ message: 'You are not assigned to this task', type: 'error' })
+      return
+    }
+
     if (!noteText.trim()) return
     
     setAddingNote(true)
@@ -478,6 +514,11 @@ export default function FieldCrewCleanupTaskDetailPage() {
   }
 
   const handleReportPhotoUpload = async (reportId, photoType, file) => {
+    if (!isAssigned) {
+      setNotification({ message: 'You are not assigned to this task', type: 'error' })
+      return
+    }
+
     if (!file) return
 
     // Validate file type
@@ -540,6 +581,11 @@ export default function FieldCrewCleanupTaskDetailPage() {
   }
 
   const handleReportPhotoDelete = async (reportId, photoType) => {
+    if (!isAssigned) {
+      setNotification({ message: 'You are not assigned to this task', type: 'error' })
+      return
+    }
+
     if (!confirm('Are you sure you want to delete this photo? This action cannot be undone.')) {
       return
     }
@@ -1016,7 +1062,8 @@ export default function FieldCrewCleanupTaskDetailPage() {
                                 {report.before_photo_url && (
                                   <button
                                     onClick={() => handleReportPhotoDelete(report.id, 'before')}
-                                    className="p-1.5 text-text-muted hover:text-error hover:bg-error/10 rounded-lg transition-colors cursor-pointer"
+                                    disabled={!isAssigned}
+                                    className="p-1.5 text-text-muted hover:text-error hover:bg-error/10 rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                     title="Delete photo"
                                   >
                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -1036,9 +1083,9 @@ export default function FieldCrewCleanupTaskDetailPage() {
                                 <input
                                   type="file"
                                   accept="image/*"
-                                  disabled={uploadingReportPhotos[`${report.id}-before`]}
+                                  disabled={uploadingReportPhotos[`${report.id}-before`] || !isAssigned}
                                   onChange={(e) => e.target.files[0] && handleReportPhotoUpload(report.id, 'before', e.target.files[0])}
-                                  className="w-full"
+                                  className="w-full disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                               )}
                               {uploadingReportPhotos[`${report.id}-before`] && <p className="mt-2 text-sm text-text-muted">Uploading...</p>}
@@ -1050,7 +1097,8 @@ export default function FieldCrewCleanupTaskDetailPage() {
                                 {report.after_photo_url && (
                                   <button
                                     onClick={() => handleReportPhotoDelete(report.id, 'after')}
-                                    className="p-1.5 text-text-muted hover:text-error hover:bg-error/10 rounded-lg transition-colors cursor-pointer"
+                                    disabled={!isAssigned}
+                                    className="p-1.5 text-text-muted hover:text-error hover:bg-error/10 rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                     title="Delete photo"
                                   >
                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -1070,9 +1118,9 @@ export default function FieldCrewCleanupTaskDetailPage() {
                                 <input
                                   type="file"
                                   accept="image/*"
-                                  disabled={uploadingReportPhotos[`${report.id}-after`]}
+                                  disabled={uploadingReportPhotos[`${report.id}-after`] || !isAssigned}
                                   onChange={(e) => e.target.files[0] && handleReportPhotoUpload(report.id, 'after', e.target.files[0])}
-                                  className="w-full"
+                                  className="w-full disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                               )}
                               {uploadingReportPhotos[`${report.id}-after`] && <p className="mt-2 text-sm text-text-muted">Uploading...</p>}
@@ -1097,8 +1145,8 @@ export default function FieldCrewCleanupTaskDetailPage() {
                           <div className="flex gap-2">
                             <button
                               onClick={handleAddNote}
-                              disabled={addingNote || !noteText.trim()}
-                              className="btn-primary flex-1"
+                              disabled={addingNote || !noteText.trim() || !isAssigned}
+                              className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               {addingNote ? 'Adding...' : 'Save Note'}
                             </button>
@@ -1201,6 +1249,35 @@ export default function FieldCrewCleanupTaskDetailPage() {
                   </button>
                 )}
 
+                {/* Assigned Crew Section */}
+                <div className="mt-6 pt-4 border-t border-border">
+                  <h3 className="font-semibold mb-3">Assigned Crew</h3>
+                  {task.assigned_crew_ids && task.assigned_crew_ids.length > 0 ? (
+                    <div className="space-y-2">
+                      {availableCrew.filter(crew => task.assigned_crew_ids.includes(crew.id)).map(crew => (
+                        <div key={crew.id} className="flex items-center space-x-3 p-2 bg-surface-elevated rounded-lg">
+                          {crew.avatar_url ? (
+                            <img
+                              src={crew.avatar_url}
+                              alt={crew.full_name}
+                              className="w-10 h-10 rounded-full object-cover border border-border"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-surface border border-border flex items-center justify-center text-text-muted font-medium">
+                              {crew.full_name?.[0]?.toUpperCase() || 'U'}
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-text-primary">{crew.full_name}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-text-muted">No crew assigned</p>
+                  )}
+                </div>
+
                 {reports.length > 0 && (
                   <>
                     <div className="mt-6 pt-4 border-t border-border">
@@ -1225,27 +1302,13 @@ export default function FieldCrewCleanupTaskDetailPage() {
                   <div className="mt-6 pt-4 border-t border-border">
                     <button
                       onClick={handleMarkComplete}
-                      disabled={markingComplete}
-                      className="btn-primary w-full"
+                      disabled={markingComplete || !isAssigned}
+                      className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {markingComplete ? 'Marking Complete...' : 'Mark Task as Complete'}
+                      {markingComplete ? 'Marking Complete...' : 'Mark Task Complete'}
                     </button>
                   </div>
                 )}
-
-                {firstReport && (() => {
-                  const loc = parseLocation(firstReport.location, firstReport.latitude, firstReport.longitude);
-                  return (
-                    <div className="mt-6 pt-4 border-t border-border">
-                      <button
-                        onClick={() => router.push(`/dashboard/map-view?lat=${loc.latitude}&lng=${loc.longitude}&id=${firstReport.id}&validationStatus=${firstReport.validation_status}&status=${firstReport.status}`)}
-                        className="btn-secondary w-full"
-                      >
-                        View on Map
-                      </button>
-                    </div>
-                  );
-                })()}
 
                 {/* Actions Card - Show in detail view */}
                 {viewMode === 'detail' && selectedReportId && (() => {
@@ -1259,8 +1322,8 @@ export default function FieldCrewCleanupTaskDetailPage() {
                         {(report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review') && report.status !== 'closed' && report.status !== 'resolved' && report.validation_status !== 'rejected' && !(report.on_private_property && report.property_owner_consent_status === 'denied') && (
                           <button
                             onClick={() => handleRejectReport(report.id)}
-                            disabled={validatingReport === report.id}
-                            className="w-full px-4 py-2 bg-error text-white rounded-lg hover:bg-error/80 disabled:opacity-50 font-medium"
+                            disabled={validatingReport === report.id || !isAssigned}
+                            className="w-full px-4 py-2 bg-error text-white rounded-lg hover:bg-error/80 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                           >
                             {validatingReport === report.id ? 'Rejecting...' : 'Reject Report'}
                           </button>
@@ -1270,7 +1333,8 @@ export default function FieldCrewCleanupTaskDetailPage() {
                         <div className="relative" ref={lifecycleDropdownRef}>
                           <button
                             onClick={() => setShowLifecycleDropdown(!showLifecycleDropdown)}
-                            className="w-full px-4 py-2 border-2 border-border text-text-primary rounded-lg hover:bg-surface-elevated font-medium transition-colors"
+                            disabled={!isAssigned}
+                            className="w-full px-4 py-2 border-2 border-border text-text-primary rounded-lg hover:bg-surface-elevated font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {updatingLifecycle ? 'Updating...' : 'Update Lifecycle Stage'}
                           </button>
@@ -1278,8 +1342,8 @@ export default function FieldCrewCleanupTaskDetailPage() {
                             <div className="absolute bottom-full left-0 right-0 mb-2 bg-surface border border-border rounded-lg shadow-lg z-50">
                               <button
                                 onClick={() => handleLifecycleStageUpdate(report.id, 'resolved')}
-                                disabled={report.stage !== 'responded'}
-                                className={`w-full px-4 py-3 text-left border-b border-border transition-colors ${report.stage === 'resolved'
+                                disabled={report.stage !== 'responded' || !isAssigned}
+                                className={`w-full px-4 py-3 text-left border-b border-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${report.stage === 'resolved'
                                   ? 'bg-success/10 text-success font-semibold cursor-not-allowed'
                                   : report.stage === 'responded'
                                     ? 'text-text-primary hover:bg-success/5'
@@ -1290,8 +1354,8 @@ export default function FieldCrewCleanupTaskDetailPage() {
                               </button>
                               <button
                                 onClick={() => handleLifecycleStageUpdate(report.id, 'responded')}
-                                disabled={report.stage !== 'acknowledged'}
-                                className={`w-full px-4 py-3 text-left border-b border-border transition-colors ${report.stage === 'responded'
+                                disabled={report.stage !== 'acknowledged' || !isAssigned}
+                                className={`w-full px-4 py-3 text-left border-b border-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${report.stage === 'responded'
                                   ? 'bg-warning/10 text-warning font-semibold cursor-not-allowed'
                                   : report.stage === 'acknowledged'
                                     ? 'text-text-primary hover:bg-warning/5'
@@ -1302,8 +1366,8 @@ export default function FieldCrewCleanupTaskDetailPage() {
                               </button>
                               <button
                                 onClick={() => handleLifecycleStageUpdate(report.id, 'acknowledged')}
-                                disabled={report.stage !== 'submitted'}
-                                className={`w-full px-4 py-3 text-left transition-colors ${report.stage === 'acknowledged'
+                                disabled={report.stage !== 'submitted' || !isAssigned}
+                                className={`w-full px-4 py-3 text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${report.stage === 'acknowledged'
                                   ? 'bg-info/10 text-info font-semibold cursor-not-allowed'
                                   : report.stage === 'submitted'
                                     ? 'text-text-primary hover:bg-info/5'

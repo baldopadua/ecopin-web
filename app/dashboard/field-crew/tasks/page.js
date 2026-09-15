@@ -18,7 +18,7 @@ export default function FieldCrewTasksPage() {
   // Filter states
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
-  const [assignmentFilter, setAssignmentFilter] = useState('all')
+  const [assignmentFilter, setAssignmentFilter] = useState('assigned_to_me')
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
@@ -30,7 +30,7 @@ export default function FieldCrewTasksPage() {
   useEffect(() => {
     const loadTasks = async () => {
       try {
-        const data = await fetchCleanupTasks()
+        const data = await fetchCleanupTasks(assignmentFilter === 'assigned_to_me')
         setTasks(data)
         setFilteredTasks(data)
       } catch (error) {
@@ -40,7 +40,7 @@ export default function FieldCrewTasksPage() {
       }
     }
     loadTasks()
-  }, [])
+  }, [assignmentFilter])
 
   // Apply filters
   useEffect(() => {
@@ -58,13 +58,11 @@ export default function FieldCrewTasksPage() {
       filtered = filtered.filter(t => t.status === statusFilter)
     }
 
-    if (assignmentFilter === 'assigned_to_me') {
-      filtered = filtered.filter(t => t.assigned_crew_ids && t.assigned_crew_ids.includes(currentUserId))
-    }
+    // No need for client-side assignment filter - backend handles it
 
     setFilteredTasks(filtered)
     setCurrentPage(1)
-  }, [searchQuery, statusFilter, assignmentFilter, tasks, currentUserId])
+  }, [searchQuery, statusFilter, tasks])
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredTasks.length / itemsPerPage)
@@ -153,13 +151,13 @@ export default function FieldCrewTasksPage() {
             },
             {
               key: 'assigned_crew_ids',
-              label: 'Assignment',
+              label: 'Assigned',
               width: '20%',
               render: (value) => {
-                const assigned = isAssignedToMe({ assigned_crew_ids: value })
+                const count = value && value.length > 0 ? value.length : 0
                 return (
-                  <span className={`text-sm font-medium ${assigned ? 'text-accent-green' : 'text-text-muted'}`}>
-                    {assigned ? 'Assigned to me' : 'Not assigned'}
+                  <span className={`text-sm font-medium ${count > 0 ? 'text-accent-green' : 'text-text-muted'}`}>
+                    {count > 0 ? `${count} crew member${count > 1 ? 's' : ''}` : 'Unassigned'}
                   </span>
                 )
               }
