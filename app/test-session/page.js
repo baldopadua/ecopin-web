@@ -9,8 +9,17 @@ function TestSessionContent() {
   const [sessionTimeout, setSessionTimeout] = useState(60)
   const [timeUntilExpiry, setTimeUntilExpiry] = useState(null)
   const [validationResult, setValidationResult] = useState(null)
+  const [isMounted, setIsMounted] = useState(false)
+  const [authTokenPresent, setAuthTokenPresent] = useState(false)
 
   useEffect(() => {
+    setIsMounted(true)
+    setAuthTokenPresent(!!localStorage.getItem('authToken'))
+  }, [])
+
+  useEffect(() => {
+    if (!isMounted) return
+
     const updateTimer = () => {
       const activity = localStorage.getItem('lastActivity')
       if (activity) {
@@ -28,7 +37,7 @@ function TestSessionContent() {
     updateTimer()
     const interval = setInterval(updateTimer, 1000)
     return () => clearInterval(interval)
-  }, [])
+  }, [isMounted])
 
   const handleServerValidation = async () => {
     const result = await validateSessionWithServer()
@@ -57,7 +66,7 @@ function TestSessionContent() {
             <p><strong>Last Activity:</strong> {lastActivity || 'Not set'}</p>
             <p><strong>Session Timeout:</strong> {sessionTimeout} minutes</p>
             <p><strong>Time Until Expiry:</strong> {timeUntilExpiry !== null ? `${Math.floor(timeUntilExpiry / 60)}m ${timeUntilExpiry % 60}s` : 'Calculating...'}</p>
-            <p><strong>Auth Token:</strong> {localStorage.getItem('authToken') ? 'Present' : 'Missing'}</p>
+            <p><strong>Auth Token:</strong> {isMounted ? (authTokenPresent ? 'Present' : 'Missing') : 'Loading...'}</p>
           </div>
         </div>
 
