@@ -18,6 +18,7 @@ const officerNavigation = [
     { name: 'Reports', href: '/dashboard/reports', icon: '/icons/reports.png' },
     { name: 'Response Logs', href: '/dashboard/officer/response-logs', icon: '/icons/logs.png' },
     { name: 'Analytics', href: '/dashboard/officer/analytics', icon: '/icons/analytics.png' },
+    { name: 'Forecast', href: '/dashboard/forecast', icon: '/icons/analytics.png' },
 ]
 
 const fieldCrewNavigation = [
@@ -32,6 +33,7 @@ const adminNavigation = [
     { name: 'Users', href: '/dashboard/admin/users', icon: '/icons/users.png' },
     { name: 'System', href: '/dashboard/admin/settings', icon: '/icons/settings.png' },
     { name: 'Audit Logs', href: '/dashboard/admin/audit-logs', icon: '/icons/logs.png' },
+    { name: 'Forecast', href: '/dashboard/forecast', icon: '/icons/analytics.png' },
 ]
 
 export default function Sidebar() {
