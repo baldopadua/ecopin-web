@@ -209,7 +209,7 @@ export default function Home() {
       {/* Header */}
       <header className="relative z-50 flex items-center justify-between p-6 md:px-12 border-b-4 border-black dark:border-[#ccff00] bg-white dark:bg-black transition-colors duration-300">
         <a href="#home" className="text-3xl font-black tracking-tighter cursor-pointer text-black dark:text-white">
-          ECOPIN<span className="text-[#ccff00]">.AI</span>
+          ECOPIN<span className="text-[#3300FF]">.AI</span>
         </a>
         <nav className="hidden md:flex gap-8 items-center">
           <a href="#about" className="text-sm font-bold uppercase tracking-widest hover:text-[#ccff00] hover:bg-black dark:hover:bg-white dark:hover:text-black px-2 py-1 transition-all">About</a>
@@ -258,7 +258,7 @@ export default function Home() {
           </h1>
 
           <div className="text-lg md:text-2xl font-medium max-w-4xl mx-auto mb-12 leading-tight text-center px-4 text-black dark:text-white inline-block p-4">
-            <span className="bg-[#ccff00] text-black px-2 font-bold border-2 border-black inline-block">EcoPin A.I.</span> is a Crowdsourced Geospatial Platform for Transparent Environmental Reporting and Rapid Institutional Detection for the Pasig City Solid Waste Management Office.
+            A Crowdsourced Geospatial Platform for Transparent Environmental Reporting and Rapid Institutional Detection for the Pasig City Solid Waste Management Office.
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6 w-full max-w-2xl mt-4">
