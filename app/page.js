@@ -439,9 +439,9 @@ export default function Home() {
           Report, track, and manage environmental concerns in Pasig City. Available for Android devices.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-8 relative z-10">
-          <button className="px-12 py-6 bg-[#ccff00] text-black font-black uppercase text-3xl hover:bg-black hover:text-[#ccff00] dark:hover:bg-white dark:hover:text-black transition-all border-8 border-black dark:border-white shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] dark:shadow-[12px_12px_0px_0px_rgba(204,255,0,0.5)] hover:shadow-none hover:translate-x-[12px] hover:translate-y-[12px]">
+          <a href="/ecopin-app-release.apk" download className="inline-block px-12 py-6 bg-[#ccff00] text-black font-black uppercase text-3xl hover:bg-black hover:text-[#ccff00] dark:hover:bg-white dark:hover:text-black transition-all border-8 border-black dark:border-white shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] dark:shadow-[12px_12px_0px_0px_rgba(204,255,0,0.5)] hover:shadow-none hover:translate-x-[12px] hover:translate-y-[12px]">
             Download App
-          </button>
+          </a>
         </div>
       </section>
 
