@@ -257,7 +257,7 @@ export default function Home() {
             </span>
           </h1>
 
-          <div className="text-lg md:text-2xl font-medium max-w-4xl mx-auto mb-12 leading-tight text-center px-4 text-black dark:text-white inline-block p-4">
+          <div className="text-lg md:text-2xl font-sans font-medium max-w-4xl mx-auto mb-12 leading-tight text-center px-4 text-black dark:text-white inline-block p-4">
             A Crowdsourced Geospatial Platform for Transparent Environmental Reporting and Rapid Institutional Detection for the Pasig City Solid Waste Management Office.
           </div>
 
@@ -451,7 +451,7 @@ export default function Home() {
           {/* Brand Info */}
           <div className="md:col-span-2">
             <div className="text-[#ccff00] font-black text-5xl mb-4">ECOPIN<span className="text-white">.AI</span></div>
-            <p className="font-mono text-gray-400 max-w-sm mb-6 leading-relaxed">
+            <p className="font-sans font-regular text-gray-400 max-w-sm mb-6 leading-relaxed">
               A Crowdsourced Geospatial Platform for Transparent Environmental Reporting and Rapid Institutional Detection for the Pasig City Solid Waste Management Office.
             </p>
             <div className="inline-block border-2 border-[#ccff00] text-[#ccff00] font-mono text-sm px-3 py-1 font-bold">
