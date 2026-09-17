@@ -1,6 +1,11 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
 import Lenis from 'lenis';
+import dynamic from 'next/dynamic';
+
+const BackgroundMap = dynamic(() => import('./BackgroundMap'), {
+  ssr: false,
+});
 
 // Interactive Particle Background Component
 const InteractiveMapParticles = ({ isDark }) => {
@@ -40,7 +45,7 @@ const InteractiveMapParticles = ({ isDark }) => {
         const dx = mouse.x - this.x;
         const dy = mouse.y - this.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        
+
         if (dist < 200) {
           this.vx += dx * 0.0005;
           this.vy += dy * 0.0005;
@@ -58,7 +63,7 @@ const InteractiveMapParticles = ({ isDark }) => {
       draw() {
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        // In light mode, particles could be black or green. The user wants a brutalist vibe. We'll stick to neon green for particles.
+        // neon green for particles.
         ctx.fillStyle = '#ccff00';
         ctx.fill();
 
@@ -84,7 +89,7 @@ const InteractiveMapParticles = ({ isDark }) => {
       mouse.x = e.clientX - rect.left;
       mouse.y = e.clientY - rect.top;
     };
-    
+
     const handleMouseLeave = () => {
       mouse.x = -1000;
       mouse.y = -1000;
@@ -94,10 +99,9 @@ const InteractiveMapParticles = ({ isDark }) => {
     document.body.addEventListener('mouseleave', handleMouseLeave);
 
     const animate = () => {
-      // Background clear color dependent on theme
-      ctx.fillStyle = isDark ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.2)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
+      // Clear the canvas completely so the background map is visible
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
       particles.forEach(p => {
         p.update();
         p.draw();
@@ -165,19 +169,20 @@ export default function Home() {
   const isDark = theme === 'dark';
 
   return (
-    <main 
+    <main
       className="min-h-screen bg-white text-black dark:bg-black dark:text-white relative overflow-hidden selection:bg-[#ccff00] selection:text-black transition-colors duration-300"
       style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
     >
       {/* Background System */}
       <div className="absolute inset-0 z-0 bg-white dark:bg-black transition-colors duration-300">
+        <BackgroundMap isDark={isDark} />
         <InteractiveMapParticles isDark={isDark} />
-        
+
         {/* Subtle Map Pattern Overlay - Turned up opacity */}
-        <div 
-          className="absolute inset-0 opacity-40 dark:opacity-40 pointer-events-none" 
+        <div
+          className="absolute inset-0 opacity-40 dark:opacity-40 pointer-events-none"
           style={{
-            backgroundImage: isDark 
+            backgroundImage: isDark
               ? 'linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px)'
               : 'linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px)',
             backgroundSize: '100px 100px',
@@ -209,9 +214,9 @@ export default function Home() {
         <nav className="hidden md:flex gap-8 items-center">
           <a href="#about" className="text-sm font-bold uppercase tracking-widest hover:text-[#ccff00] hover:bg-black dark:hover:bg-white dark:hover:text-black px-2 py-1 transition-all">About</a>
           <a href="#features" className="text-sm font-bold uppercase tracking-widest hover:text-[#ccff00] hover:bg-black dark:hover:bg-white dark:hover:text-black px-2 py-1 transition-all">Features</a>
-          
+
           {/* Theme Toggler with SVG */}
-          <button 
+          <button
             onClick={toggleTheme}
             className="p-2 border-2 border-black dark:border-[#ccff00] hover:bg-black hover:text-[#ccff00] dark:hover:bg-[#ccff00] dark:hover:text-black transition-colors flex items-center justify-center"
             title="Toggle Theme"
@@ -241,7 +246,7 @@ export default function Home() {
           <div className="inline-block bg-[#ccff00] text-black px-8 py-2 mb-8 transform -rotate-2 border-4 border-black">
             <span className="text-xl md:text-2xl font-black uppercase tracking-tight">Civic Tech Platform</span>
           </div>
-          
+
           <h1 className="text-6xl md:text-[8rem] font-black uppercase tracking-tighter leading-[0.85] mb-10 text-black dark:text-white drop-shadow-2xl">
             Clean the <br />
             <span className="text-black dark:text-[#ccff00]">Streets</span>, <br />
@@ -252,7 +257,7 @@ export default function Home() {
             </span>
           </h1>
 
-          <div className="text-lg md:text-2xl font-medium max-w-4xl mx-auto mb-12 leading-tight text-center px-4 text-black dark:text-white bg-white/80 dark:bg-black/80 inline-block p-4">
+          <div className="text-lg md:text-2xl font-medium max-w-4xl mx-auto mb-12 leading-tight text-center px-4 text-black dark:text-white inline-block p-4">
             <span className="bg-[#ccff00] text-black px-2 font-bold border-2 border-black inline-block">EcoPin A.I.</span> is a Crowdsourced Geospatial Platform for Transparent Environmental Reporting and Rapid Institutional Detection for the Pasig City Solid Waste Management Office.
           </div>
 
@@ -278,7 +283,7 @@ export default function Home() {
       {/* Marquee Divider */}
       <div className="w-full bg-[#ccff00] text-black font-black text-2xl py-3 overflow-hidden whitespace-nowrap border-y-4 border-black dark:border-black relative z-20">
         <div className="inline-block animate-[marquee_20s_linear_infinite]">
-          REPORT IT. TRACK IT. WATCH IT DISAPPEAR. // REPORT IT. TRACK IT. WATCH IT DISAPPEAR. // REPORT IT. TRACK IT. WATCH IT DISAPPEAR. // 
+          REPORT IT. TRACK IT. WATCH IT DISAPPEAR. // REPORT IT. TRACK IT. WATCH IT DISAPPEAR. // REPORT IT. TRACK IT. WATCH IT DISAPPEAR. //
         </div>
       </div>
 
@@ -293,53 +298,53 @@ export default function Home() {
               <div className="border-l-8 border-[#ccff00] pl-6 bg-black/5 dark:bg-white/5 p-4 hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
                 {/* Fixed dark mode text color for 01 */}
                 <span className="text-black dark:text-black font-black text-2xl block mb-2 tracking-widest bg-[#ccff00] inline-block px-2">01. REPORT</span>
-                <br/>Citizens pin environmental issues on the map with photos and descriptions.
+                <br />Citizens pin environmental issues on the map with photos and descriptions.
               </div>
               <div className="border-l-8 border-black dark:border-white pl-6 bg-black/5 dark:bg-white/5 p-4 hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
                 <span className="text-white bg-black dark:bg-white dark:text-black font-black text-2xl block mb-2 tracking-widest inline-block px-2">02. VALIDATE</span>
-                <br/>AI automatically verifies each report for accuracy and relevance.
+                <br />AI automatically verifies each report for accuracy and relevance.
               </div>
               <div className="border-l-8 border-[#ccff00] pl-6 bg-black/5 dark:bg-white/5 p-4 hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
                 {/* Fixed dark mode text color for 03 */}
                 <span className="text-black dark:text-black font-black text-2xl block mb-2 tracking-widest bg-[#ccff00] inline-block px-2">03. PRIORITIZE</span>
-                <br/>The system clusters and ranks issues based on severity and location.
+                <br />The system clusters and ranks issues based on severity and location.
               </div>
               <div className="border-l-8 border-black dark:border-white pl-6 bg-black/5 dark:bg-white/5 p-4 hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
                 <span className="text-white bg-black dark:bg-white dark:text-black font-black text-2xl block mb-2 tracking-widest inline-block px-2">04. ACT</span>
-                <br/>SWMO assigns cleanup tasks and tracks resolution in real time.
+                <br />SWMO assigns cleanup tasks and tracks resolution in real time.
               </div>
             </div>
           </div>
-          
-          <div 
+
+          <div
             className="relative h-[700px] border-8 border-black dark:border-[#ccff00] bg-gray-100 dark:bg-[#111] flex items-center justify-center group [perspective:1000px] overflow-visible"
             onMouseMove={handlePhoneMouseMove}
             onMouseLeave={handlePhoneMouseLeave}
           >
             {/* Background pattern for the box */}
             <div className="absolute inset-0 opacity-20 dark:opacity-20 mix-blend-multiply dark:mix-blend-normal overflow-hidden" style={{ backgroundImage: 'repeating-linear-gradient(45deg, #ccff00 0, #ccff00 2px, transparent 2px, transparent 10px)' }}></div>
-            
+
             {/* 3D Phone Mockup - Increased Size */}
-            <div 
+            <div
               className="w-[360px] h-[780px] border-[12px] border-black dark:border-[#222] rounded-[3.5rem] relative overflow-hidden bg-black shadow-[20px_20px_0px_0px_rgba(0,0,0,0.4)] dark:shadow-[30px_30px_0px_0px_rgba(204,255,0,0.15)] transition-transform duration-100 ease-out flex flex-col items-center justify-center px-8 z-10"
               style={{
                 transform: `rotateX(${phoneRotation.x}deg) rotateY(${phoneRotation.y}deg)`,
               }}
             >
               <div className="absolute top-0 inset-x-0 h-7 bg-black dark:bg-[#222] rounded-b-2xl w-40 mx-auto z-20"></div>
-              
+
               <div className="w-full flex flex-col items-center justify-center h-full pt-16 pb-10 relative z-10">
-                <h3 className="text-[3rem] font-bold text-white mb-12 text-center font-sans tracking-tight leading-tight">Ecopin<br/>Login</h3>
-                
+                <h3 className="text-[3rem] font-bold text-white mb-12 text-center font-sans tracking-tight leading-tight">Ecopin<br />Login</h3>
+
                 <div className="w-full space-y-5">
                   <div className="w-full bg-[#1A1A1A] border border-[#333] rounded-[1rem] p-5 text-gray-400 text-base font-sans font-medium flex items-center">
                     Email
                   </div>
-                  
+
                   <div className="w-full bg-[#1A1A1A] border border-[#333] rounded-[1rem] p-5 text-gray-400 text-base font-sans font-medium flex items-center justify-between">
                     <span>Password</span>
                     <svg className="w-6 h-6 text-gray-300" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                      <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
                     </svg>
                   </div>
                 </div>
@@ -353,7 +358,7 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            
+
             {/* Floating UI Chips with Authentic SVG Emojis - Positioned securely above phone via z-30 */}
             <div className="absolute top-20 -left-12 bg-[#ccff00] text-black font-black text-xl py-4 px-8 border-4 border-black rotate-[-12deg] z-30 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] flex items-center">
               <svg className="w-7 h-7 mr-3 text-black inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -374,14 +379,14 @@ export default function Home() {
       {/* Features Section */}
       <section id="features" className="relative z-10 py-32 px-6 bg-[#ccff00] border-t-8 border-black">
         {/* Wireframe background */}
-        <div 
-          className="absolute inset-0 opacity-30 pointer-events-none" 
+        <div
+          className="absolute inset-0 opacity-30 pointer-events-none"
           style={{
             backgroundImage: 'linear-gradient(rgba(0,0,0,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.5) 1px, transparent 1px)',
             backgroundSize: '40px 40px'
           }}
         ></div>
-        
+
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="flex flex-col md:flex-row justify-between items-end mb-16 border-b-4 border-black pb-8">
             <h2 className="text-6xl md:text-8xl font-black uppercase tracking-tighter leading-[0.9] text-black">
@@ -424,12 +429,12 @@ export default function Home() {
       {/* Downloads */}
       <section id="download" className="relative z-10 py-40 px-6 bg-white dark:bg-black text-black dark:text-white text-center border-t-8 border-black dark:border-[#ccff00] transition-colors duration-300">
         <div className="absolute inset-0 opacity-10 pointer-events-none mix-blend-difference" style={{ backgroundImage: 'radial-gradient(#000 2px, transparent 2px)', backgroundSize: '20px 20px' }}></div>
-        
+
         <h2 className="text-6xl md:text-[8rem] font-black uppercase tracking-tighter mb-8 leading-[0.8] relative z-10 flex flex-col items-center">
           <span className="glitch-text cursor-crosshair" data-text="MAKE PASIG">MAKE PASIG</span>
           <span className="glitch-text cursor-crosshair" data-text="GREEN AGAIN.">GREEN AGAIN.</span>
         </h2>
-        
+
         <p className="text-2xl md:text-3xl font-bold max-w-4xl mx-auto mb-16 relative z-10 border-b-8 border-black dark:border-[#ccff00] pb-8">
           Report, track, and manage environmental concerns in Pasig City. Available for Android devices.
         </p>
@@ -485,7 +490,8 @@ export default function Home() {
         </div>
       </footer>
 
-      <style dangerouslySetInnerHTML={{__html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes marquee {
           0% { transform: translateX(0); }
           100% { transform: translateX(-50%); }
