@@ -1,36 +1,29 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# EcoPin Web Application
 
-## Getting Started
+EcoPin is an AI-powered environmental response and cleanup monitoring platform.
 
-First, run the development server:
+## Role-Based Access Control (RBAC) System
+
+The application separates operations into clear roles:
+
+- **Officer**: Responsible for planning, supervision, operational analytics, cluster management, cleanup task creation, and response logs monitoring.
+- **Field Crew**: Responsible for field cleanup execution, viewing assigned tasks, status updates, and field report tracking.
+- **Citizen**: Standard user role for reporting environmental issues and viewing public maps.
+- **Admin**: User management, system configuration, and audit logs.
+
+### Role Navigation & UI Protection
+- Dynamic navigation rendering based on authenticated user context via `UserContext`.
+- Role-specific UI gating using `RequireRole`, `OfficerGuard`, and `FieldCrewGuard` components.
+- Dedicated dashboards for Officers (`/dashboard`) and Field Crew (`/dashboard/field-crew`).
+
+## Development
 
 ```bash
+# Install dependencies
+npm install
+
+# Run development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Open [http://localhost:3000](http://localhost:3000) with your browser to launch the web application.

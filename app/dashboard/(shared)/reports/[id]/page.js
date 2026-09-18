@@ -1,0 +1,910 @@
+'use client'
+import { useEffect, useState, useRef } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import {
+  fetchReportById,
+  fetchReportEvidence,
+  updateReportStatus,
+  updatePropertyOwnerConsent,
+  lguResolveReport,
+  updateReportValidation
+} from '@/lib/api'
+import PageHeader from '@/components/layout/PageHeader'
+import Notification from '@/components/ui/Notification'
+import StatusBadge from '@/components/ui/StatusBadge'
+import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
+import wkx from 'wkx'
+import { Buffer } from 'buffer'
+
+// Polyfill Buffer for browser environment
+if (typeof window !== 'undefined' && !window.Buffer) {
+  window.Buffer = Buffer
+}
+
+export default function ReportDetailPage() {
+  const params = useParams()
+  const router = useRouter()
+  const reportId = params.id
+
+  const [report, setReport] = useState(null)
+  const [evidence, setEvidence] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [selectedImage, setSelectedImage] = useState(null)
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false)
+  const [updatingStatus, setUpdatingStatus] = useState(false)
+  const [uploadingBefore, setUploadingBefore] = useState(false)
+  const [uploadingAfter, setUploadingAfter] = useState(false)
+  const [showNoteInput, setShowNoteInput] = useState(false)
+  const [noteText, setNoteText] = useState('')
+  const [addingNote, setAddingNote] = useState(false)
+  const [updatingConsent, setUpdatingConsent] = useState(false)
+  const [notification, setNotification] = useState(null)
+  const statusDropdownRef = useRef(null)
+  const [agencyResponses, setAgencyResponses] = useState([])
+  const [resolvingReport, setResolvingReport] = useState(false)
+  const [validatingReport, setValidatingReport] = useState(null)
+  const [activityLogPage, setActivityLogPage] = useState(1)
+  const activityLogPerPage = 10
+
+  const loadReportData = async () => {
+    setLoading(true)
+    try {
+      const [reportData, evidenceData] = await Promise.all([
+        fetchReportById(reportId),
+        fetchReportEvidence(reportId)
+      ])
+      console.log('Report data:', reportData)
+      console.log('Profiles data:', reportData?.profiles)
+      console.log('Data consent value:', reportData?.profiles?.data_consent)
+      console.log('Evidence data:', evidenceData)
+      if (reportData) {
+        setReport(reportData)
+        setEvidence(evidenceData)
+        setAgencyResponses([])
+      } else {
+        setError('Report not found')
+      }
+    } catch (err) {
+      console.error('Error loading report:', err)
+      setError('Failed to load report')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadReportData()
+  }, [reportId])
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target)) {
+        setShowStatusDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
+
+  const parseLocation = (location, latitude, longitude) => {
+    // reports_view has latitude and longitude columns directly
+    if (latitude && longitude) {
+      return { latitude, longitude }
+    }
+
+    if (!location) return { latitude: null, longitude: null }
+
+    try {
+      // Handle GeoJSON format from reports_view
+      if (typeof location === 'string' && location.startsWith('{')) {
+        const geoJSON = JSON.parse(location)
+        if (geoJSON.type === 'Point' && geoJSON.coordinates) {
+          return { latitude: geoJSON.coordinates[1], longitude: geoJSON.coordinates[0] }
+        }
+      }
+      // Handle hex string format
+      else if (typeof location === 'string') {
+        const buffer = Buffer.from(location, 'hex')
+        const geometry = wkx.Geometry.parse(buffer)
+        if (geometry && geometry.x && geometry.y) {
+          return { latitude: geometry.y, longitude: geometry.x }
+        }
+      }
+      // Handle Buffer format
+      else if (Buffer.isBuffer(location)) {
+        const geometry = wkx.Geometry.parse(location)
+        if (geometry && geometry.x && geometry.y) {
+          return { latitude: geometry.y, longitude: geometry.x }
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing location:', error)
+    }
+
+    return { latitude: null, longitude: null }
+  }
+
+  const getSatisfactionEmoji = (rating) => {
+    switch (rating) {
+      case 1:
+        return '😢'
+      case 2:
+        return '😕'
+      case 3:
+        return '😐'
+      case 4:
+        return '😊'
+      case 5:
+        return '😄'
+      default:
+        return '😐'
+    }
+  }
+
+  const getSatisfactionLabel = (rating) => {
+    switch (rating) {
+      case 1:
+        return 'Very Dissatisfied'
+      case 2:
+        return 'Dissatisfied'
+      case 3:
+        return 'Neutral'
+      case 4:
+        return 'Satisfied'
+      case 5:
+        return 'Very Satisfied'
+      default:
+        return 'Neutral'
+    }
+  }
+
+  const handleStatusUpdate = async (newStatus) => {
+    // Check if trying to mark as resolved without photos
+    if (newStatus === 'resolved' && (!report.before_photo_url || !report.after_photo_url)) {
+      setNotification({ message: 'Please upload both before and after photos before marking the report as resolved.', type: 'warning' })
+      return
+    }
+
+    setUpdatingStatus(true)
+    try {
+      await updateReportStatus(reportId, newStatus)
+      // Refresh report data
+      const updatedReport = await fetchReportById(reportId)
+      setReport(updatedReport)
+      setShowStatusDropdown(false)
+      setNotification({ message: 'Status updated successfully', type: 'success' })
+    } catch (error) {
+      console.error('Failed to update status:', error)
+      setNotification({ message: 'Failed to update status. Please try again.', type: 'error' })
+    } finally {
+      setUpdatingStatus(false)
+    }
+  }
+
+  const handleRejectReport = async () => {
+    setValidatingReport(reportId)
+    try {
+      await updateReportValidation(reportId, 'rejected')
+      setReport({ ...report, validation_status: 'rejected' })
+      setNotification({ message: 'Report rejected successfully', type: 'success' })
+    } catch (error) {
+      console.error('Failed to reject report:', error)
+      setNotification({ message: 'Failed to reject report. Please try again.', type: 'error' })
+    } finally {
+      setValidatingReport(null)
+    }
+  }
+
+  const handleValidateReport = async () => {
+    setValidatingReport(reportId)
+    try {
+      await updateReportValidation(reportId, 'approved')
+      setReport({ ...report, validation_status: 'approved' })
+      setNotification({ message: 'Report approved successfully', type: 'success' })
+    } catch (error) {
+      console.error('Failed to approve report:', error)
+      setNotification({ message: 'Failed to approve report. Please try again.', type: 'error' })
+    } finally {
+      setValidatingReport(null)
+    }
+  }
+
+  const handleResolveReport = async () => {
+    // Check if trying to resolve without photos
+    if (!report.before_photo_url || !report.after_photo_url) {
+      setNotification({ message: 'Please upload both before and after photos before resolving the report.', type: 'warning' })
+      return
+    }
+
+    setResolvingReport(true)
+    try {
+      const updatedReport = await lguResolveReport(reportId)
+      setReport(updatedReport)
+      setNotification({ message: 'Report resolved successfully. Waiting for reporter feedback.', type: 'success' })
+    } catch (error) {
+      console.error('Failed to resolve report:', error)
+      setNotification({ message: 'Failed to resolve report. Please try again.', type: 'error' })
+    } finally {
+      setResolvingReport(false)
+    }
+  }
+
+  const handlePhotoUpload = async (photoType, file) => {
+    if (!file) return
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    if (!validTypes.includes(file.type)) {
+      setNotification({ message: 'Invalid file type. Please upload JPEG, JPG, PNG, or WEBP images.', type: 'error' })
+      return
+    }
+
+    // Validate file size (10MB limit)
+    const maxSize = 10 * 1024 * 1024
+    if (file.size > maxSize) {
+      setNotification({ message: 'File size exceeds 10MB limit. Please upload a smaller image.', type: 'error' })
+      return
+    }
+
+    const setUploading = photoType === 'before' ? setUploadingBefore : setUploadingAfter
+    setUploading(true)
+
+    const token = localStorage.getItem('authToken')
+    console.log('Uploading photo:', { token: token ? token.substring(0, 20) + '...' : null, photoType })
+    const formData = new FormData()
+    formData.append('image', file)
+    formData.append('photo_type', photoType)
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/reports/${reportId}/photo`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || errorData.error || 'Failed to upload photo')
+      }
+
+      const data = await response.json()
+      console.log('Upload response:', data)
+      setReport(data.report)
+      setNotification({ message: 'Photo uploaded successfully', type: 'success' })
+    } catch (error) {
+      console.error('Failed to upload photo:', error)
+      setNotification({ message: error.message || 'Failed to upload photo. Please try again.', type: 'error' })
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handlePhotoDelete = async (photoType) => {
+    if (!confirm('Are you sure you want to delete this photo? This action cannot be undone.')) {
+      return
+    }
+
+    const token = localStorage.getItem('authToken')
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/reports/${reportId}/photo`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ photo_type: photoType }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || errorData.error || 'Failed to delete photo')
+      }
+
+      const data = await response.json()
+      setReport(data.report)
+      setNotification({ message: 'Photo deleted successfully', type: 'success' })
+    } catch (error) {
+      console.error('Failed to delete photo:', error)
+      setNotification({ message: error.message || 'Failed to delete photo. Please try again.', type: 'error' })
+    }
+  }
+
+  const handlePropertyOwnerConsent = async (newStatus) => {
+    setUpdatingConsent(true)
+    try {
+      await updatePropertyOwnerConsent(reportId, newStatus)
+      await loadReportData()
+      setNotification({ message: 'Property owner consent status updated', type: 'success' })
+    } catch (error) {
+      console.error('Failed to update consent status:', error)
+      setNotification({ message: 'Failed to update consent status', type: 'error' })
+    } finally {
+      setUpdatingConsent(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="p-8">
+        <PageHeader
+          title="Report Details"
+          subtitle="Loading report information..."
+          breadcrumbs={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Reports', href: '/dashboard/reports' },
+            { label: 'Details' }
+          ]}
+        />
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-3 space-y-6">
+            <SkeletonCard />
+            <div className="card animate-pulse">
+              <SkeletonLine className="h-7 w-2/3 mb-3" />
+              <SkeletonLine className="h-4 w-1/4 mb-6" />
+              <SkeletonLine className="h-4 w-full mb-2" />
+              <SkeletonLine className="h-4 w-5/6 mb-2" />
+              <SkeletonLine className="h-4 w-3/4" />
+            </div>
+            <div className="card animate-pulse">
+              <SkeletonLine className="h-5 w-1/4 mb-4" />
+              <div className="grid grid-cols-3 gap-4">
+                <SkeletonLine className="h-48 w-full rounded-lg" />
+                <SkeletonLine className="h-48 w-full rounded-lg" />
+                <SkeletonLine className="h-48 w-full rounded-lg" />
+              </div>
+            </div>
+          </div>
+          <div className="space-y-6">
+            <div className="card animate-pulse">
+              <SkeletonLine className="h-5 w-1/3 mb-4" />
+              <div className="space-y-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i}>
+                    <SkeletonLine className="h-3 w-1/4 mb-1" />
+                    <SkeletonLine className="h-4 w-2/3" />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="card animate-pulse">
+              <SkeletonLine className="h-5 w-1/3 mb-4" />
+              <SkeletonLine className="h-10 w-full mb-2" />
+              <SkeletonLine className="h-10 w-full" />
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !report) {
+    return (
+      <div className="p-8">
+        <PageHeader
+          title="Report Details"
+          subtitle="Error loading report"
+          breadcrumbs={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Reports', href: '/dashboard/reports' },
+            { label: 'Details' }
+          ]}
+        />
+        <div className="card">
+          <p className="text-error">{error || 'Report not found'}</p>
+          <button
+            onClick={() => router.back()}
+            className="btn-secondary mt-4"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  const location = parseLocation(report.location, report.latitude, report.longitude)
+  const dateStr = new Date(report.created_at).toLocaleString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+
+  return (
+    <div className="p-8">
+      <PageHeader
+        title="Report Details"
+        subtitle="View detailed report information"
+        breadcrumbs={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Reports', href: '/dashboard/reports' },
+          { label: 'Details' }
+        ]}
+      >
+        <button
+          onClick={loadReportData}
+          disabled={loading}
+          className="btn-secondary flex items-center gap-2 text-sm"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          {loading ? 'Refreshing...' : 'Refresh'}
+        </button>
+      </PageHeader>
+
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-4">
+            {/* Main Content */}
+            <div className="lg:col-span-3 space-y-6">
+              {/* Lifecycle Timeline - Read-only display */}
+              <div className="card border-2 border-[var(--accent-green)]">
+                <div className="text-center mb-6">
+                  <h2 className="text-2xl font-bold text-text-primary mb-2">Report Lifecycle</h2>
+                  <div className="flex justify-center gap-3 flex-wrap">
+                    {report.validation_status === 'rejected' || (report.on_private_property && report.property_owner_consent_status === 'denied') ? (
+                      <>
+                        {report.validation_status === 'rejected' && (
+                          <StatusBadge status={report.validation_status} type="validation" size="large" />
+                        )}
+                        {report.on_private_property && report.property_owner_consent_status === 'denied' && (
+                          <StatusBadge status={report.property_owner_consent_status} type="consent" size="large" />
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <StatusBadge status={report.status} type="report" size="large" />
+                        <StatusBadge status={report.validation_status} type="validation" size="large" />
+                        {report.on_private_property && (
+                          <StatusBadge
+                            status={report.property_owner_consent_status}
+                            type="consent"
+                            size="large"
+                          />
+                        )}
+                        {report.lifecycle_stage && (
+                          <StatusBadge status={report.lifecycle_stage} type="lifecycle" size="large" />
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center justify-center gap-0 px-4 relative">
+                  {/* Continuous background line */}
+                  <div className="absolute top-3 left-3 right-3 h-1 bg-border -z-10" />
+                  {/* Colored progress line */}
+                  {(() => {
+                    const stages = ['submitted', 'verified', 'assigned', 'in_progress', 'resolved', 'closed']
+                    const currentIndex = stages.indexOf(report.lifecycle_stage)
+                    const totalSegments = stages.length - 1
+
+                    let lineWidthCalc = '0px'
+                    if (currentIndex === 0) {
+                      lineWidthCalc = '12px'
+                    } else if (currentIndex > 0) {
+                      lineWidthCalc = `calc(12px + ((100% - 24px) / ${totalSegments}) * ${currentIndex})`
+                    }
+
+                    return (
+                      <div
+                        className="absolute top-3 left-3 h-1 bg-[var(--accent-green)] -z-10 transition-all"
+                        style={{ width: lineWidthCalc }}
+                      />
+                    )
+                  })()}
+                  {['submitted', 'verified', 'assigned', 'in_progress', 'resolved', 'closed'].map((stage, index) => {
+                    const stages = ['submitted', 'verified', 'assigned', 'in_progress', 'resolved', 'closed']
+                    const currentIndex = stages.indexOf(report.lifecycle_stage)
+                    const isCompleted = currentIndex >= index
+                    const isCurrent = report.lifecycle_stage === stage
+                    return (
+                      <div key={stage} className="flex-1 flex flex-col items-center z-10">
+                        <div className={`w-6 h-6 rounded-full ${isCurrent ? 'bg-[var(--success)] ring-4 ring-[var(--success)]/20' : isCompleted ? 'bg-[var(--accent-green)]' : 'bg-border'} transition-all relative`} />
+                        <span className={`text-xs mt-2 font-medium ${isCurrent ? 'text-[var(--success)]' : isCompleted ? 'text-[var(--accent-green)]' : 'text-text-muted'}`}>
+                          {stage.replace(/_/g, ' ').toUpperCase()}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Report Information */}
+              <div className="card">
+                <h1 className="text-3xl font-bold text-text-primary mb-2">{report.title}</h1>
+                <p className="text-lg text-text-secondary mb-6">Issue: {report.issue_type || 'General'}</p>
+
+                <h2 className="text-lg font-semibold text-text-primary mb-3">Description</h2>
+                <p className="text-text-primary leading-relaxed mb-6">
+                  {report.description || 'No description provided.'}
+                </p>
+
+              </div>
+
+              {/* Evidence Photos */}
+              <div className="card">
+                <h2 className="text-xl font-bold text-text-primary mb-4">Evidence Photos</h2>
+                {evidence.length === 0 ? (
+                  <div className="h-48 bg-surface rounded-lg flex items-center justify-center border border-dashed border-border">
+                    <div className="text-center">
+                      <svg className="w-12 h-12 text-text-muted mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <p className="text-text-muted">No evidence images available</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {evidence.map((img, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={img.url}
+                          alt={`Evidence ${index + 1}`}
+                          className="w-full h-48 object-cover rounded-lg border border-border cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => setSelectedImage(img.url)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Before & After Photos */}
+                {report.status !== 'closed' && report.status !== 'resolved' && report.validation_status !== 'rejected' && !(report.on_private_property && report.property_owner_consent_status === 'denied') && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                  {/* Before Photo */}
+                  <div className="p-4 border border-border rounded-lg">
+                    <div className="flex justify-between items-center mb-3">
+                      <h3 className="font-semibold">Before Photo</h3>
+                      {report.before_photo_url && (
+                        <button
+                          onClick={() => handlePhotoDelete('before')}
+                          className="px-3 py-1 bg-error hover:bg-error/90 text-white text-sm rounded transition-colors"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                    {report.before_photo_url ? (
+                      <img src={report.before_photo_url} alt="Before" className="w-full h-48 object-cover rounded-lg" />
+                    ) : (
+                      <div
+                        className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${uploadingBefore ? 'border-border bg-surface' : 'border-border hover:border-accent-green hover:bg-accent-green/5'
+                          }`}
+                        onClick={() => document.getElementById('before-photo-input').click()}
+                        onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-accent-green', 'bg-accent-green/10'); }}
+                        onDragLeave={(e) => { e.currentTarget.classList.remove('border-accent-green', 'bg-accent-green/10'); }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.currentTarget.classList.remove('border-accent-green', 'bg-accent-green/10');
+                          if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                            handlePhotoUpload('before', e.dataTransfer.files[0]);
+                          }
+                        }}
+                      >
+                        <input
+                          id="before-photo-input"
+                          type="file"
+                          accept="image/jpeg,image/jpg,image/png,image/webp"
+                          disabled={uploadingBefore}
+                          onChange={(e) => e.target.files[0] && handlePhotoUpload('before', e.target.files[0])}
+                          className="hidden"
+                        />
+                        {uploadingBefore ? (
+                          <div className="flex flex-col items-center gap-2">
+                            <div className="w-8 h-8 border-2 border-accent-green border-t-transparent rounded-full animate-spin"></div>
+                            <p className="text-sm text-text-muted">Uploading...</p>
+                          </div>
+                        ) : (
+                          <>
+                            <svg className="w-12 h-12 text-text-muted mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <p className="text-sm font-medium text-text-primary">Click or drag to upload</p>
+                            <p className="text-xs text-text-muted mt-1">JPG, PNG, or WEBP • Max 10MB</p>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* After Photo */}
+                  <div className="p-4 border border-border rounded-lg">
+                    <div className="flex justify-between items-center mb-3">
+                      <h3 className="font-semibold">After Photo</h3>
+                      {report.after_photo_url && (
+                        <button
+                          onClick={() => handlePhotoDelete('after')}
+                          className="px-3 py-1 bg-error hover:bg-error/90 text-white text-sm rounded transition-colors"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                    {report.after_photo_url ? (
+                      <img src={report.after_photo_url} alt="After" className="w-full h-48 object-cover rounded-lg" />
+                    ) : (
+                      <div
+                        className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${uploadingAfter ? 'border-border bg-surface' : 'border-border hover:border-accent-green hover:bg-accent-green/5'
+                          }`}
+                        onClick={() => document.getElementById('after-photo-input').click()}
+                        onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-accent-green', 'bg-accent-green/10'); }}
+                        onDragLeave={(e) => { e.currentTarget.classList.remove('border-accent-green', 'bg-accent-green/10'); }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.currentTarget.classList.remove('border-accent-green', 'bg-accent-green/10');
+                          if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                            handlePhotoUpload('after', e.dataTransfer.files[0]);
+                          }
+                        }}
+                      >
+                        <input
+                          id="after-photo-input"
+                          type="file"
+                          accept="image/jpeg,image/jpg,image/png,image/webp"
+                          disabled={uploadingAfter}
+                          onChange={(e) => e.target.files[0] && handlePhotoUpload('after', e.target.files[0])}
+                          className="hidden"
+                        />
+                        {uploadingAfter ? (
+                          <div className="flex flex-col items-center gap-2">
+                            <div className="w-8 h-8 border-2 border-accent-green border-t-transparent rounded-full animate-spin"></div>
+                            <p className="text-sm text-text-muted">Uploading...</p>
+                          </div>
+                        ) : (
+                          <>
+                            <svg className="w-12 h-12 text-text-muted mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <p className="text-sm font-medium text-text-primary">Click or drag to upload</p>
+                            <p className="text-xs text-text-muted mt-1">JPG, PNG, or WEBP • Max 10MB</p>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                )}
+              </div>
+
+              {/* Audit Log - Moved to main content */}
+              <div className="card">
+                <h2 className="text-xl font-bold text-text-primary mb-4">Activity Log</h2>
+                <div className="bg-surface p-4 rounded-lg border border-border">
+                  <p className="text-text-muted text-sm">
+                    Activity log is now managed through cleanup tasks.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Sidebar - Simplified */}
+            <div className="space-y-6 sticky top-[160px] self-start">
+              {/* Report Metadata */}
+              <div className="card">
+                <h2 className="text-lg font-bold text-text-primary mb-4">Report Details</h2>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs text-text-muted">Report ID</p>
+                    <p className="text-text-primary font-medium text-sm">{report.id}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-text-muted">Location</p>
+                    <p className="text-text-primary font-medium text-sm">
+                      {location.latitude && location.longitude
+                        ? `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`
+                        : 'Not available'
+                      }
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-text-muted">Submitted</p>
+                    <p className="text-text-primary font-medium text-sm">{dateStr}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-text-muted">Last Updated</p>
+                    <p className="text-text-primary font-medium text-sm">
+                      {new Date(report.updated_at).toLocaleString('en-US', {
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  </div>
+                  <div className="pt-3 border-t border-border">
+                    <p className="text-xs text-text-muted mb-2">Reporter Information</p>
+                    <div className="space-y-2">
+                      <div>
+                        <p className="text-xs text-text-muted">Name</p>
+                        <p className="text-text-primary font-medium text-sm">
+                          {report.profiles?.data_consent === true
+                            ? (report.profiles?.full_name || report.user_full_name || 'Anonymous')
+                            : 'Information not disclosed'
+                          }
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-text-muted">User ID</p>
+                        <p className="text-text-primary font-medium text-sm">
+                          {report.profiles?.data_consent === true
+                            ? (report.user_id || 'N/A')
+                            : 'Information not disclosed'
+                          }
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Property Owner Consent */}
+              {report.on_private_property && report.status !== 'closed' && report.status !== 'resolved' && report.validation_status !== 'rejected' && report.property_owner_consent_status !== 'denied' && (
+                <div className="card">
+                  <div className="flex items-start justify-between mb-4">
+                    <h2 className="text-lg font-bold text-text-primary">Property Owner Consent</h2>
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${
+                      report.property_owner_consent_status === 'obtained'
+                        ? 'bg-success/10 text-success border-success/30'
+                        : report.property_owner_consent_status === 'pending'
+                          ? 'bg-warning/10 text-warning border-warning/30'
+                          : report.property_owner_consent_status === 'denied'
+                            ? 'bg-error/10 text-error border-error/30'
+                            : 'bg-surface text-text-muted border-border'
+                    }`}>
+                      {report.property_owner_consent_status.replace(/_/g, ' ').toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        onClick={() => handlePropertyOwnerConsent('pending')}
+                        disabled={updatingConsent}
+                        className={`text-sm py-2 rounded-lg border transition-all ${report.property_owner_consent_status === 'pending'
+                          ? 'bg-warning/10 text-warning border-warning/30 font-semibold'
+                          : 'btn-secondary'
+                          }`}
+                      >
+                        Pending
+                      </button>
+                      <button
+                        onClick={() => handlePropertyOwnerConsent('obtained')}
+                        disabled={updatingConsent}
+                        className={`text-sm py-2 rounded-lg border transition-all ${report.property_owner_consent_status === 'obtained'
+                          ? 'bg-success text-white border-success font-semibold'
+                          : 'btn-secondary'
+                          }`}
+                      >
+                        Obtained
+                      </button>
+                      <button
+                        onClick={() => handlePropertyOwnerConsent('denied')}
+                        disabled={updatingConsent}
+                        className={`text-sm py-2 rounded-lg border transition-all ${report.property_owner_consent_status === 'denied'
+                          ? 'bg-error/10 text-error border-error/30 font-semibold'
+                          : 'btn-secondary'
+                          }`}
+                      >
+                        Denied
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Client Satisfaction */}
+              {report.status === 'closed' && (
+                <div className="card">
+                  <h2 className="text-lg font-bold text-text-primary mb-4">Client Satisfaction</h2>
+                  {report.satisfaction_rating ? (
+                    <div className="flex items-center gap-4">
+                      <span className="text-5xl">{getSatisfactionEmoji(report.satisfaction_rating)}</span>
+                      <div className="flex-1">
+                        <p className="text-xl font-semibold text-text-primary">
+                          {getSatisfactionLabel(report.satisfaction_rating)}
+                        </p>
+                        <p className="text-sm text-text-muted mt-1">
+                          Rating: {report.satisfaction_rating}/5
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-text-muted text-sm">No satisfaction rating provided</p>
+                  )}
+                </div>
+              )}
+
+              {/* Actions */}
+              {report.status !== 'closed' && report.status !== 'resolved' && report.validation_status !== 'rejected' && !(report.on_private_property && report.property_owner_consent_status === 'denied') && (
+                <div className="card">
+                  <h2 className="text-lg font-bold text-text-primary mb-4">Actions</h2>
+                  <div className="space-y-3">
+                  {/* Cleanup Task Link/Create */}
+                  {report.cleanup_task_id ? (
+                    <button
+                      onClick={() => router.push(`/dashboard/officer/cleanup-tasks/${report.cleanup_task_id}`)}
+                      className="btn-primary w-full"
+                    >
+                      View Cleanup Task
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => router.push(`/dashboard/officer/cleanup-tasks/create?preselect=${report.id}`)}
+                      disabled={report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review'}
+                      className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Create Cleanup Task
+                    </button>
+                  )}
+
+                  {/* Validate/Reject Report for Manual Review */}
+                  {(report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review') && (
+                    <>
+                      <button
+                        onClick={handleValidateReport}
+                        disabled={validatingReport === reportId}
+                        className="w-full px-4 py-2 bg-success text-white rounded-lg hover:bg-success/80 disabled:opacity-50 font-medium"
+                      >
+                        {validatingReport === reportId ? 'Approving...' : 'Approve Report'}
+                      </button>
+                      <button
+                        onClick={handleRejectReport}
+                        disabled={validatingReport === reportId}
+                        className="w-full px-4 py-2 bg-error text-white rounded-lg hover:bg-error/80 disabled:opacity-50 font-medium"
+                      >
+                        {validatingReport === reportId ? 'Rejecting...' : 'Reject Report'}
+                      </button>
+                    </>
+                  )}
+
+                  <button
+                    onClick={() => router.push(`/dashboard/map-view?lat=${location.latitude}&lng=${location.longitude}&id=${reportId}&validationStatus=${report.validation_status}&status=${report.status}`)}
+                    className="btn-secondary w-full"
+                  >
+                    View on Map
+                  </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+      {/* Full Image Modal */}
+      {selectedImage && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[2000]"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div className="relative max-w-5xl max-h-[90vh] p-4">
+            <button
+              onClick={() => setSelectedImage(null)}
+              className="absolute -top-12 right-0 text-white text-4xl hover:text-gray-300 transition-colors"
+            >
+              ×
+            </button>
+            <img
+              src={selectedImage}
+              alt="Full size evidence"
+              className="max-w-full max-h-[90vh] object-contain rounded-lg"
+            />
+          </div>
+        </div>
+      )}
+
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
+    </div>
+  )
+}
