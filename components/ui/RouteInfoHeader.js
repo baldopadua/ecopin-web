@@ -2,7 +2,7 @@
 
 export default function RouteInfoHeader({ eta = '2h 30m', weather = '28°C - Sunny', traffic = 'Light' }) {
   return (
-    <div className="card border-l-4 border-l-[var(--primary)] mb-4">
+    <div className="card border-l-2 border-l-[var(--primary)] mb-4">
       <h3 className="font-bold text-text-primary mb-4">Optimized Route Plan</h3>
       <div className="grid grid-cols-3 gap-4">
         {/* ETA */}

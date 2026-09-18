@@ -42,8 +42,8 @@ export default function OfficerHomepage() {
   ]
 
   const quickActions = [
-    { label: 'View All Tasks', onClick: () => router.push('/dashboard/officer/cleanup-tasks'), variant: 'primary' },
-    { label: 'View Reports', onClick: () => router.push('/dashboard/reports'), variant: 'secondary' }
+    { label: 'View All Tasks', onClick: () => router.push('/dashboard/officer/operations'), variant: 'primary' },
+    { label: 'View Reports', onClick: () => router.push('/dashboard/raw-data'), variant: 'secondary' }
   ]
 
   const formatDate = (dateString) => {
@@ -52,7 +52,7 @@ export default function OfficerHomepage() {
   }
 
   const handleTaskClick = (task) => {
-    router.push(`/dashboard/officer/cleanup-tasks/${task.id}`)
+    router.push(`/dashboard/officer/operations/${task.id}`)
   }
 
   const completedTaskColumns = [
@@ -96,11 +96,11 @@ export default function OfficerHomepage() {
         loading={loading}
       >
         {/* Active Tasks */}
-        <div className="bg-surface border-2 border-border rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_#ccff00] p-6 mb-8">
-          <div className="flex justify-between items-center mb-6 border-b-2 border-border pb-4">
-            <h2 className="text-2xl font-black uppercase tracking-tighter text-text-primary">Active Tasks</h2>
+        <div className="bg-surface border-2 border-border rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] p-6 mb-8">
+          <div className="flex justify-between items-center mb-6 border-b-2 border-border pb-3">
+            <h2 className="text-xl font-bold text-text-primary">Active Tasks</h2>
             <button
-              onClick={() => router.push('/dashboard/officer/cleanup-tasks')}
+              onClick={() => router.push('/dashboard/officer/operations')}
               className="btn-secondary"
             >
               View All
@@ -127,23 +127,23 @@ export default function OfficerHomepage() {
               {activeTasks.slice(0, 6).map(task => (
                 <div
                   key={task.id}
-                  className="border-2 border-border p-5 hover:bg-black hover:text-white dark:hover:bg-accent-green dark:hover:text-black transition-colors cursor-pointer group"
+                  className="border-2 border-border p-5 hover:bg-surface-elevated transition-colors cursor-pointer group"
                   onClick={() => handleTaskClick(task)}
                 >
                   <div className="flex justify-between items-start mb-4">
-                    <h3 className="font-black uppercase tracking-tight text-lg leading-tight flex-1 mr-2 group-hover:text-white dark:group-hover:text-black">
+                    <h3 className="font-bold text-lg leading-tight flex-1 mr-2 text-text-primary group-hover:text-primary transition-colors">
                       {task.title}
                     </h3>
                     <StatusBadge status={task.status} type="task" />
                   </div>
-                  <p className="text-sm font-mono line-clamp-2 mb-6 group-hover:text-white/80 dark:group-hover:text-black/80">
+                  <p className="text-sm text-text-secondary line-clamp-2 mb-6">
                     {task.description || 'No description provided.'}
                   </p>
-                  <div className="text-xs font-mono tracking-widest uppercase mb-4 group-hover:text-white/60 dark:group-hover:text-black/60">
+                  <div className="text-xs text-text-muted mb-4">
                     Created: {formatDate(task.created_at)}
                   </div>
-                  <button className="w-full border-2 border-current px-4 py-2 font-mono font-bold uppercase tracking-widest text-xs hover:bg-white hover:text-black dark:hover:bg-black dark:hover:text-white transition-colors">
-                    View Details
+                  <button className="text-sm font-medium text-text-secondary hover:text-primary transition-colors">
+                    View Details →
                   </button>
                 </div>
               ))}
@@ -153,8 +153,8 @@ export default function OfficerHomepage() {
 
         {/* Recently Completed */}
         {!loading && recentCompleted.length > 0 && (
-          <div className="bg-surface border-2 border-border rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_#ccff00] p-6">
-            <h2 className="text-2xl font-black uppercase tracking-tighter text-text-primary mb-6 border-b-2 border-border pb-4">Recently Completed</h2>
+          <div className="bg-surface border-2 border-border rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] p-6">
+            <h2 className="text-xl font-bold text-text-primary mb-4 border-b-2 border-border pb-3">Recently Completed</h2>
             <DataTable
               columns={completedTaskColumns}
               data={recentCompleted}

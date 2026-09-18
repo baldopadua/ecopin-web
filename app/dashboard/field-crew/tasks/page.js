@@ -75,7 +75,7 @@ export default function FieldCrewTasksPage() {
   }
 
   const handleRowClick = (task) => {
-    router.push(`/dashboard/field-crew/cleanup-tasks/${task.id}`)
+    router.push(`/dashboard/field-crew/operations/${task.id}`)
   }
 
   const handleResetFilters = () => {

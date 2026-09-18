@@ -125,6 +125,7 @@ export default function Home() {
   const [theme, setTheme] = useState('dark');
   const [phoneRotation, setPhoneRotation] = useState({ x: 0, y: 0 });
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const lenis = new Lenis({
@@ -140,6 +141,18 @@ export default function Home() {
 
     const isDarkMode = document.documentElement.classList.contains('dark');
     setTheme(isDarkMode ? 'dark' : 'light');
+
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      fetch(process.env.NEXT_PUBLIC_BACKEND_API_URL + '/api/auth/me', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.user) setUser(data.user);
+      })
+      .catch(console.error);
+    }
 
     return () => lenis.destroy();
   }, []);
@@ -191,8 +204,8 @@ export default function Home() {
           }}
         >
           {/* Crosshairs & Coordinates */}
-          <div className="absolute top-1/4 left-1/4 w-8 h-8 border-t border-l border-black dark:border-[#ccff00] opacity-80"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-8 h-8 border-b border-r border-black dark:border-[#ccff00] opacity-80"></div>
+          <div className="absolute top-1/4 left-1/4 w-8 h-8 border-t border-l border-[#1a1a1a] dark:border-[#333333] opacity-80"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-8 h-8 border-b border-r border-[#1a1a1a] dark:border-[#333333] opacity-80"></div>
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-black dark:text-[#ccff00] text-2xl font-light tracking-widest">+</div>
           <div className="absolute top-[30%] right-[20%] text-black dark:text-[#ccff00] text-2xl font-light tracking-widest">+</div>
           <div className="absolute bottom-[20%] left-[15%] text-black dark:text-[#ccff00] text-2xl font-light tracking-widest">+</div>
@@ -208,7 +221,7 @@ export default function Home() {
       <div className="absolute bottom-20 left-0 w-48 h-64 bg-[#ccff00] z-0 hidden md:block mix-blend-difference"></div>
 
       {/* Header */}
-      <header className="relative z-50 flex items-center justify-between p-6 md:px-12 border-b-4 border-black dark:border-[#ccff00] bg-white dark:bg-black transition-colors duration-300">
+      <header className="relative z-50 flex items-center justify-between p-6 md:px-12 border-b-2 border-[#1a1a1a] dark:border-[#333333] bg-white dark:bg-black transition-colors duration-300">
         <a href="#home" className="text-3xl font-black tracking-tighter cursor-pointer text-black dark:text-white">
           ECOPIN<span className="text-[#3300FF]">.AI</span>
         </a>
@@ -219,7 +232,7 @@ export default function Home() {
           {/* Theme Toggler with SVG */}
           <button
             onClick={toggleTheme}
-            className="p-2 border-2 border-black dark:border-[#ccff00] hover:bg-black hover:text-[#ccff00] dark:hover:bg-[#ccff00] dark:hover:text-black transition-colors flex items-center justify-center"
+            className="p-2 border-2 border-[#1a1a1a] dark:border-[#333333] hover:bg-black hover:text-[#ccff00] dark:hover:bg-[#ccff00] dark:hover:text-black transition-colors flex items-center justify-center"
             title="Toggle Theme"
           >
             {theme === 'dark' ? (
@@ -233,12 +246,25 @@ export default function Home() {
             )}
           </button>
 
-          <a href="/auth" className="px-6 py-2 bg-[#ccff00] text-black text-sm font-black uppercase tracking-widest border-2 border-black dark:border-[#ccff00] hover:bg-black hover:text-[#ccff00] dark:hover:bg-white dark:hover:text-black transition-colors">Login</a>
+          {user ? (
+            <a href="/dashboard" className="flex items-center gap-3 px-4 py-1.5 bg-[#ccff00] border-2 border-[#1a1a1a] dark:border-[#333333] hover:bg-black hover:text-[#ccff00] dark:hover:bg-white dark:hover:text-black transition-colors">
+              {user.avatar_url ? (
+                <img src={user.avatar_url} alt="Avatar" className="w-6 h-6 object-cover border border-[#1a1a1a] dark:border-white" />
+              ) : (
+                <div className="w-6 h-6 bg-[#1a1a1a] dark:bg-white text-white dark:text-black flex items-center justify-center font-bold text-xs border border-[#1a1a1a] dark:border-white">
+                  {user.full_name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U'}
+                </div>
+              )}
+              <span className="text-sm font-black uppercase tracking-widest text-black inherit-text">Dashboard</span>
+            </a>
+          ) : (
+            <a href="/auth" className="px-6 py-2 bg-[#ccff00] text-black text-sm font-black uppercase tracking-widest border-2 border-[#1a1a1a] dark:border-[#333333] hover:bg-black hover:text-[#ccff00] dark:hover:bg-white dark:hover:text-black transition-colors">Login</a>
+          )}
         </nav>
 
         {/* Mobile Menu Button */}
         <button
-          className="md:hidden p-2 border-2 border-black dark:border-[#ccff00] text-black dark:text-[#ccff00] hover:bg-black hover:text-[#ccff00] dark:hover:bg-[#ccff00] dark:hover:text-black transition-colors z-[60]"
+          className="md:hidden p-2 border-2 border-[#1a1a1a] dark:border-[#333333] text-black dark:text-[#ccff00] hover:bg-black hover:text-[#ccff00] dark:hover:bg-[#ccff00] dark:hover:text-black transition-colors z-[60]"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           title="Toggle Menu"
         >
@@ -264,12 +290,25 @@ export default function Home() {
             {/* Theme Toggler in Mobile Menu */}
             <button
               onClick={toggleTheme}
-              className="mt-4 p-4 border-4 border-black dark:border-[#ccff00] hover:bg-black hover:text-[#ccff00] dark:hover:bg-[#ccff00] dark:hover:text-black transition-colors flex items-center justify-center gap-4 text-xl font-black uppercase"
+              className="mt-4 p-4 border-2 border-[#1a1a1a] dark:border-[#333333] hover:bg-black hover:text-[#ccff00] dark:hover:bg-[#ccff00] dark:hover:text-black transition-colors flex items-center justify-center gap-4 text-xl font-black uppercase"
             >
               {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
             </button>
 
-            <a href="/auth" onClick={() => setIsMenuOpen(false)} className="mt-8 px-12 py-4 bg-[#ccff00] text-black text-2xl font-black uppercase tracking-widest border-4 border-black dark:border-[#ccff00] w-full text-center hover:bg-black hover:text-[#ccff00] transition-colors">Login</a>
+            {user ? (
+              <a href="/dashboard" onClick={() => setIsMenuOpen(false)} className="mt-8 flex items-center justify-center gap-4 px-12 py-4 bg-[#ccff00] text-black text-2xl font-black uppercase tracking-widest border-2 border-[#1a1a1a] dark:border-[#333333] w-full text-center hover:bg-black hover:text-[#ccff00] transition-colors">
+                {user.avatar_url ? (
+                  <img src={user.avatar_url} alt="Avatar" className="w-8 h-8 object-cover border-2 border-[#1a1a1a]" />
+                ) : (
+                  <div className="w-8 h-8 bg-[#1a1a1a] text-white flex items-center justify-center font-bold text-sm border-2 border-[#1a1a1a]">
+                    {user.full_name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U'}
+                  </div>
+                )}
+                Dashboard
+              </a>
+            ) : (
+              <a href="/auth" onClick={() => setIsMenuOpen(false)} className="mt-8 px-12 py-4 bg-[#ccff00] text-black text-2xl font-black uppercase tracking-widest border-2 border-[#1a1a1a] dark:border-[#333333] w-full text-center hover:bg-black hover:text-[#ccff00] transition-colors">Login</a>
+            )}
           </nav>
         </div>
       )}
@@ -281,7 +320,7 @@ export default function Home() {
 
         <div className="relative z-20 max-w-5xl mx-auto flex flex-col items-center pointer-events-auto">
           {/* Brutalist highlight box */}
-          <div className="inline-block bg-[#ccff00] text-black px-8 py-2 mb-8 transform -rotate-2 border-4 border-black">
+          <div className="inline-block bg-[#ccff00] text-black px-8 py-2 mb-8 transform -rotate-2 border-2 border-[#1a1a1a]">
             <span className="text-xl md:text-2xl font-black uppercase tracking-tight">Civic Tech Platform</span>
           </div>
 
@@ -300,37 +339,37 @@ export default function Home() {
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6 w-full max-w-2xl mt-4">
-            <a href="#download" className="group relative w-full sm:w-auto px-10 py-5 bg-[#ccff00] text-black font-black uppercase text-xl md:text-2xl overflow-hidden border-4 border-black dark:border-[#ccff00]">
+            <a href="#download" className="group relative w-full sm:w-auto px-10 py-5 bg-[#ccff00] text-black font-black uppercase text-xl md:text-2xl overflow-hidden border-2 border-[#1a1a1a] dark:border-[#333333]">
               <span className="relative z-10 block group-hover:scale-110 transition-transform duration-200">Download App</span>
             </a>
-            <a href="/map" className="group relative w-full sm:w-auto px-10 py-5 bg-black dark:bg-black text-[#ccff00] font-black uppercase text-xl md:text-2xl overflow-hidden border-4 border-black dark:border-[#ccff00] hover:bg-[#ccff00] hover:text-black transition-colors">
+            <a href="/map" className="group relative w-full sm:w-auto px-10 py-5 bg-black dark:bg-black text-[#ccff00] font-black uppercase text-xl md:text-2xl overflow-hidden border-2 border-[#1a1a1a] dark:border-[#333333] hover:bg-[#ccff00] hover:text-black transition-colors">
               <span className="relative z-10 block group-hover:scale-110 transition-transform duration-200">Live Reports</span>
             </a>
           </div>
         </div>
 
         {/* Small floating brutalist text elements - Fixed text color in light mode */}
-        <div className="absolute top-32 left-10 text-xs font-mono uppercase text-black dark:text-[#ccff00] hidden xl:block border-2 border-black dark:border-[#ccff00] p-2 bg-white dark:bg-black font-bold">
+        <div className="absolute top-32 left-10 text-xs font-mono uppercase text-black dark:text-[#ccff00] hidden xl:block border-2 border-[#1a1a1a] dark:border-[#333333] p-2 bg-white dark:bg-black font-bold">
           [08] resources <br /> loaded.
         </div>
-        <div className="absolute bottom-40 right-10 text-xs font-mono uppercase text-black dark:text-white hidden xl:block text-right border-r-4 border-[#ccff00] pr-2 font-bold bg-white/50 dark:bg-black/50 p-2">
+        <div className="absolute bottom-40 right-10 text-xs font-mono uppercase text-black dark:text-white hidden xl:block text-right border-r-2 border-[#ccff00] pr-2 font-bold bg-white/50 dark:bg-black/50 p-2">
           @pasig_city <br /> system.init()
         </div>
       </section>
 
       {/* Marquee Divider */}
-      <div className="w-full bg-[#ccff00] text-black font-black text-2xl py-3 overflow-hidden whitespace-nowrap border-y-4 border-black dark:border-black relative z-20">
+      <div className="w-full bg-[#ccff00] text-black font-black text-2xl py-3 overflow-hidden whitespace-nowrap border-y-4 border-[#1a1a1a] dark:border-[#1a1a1a] relative z-20">
         <div className="inline-block animate-[marquee_20s_linear_infinite]">
           REPORT IT. TRACK IT. WATCH IT DISAPPEAR. // REPORT IT. TRACK IT. WATCH IT DISAPPEAR. // REPORT IT. TRACK IT. WATCH IT DISAPPEAR. //
         </div>
       </div>
 
       {/* How it Works Section */}
-      <section id="about" className="relative z-10 py-32 px-6 bg-white dark:bg-black border-t-8 border-black dark:border-[#ccff00] transition-colors duration-300">
+      <section id="about" className="relative z-10 py-32 px-6 bg-white dark:bg-black border-t-8 border-[#1a1a1a] dark:border-[#333333] transition-colors duration-300">
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-20 items-center">
           <div>
             <h2 className="text-6xl md:text-8xl font-black uppercase tracking-tighter mb-12 leading-[0.9] text-black dark:text-white">
-              How it <br /> <span className="text-black bg-[#ccff00] px-4 inline-block mt-2 transform rotate-1 border-4 border-black">Works</span>
+              How it <br /> <span className="text-black bg-[#ccff00] px-4 inline-block mt-2 transform rotate-1 border-2 border-[#1a1a1a]">Works</span>
             </h2>
             <div className="space-y-10 font-mono text-lg md:text-xl text-black dark:text-gray-300">
               <div className="border-l-8 border-[#ccff00] pl-6 bg-black/5 dark:bg-white/5 p-4 hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
@@ -338,7 +377,7 @@ export default function Home() {
                 <span className="text-black dark:text-black font-black text-2xl block mb-2 tracking-widest bg-[#ccff00] inline-block px-2">01. REPORT</span>
                 <br />Citizens pin environmental issues on the map with photos and descriptions.
               </div>
-              <div className="border-l-8 border-black dark:border-white pl-6 bg-black/5 dark:bg-white/5 p-4 hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
+              <div className="border-l-8 border-[#1a1a1a] dark:border-white pl-6 bg-black/5 dark:bg-white/5 p-4 hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
                 <span className="text-white bg-black dark:bg-white dark:text-black font-black text-2xl block mb-2 tracking-widest inline-block px-2">02. VALIDATE</span>
                 <br />AI automatically verifies each report for accuracy and relevance.
               </div>
@@ -347,7 +386,7 @@ export default function Home() {
                 <span className="text-black dark:text-black font-black text-2xl block mb-2 tracking-widest bg-[#ccff00] inline-block px-2">03. PRIORITIZE</span>
                 <br />The system clusters and ranks issues based on severity and location.
               </div>
-              <div className="border-l-8 border-black dark:border-white pl-6 bg-black/5 dark:bg-white/5 p-4 hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
+              <div className="border-l-8 border-[#1a1a1a] dark:border-white pl-6 bg-black/5 dark:bg-white/5 p-4 hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
                 <span className="text-white bg-black dark:bg-white dark:text-black font-black text-2xl block mb-2 tracking-widest inline-block px-2">04. ACT</span>
                 <br />SWMO assigns cleanup tasks and tracks resolution in real time.
               </div>
@@ -355,7 +394,7 @@ export default function Home() {
           </div>
 
           <div
-            className="relative h-[500px] lg:h-[700px] border-8 border-black dark:border-[#ccff00] bg-gray-100 dark:bg-[#111] flex items-center justify-center group [perspective:1000px] overflow-visible"
+            className="relative h-[500px] lg:h-[700px] border-8 border-[#1a1a1a] dark:border-[#333333] bg-gray-100 dark:bg-[#111] flex items-center justify-center group [perspective:1000px] overflow-visible"
             onMouseMove={handlePhoneMouseMove}
             onMouseLeave={handlePhoneMouseLeave}
           >
@@ -365,7 +404,7 @@ export default function Home() {
             {/* 3D Phone Mockup - Scaled for mobile */}
             <div className="transform scale-[0.6] md:scale-100">
               <div
-                className="w-[360px] h-[780px] border-[12px] border-black dark:border-[#222] rounded-[3.5rem] relative overflow-hidden bg-black shadow-[20px_20px_0px_0px_rgba(0,0,0,0.4)] dark:shadow-[30px_30px_0px_0px_rgba(204,255,0,0.15)] transition-transform duration-100 ease-out flex flex-col items-center justify-center px-8 z-10"
+                className="w-[360px] h-[780px] border-[12px] border-[#1a1a1a] dark:border-[#222] rounded-[3.5rem] relative overflow-hidden bg-black shadow-[20px_20px_0px_0px_rgba(0,0,0,0.4)] dark:shadow-[30px_30px_0px_0px_rgba(204,255,0,0.15)] transition-transform duration-100 ease-out flex flex-col items-center justify-center px-8 z-10"
                 style={{
                   transform: `rotateX(${phoneRotation.x}deg) rotateY(${phoneRotation.y}deg)`,
                 }}
@@ -400,13 +439,13 @@ export default function Home() {
             </div>
 
             {/* Floating UI Chips with Authentic SVG Emojis - Positioned securely above phone via z-30 */}
-            <div className="absolute top-20 -left-12 bg-[#ccff00] text-black font-black text-xl py-4 px-8 border-4 border-black rotate-[-12deg] z-30 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] flex items-center">
+            <div className="absolute top-20 -left-12 bg-[#ccff00] text-black font-black text-xl py-4 px-8 border-2 border-[#1a1a1a] rotate-[-12deg] z-30 shadow-[8px_8px_0px_0px_#1a1a1a] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] flex items-center">
               <svg className="w-7 h-7 mr-3 text-black inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
               </svg>
               RESOLVED
             </div>
-            <div className="absolute bottom-32 -right-12 bg-white dark:bg-black text-black dark:text-white font-black text-xl py-4 px-8 border-4 border-black dark:border-white rotate-[8deg] z-30 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(204,255,0,1)] flex items-center">
+            <div className="absolute bottom-32 -right-12 bg-white dark:bg-black text-black dark:text-white font-black text-xl py-4 px-8 border-2 border-[#1a1a1a] dark:border-white rotate-[8deg] z-30 shadow-[8px_8px_0px_0px_#1a1a1a] dark:shadow-[8px_8px_0px_0px_rgba(204,255,0,1)] flex items-center">
               <svg className="w-7 h-7 mr-3 text-red-600 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
@@ -417,7 +456,7 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="relative z-10 py-32 px-6 bg-[#ccff00] border-t-8 border-black">
+      <section id="features" className="relative z-10 py-32 px-6 bg-[#ccff00] border-t-8 border-[#1a1a1a]">
         {/* Wireframe background */}
         <div
           className="absolute inset-0 opacity-30 pointer-events-none"
@@ -428,37 +467,37 @@ export default function Home() {
         ></div>
 
         <div className="max-w-7xl mx-auto relative z-10">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-16 border-b-4 border-black pb-8">
+          <div className="flex flex-col md:flex-row justify-between items-end mb-16 border-b-2 border-[#1a1a1a] pb-8">
             <h2 className="text-6xl md:text-8xl font-black uppercase tracking-tighter leading-[0.9] text-black">
               System <br /> Features
             </h2>
-            <div className="font-mono text-black font-bold uppercase border-2 border-black p-2 bg-[#ccff00] mt-4 md:mt-0">
+            <div className="font-mono text-black font-bold uppercase border-2 border-[#1a1a1a] p-2 bg-[#ccff00] mt-4 md:mt-0">
               *004 [READY]
             </div>
           </div>
 
           <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-black text-white p-8 border-4 border-black shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all">
+            <div className="bg-black text-white p-8 border-2 border-[#1a1a1a] shadow-[12px_12px_0px_0px_#1a1a1a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[8px_8px_0px_0px_#1a1a1a] transition-all">
               <h3 className="text-3xl font-black uppercase tracking-tight mb-4 text-[#ccff00]">AI-Powered Validation</h3>
               <p className="font-mono text-gray-300">Reports are automatically verified using artificial intelligence to reduce false reports and ensure data accuracy.</p>
             </div>
-            <div className="bg-black text-white p-8 border-4 border-black shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all">
+            <div className="bg-black text-white p-8 border-2 border-[#1a1a1a] shadow-[12px_12px_0px_0px_#1a1a1a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[8px_8px_0px_0px_#1a1a1a] transition-all">
               <h3 className="text-3xl font-black uppercase tracking-tight mb-4 text-[#ccff00]">Geospatial Mapping</h3>
               <p className="font-mono text-gray-300">Issues are pinned on an interactive map, giving SWMO a real-time geographic overview of environmental hotspots.</p>
             </div>
-            <div className="bg-black text-white p-8 border-4 border-black shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all">
+            <div className="bg-black text-white p-8 border-2 border-[#1a1a1a] shadow-[12px_12px_0px_0px_#1a1a1a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[8px_8px_0px_0px_#1a1a1a] transition-all">
               <h3 className="text-3xl font-black uppercase tracking-tight mb-4 text-[#ccff00]">Smart Clustering</h3>
               <p className="font-mono text-gray-300">Related reports are automatically grouped by location and type, helping authorities identify patterns and prioritize action.</p>
             </div>
-            <div className="bg-black text-white p-8 border-4 border-black shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all">
+            <div className="bg-black text-white p-8 border-2 border-[#1a1a1a] shadow-[12px_12px_0px_0px_#1a1a1a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[8px_8px_0px_0px_#1a1a1a] transition-all">
               <h3 className="text-3xl font-black uppercase tracking-tight mb-4 text-[#ccff00]">Role-Based Access</h3>
               <p className="font-mono text-gray-300">Separate interfaces for citizens and SWMO personnel, ensuring the right people have the right tools and access levels.</p>
             </div>
-            <div className="bg-black text-white p-8 border-4 border-black shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all">
+            <div className="bg-black text-white p-8 border-2 border-[#1a1a1a] shadow-[12px_12px_0px_0px_#1a1a1a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[8px_8px_0px_0px_#1a1a1a] transition-all">
               <h3 className="text-3xl font-black uppercase tracking-tight mb-4 text-[#ccff00]">Cleanup Task Mgmt</h3>
               <p className="font-mono text-gray-300">SWMO can create, assign, and track cleanup tasks directly from reported issues, closing the loop from report to resolution.</p>
             </div>
-            <div className="bg-black text-white p-8 border-4 border-black shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all">
+            <div className="bg-black text-white p-8 border-2 border-[#1a1a1a] shadow-[12px_12px_0px_0px_#1a1a1a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[8px_8px_0px_0px_#1a1a1a] transition-all">
               <h3 className="text-3xl font-black uppercase tracking-tight mb-4 text-[#ccff00]">Analytics Dashboard</h3>
               <p className="font-mono text-gray-300">Comprehensive insights into report volumes, resolution rates, and environmental trends to support data-driven decisions.</p>
             </div>
@@ -467,7 +506,7 @@ export default function Home() {
       </section>
 
       {/* Downloads */}
-      <section id="download" className="relative z-10 py-40 px-6 bg-white dark:bg-black text-black dark:text-white text-center border-t-8 border-black dark:border-[#ccff00] transition-colors duration-300">
+      <section id="download" className="relative z-10 py-40 px-6 bg-white dark:bg-black text-black dark:text-white text-center border-t-8 border-[#1a1a1a] dark:border-[#333333] transition-colors duration-300">
         <div className="absolute inset-0 opacity-10 pointer-events-none mix-blend-difference" style={{ backgroundImage: 'radial-gradient(#000 2px, transparent 2px)', backgroundSize: '20px 20px' }}></div>
 
         <h2 className="text-6xl md:text-[8rem] font-black uppercase tracking-tighter mb-8 leading-[0.8] relative z-10 flex flex-col items-center">
@@ -475,11 +514,11 @@ export default function Home() {
           <span className="glitch-text cursor-crosshair" data-text="GREEN AGAIN.">GREEN AGAIN.</span>
         </h2>
 
-        <p className="text-2xl md:text-3xl font-bold max-w-4xl mx-auto mb-16 relative z-10 border-b-8 border-black dark:border-[#ccff00] pb-8">
+        <p className="text-2xl md:text-3xl font-bold max-w-4xl mx-auto mb-16 relative z-10 border-b-8 border-[#1a1a1a] dark:border-[#333333] pb-8">
           Report, track, and manage environmental concerns in Pasig City. Available for Android devices.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-8 relative z-10">
-          <a href="/ecopin-app-release.apk" download className="inline-block px-12 py-6 bg-[#ccff00] text-black font-black uppercase text-3xl hover:bg-black hover:text-[#ccff00] dark:hover:bg-white dark:hover:text-black transition-all border-8 border-black dark:border-white shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] dark:shadow-[12px_12px_0px_0px_rgba(204,255,0,0.5)] hover:shadow-none hover:translate-x-[12px] hover:translate-y-[12px]">
+          <a href="/ecopin-app-release.apk" download className="inline-block px-12 py-6 bg-[#ccff00] text-black font-black uppercase text-3xl hover:bg-black hover:text-[#ccff00] dark:hover:bg-white dark:hover:text-black transition-all border-8 border-[#1a1a1a] dark:border-white shadow-[12px_12px_0px_0px_#1a1a1a] dark:shadow-[12px_12px_0px_0px_rgba(204,255,0,0.5)] hover:shadow-none hover:translate-x-[12px] hover:translate-y-[12px]">
             Download App
           </a>
         </div>

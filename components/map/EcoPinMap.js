@@ -458,7 +458,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
       return // Don't navigate if onReportClick is provided
     }
     
-    router.push(`/dashboard/reports/${reportId}`)
+    router.push(`/dashboard/raw-data/${reportId}`)
   }, [selectionMode, onReportSelect, onReportClick, router])
 
   if (!mounted) return <p>Loading map...</p>
@@ -576,7 +576,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                         onClusterSelect(memberReports.map(r => r.id))
                       }
                     } else {
-                      router.push(`/dashboard/officer/clusters/${cluster.id}`)
+                      router.push(`/dashboard/officer/hotzone-intel/${cluster.id}`)
                     }
                   }
                 }}
@@ -618,7 +618,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
-                          router.push(`/dashboard/officer/clusters/${cluster.id}`)
+                          router.push(`/dashboard/officer/hotzone-intel/${cluster.id}`)
                         }}
                         className="mt-2 w-full text-xs bg-accent-green text-white py-1 rounded hover:bg-accent-green-dark"
                       >

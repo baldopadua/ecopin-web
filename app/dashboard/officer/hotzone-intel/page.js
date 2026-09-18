@@ -91,7 +91,7 @@ export default function ClustersPage() {
   }
 
   const handleRowClick = (cluster) => {
-    router.push(`/dashboard/officer/clusters/${cluster.id}`)
+    router.push(`/dashboard/officer/hotzone-intel/${cluster.id}`)
   }
 
   const handleResetFilters = () => {

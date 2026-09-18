@@ -125,7 +125,7 @@ export default function ClusterDetailPage() {
   }, [clusterId])
 
   const handleRowClick = (reportId) => {
-    router.push(`/dashboard/reports/${reportId}`)
+    router.push(`/dashboard/raw-data/${reportId}`)
   }
 
   const handleCreateTask = async () => {
@@ -141,7 +141,7 @@ export default function ClusterDetailPage() {
       setShowCreateTaskModal(false)
       setTaskTitle('')
       setTaskDescription('')
-      router.push(`/dashboard/officer/cleanup-tasks/${result.task.id}`)
+      router.push(`/dashboard/officer/operations/${result.task.id}`)
     } catch (error) {
       console.error('Failed to create cleanup task:', error)
       alert('Failed to create cleanup task. Please try again.')
@@ -249,7 +249,7 @@ export default function ClusterDetailPage() {
         subtitle={`Reports grouped by ${cluster.issue_type || 'similar issue'}`}
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Clusters', href: '/dashboard/officer/clusters' },
+          { label: 'Clusters', href: '/dashboard/officer/hotzone-intel' },
           { label: `Cluster #${cluster.id}` }
         ]}
       />
@@ -280,7 +280,7 @@ export default function ClusterDetailPage() {
             </button>
           ) : existingTask ? (
             <button
-              onClick={() => router.push(`/dashboard/officer/cleanup-tasks/${existingTask.id}`)}
+              onClick={() => router.push(`/dashboard/officer/operations/${existingTask.id}`)}
               className="btn-primary"
             >
               View Task
@@ -297,7 +297,7 @@ export default function ClusterDetailPage() {
             const loc = parseLocation(firstReport.location, firstReport.latitude, firstReport.longitude);
             return (
               <button
-                onClick={() => router.push(`/dashboard/map-view?lat=${loc.latitude}&lng=${loc.longitude}&id=${firstReport.id}&validationStatus=${firstReport.validation_status}&status=${firstReport.status}`)}
+                onClick={() => router.push(`/dashboard/map-grid?lat=${loc.latitude}&lng=${loc.longitude}&id=${firstReport.id}&validationStatus=${firstReport.validation_status}&status=${firstReport.status}`)}
                 className="btn-secondary"
               >
                 View on Map

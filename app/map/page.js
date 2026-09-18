@@ -36,7 +36,7 @@ export default function PublicMapPage() {
       style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
     >
       {/* Header */}
-      <header className="relative z-[1100] flex flex-shrink-0 items-center justify-between p-4 md:px-8 border-b-8 border-black dark:border-[#ccff00] bg-white dark:bg-black transition-colors duration-300 shadow-[0px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[0px_8px_0px_0px_rgba(204,255,0,0.2)]">
+      <header className="relative z-[1100] flex flex-shrink-0 items-center justify-between p-4 md:px-8 border-b-8 border-[#1a1a1a] dark:border-[#333333] bg-white dark:bg-black transition-colors duration-300 shadow-[0px_8px_0px_0px_#1a1a1a] dark:shadow-[0px_8px_0px_0px_rgba(204,255,0,0.2)]">
         <a href="/" className="text-2xl md:text-3xl font-black tracking-tighter cursor-pointer text-black dark:text-white hover:underline">
           ECOPIN<span className="text-[#3300FF]">.AI</span>
         </a>
@@ -47,7 +47,7 @@ export default function PublicMapPage() {
           {/* Theme Toggler */}
           <button
             onClick={toggleTheme}
-            className="p-2 border-4 border-black dark:border-[#ccff00] hover:bg-black hover:text-[#ccff00] dark:hover:bg-[#ccff00] dark:hover:text-black transition-colors flex items-center justify-center"
+            className="p-2 border-2 border-[#1a1a1a] dark:border-[#333333] hover:bg-black hover:text-[#ccff00] dark:hover:bg-[#ccff00] dark:hover:text-black transition-colors flex items-center justify-center"
             title="Toggle Theme"
           >
             {theme === 'dark' ? (
@@ -61,12 +61,12 @@ export default function PublicMapPage() {
             )}
           </button>
 
-          <a href="/auth" className="px-6 py-2 bg-[#ccff00] text-black text-sm font-black uppercase tracking-widest border-4 border-black dark:border-[#ccff00] hover:bg-black hover:text-[#ccff00] dark:hover:bg-white dark:hover:text-black transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-none">Login</a>
+          <a href="/auth" className="px-6 py-2 bg-[#ccff00] text-black text-sm font-black uppercase tracking-widest border-2 border-[#1a1a1a] dark:border-[#333333] hover:bg-black hover:text-[#ccff00] dark:hover:bg-white dark:hover:text-black transition-colors shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-none">Login</a>
         </nav>
 
         {/* Mobile Menu Button */}
         <button
-          className="md:hidden p-2 border-4 border-black dark:border-[#ccff00] text-black dark:text-[#ccff00] hover:bg-black hover:text-[#ccff00] dark:hover:bg-[#ccff00] dark:hover:text-black transition-colors"
+          className="md:hidden p-2 border-2 border-[#1a1a1a] dark:border-[#333333] text-black dark:text-[#ccff00] hover:bg-black hover:text-[#ccff00] dark:hover:bg-[#ccff00] dark:hover:text-black transition-colors"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           title="Toggle Menu"
         >
@@ -91,12 +91,12 @@ export default function PublicMapPage() {
             
             <button
               onClick={toggleTheme}
-              className="mt-4 p-4 border-8 border-black dark:border-[#ccff00] hover:bg-black hover:text-[#ccff00] dark:hover:bg-[#ccff00] dark:hover:text-black transition-colors flex items-center justify-center gap-4 text-xl font-black uppercase"
+              className="mt-4 p-4 border-8 border-[#1a1a1a] dark:border-[#333333] hover:bg-black hover:text-[#ccff00] dark:hover:bg-[#ccff00] dark:hover:text-black transition-colors flex items-center justify-center gap-4 text-xl font-black uppercase"
             >
               {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
             </button>
 
-            <a href="/auth" onClick={() => setIsMenuOpen(false)} className="mt-8 px-12 py-4 bg-[#ccff00] text-black text-2xl font-black uppercase tracking-widest border-8 border-black dark:border-[#ccff00] w-full text-center hover:bg-black hover:text-[#ccff00] transition-colors">Login</a>
+            <a href="/auth" onClick={() => setIsMenuOpen(false)} className="mt-8 px-12 py-4 bg-[#ccff00] text-black text-2xl font-black uppercase tracking-widest border-8 border-[#1a1a1a] dark:border-[#333333] w-full text-center hover:bg-black hover:text-[#ccff00] transition-colors">Login</a>
           </nav>
         </div>
       )}

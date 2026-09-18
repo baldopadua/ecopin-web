@@ -1386,7 +1386,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
                           if (loc.latitude && loc.longitude) {
                             return (
                               <button
-                                onClick={() => router.push(`/dashboard/map-view?lat=${loc.latitude}&lng=${loc.longitude}&id=${report.id}&validationStatus=${report.validation_status}&status=${report.status}`)}
+                                onClick={() => router.push(`/dashboard/map-grid?lat=${loc.latitude}&lng=${loc.longitude}&id=${report.id}&validationStatus=${report.validation_status}&status=${report.status}`)}
                                 className="btn-secondary w-full"
                               >
                                 View on Map

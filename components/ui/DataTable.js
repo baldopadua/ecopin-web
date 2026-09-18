@@ -43,7 +43,7 @@ export default function DataTable({
 
   if (loading) {
     return (
-      <div className={`bg-surface border-2 border-border rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_#ccff00] ${className}`}>
+      <div className={`bg-surface border-2 border-border rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] ${className}`}>
         <div className="space-y-0">
           <div className="overflow-x-auto">
             <table className="w-full font-mono">
@@ -83,7 +83,7 @@ export default function DataTable({
 
   if (data.length === 0) {
     return (
-      <div className={`bg-surface border-2 border-border rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_#ccff00] p-8 ${className}`}>
+      <div className={`bg-surface border-2 border-border rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] p-8 ${className}`}>
         <div className="text-center py-10 text-text-muted font-mono uppercase tracking-widest">
           <p className="text-lg mb-1">{emptyMessage}</p>
         </div>
@@ -92,7 +92,7 @@ export default function DataTable({
   }
 
   return (
-    <div className={`bg-surface border-2 border-border rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_#ccff00] ${className}`}>
+    <div className={`bg-surface border-2 border-border rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] ${className}`}>
       <div className="overflow-x-auto">
         <table className="w-full font-mono">
           <colgroup>

@@ -113,7 +113,12 @@ export function SessionProvider({ children }) {
       try {
         const storedToken = localStorage.getItem('authToken')
         if (storedToken) {
-          const payload = JSON.parse(atob(storedToken.split('.')[1]))
+          const base64Url = storedToken.split('.')[1]
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+          const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+          }).join(''))
+          const payload = JSON.parse(jsonPayload)
           const jwtExpTime = payload.exp * 1000 // Convert to milliseconds
           
           if (jwtExpTime < currentTime) {
@@ -140,6 +145,15 @@ export function SessionProvider({ children }) {
 
     // Activity tracking - update last activity timestamp
     const handleUserActivity = () => {
+      // Don't update if session has already expired based on inactivity timeout
+      const lastActivity = localStorage.getItem('lastActivity')
+      if (lastActivity) {
+        const timeSinceActivity = Date.now() - parseInt(lastActivity)
+        if (timeSinceActivity > sessionTimeoutMinutes * 60 * 1000) {
+          checkSessionExpiry()
+          return
+        }
+      }
       updateLastActivity()
     }
 

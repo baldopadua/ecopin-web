@@ -8,7 +8,7 @@ export function SkeletonLine({ className = '' }) {
 
 export function SkeletonCard({ className = '' }) {
   return (
-    <div className={`bg-surface border-2 border-border rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_#ccff00] p-6 animate-pulse ${className}`}>
+    <div className={`bg-surface border-2 border-border rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] p-6 animate-pulse ${className}`}>
       <SkeletonLine className="h-4 w-1/3 mb-3" />
       <SkeletonLine className="h-3 w-2/3 mb-2" />
       <SkeletonLine className="h-3 w-1/2" />
@@ -18,7 +18,7 @@ export function SkeletonCard({ className = '' }) {
 
 export function SkeletonStatCard({ className = '' }) {
   return (
-    <div className={`bg-surface border-2 border-border rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_#ccff00] p-6 border-l-8 animate-pulse ${className}`}>
+    <div className={`bg-surface border-2 border-border rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] p-6 border-l-8 animate-pulse ${className}`}>
       <SkeletonLine className="h-3 w-1/2 mb-3" />
       <SkeletonLine className="h-8 w-1/3 mb-2" />
       <SkeletonLine className="h-3 w-2/5" />
@@ -28,7 +28,7 @@ export function SkeletonStatCard({ className = '' }) {
 
 export function SkeletonTable({ rows = 5, cols = 5, className = '' }) {
   return (
-    <div className={`bg-surface border-2 border-border rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_#ccff00] p-6 animate-pulse ${className}`}>
+    <div className={`bg-surface border-2 border-border rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] p-6 animate-pulse ${className}`}>
       <div className="space-y-3">
         <div className="flex gap-4">
           {Array.from({ length: cols }).map((_, i) => (
@@ -59,7 +59,7 @@ export function SkeletonPageHeader() {
 
 export function SkeletonChartCard({ className = '' }) {
   return (
-    <div className={`bg-surface border-2 border-border rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_#ccff00] p-6 animate-pulse ${className}`}>
+    <div className={`bg-surface border-2 border-border rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] p-6 animate-pulse ${className}`}>
       <SkeletonLine className="h-4 w-1/3 mb-4" />
       <SkeletonLine className="h-48 w-full rounded-none" />
     </div>
@@ -68,7 +68,7 @@ export function SkeletonChartCard({ className = '' }) {
 
 export function SkeletonForm({ fields = 4, className = '' }) {
   return (
-    <div className={`bg-surface border-2 border-border rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_#ccff00] p-6 animate-pulse ${className}`}>
+    <div className={`bg-surface border-2 border-border rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] p-6 animate-pulse ${className}`}>
       <SkeletonLine className="h-6 w-1/4 mb-6" />
       <div className="space-y-4">
         {Array.from({ length: fields }).map((_, i) => (

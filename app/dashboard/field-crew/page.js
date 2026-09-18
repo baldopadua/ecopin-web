@@ -104,7 +104,7 @@ export default function FieldCrewHomepage() {
 
   const quickActions = [
     { label: 'View All Tasks', onClick: () => router.push('/dashboard/field-crew/tasks'), variant: 'primary' },
-    { label: 'View Reports', onClick: () => router.push('/dashboard/field-crew/reports'), variant: 'secondary' }
+    { label: 'View Reports', onClick: () => router.push('/dashboard/raw-data'), variant: 'secondary' }
   ]
 
   const formatDate = (dateString) => {

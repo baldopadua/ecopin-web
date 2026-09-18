@@ -1,17 +1,17 @@
-# Ecopin Design System: Neo-Brutalist / Cyber-Matrix 
+# Ecopin Design System: Refined Neo-Brutalist / Cyber-Matrix 
 
 This document outlines the core design language, aesthetic principles, and technical implementation details for the Ecopin neo-brutalist redesign. This system is designed to be reusable across web, mobile, and any other platforms within the Ecopin ecosystem.
 
 ## 1. Core Philosophy
-The design bridges the gap between raw civic action and cutting-edge geospatial technology. Moving away from friendly, rounded, "corporate-green" aesthetics, this style embraces a **Cyber-Brutalist** / **Terminal** look. 
+The design bridges the gap between raw civic action and cutting-edge geospatial technology. Moving away from "maximum neo-brutalism" towards a **Refined Cyber-Brutalist** / **Terminal** look. 
 
-It communicates urgency, transparency, and grassroots action. It feels like a high-tech control center combined with a rebellious underground movement.
+It communicates urgency, transparency, and grassroots action while remaining highly legible and accessible. It feels like a high-tech control center combined with a sophisticated operational dashboard.
 
 ### Key Characteristics:
-*   **High Contrast:** Absolute blacks and blinding neon greens.
-*   **Raw & Unapologetic:** Sharp edges, thick borders, no soft drop shadows (except for glowing elements).
-*   **System/Terminal Accents:** Monospace typography, code-like brackets `[08]`, and system readouts.
-*   **Kinetic & Glitchy:** Overlapping elements, blend modes, and harsh hover interactions.
+*   **Controlled Contrast:** Dark charcoal (`#1A1A1A`) instead of pure black. Neon green used selectively for accents and active states.
+*   **Structural & Technical:** Sharp edges (`rounded-none` or `rounded-sm`), 1px or 2px borders, subtle tectonic drop shadows (e.g., 2px offset).
+*   **System/Terminal Accents:** Monospace typography strictly reserved for system readouts, metadata, and timestamps. Standard sans-serif for reading.
+*   **Clear Hierarchy:** Not everything needs a heavy border. Outline weights establish importance.
 
 ---
 
@@ -21,10 +21,10 @@ The color system is highly restricted to maintain maximum impact. Avoid using gr
 
 | Role | Hex | RGB | Usage |
 | :--- | :--- | :--- | :--- |
-| **Deep Black (Base)** | `#000000` | `rgb(0,0,0)` | Primary background, text on neon, heavy borders. |
-| **Neon Lime (Primary)** | `#CCFF00` | `rgb(204,255,0)` | Main accent, primary buttons, borders, highlights, glowing orbs. |
-| **Pure White** | `#FFFFFF` | `rgb(255,255,255)` | Primary text, secondary borders, secondary accent. |
-| **Dark Grey (Surface)**| `#111111` | `rgb(17,17,17)` | Secondary backgrounds (e.g., inside mockups/cards). |
+| **Dark Charcoal (Base)** | `#1A1A1A` | `rgb(26,26,26)` | Primary background in dark mode, borders, text, and shadows. |
+| **Neon Lime (Accent)** | `#CCFF00` | `rgb(204,255,0)` | Active states, highlights, glowing orbs, primary buttons. Used selectively. |
+| **Pure White** | `#FFFFFF` | `rgb(255,255,255)` | Primary text (dark mode), secondary backgrounds (light mode). |
+| **Dark Grey (Surface)**| `#222222` | `rgb(34,34,34)` | Secondary backgrounds. |
 | **Status: Urgent** | `#FF0000` | `rgb(255,0,0)` | Urgent report tags, critical errors. |
 
 ---
@@ -34,30 +34,30 @@ The color system is highly restricted to maintain maximum impact. Avoid using gr
 The typography discards modern geometric sans-serifs (like Inter or Outfit) in favor of raw, unpolished, native fonts. 
 
 ### Font Families
-1.  **Primary/Display:** `Helvetica`, `Arial`, `sans-serif`
-    *   *Usage:* Headlines, massive hero text, primary buttons.
-    *   *Styling:* Always use the heaviest weight available (`font-black`), tightly tracked (`tracking-tighter`), and often uppercase.
+1.  **Primary/Reading:** `Helvetica`, `Arial`, `sans-serif` (or modern sans like `Outfit`)
+    *   *Usage:* Headlines, task descriptions, UI text, primary buttons.
+    *   *Styling:* Avoid excessive uppercase for readability. Use `font-bold` for emphasis rather than always `font-black`.
 2.  **Secondary/System:** `monospace` (System default like `Courier New` or `SF Mono`)
-    *   *Usage:* System readouts, timestamps, small labels, UI chips, footer text.
+    *   *Usage:* System readouts, timestamps, metadata, specific tags.
     *   *Styling:* Small, uppercase, widely spaced (`tracking-widest`).
 
 ### Typographic Rules
-*   **Headlines:** Keep line-heights extremely tight (e.g., `leading-[0.85]`). Break lines manually for structural effect.
-*   **Outline Text:** Use CSS text strokes (`-webkit-text-stroke: 2px #ccff00`) with transparent fills for massive background text or secondary headline lines.
-*   **Text Highlights:** Wrap inline text in a solid `#ccff00` block with `#000000` text for immediate emphasis.
+*   **Headlines:** Keep line-heights relatively tight.
+*   **Outline Text:** Use CSS text strokes (`-webkit-text-stroke: 1px #ccff00`) sparingly.
+*   **Hierarchy:** Do not make all text uppercase. Reserve uppercase for headers and small metadata.
 
 ---
 
 ## 4. UI Elements & Motifs
 
 ### A. Borders & Shapes
-*   **Thickness:** Use thick, unapologetic borders (`border-4`, `border-8`). 
-*   **Corners:** Sharp (`rounded-none`). If rounding is necessary (like on a phone mockup), use exaggerated curves juxtaposed against sharp outer containers.
+*   **Thickness:** Establish hierarchy. Standard containers use `border-border` (1px). Primary interactive containers use `border-2` (charcoal).
+*   **Corners:** Sharp (`rounded-none`) or slightly refined (`rounded-sm`). Avoid large border radiuses.
 
-### B. Interactions & Hover States (Brutalist Shadows)
-Avoid soft, blurry drop shadows for standard UI elements. Use **solid, offset shadows**.
-*   **Resting State:** Button has a solid shadow, e.g., `box-shadow: 8px 8px 0px 0px #ccff00;`
-*   **Hover State:** Button translates to "press down" into the shadow, e.g., `transform: translate(8px, 8px); box-shadow: 0px 0px 0px 0px #ccff00;`
+### B. Interactions & Hover States (Refined Shadows)
+Avoid soft, blurry drop shadows for standard UI elements. Use **solid, subtle offset shadows**.
+*   **Resting State:** Button has a solid shadow, e.g., `box-shadow: 2px 2px 0px 0px #1A1A1A;`
+*   **Hover State:** Button translates to "press down" into the shadow, e.g., `transform: translate(2px, 2px); box-shadow: 0px 0px 0px 0px #1A1A1A;`
 
 ### C. Mix-Blend Modes
 Use CSS `mix-blend-difference` and `mix-blend-exclusion` for overlapping text and shapes. This ensures text remains readable even when intersecting with solid neon blocks, while adding a glitchy, technical feel.
@@ -86,11 +86,11 @@ Scatter small, tilted UI cards across the layout to represent the "live" nature 
 ---
 
 ## 5. Light Mode Implementation
-The brutalist aesthetic is inherently neon-on-black. When implementing **Light Mode**, follow these inversion rules:
-*   **Backgrounds:** Pure white (`#ffffff`).
-*   **Text & Borders:** Pure black (`#000000`).
-*   **Accents:** Keep Neon Green (`#ccff00`) as the primary punch color for highlights and solid blocks.
-*   **Shadows:** In light mode, solid black drop shadows (`shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]`) provide incredible brutalist contrast against white containers.
+The refined brutalist aesthetic relies on charcoal-on-white. When implementing **Light Mode**, follow these inversion rules:
+*   **Backgrounds:** Pure white (`#ffffff`) or light surface (`#F8FAF6`).
+*   **Text & Borders:** Charcoal (`#1A1A1A`).
+*   **Accents:** Keep Neon Green (`#ccff00`) as the primary punch color for highlights.
+*   **Shadows:** In light mode, subtle charcoal drop shadows (`shadow-[2px_2px_0px_0px_#1A1A1A]`) provide brutalist contrast against white containers.
 
 ---
 

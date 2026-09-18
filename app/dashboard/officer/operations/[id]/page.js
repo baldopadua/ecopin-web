@@ -710,7 +710,7 @@ export default function CleanupTaskDetailPage() {
         subtitle={task.title}
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Cleanup Tasks', href: '/dashboard/officer/cleanup-tasks' },
+          { label: 'Cleanup Tasks', href: '/dashboard/officer/operations' },
           { label: `Task #${task.id}` }
         ]}
       />
@@ -1379,7 +1379,7 @@ export default function CleanupTaskDetailPage() {
                           if (loc.latitude && loc.longitude) {
                             return (
                               <button
-                                onClick={() => router.push(`/dashboard/map-view?lat=${loc.latitude}&lng=${loc.longitude}&id=${report.id}&validationStatus=${report.validation_status}&status=${report.status}`)}
+                                onClick={() => router.push(`/dashboard/map-grid?lat=${loc.latitude}&lng=${loc.longitude}&id=${report.id}&validationStatus=${report.validation_status}&status=${report.status}`)}
                                 className="btn-secondary w-full"
                               >
                                 View on Map

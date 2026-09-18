@@ -13,7 +13,7 @@ export default function TaskClusterCard({ cluster, onTap }) {
 
   return (
     <div 
-      className="card border-l-4 border-l-[var(--accent)] hover:shadow-lg transition-shadow cursor-pointer"
+      className="card border-l-2 border-l-[var(--accent)] hover:shadow-lg transition-shadow cursor-pointer"
       onClick={onTap}
     >
       <div className="p-4">

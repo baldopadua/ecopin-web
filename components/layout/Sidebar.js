@@ -1,178 +1,145 @@
 'use client'
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useUser } from '../auth/UserContext'
 import { OfficerGuard, FieldCrewGuard } from '../auth/RequireRole'
+import { 
+    LayoutDashboard, 
+    Map, 
+    Target, 
+    Wrench, 
+    Database, 
+    Terminal, 
+    Activity, 
+    Scan, 
+    Users, 
+    Settings, 
+    ScrollText,
+    ChevronLeft,
+    ChevronRight
+} from 'lucide-react'
 
 const citizenNavigation = [
-    { name: 'Dashboard', href: '/dashboard/citizen', icon: '/icons/dashboard.png' },
-    { name: 'Map View', href: '/dashboard/map-view', icon: '/icons/map.png' },
-    { name: 'Reports', href: '/dashboard/reports', icon: '/icons/reports.png' },
+    { name: 'Command Center', href: '/dashboard/citizen', icon: LayoutDashboard },
+    { name: 'Map Grid', href: '/dashboard/map-grid', icon: Map },
+    { name: 'Raw Data', href: '/dashboard/raw-data', icon: Database },
 ]
 
 const officerNavigation = [
-    { name: 'Dashboard', href: '/dashboard/officer', icon: '/icons/dashboard.png' },
-    { name: 'Map View', href: '/dashboard/map-view', icon: '/icons/map.png' },
-    { name: 'Clusters', href: '/dashboard/officer/clusters', icon: '/icons/cluster.png' },
-    { name: 'Cleanup Tasks', href: '/dashboard/officer/cleanup-tasks', icon: '/icons/cleanup task.png' },
-    { name: 'Reports', href: '/dashboard/reports', icon: '/icons/reports.png' },
-    { name: 'Response Logs', href: '/dashboard/officer/response-logs', icon: '/icons/logs.png' },
-    { name: 'Analytics', href: '/dashboard/officer/analytics', icon: '/icons/analytics.png' },
-    { name: 'Spatial Analysis', href: '/dashboard/spatial-analysis', icon: '/icons/analytics.png' },
+    { name: 'Command Center', href: '/dashboard/officer', icon: LayoutDashboard },
+    { name: 'Map Grid', href: '/dashboard/map-grid', icon: Map },
+    { name: 'Hotzone Intel', href: '/dashboard/officer/hotzone-intel', icon: Target },
+    { name: 'Operations', href: '/dashboard/officer/operations', icon: Wrench },
+    { name: 'Raw Data', href: '/dashboard/raw-data', icon: Database },
+    { name: 'Sys Logs', href: '/dashboard/officer/sys-logs', icon: Terminal },
+    { name: 'Metrics', href: '/dashboard/officer/metrics', icon: Activity },
+    { name: 'Spatial Scan', href: '/dashboard/spatial-scan', icon: Scan },
 ]
 
 const fieldCrewNavigation = [
-    { name: 'Dashboard', href: '/dashboard/field-crew', icon: '/icons/dashboard.png' },
-    { name: 'Map View', href: '/dashboard/map-view', icon: '/icons/map.png' },
-    { name: 'Tasks', href: '/dashboard/field-crew/tasks', icon: '/icons/cleanup task.png' },
-    { name: 'Reports', href: '/dashboard/field-crew/reports', icon: '/icons/reports.png' },
+    { name: 'Command Center', href: '/dashboard/field-crew', icon: LayoutDashboard },
+    { name: 'Map Grid', href: '/dashboard/map-grid', icon: Map },
+    { name: 'Operations', href: '/dashboard/field-crew/tasks', icon: Wrench },
+    { name: 'Raw Data', href: '/dashboard/raw-data', icon: Database },
 ]
 
 const adminNavigation = [
-    { name: 'Dashboard', href: '/dashboard/admin', icon: '/icons/dashboard.png' },
-    { name: 'Users', href: '/dashboard/admin/users', icon: '/icons/users.png' },
-    { name: 'System', href: '/dashboard/admin/settings', icon: '/icons/settings.png' },
-    { name: 'Audit Logs', href: '/dashboard/admin/audit-logs', icon: '/icons/logs.png' },
-    { name: 'Spatial Analysis', href: '/dashboard/spatial-analysis', icon: '/icons/analytics.png' },
+    { name: 'Command Center', href: '/dashboard/admin', icon: LayoutDashboard },
+    { name: 'Users', href: '/dashboard/admin/users', icon: Users },
+    { name: 'System', href: '/dashboard/admin/settings', icon: Settings },
+    { name: 'Audit Logs', href: '/dashboard/admin/audit-logs', icon: ScrollText },
+    { name: 'Spatial Scan', href: '/dashboard/spatial-scan', icon: Scan },
 ]
 
 export default function Sidebar() {
     const pathname = usePathname()
     const user = useUser()
+    const [isCollapsed, setIsCollapsed] = useState(false)
+
+    const renderNavItems = (navigation) => {
+        return navigation.map((item) => {
+            const isActive = pathname === item.href;
+            const Icon = item.icon;
+            return (
+                <Link
+                    key={item.name}
+                    href={item.href}
+                    className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors border-2 border-transparent ${isActive
+                        ? 'bg-[#ccff00] text-black border-[#1a1a1a] dark:border-[#1a1a1a] font-bold'
+                        : 'text-text-secondary hover:bg-surface-elevated hover:text-text-primary hover:border-border'
+                        } ${isCollapsed ? 'justify-center px-2' : ''}`}
+                    title={isCollapsed ? item.name : undefined}
+                >
+                    {Icon && (
+                        <Icon className={`w-5 h-5 min-w-[20px] min-h-[20px] ${isActive ? 'stroke-[2.5px]' : 'stroke-2'}`} />
+                    )}
+                    {!isCollapsed && <span className="whitespace-nowrap">{item.name}</span>}
+                </Link>
+            );
+        });
+    }
 
     return (
-        <aside className="w-64 bg-surface dark:bg-[#0a0f08] border-r border-border h-screen flex flex-col transition-colors duration-400">
+        <aside className={`${isCollapsed ? 'w-20' : 'w-64'} bg-white dark:bg-[#141414] border-r-2 border-[#1a1a1a] dark:border-[#333333] h-screen flex flex-col transition-all duration-300 z-50`}>
 
             {/* Logo */}
-            <div className="p-6 border-b border-border">
-                <div className="text-xl font-bold text-text-primary">
-                    EcoPin<span className="text-accent-green">.AI</span>
-                </div>
+            <div className={`p-6 border-b-2 border-[#1a1a1a] dark:border-[#333333] flex items-center h-[77px] ${isCollapsed ? 'justify-center px-2' : 'justify-between'}`}>
+                {!isCollapsed && (
+                    <Link href="/" className="text-2xl font-black tracking-tighter text-black dark:text-white hover:opacity-80 transition-opacity">
+                        ECOPIN<span className="text-[#3300FF]">.AI</span>
+                    </Link>
+                )}
+                <button 
+                    onClick={() => setIsCollapsed(!isCollapsed)}
+                    className="p-1.5 border-2 border-transparent hover:border-border hover:bg-surface-elevated text-text-secondary transition-colors rounded"
+                    title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+                >
+                    {isCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+                </button>
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 p-4 space-y-1">
-
+            <nav className="flex-1 p-4 space-y-1 overflow-y-auto overflow-x-hidden scrollbar-hide">
                 {/* Admin Navigation */}
-                {user?.role === 'admin' && adminNavigation.map((item) => {
-                    const isActive = pathname === item.href;
-                    return (
-                        <Link
-                            key={item.name}
-                            href={item.href}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${isActive
-                                ? 'bg-primary text-white dark:text-black'
-                                : 'text-text-secondary hover:bg-surface dark:hover:bg-white/5 hover:text-text-primary'
-                                }`}
-                        >
-                            {item.icon && (
-                                <img
-                                    src={item.icon}
-                                    alt={item.name}
-                                    className={`w-5 h-5 sidebar-icon ${isActive ? 'brightness-0 invert dark:invert-0' : ''}`}
-                                />
-                            )}
-                            {item.name}
-                        </Link>
-                    );
-                })}
+                {user?.role === 'admin' && renderNavItems(adminNavigation)}
 
                 {/* Officer Navigation */}
-                {user?.role === 'officer' && officerNavigation.map((item) => {
-                    const isActive = pathname === item.href;
-                    return (
-                        <Link
-                            key={item.name}
-                            href={item.href}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${isActive
-                                ? 'bg-primary text-white dark:text-black'
-                                : 'text-text-secondary hover:bg-surface dark:hover:bg-white/5 hover:text-text-primary'
-                                }`}
-                        >
-                            {item.icon && (
-                                <img
-                                    src={item.icon}
-                                    alt={item.name}
-                                    className={`w-5 h-5 sidebar-icon ${isActive ? 'brightness-0 invert dark:invert-0' : ''}`}
-                                />
-                            )}
-                            {item.name}
-                        </Link>
-                    );
-                })}
+                {user?.role === 'officer' && renderNavItems(officerNavigation)}
 
                 {/* Field Crew Navigation */}
-                {user?.role === 'field_crew' && fieldCrewNavigation.map((item) => {
-                    const isActive = pathname === item.href;
-                    return (
-                        <Link
-                            key={item.name}
-                            href={item.href}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${isActive
-                                ? 'bg-primary text-white dark:text-black'
-                                : 'text-text-secondary hover:bg-surface dark:hover:bg-white/5 hover:text-text-primary'
-                                }`}
-                        >
-                            {item.icon && (
-                                <img
-                                    src={item.icon}
-                                    alt={item.name}
-                                    className={`w-5 h-5 sidebar-icon ${isActive ? 'brightness-0 invert dark:invert-0' : ''}`}
-                                />
-                            )}
-                            {item.name}
-                        </Link>
-                    );
-                })}
+                {user?.role === 'field_crew' && renderNavItems(fieldCrewNavigation)}
 
                 {/* Citizen Navigation */}
-                {user?.role === 'citizen' && citizenNavigation.map((item) => {
-                    const isActive = pathname === item.href;
-                    return (
-                        <Link
-                            key={item.name}
-                            href={item.href}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${isActive
-                                ? 'bg-primary text-white dark:text-black'
-                                : 'text-text-secondary hover:bg-surface dark:hover:bg-white/5 hover:text-text-primary'
-                                }`}
-                        >
-                            {item.icon && (
-                                <img
-                                    src={item.icon}
-                                    alt={item.name}
-                                    className={`w-5 h-5 sidebar-icon ${isActive ? 'brightness-0 invert dark:invert-0' : ''}`}
-                                />
-                            )}
-                            {item.name}
-                        </Link>
-                    );
-                })}
+                {user?.role === 'citizen' && renderNavItems(citizenNavigation)}
             </nav>
 
             {/* User Info */}
-            <div className="p-4 border-t border-border">
+            <div className="p-4 border-t-2 border-[#1a1a1a] dark:border-[#333333]">
                 <Link
                     href="/dashboard/profile"
-                    className="flex items-center justify-between mb-3 hover:opacity-80 transition-opacity"
+                    className={`flex items-center mb-1 hover:bg-surface-elevated hover:text-text-primary p-2 border-2 border-transparent hover:border-border transition-colors rounded ${isCollapsed ? 'justify-center' : 'justify-between'}`}
+                    title={isCollapsed ? (user?.full_name || user?.email || 'User') : undefined}
                 >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 w-full">
                         {user?.avatar_url ? (
                             <img
                                 src={user.avatar_url}
                                 alt="Avatar"
-                                className="w-8 h-8 rounded-full object-cover"
+                                className="w-8 h-8 object-cover min-w-[32px] min-h-[32px] border-2 border-[#1a1a1a] dark:border-white"
                             />
                         ) : (
-                            <div className="w-8 h-8 rounded-full bg-primary text-white dark:text-black flex items-center justify-center font-bold text-sm">
+                            <div className="w-8 h-8 bg-[#1a1a1a] dark:bg-white text-white dark:text-black flex items-center justify-center font-bold text-sm min-w-[32px] min-h-[32px] border-2 border-[#1a1a1a] dark:border-white">
                                 {user?.full_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
                             </div>
                         )}
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-text-primary truncate">
-                                {user?.full_name || user?.email || 'User'}
-                            </p>
-                        </div>
+                        {!isCollapsed && (
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate text-text-primary">
+                                    {user?.full_name || user?.email || 'User'}
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </Link>
             </div>

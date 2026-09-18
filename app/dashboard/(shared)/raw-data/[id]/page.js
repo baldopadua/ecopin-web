@@ -338,7 +338,7 @@ export default function ReportDetailPage() {
           subtitle="Loading report information..."
           breadcrumbs={[
             { label: 'Dashboard', href: '/dashboard' },
-            { label: 'Reports', href: '/dashboard/reports' },
+            { label: 'Reports', href: '/dashboard/raw-data' },
             { label: 'Details' }
           ]}
         />
@@ -392,7 +392,7 @@ export default function ReportDetailPage() {
           subtitle="Error loading report"
           breadcrumbs={[
             { label: 'Dashboard', href: '/dashboard' },
-            { label: 'Reports', href: '/dashboard/reports' },
+            { label: 'Reports', href: '/dashboard/raw-data' },
             { label: 'Details' }
           ]}
         />
@@ -425,7 +425,7 @@ export default function ReportDetailPage() {
         subtitle="View detailed report information"
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Reports', href: '/dashboard/reports' },
+          { label: 'Reports', href: '/dashboard/raw-data' },
           { label: 'Details' }
         ]}
       >
@@ -829,14 +829,14 @@ export default function ReportDetailPage() {
                   {/* Cleanup Task Link/Create */}
                   {report.cleanup_task_id ? (
                     <button
-                      onClick={() => router.push(`/dashboard/officer/cleanup-tasks/${report.cleanup_task_id}`)}
+                      onClick={() => router.push(`/dashboard/officer/operations/${report.cleanup_task_id}`)}
                       className="btn-primary w-full"
                     >
                       View Cleanup Task
                     </button>
                   ) : (
                     <button
-                      onClick={() => router.push(`/dashboard/officer/cleanup-tasks/create?preselect=${report.id}`)}
+                      onClick={() => router.push(`/dashboard/officer/operations/create?preselect=${report.id}`)}
                       disabled={report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review'}
                       className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -865,7 +865,7 @@ export default function ReportDetailPage() {
                   )}
 
                   <button
-                    onClick={() => router.push(`/dashboard/map-view?lat=${location.latitude}&lng=${location.longitude}&id=${reportId}&validationStatus=${report.validation_status}&status=${report.status}`)}
+                    onClick={() => router.push(`/dashboard/map-grid?lat=${location.latitude}&lng=${location.longitude}&id=${reportId}&validationStatus=${report.validation_status}&status=${report.status}`)}
                     className="btn-secondary w-full"
                   >
                     View on Map

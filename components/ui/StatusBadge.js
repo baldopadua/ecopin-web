@@ -74,13 +74,13 @@ export default function StatusBadge({
   }
 
   const sizeClasses = {
-    small: 'px-2 py-1 rounded-none text-xs',
-    medium: 'px-3 py-1.5 rounded-none text-sm',
-    large: 'px-4 py-2 rounded-none text-sm'
+    small: 'px-2 py-0.5 rounded-sm text-xs',
+    medium: 'px-2.5 py-1 rounded-sm text-sm',
+    large: 'px-3 py-1.5 rounded-sm text-sm'
   }
 
   return (
-    <span className={`${sizeClasses[size]} font-mono font-bold uppercase tracking-wider border-2 whitespace-nowrap ${colorClass} ${className}`}>
+    <span className={`${sizeClasses[size]} font-medium tracking-wide border whitespace-nowrap ${colorClass} ${className}`}>
       {displayLabel}
     </span>
   )

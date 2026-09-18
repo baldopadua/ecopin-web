@@ -100,7 +100,7 @@ export default function FieldCrewReportsPage() {
   }
 
   const handleRowClick = (report) => {
-    router.push(`/dashboard/reports/${report.id}`)
+    router.push(`/dashboard/raw-data/${report.id}`)
   }
 
   const handleResetFilters = () => {

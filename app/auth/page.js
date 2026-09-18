@@ -87,7 +87,7 @@ export default function AuthPage() {
       {/* Desktop Back Button */}
       <button 
         onClick={() => router.push('/')}
-        className="hidden md:block absolute top-8 left-8 z-50 font-mono text-base font-bold uppercase bg-white dark:bg-black text-black dark:text-white border-4 border-black dark:border-[#ccff00] px-4 py-2 hover:bg-[#ccff00] hover:text-black dark:hover:bg-[#ccff00] dark:hover:text-black transition-all shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:shadow-[6px_6px_0px_0px_rgba(204,255,0,0.5)] hover:shadow-none hover:translate-x-[6px] hover:translate-y-[6px]"
+        className="hidden md:block absolute top-8 left-8 z-50 font-mono text-base font-bold uppercase bg-white dark:bg-black text-black dark:text-white border-2 border-[#1a1a1a] dark:border-[#333333] px-4 py-2 hover:bg-[#ccff00] hover:text-black dark:hover:bg-[#ccff00] dark:hover:text-black transition-all shadow-[6px_6px_0px_0px_#1a1a1a] dark:shadow-[6px_6px_0px_0px_rgba(204,255,0,0.5)] hover:shadow-none hover:translate-x-[6px] hover:translate-y-[6px]"
       >
         [← Back]
       </button>
@@ -102,15 +102,15 @@ export default function AuthPage() {
           backgroundPosition: 'center center',
         }}
       >
-        <div className="absolute top-1/4 left-1/4 w-8 h-8 border-t border-l border-black dark:border-[#ccff00] opacity-80"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-8 h-8 border-b border-r border-black dark:border-[#ccff00] opacity-80"></div>
+        <div className="absolute top-1/4 left-1/4 w-8 h-8 border-t border-l border-[#1a1a1a] dark:border-[#333333] opacity-80"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-8 h-8 border-b border-r border-[#1a1a1a] dark:border-[#333333] opacity-80"></div>
       </div>
 
       {/* Auth Container */}
-      <div className="w-full max-w-5xl mx-auto grid md:grid-cols-2 border-4 md:border-8 border-black dark:border-[#ccff00] bg-white dark:bg-black shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] md:shadow-[20px_20px_0px_0px_rgba(0,0,0,1)] dark:shadow-[10px_10px_0px_0px_rgba(204,255,0,0.5)] md:dark:shadow-[20px_20px_0px_0px_rgba(204,255,0,0.5)] relative z-10 animate-fade-in-up mt-4 md:mt-0">
+      <div className="w-full max-w-5xl mx-auto grid md:grid-cols-2 border-2 md:border-8 border-[#1a1a1a] dark:border-[#333333] bg-white dark:bg-black shadow-[10px_10px_0px_0px_#1a1a1a] md:shadow-[20px_20px_0px_0px_#1a1a1a] dark:shadow-[10px_10px_0px_0px_rgba(204,255,0,0.5)] md:dark:shadow-[20px_20px_0px_0px_rgba(204,255,0,0.5)] relative z-10 animate-fade-in-up mt-4 md:mt-0">
 
         {/* Left Panel - Branding */}
-        <div className="flex flex-col justify-between p-6 md:p-12 bg-[#ccff00] text-black border-r-0 md:border-r-8 border-b-4 md:border-b-0 border-black dark:border-[#ccff00] relative overflow-hidden group">
+        <div className="flex flex-col justify-between p-6 md:p-12 bg-[#ccff00] text-black border-r-0 md:border-r-8 border-b-2 md:border-b-0 border-[#1a1a1a] dark:border-[#333333] relative overflow-hidden group">
           <div className="relative z-10 hidden md:block">
             <a href="/" className="text-3xl md:text-4xl font-black tracking-tighter hover:underline">
               ECOPIN<span className="text-[#3300FF]">.AI</span>
@@ -122,7 +122,7 @@ export default function AuthPage() {
               <h2 className="text-2xl sm:text-3xl md:text-5xl font-black uppercase tracking-tighter leading-none mb-0 md:mb-6 transition-transform origin-left">
                 Pasig SWMO <br className="hidden md:block" /> Portal
               </h2>
-              <p className="font-mono text-sm font-bold border-black hidden md:block mt-6">
+              <p className="font-mono text-sm font-bold border-[#1a1a1a] hidden md:block mt-6">
                 MONITOR, MANAGE, AND RESOLVE ENVIRONMENTAL CONCERNS ACROSS THE CITY WITH AI-POWERED REPORTING.
               </p>
             </div>
@@ -130,7 +130,7 @@ export default function AuthPage() {
             {/* Mobile Back Button */}
             <button 
               onClick={() => router.push('/')}
-              className="md:hidden shrink-0 font-mono text-sm font-bold uppercase bg-white dark:bg-black text-black dark:text-white border-2 border-black dark:border-[#ccff00] px-3 py-1.5 hover:bg-[#ccff00] hover:text-black dark:hover:bg-[#ccff00] dark:hover:text-black transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(204,255,0,0.5)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px]"
+              className="md:hidden shrink-0 font-mono text-sm font-bold uppercase bg-white dark:bg-black text-black dark:text-white border-2 border-[#1a1a1a] dark:border-[#333333] px-3 py-1.5 hover:bg-[#ccff00] hover:text-black dark:hover:bg-[#ccff00] dark:hover:text-black transition-all shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_rgba(204,255,0,0.5)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px]"
             >
               [← Back]
             </button>
@@ -157,7 +157,7 @@ export default function AuthPage() {
           </div>
 
           <div className="space-y-6" suppressHydrationWarning>
-            <div>
+            <div suppressHydrationWarning>
               <label className="block font-mono text-sm font-bold text-black dark:text-[#ccff00] mb-2 uppercase">Email Address</label>
               <input
                 ref={emailRef}
@@ -166,12 +166,12 @@ export default function AuthPage() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 onKeyDown={handleEmailKeyDown}
-                className="w-full bg-white dark:bg-[#111] border-4 border-black dark:border-[#333] p-4 font-mono font-bold text-black dark:text-white focus:outline-none focus:border-[#ccff00] dark:focus:border-[#ccff00] transition-colors placeholder:text-gray-400"
+                className="w-full bg-white dark:bg-[#111] border-2 border-[#1a1a1a] dark:border-[#333] p-4 font-mono font-bold text-black dark:text-white focus:outline-none focus:border-[#ccff00] dark:focus:border-[#ccff00] transition-colors placeholder:text-gray-400"
               />
             </div>
             <div>
               <label className="block font-mono text-sm font-bold text-black dark:text-[#ccff00] mb-2 uppercase">Password</label>
-              <div className="relative">
+              <div className="relative" suppressHydrationWarning>
                 <input
                   ref={passwordRef}
                   type={showPassword ? 'text' : 'password'}
@@ -179,7 +179,7 @@ export default function AuthPage() {
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   onKeyDown={handlePasswordKeyDown}
-                  className="w-full bg-white dark:bg-[#111] border-4 border-black dark:border-[#333] p-4 font-mono font-bold text-black dark:text-white focus:outline-none focus:border-[#ccff00] dark:focus:border-[#ccff00] transition-colors placeholder:text-gray-400 pr-12"
+                  className="w-full bg-white dark:bg-[#111] border-2 border-[#1a1a1a] dark:border-[#333] p-4 font-mono font-bold text-black dark:text-white focus:outline-none focus:border-[#ccff00] dark:focus:border-[#ccff00] transition-colors placeholder:text-gray-400 pr-12"
                   autoComplete="off"
                 />
                 <button
@@ -197,7 +197,7 @@ export default function AuthPage() {
             </div>
 
             {error && (
-              <div className="flex items-start gap-3 p-4 border-4 border-black dark:border-white bg-red-500 text-white font-mono font-bold text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
+              <div className="flex items-start gap-3 p-4 border-2 border-[#1a1a1a] dark:border-white bg-red-500 text-white font-mono font-bold text-sm shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]">
                 <svg className="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
@@ -208,13 +208,13 @@ export default function AuthPage() {
             <button
               onClick={handleSubmit}
               disabled={loading}
-              className="w-full mt-4 py-5 bg-black dark:bg-[#ccff00] text-white dark:text-black font-black uppercase text-xl border-4 border-black hover:bg-[#ccff00] dark:hover:bg-white hover:text-black transition-all shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] hover:shadow-none hover:translate-x-[8px] hover:translate-y-[8px] disabled:opacity-50 disabled:hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] disabled:hover:translate-x-0 disabled:hover:translate-y-0"
+              className="w-full mt-4 py-5 bg-black dark:bg-[#ccff00] text-white dark:text-black font-black uppercase text-xl border-2 border-[#1a1a1a] hover:bg-[#ccff00] dark:hover:bg-white hover:text-black transition-all shadow-[8px_8px_0px_0px_#1a1a1a] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] hover:shadow-none hover:translate-x-[8px] hover:translate-y-[8px] disabled:opacity-50 disabled:hover:shadow-[8px_8px_0px_0px_#1a1a1a] disabled:hover:translate-x-0 disabled:hover:translate-y-0"
             >
               {loading ? 'AUTHENTICATING...' : 'SYSTEM LOGIN'}
             </button>
 
             <div className="pt-6">
-              <p className="text-center font-mono text-xs font-bold text-gray-500 dark:text-gray-400 border-t-4 border-black dark:border-[#333] pt-6">
+              <p className="text-center font-mono text-xs font-bold text-gray-500 dark:text-gray-400 border-t-2 border-[#1a1a1a] dark:border-[#333] pt-6">
                 AUTHORIZED PERSONNEL ONLY. <br />CONTACT AN ADMINISTRATOR FOR ACCOUNT ACCESS.
               </p>
             </div>

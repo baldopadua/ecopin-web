@@ -20,7 +20,7 @@ const ImageWithLoader = ({ src, alt, className }) => {
     <div className={`relative ${className} bg-gray-200 dark:bg-[#222]`}>
       {!loaded && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-8 h-8 border-4 border-[#ccff00] border-t-black dark:border-t-white rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-2 border-[#ccff00] border-t-black dark:border-t-white rounded-full animate-spin"></div>
         </div>
       )}
       <img 
@@ -46,7 +46,7 @@ const createBrutalistIcon = (status, isSelected = false) => {
 
   return L.divIcon({
     className: 'custom-brutalist-marker',
-    html: `<div style="background-color: ${bgColor}; width: ${isSelected ? '32px' : '24px'}; height: ${isSelected ? '32px' : '24px'}; border: 3px solid ${borderColor}; box-shadow: 4px 4px 0px 0px rgba(0,0,0,1); display: flex; align-items: center; justify-content: center; transition: transform 0.1s ease-in-out;">
+    html: `<div style="background-color: ${bgColor}; width: ${isSelected ? '32px' : '24px'}; height: ${isSelected ? '32px' : '24px'}; border: 3px solid ${borderColor}; box-shadow: 4px 4px 0px 0px #1a1a1a; display: flex; align-items: center; justify-content: center; transition: transform 0.1s ease-in-out;">
       <div style="width: ${isSelected ? '12px' : '8px'}; height: ${isSelected ? '12px' : '8px'}; background-color: #000; border-radius: 0%;"></div>
     </div>`,
     iconSize: [isSelected ? 32 : 24, isSelected ? 32 : 24],
@@ -67,7 +67,7 @@ const createClusterIcon = (cluster) => {
 
   return L.divIcon({
     className: 'custom-brutalist-cluster',
-    html: `<div style="background-color: ${bgColor}; color: ${bgColor === '#000000' || bgColor === '#ff0000' ? '#ffffff' : '#000000'}; width: 44px; height: 44px; border: 4px solid #000000; box-shadow: 6px 6px 0px 0px rgba(0,0,0,1); display: flex; align-items: center; justify-content: center; font-weight: 900; font-family: monospace; font-size: 18px;">
+    html: `<div style="background-color: ${bgColor}; color: ${bgColor === '#000000' || bgColor === '#ff0000' ? '#ffffff' : '#000000'}; width: 44px; height: 44px; border: 4px solid #000000; box-shadow: 6px 6px 0px 0px #1a1a1a; display: flex; align-items: center; justify-content: center; font-weight: 900; font-family: monospace; font-size: 18px;">
       ${count}
     </div>`,
     iconSize: [44, 44],
@@ -263,7 +263,7 @@ export default function PublicMap({ isDark }) {
           color: ${isDark ? '#fff' : '#000'} !important;
           border: 4px solid ${isDark ? '#ccff00' : '#000'} !important;
           border-radius: 0 !important;
-          box-shadow: 8px 8px 0px 0px ${isDark ? 'rgba(204,255,0,0.5)' : 'rgba(0,0,0,1)'} !important;
+          box-shadow: 8px 8px 0px 0px ${isDark ? 'rgba(204,255,0,0.5)' : '#1a1a1a'} !important;
         }
         .leaflet-popup-tip { display: none !important; }
         .leaflet-popup-close-button {
@@ -274,7 +274,7 @@ export default function PublicMap({ isDark }) {
         }
         .custom-brutalist-marker:hover div, .custom-brutalist-cluster:hover div {
           transform: translateY(-2px) translateX(-2px);
-          box-shadow: 6px 6px 0px 0px rgba(0,0,0,1) !important;
+          box-shadow: 6px 6px 0px 0px #1a1a1a !important;
         }
         @keyframes slideInLeft {
           from { transform: translateX(-100%); }
@@ -305,7 +305,7 @@ export default function PublicMap({ isDark }) {
               >
                 <Popup>
                   <div className="p-3 max-w-[200px] font-sans">
-                    <strong className="block text-xl font-black uppercase tracking-tight leading-tight mb-2 border-b-2 border-black dark:border-white pb-2">
+                    <strong className="block text-xl font-black uppercase tracking-tight leading-tight mb-2 border-b-2 border-[#1a1a1a] dark:border-white pb-2">
                       CLUSTER #{cluster.id}
                     </strong>
                     <p className="text-sm font-medium mb-1">
@@ -402,10 +402,10 @@ export default function PublicMap({ isDark }) {
                 >
                   <Popup>
                     <div className="p-3 max-w-[250px] font-sans">
-                      <div className="inline-block bg-[#ccff00] text-black font-mono text-xs font-bold px-2 py-1 mb-2 border-2 border-black">
+                      <div className="inline-block bg-[#ccff00] text-black font-mono text-xs font-bold px-2 py-1 mb-2 border-2 border-[#1a1a1a]">
                         {report.issue_type?.replace(/_/g, ' ').toUpperCase()}
                       </div>
-                      <strong className="block text-xl font-black uppercase tracking-tight leading-tight mb-2 border-b-2 border-black dark:border-white pb-2">
+                      <strong className="block text-xl font-black uppercase tracking-tight leading-tight mb-2 border-b-2 border-[#1a1a1a] dark:border-white pb-2">
                         {report.title}
                       </strong>
                       <p className="text-sm font-medium mb-3 opacity-90">
@@ -419,7 +419,7 @@ export default function PublicMap({ isDark }) {
                       
                       <button 
                         onClick={() => handleViewDetails(report)}
-                        className="w-full bg-black text-[#ccff00] dark:bg-[#ccff00] dark:text-black border-2 border-black font-black uppercase py-2 hover:bg-gray-800 dark:hover:bg-yellow-400 transition-colors"
+                        className="w-full bg-black text-[#ccff00] dark:bg-[#ccff00] dark:text-black border-2 border-[#1a1a1a] font-black uppercase py-2 hover:bg-gray-800 dark:hover:bg-yellow-400 transition-colors"
                       >
                         SEE FULL DETAILS
                       </button>
@@ -437,7 +437,7 @@ export default function PublicMap({ isDark }) {
         {!showFilterPanel && (
           <button
             onClick={() => setShowFilterPanel(true)}
-            className="absolute top-6 right-6 z-[1001] bg-[#ccff00] text-black border-4 border-black px-6 py-3 font-black uppercase tracking-widest shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center gap-2"
+            className="absolute top-6 right-6 z-[1001] bg-[#ccff00] text-black border-2 border-[#1a1a1a] px-6 py-3 font-black uppercase tracking-widest shadow-[8px_8px_0px_0px_#1a1a1a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_#1a1a1a] transition-all flex items-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -448,12 +448,12 @@ export default function PublicMap({ isDark }) {
 
         {/* Brutalist Filter Panel */}
         {showFilterPanel && (
-          <div className="absolute top-0 right-0 h-full w-full sm:w-96 bg-white dark:bg-black border-l-0 sm:border-l-8 border-black dark:border-[#ccff00] z-[1002] flex flex-col transition-transform duration-300">
-            <div className="p-6 border-b-8 border-black dark:border-[#ccff00] flex justify-between items-center bg-[#ccff00] text-black">
+          <div className="absolute top-0 right-0 h-full w-full sm:w-96 bg-white dark:bg-black border-l-0 sm:border-l-8 border-[#1a1a1a] dark:border-[#333333] z-[1002] flex flex-col transition-transform duration-300">
+            <div className="p-6 border-b-8 border-[#1a1a1a] dark:border-[#333333] flex justify-between items-center bg-[#ccff00] text-black">
               <h3 className="font-black text-2xl uppercase tracking-tighter">Live Filters</h3>
               <button
                 onClick={() => setShowFilterPanel(false)}
-                className="w-10 h-10 border-4 border-black flex items-center justify-center hover:bg-black hover:text-[#ccff00] transition-colors font-black"
+                className="w-10 h-10 border-2 border-[#1a1a1a] flex items-center justify-center hover:bg-black hover:text-[#ccff00] transition-colors font-black"
               >
                 X
               </button>
@@ -465,7 +465,7 @@ export default function PublicMap({ isDark }) {
                 <select 
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full bg-white dark:bg-[#111] border-4 border-black dark:border-[#ccff00] p-4 font-black text-lg uppercase cursor-pointer appearance-none rounded-none focus:outline-none focus:bg-[#ccff00] focus:text-black transition-colors"
+                  className="w-full bg-white dark:bg-[#111] border-2 border-[#1a1a1a] dark:border-[#333333] p-4 font-black text-lg uppercase cursor-pointer appearance-none rounded-none focus:outline-none focus:bg-[#ccff00] focus:text-black transition-colors"
                 >
                   <option value="all">ALL STATUSES</option>
                   <option value="unresolved">UNRESOLVED</option>
@@ -479,7 +479,7 @@ export default function PublicMap({ isDark }) {
                 <div className="flex flex-col gap-3">
                   <button 
                     onClick={() => setIssueTypeFilter('all')}
-                    className={`p-3 border-4 border-black ${issueTypeFilter === 'all' ? 'bg-black text-white dark:bg-[#ccff00] dark:text-black' : 'bg-white text-black hover:bg-gray-200'} font-black uppercase text-left transition-colors`}
+                    className={`p-3 border-2 border-[#1a1a1a] ${issueTypeFilter === 'all' ? 'bg-black text-white dark:bg-[#ccff00] dark:text-black' : 'bg-white text-black hover:bg-gray-200'} font-black uppercase text-left transition-colors`}
                   >
                     ALL CATEGORIES
                   </button>
@@ -487,7 +487,7 @@ export default function PublicMap({ isDark }) {
                     <button 
                       key={type}
                       onClick={() => setIssueTypeFilter(type)}
-                      className={`p-3 border-4 border-black ${issueTypeFilter === type ? 'bg-black text-white dark:bg-[#ccff00] dark:text-black' : 'bg-white text-black hover:bg-gray-200'} font-black uppercase text-left transition-colors`}
+                      className={`p-3 border-2 border-[#1a1a1a] ${issueTypeFilter === type ? 'bg-black text-white dark:bg-[#ccff00] dark:text-black' : 'bg-white text-black hover:bg-gray-200'} font-black uppercase text-left transition-colors`}
                     >
                       {type.replace(/_/g, ' ')}
                     </button>
@@ -496,7 +496,7 @@ export default function PublicMap({ isDark }) {
               </div>
             </div>
             
-            <div className="p-6 border-t-8 border-black dark:border-[#ccff00] bg-gray-100 dark:bg-[#111]">
+            <div className="p-6 border-t-8 border-[#1a1a1a] dark:border-[#333333] bg-gray-100 dark:bg-[#111]">
               <div className="font-mono text-xs font-bold text-gray-500 uppercase">
                 SHOWING {filteredReports.length} / {reports?.length || 0} REPORTS
               </div>
@@ -506,31 +506,31 @@ export default function PublicMap({ isDark }) {
 
         {/* Brutalist Details Panel (Left Side) */}
         {detailedReport && (
-          <div className="animate-slide-in-left absolute top-0 left-0 h-full w-full sm:w-[450px] bg-white dark:bg-black border-r-0 sm:border-r-8 border-black dark:border-[#ccff00] z-[1002] flex flex-col">
-            <div className="p-6 border-b-8 border-black dark:border-[#ccff00] flex justify-between items-center bg-black text-[#ccff00] dark:bg-[#ccff00] dark:text-black">
+          <div className="animate-slide-in-left absolute top-0 left-0 h-full w-full sm:w-[450px] bg-white dark:bg-black border-r-0 sm:border-r-8 border-[#1a1a1a] dark:border-[#333333] z-[1002] flex flex-col">
+            <div className="p-6 border-b-8 border-[#1a1a1a] dark:border-[#333333] flex justify-between items-center bg-black text-[#ccff00] dark:bg-[#ccff00] dark:text-black">
               <h3 className="font-black text-2xl uppercase tracking-tighter">REPORT DETAILS</h3>
               <button
                 onClick={() => setDetailedReport(null)}
-                className="w-10 h-10 border-4 border-[#ccff00] dark:border-black flex items-center justify-center hover:bg-[#ccff00] hover:text-black dark:hover:bg-black dark:hover:text-[#ccff00] transition-colors font-black"
+                className="w-10 h-10 border-2 border-[#ccff00] dark:border-[#1a1a1a] flex items-center justify-center hover:bg-[#ccff00] hover:text-black dark:hover:bg-black dark:hover:text-[#ccff00] transition-colors font-black"
               >
                 X
               </button>
             </div>
             
             <div className="p-6 flex-1 overflow-y-auto bg-white dark:bg-black text-black dark:text-white">
-              <div className="inline-block bg-[#ccff00] text-black font-mono text-xs font-bold px-2 py-1 mb-4 border-2 border-black">
+              <div className="inline-block bg-[#ccff00] text-black font-mono text-xs font-bold px-2 py-1 mb-4 border-2 border-[#1a1a1a]">
                 {detailedReport.issue_type?.replace(/_/g, ' ').toUpperCase()}
               </div>
               <h2 className="font-black text-3xl uppercase tracking-tighter mb-4 leading-none break-words">
                 {detailedReport.title}
               </h2>
               
-              <div className="font-mono text-sm font-bold border-l-4 border-black dark:border-[#ccff00] pl-4 mb-6">
+              <div className="font-mono text-sm font-bold border-l-2 border-[#1a1a1a] dark:border-[#333333] pl-4 mb-6">
                 <p className="mb-1">STATUS: <span className="uppercase text-[#ff0000] dark:text-[#ccff00]">{detailedReport.status?.replace(/_/g, ' ')}</span></p>
                 <p>DATE: {new Date(detailedReport.created_at).toLocaleDateString()}</p>
               </div>
 
-              <div className="mb-8 border-4 border-black dark:border-[#ccff00] p-4 bg-gray-100 dark:bg-[#111]">
+              <div className="mb-8 border-2 border-[#1a1a1a] dark:border-[#333333] p-4 bg-gray-100 dark:bg-[#111]">
                 <p className="font-medium text-lg leading-relaxed whitespace-pre-wrap">
                   {detailedReport.description || 'No description provided.'}
                 </p>
@@ -538,13 +538,13 @@ export default function PublicMap({ isDark }) {
 
               {/* Citizen Photos */}
               <div className="mb-8">
-                <h4 className="font-black text-xl uppercase border-b-4 border-black dark:border-[#ccff00] pb-2 mb-4">
+                <h4 className="font-black text-xl uppercase border-b-2 border-[#1a1a1a] dark:border-[#333333] pb-2 mb-4">
                   CITIZEN EVIDENCE
                 </h4>
                 {detailedEvidence.length > 0 ? (
                   <div className="grid grid-cols-2 gap-4">
                     {detailedEvidence.map((img, i) => (
-                      <div key={i} className="border-4 border-black dark:border-[#ccff00]">
+                      <div key={i} className="border-2 border-[#1a1a1a] dark:border-[#333333]">
                         <ImageWithLoader src={img.url} alt="Evidence" className="w-full h-32" />
                       </div>
                     ))}
@@ -557,14 +557,14 @@ export default function PublicMap({ isDark }) {
               {/* Staff Before / After */}
               {(detailedReport.before_photo_url || detailedReport.after_photo_url) && (
                 <div className="mb-8">
-                  <h4 className="font-black text-xl uppercase border-b-4 border-black dark:border-[#ccff00] pb-2 mb-4">
+                  <h4 className="font-black text-xl uppercase border-b-2 border-[#1a1a1a] dark:border-[#333333] pb-2 mb-4">
                     OFFICIAL RESOLUTION
                   </h4>
                   <div className="grid grid-cols-1 gap-6">
                     {detailedReport.before_photo_url && (
                       <div>
                         <span className="inline-block bg-black text-white dark:bg-white dark:text-black font-mono text-xs font-bold px-2 py-1 mb-2">BEFORE</span>
-                        <div className="border-4 border-black dark:border-[#ccff00]">
+                        <div className="border-2 border-[#1a1a1a] dark:border-[#333333]">
                           <ImageWithLoader src={detailedReport.before_photo_url} alt="Before" className="w-full h-48" />
                         </div>
                       </div>
@@ -572,7 +572,7 @@ export default function PublicMap({ isDark }) {
                     {detailedReport.after_photo_url && (
                       <div>
                         <span className="inline-block bg-[#ccff00] text-black font-mono text-xs font-bold px-2 py-1 mb-2">AFTER</span>
-                        <div className="border-4 border-black dark:border-[#ccff00]">
+                        <div className="border-2 border-[#1a1a1a] dark:border-[#333333]">
                           <ImageWithLoader src={detailedReport.after_photo_url} alt="After" className="w-full h-48" />
                         </div>
                       </div>
