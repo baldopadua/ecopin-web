@@ -156,7 +156,7 @@ export default function AuthPage() {
             </p>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-6" suppressHydrationWarning>
             <div>
               <label className="block font-mono text-sm font-bold text-black dark:text-[#ccff00] mb-2 uppercase">Email Address</label>
               <input
