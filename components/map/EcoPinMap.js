@@ -452,9 +452,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
         .custom-marker.removing div {
           animation: markerBounceOut 0.3s ease-in forwards;
         }
-        .dark-mode-tiles {
-          filter: grayscale(100%) invert(100%) brightness(70%) contrast(95%);
-        }
+
         html.dark .leaflet-control-zoom a {
           background-color: #1e1e1e !important;
           color: #e0e0e0 !important;

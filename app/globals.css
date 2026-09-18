@@ -450,7 +450,7 @@ html.dark .leaflet-popup-close-button:hover {
 }
 
 /* Global Dark Mode for Leaflet Tiles */
-html.dark .leaflet-tile-pane {
+html.dark .dark-mode-tiles {
   filter: grayscale(100%) invert(100%) brightness(70%) contrast(95%);
 }
 

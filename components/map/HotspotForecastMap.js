@@ -148,6 +148,17 @@ export default function HotspotForecastMap({ predictions, timeHorizon }) {
   const [heatmapData, setHeatmapData] = useState(null);
   const [viewMode, setViewMode] = useState('both');
   const [mapKey, setMapKey] = useState(0);
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const html = document.documentElement;
+    setIsDark(html.classList.contains('dark'));
+    const observer = new MutationObserver(() => {
+      setIsDark(html.classList.contains('dark'));
+    });
+    observer.observe(html, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!predictions) return;
@@ -329,6 +340,7 @@ export default function HotspotForecastMap({ predictions, timeHorizon }) {
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          className={isDark ? 'dark-mode-tiles' : ''}
         />
 
         <MapBoundsFitter geojsonData={geojsonData} heatmapData={heatmapData} />
