@@ -96,9 +96,9 @@ export default function OfficerHomepage() {
         loading={loading}
       >
         {/* Active Tasks */}
-        <div className="card no-hover mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-text-primary">Active Tasks</h2>
+        <div className="bg-surface border-2 border-border rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_#ccff00] p-6 mb-8">
+          <div className="flex justify-between items-center mb-6 border-b-2 border-border pb-4">
+            <h2 className="text-2xl font-black uppercase tracking-tighter text-text-primary">Active Tasks</h2>
             <button
               onClick={() => router.push('/dashboard/officer/cleanup-tasks')}
               className="btn-secondary"
@@ -110,10 +110,10 @@ export default function OfficerHomepage() {
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="card animate-pulse">
-                  <div className="h-3 w-20 rounded bg-border/50 mb-3" />
-                  <div className="h-3 w-32 rounded bg-border/50 mb-2" />
-                  <div className="h-3 w-16 rounded bg-border/50" />
+                <div key={i} className="border-2 border-border p-4 animate-pulse">
+                  <div className="h-4 w-20 bg-border/50 mb-4" />
+                  <div className="h-3 w-32 bg-border/50 mb-2" />
+                  <div className="h-3 w-16 bg-border/50" />
                 </div>
               ))}
             </div>
@@ -127,22 +127,22 @@ export default function OfficerHomepage() {
               {activeTasks.slice(0, 6).map(task => (
                 <div
                   key={task.id}
-                  className="card hover:shadow-lg transition-shadow cursor-pointer"
+                  className="border-2 border-border p-5 hover:bg-black hover:text-white dark:hover:bg-accent-green dark:hover:text-black transition-colors cursor-pointer group"
                   onClick={() => handleTaskClick(task)}
                 >
-                  <div className="flex justify-between items-start mb-3">
-                    <h3 className="font-bold text-text-primary text-base leading-tight flex-1 mr-2">
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="font-black uppercase tracking-tight text-lg leading-tight flex-1 mr-2 group-hover:text-white dark:group-hover:text-black">
                       {task.title}
                     </h3>
                     <StatusBadge status={task.status} type="task" />
                   </div>
-                  <p className="text-sm text-text-muted line-clamp-2 mb-4">
+                  <p className="text-sm font-mono line-clamp-2 mb-6 group-hover:text-white/80 dark:group-hover:text-black/80">
                     {task.description || 'No description provided.'}
                   </p>
-                  <div className="text-xs text-text-muted mb-3">
+                  <div className="text-xs font-mono tracking-widest uppercase mb-4 group-hover:text-white/60 dark:group-hover:text-black/60">
                     Created: {formatDate(task.created_at)}
                   </div>
-                  <button className="btn-secondary w-full text-sm">
+                  <button className="w-full border-2 border-current px-4 py-2 font-mono font-bold uppercase tracking-widest text-xs hover:bg-white hover:text-black dark:hover:bg-black dark:hover:text-white transition-colors">
                     View Details
                   </button>
                 </div>
@@ -153,8 +153,8 @@ export default function OfficerHomepage() {
 
         {/* Recently Completed */}
         {!loading && recentCompleted.length > 0 && (
-          <div className="card no-hover">
-            <h2 className="text-xl font-bold text-text-primary mb-6">Recently Completed</h2>
+          <div className="bg-surface border-2 border-border rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_#ccff00] p-6">
+            <h2 className="text-2xl font-black uppercase tracking-tighter text-text-primary mb-6 border-b-2 border-border pb-4">Recently Completed</h2>
             <DataTable
               columns={completedTaskColumns}
               data={recentCompleted}

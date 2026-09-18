@@ -64,19 +64,19 @@ export default function Pagination({
     <div className={`flex items-center justify-between ${className}`}>
       {/* Items Info */}
       {showItemsInfo && totalItems > 0 && (
-        <div className="text-sm text-text-secondary">
-          Showing {getStartIndex()} to {getEndIndex()} of {totalItems} items
+        <div className="text-sm font-mono tracking-widest text-text-secondary">
+          SHOWING {getStartIndex()} TO {getEndIndex()} OF {totalItems}
         </div>
       )}
 
       {/* Page Navigation */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 font-mono uppercase tracking-widest">
         <button
           onClick={() => handlePageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="btn-secondary px-3 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="border-2 border-border px-3 py-1 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Previous
+          Prev
         </button>
 
         {getVisiblePages().map((page, index) => (
@@ -88,10 +88,10 @@ export default function Pagination({
             <button
               key={page}
               onClick={() => handlePageChange(page)}
-              className={`px-3 py-1 rounded ${
+              className={`px-3 py-1 border-2 border-border transition-colors ${
                 currentPage === page
-                  ? 'bg-primary text-white dark:text-black'
-                  : 'btn-secondary'
+                  ? 'bg-black text-white dark:bg-accent-green dark:text-black dark:border-accent-green'
+                  : 'hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black'
               }`}
             >
               {page}
@@ -102,7 +102,7 @@ export default function Pagination({
         <button
           onClick={() => handlePageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="btn-secondary px-3 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="border-2 border-border px-3 py-1 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Next
         </button>

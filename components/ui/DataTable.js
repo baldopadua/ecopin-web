@@ -43,10 +43,10 @@ export default function DataTable({
 
   if (loading) {
     return (
-      <div className={`card no-hover ${className}`}>
+      <div className={`bg-surface border-2 border-border rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_#ccff00] ${className}`}>
         <div className="space-y-0">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full font-mono">
               <colgroup>
                 {columns.map((col, index) => (
                   <col key={index} style={{ width: col.width || 'auto' }} />
@@ -54,9 +54,9 @@ export default function DataTable({
               </colgroup>
               {showHeader && (
                 <thead>
-                  <tr className="border-b border-border">
+                  <tr className="border-b-2 border-border">
                     {columns.map((col, index) => (
-                      <th key={index} className="text-left py-3 px-4 text-sm font-semibold text-text-primary">
+                      <th key={index} className="text-left py-3 px-4 text-sm font-black uppercase tracking-widest text-text-primary">
                         <SkeletonLine className="h-4 w-16" />
                       </th>
                     ))}
@@ -65,7 +65,7 @@ export default function DataTable({
               )}
               <tbody>
                 {Array.from({ length: 5 }).map((_, rowIndex) => (
-                  <tr key={rowIndex} className="border-b border-border">
+                  <tr key={rowIndex} className="border-b-2 border-border">
                     {columns.map((_, colIndex) => (
                       <td key={colIndex} className="py-3 px-4">
                         <SkeletonLine className="h-4 w-24" />
@@ -83,8 +83,8 @@ export default function DataTable({
 
   if (data.length === 0) {
     return (
-      <div className={`card no-hover ${className}`}>
-        <div className="text-center py-10 text-text-muted">
+      <div className={`bg-surface border-2 border-border rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_#ccff00] p-8 ${className}`}>
+        <div className="text-center py-10 text-text-muted font-mono uppercase tracking-widest">
           <p className="text-lg mb-1">{emptyMessage}</p>
         </div>
       </div>
@@ -92,9 +92,9 @@ export default function DataTable({
   }
 
   return (
-    <div className={`card no-hover ${className}`}>
+    <div className={`bg-surface border-2 border-border rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_#ccff00] ${className}`}>
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full font-mono">
           <colgroup>
             {columns.map((col, index) => (
               <col key={index} style={{ width: col.width || 'auto' }} />
@@ -102,12 +102,12 @@ export default function DataTable({
           </colgroup>
           {showHeader && (
             <thead>
-              <tr className="border-b border-border">
+              <tr className="border-b-2 border-border">
                 {columns.map((col, index) => (
                   <th
                     key={index}
-                    className={`text-left py-3 px-4 text-sm font-semibold text-text-primary ${
-                      sortable && onSort ? 'cursor-pointer hover:text-primary' : ''
+                    className={`text-left py-3 px-4 text-sm font-black uppercase tracking-widest text-text-primary ${
+                      sortable && onSort ? 'cursor-pointer hover:text-accent-green' : ''
                     }`}
                     onClick={() => sortable && handleSort(col.key)}
                   >
@@ -124,8 +124,8 @@ export default function DataTable({
             {data.map((row, rowIndex) => (
               <tr
                 key={rowIndex}
-                className={`border-b border-border ${
-                  onRowClick ? 'cursor-pointer hover:bg-surface/50 transition-colors' : ''
+                className={`border-b-2 border-border transition-all ${
+                  onRowClick ? 'cursor-pointer hover:bg-black hover:text-white dark:hover:bg-accent-green dark:hover:text-black' : ''
                 }`}
                 onClick={() => onRowClick && onRowClick(row, rowIndex)}
               >

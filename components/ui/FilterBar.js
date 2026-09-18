@@ -24,7 +24,7 @@ export default function FilterBar({
     (showDateRange && (dateRange.start || dateRange.end))
 
   return (
-    <div className={`card mb-6 ${sticky ? 'sticky top-[120px] z-10 bg-white/60 dark:bg-black/60 border-l-4 border-l-[var(--accent-green)]' : ''} no-hover ${className}`}>
+    <div className={`bg-surface border-2 border-border rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_#ccff00] p-4 mb-6 ${sticky ? 'sticky top-[120px] z-10 border-l-8 border-l-[var(--accent-green)]' : ''} ${className}`}>
       <div className="flex flex-wrap items-center gap-4">
         {/* Search Input */}
         {onSearchChange && (

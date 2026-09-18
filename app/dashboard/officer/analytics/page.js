@@ -303,60 +303,60 @@ export default function AnalyticsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="card border-l-4 border-l-[var(--accent-green)] hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="bg-surface border-2 border-border border-l-8 border-l-[var(--accent-green)] rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_#ccff00] p-6 hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all cursor-pointer">
             <div className="mb-2">
-              <span className="text-sm text-text-muted">Total Reports</span>
+              <span className="text-xs font-mono tracking-widest uppercase text-text-muted">Total Reports</span>
             </div>
-            <p className="text-3xl font-bold text-text-primary">{stats.total}</p>
+            <p className="text-4xl font-black text-text-primary uppercase">{stats.total}</p>
           </div>
 
-          <div className="card border-l-4 border-l-[var(--error)] hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="bg-surface border-2 border-border border-l-8 border-l-[var(--error)] rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_#ccff00] p-6 hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all cursor-pointer">
             <div className="mb-2">
-              <span className="text-sm text-text-muted">Unresolved</span>
+              <span className="text-xs font-mono tracking-widest uppercase text-text-muted">Unresolved</span>
             </div>
-            <p className="text-3xl font-bold text-text-primary">{stats.unresolved}</p>
+            <p className="text-4xl font-black text-text-primary uppercase">{stats.unresolved}</p>
           </div>
 
-          <div className="card border-l-4 border-l-[var(--warning)] hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="bg-surface border-2 border-border border-l-8 border-l-[var(--warning)] rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_#ccff00] p-6 hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all cursor-pointer">
             <div className="mb-2">
-              <span className="text-sm text-text-muted">In Progress</span>
+              <span className="text-xs font-mono tracking-widest uppercase text-text-muted">In Progress</span>
             </div>
-            <p className="text-3xl font-bold text-text-primary">{stats.inProgress}</p>
+            <p className="text-4xl font-black text-text-primary uppercase">{stats.inProgress}</p>
           </div>
 
-          <div className="card border-l-4 border-l-[var(--success)] hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="bg-surface border-2 border-border border-l-8 border-l-[var(--success)] rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_#ccff00] p-6 hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all cursor-pointer">
             <div className="mb-2">
-              <span className="text-sm text-text-muted">Resolved Today</span>
+              <span className="text-xs font-mono tracking-widest uppercase text-text-muted">Resolved Today</span>
             </div>
-            <p className="text-3xl font-bold text-text-primary">{stats.resolvedToday}</p>
+            <p className="text-4xl font-black text-text-primary uppercase">{stats.resolvedToday}</p>
           </div>
 
-          <div className="card border-l-4 border-l-[var(--accent-green-dark)] hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="bg-surface border-2 border-border border-l-8 border-l-[var(--accent-green-dark)] rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_#ccff00] p-6 hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all cursor-pointer">
             <div className="mb-2">
-              <span className="text-sm text-text-muted">Avg. Resolution Time</span>
+              <span className="text-xs font-mono tracking-widest uppercase text-text-muted">Avg. Resolution Time</span>
             </div>
-            <p className="text-3xl font-bold text-text-primary">{stats.avgResolutionTime}</p>
+            <p className="text-4xl font-black text-text-primary uppercase">{stats.avgResolutionTime}</p>
           </div>
 
-          <div className="card border-l-4 border-l-[var(--accent-green)] hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="bg-surface border-2 border-border border-l-8 border-l-[var(--accent-green)] rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_#ccff00] p-6 hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all cursor-pointer">
             <div className="mb-2">
-              <span className="text-sm text-text-muted">Resolution Rate</span>
+              <span className="text-xs font-mono tracking-widest uppercase text-text-muted">Resolution Rate</span>
             </div>
-            <p className="text-3xl font-bold text-text-primary">{`${stats.resolutionRate}%`}</p>
+            <p className="text-4xl font-black text-text-primary uppercase">{`${stats.resolutionRate}%`}</p>
           </div>
 
-          <div className="card border-l-4 border-l-[var(--warning)] hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="bg-surface border-2 border-border border-l-8 border-l-[var(--warning)] rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_#ccff00] p-6 hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all cursor-pointer">
             <div className="mb-2">
-              <span className="text-sm text-text-muted">Waiting for Feedback</span>
+              <span className="text-xs font-mono tracking-widest uppercase text-text-muted">Waiting for Feedback</span>
             </div>
-            <p className="text-3xl font-bold text-text-primary">{stats.waitingForFeedback}</p>
+            <p className="text-4xl font-black text-text-primary uppercase">{stats.waitingForFeedback}</p>
           </div>
 
-          <div className="card border-l-4 border-l-[var(--error)] hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="bg-surface border-2 border-border border-l-8 border-l-[var(--error)] rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_#ccff00] p-6 hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all cursor-pointer">
             <div className="mb-2">
-              <span className="text-sm text-text-muted">Overdue Reports</span>
+              <span className="text-xs font-mono tracking-widest uppercase text-text-muted">Overdue Reports</span>
             </div>
-            <p className="text-3xl font-bold text-text-primary">{stats.overdue}</p>
+            <p className="text-4xl font-black text-text-primary uppercase">{stats.overdue}</p>
           </div>
         </div>
       )}
@@ -364,8 +364,8 @@ export default function AnalyticsPage() {
       {/* Charts Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {/* Reports per Week Bar Chart */}
-        <div className="chart-card">
-          <h2>Reports per Week</h2>
+        <div className="bg-surface border-2 border-border rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_#ccff00] p-6">
+          <h2 className="text-2xl font-black uppercase tracking-tighter text-text-primary mb-6 border-b-2 border-border pb-4">Reports per Week</h2>
           <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
               <div className="flex items-center justify-center py-16">
@@ -380,8 +380,8 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Resolution Rate Bar Chart */}
-        <div className="chart-card">
-          <h2>Resolution Rate (%)</h2>
+        <div className="bg-surface border-2 border-border rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_#ccff00] p-6">
+          <h2 className="text-2xl font-black uppercase tracking-tighter text-text-primary mb-6 border-b-2 border-border pb-4">Resolution Rate (%)</h2>
           <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
               <div className="flex items-center justify-center py-16">
@@ -396,8 +396,8 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Reports by Issue Type Pie Chart */}
-        <div className="chart-card">
-          <h2>Reports by Issue Type</h2>
+        <div className="bg-surface border-2 border-border rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_#ccff00] p-6">
+          <h2 className="text-2xl font-black uppercase tracking-tighter text-text-primary mb-6 border-b-2 border-border pb-4">Reports by Issue Type</h2>
           <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
               <div className="flex items-center justify-center py-16">
@@ -412,8 +412,8 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Satisfaction Distribution Pie Chart */}
-        <div className="chart-card">
-          <h2>Satisfaction Distribution</h2>
+        <div className="bg-surface border-2 border-border rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_#ccff00] p-6">
+          <h2 className="text-2xl font-black uppercase tracking-tighter text-text-primary mb-6 border-b-2 border-border pb-4">Satisfaction Distribution</h2>
           <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
               <div className="flex items-center justify-center py-16">
@@ -428,8 +428,8 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Reports by Status Pie Chart */}
-        <div className="chart-card">
-          <h2>Reports by Status</h2>
+        <div className="bg-surface border-2 border-border rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_#ccff00] p-6">
+          <h2 className="text-2xl font-black uppercase tracking-tighter text-text-primary mb-6 border-b-2 border-border pb-4">Reports by Status</h2>
           <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
               <div className="flex items-center justify-center py-16">
