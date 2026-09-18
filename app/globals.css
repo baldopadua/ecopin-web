@@ -449,6 +449,11 @@ html.dark .leaflet-popup-close-button:hover {
   color: var(--text-primary) !important;
 }
 
+/* Global Dark Mode for Leaflet Tiles */
+html.dark .leaflet-tile-pane {
+  filter: grayscale(100%) invert(100%) brightness(70%) contrast(95%);
+}
+
 /* Page gradient backgrounds */
 .page-gradient {
   background: linear-gradient(160deg, #ffffff 0%, #ffffff 40%, #e8f5e9 70%, #c8e6c9 100%);
@@ -456,4 +461,67 @@ html.dark .leaflet-popup-close-button:hover {
 
 html.dark .page-gradient {
   background: linear-gradient(160deg, #0a0f08 0%, #0d1a0c 30%, #122614 55%, #1a3a1e 75%, #2d5a35 100%);
+}
+
+/* React DatePicker Highlighted Days */
+.react-datepicker__day--highlighted {
+  background-color: rgba(69, 113, 19, 0.1) !important;
+  color: #264009 !important;
+  font-weight: 800 !important;
+  position: relative;
+  border-radius: 4px;
+}
+
+.react-datepicker__day--highlighted::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: #264009;
+}
+
+/* React DatePicker Dark Mode */
+html.dark .react-datepicker {
+  background-color: var(--surface-elevated);
+  border-color: var(--border);
+  font-family: inherit;
+}
+html.dark .react-datepicker__header {
+  background-color: var(--surface);
+  border-bottom-color: var(--border);
+}
+html.dark .react-datepicker__current-month,
+html.dark .react-datepicker__day-name,
+html.dark .react-datepicker__day {
+  color: var(--text-primary);
+}
+html.dark .react-datepicker__day:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+html.dark .react-datepicker__day--selected,
+html.dark .react-datepicker__day--keyboard-selected {
+  background-color: var(--primary) !important;
+  color: #000 !important;
+}
+
+html.dark .react-datepicker__day--highlighted {
+  background-color: rgba(192, 236, 142, 0.15) !important;
+  color: var(--accent-green) !important;
+}
+html.dark .react-datepicker__day--highlighted::after {
+  background-color: var(--accent-green);
+}
+
+/* Fix DatePicker z-index over Leaflet map */
+.react-datepicker-popper {
+  z-index: 1000 !important;
+}
+
+/* Make DatePicker input clickable */
+.react-datepicker-wrapper input {
+  cursor: pointer;
 }
