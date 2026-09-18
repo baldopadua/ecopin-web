@@ -103,16 +103,16 @@ export default function AuthPage() {
       <div className="w-full max-w-5xl mx-auto grid md:grid-cols-2 border-8 border-black dark:border-[#ccff00] bg-white dark:bg-black shadow-[20px_20px_0px_0px_rgba(0,0,0,1)] dark:shadow-[20px_20px_0px_0px_rgba(204,255,0,0.5)] relative z-10 animate-fade-in-up">
 
         {/* Left Panel - Branding */}
-        <div className="flex flex-col justify-between p-12 bg-[#ccff00] text-black border-r-0 md:border-r-8 border-b-8 md:border-b-0 border-black dark:border-[#ccff00] relative overflow-hidden group">
+        <div className="flex flex-col justify-between p-6 md:p-12 bg-[#ccff00] text-black border-r-0 md:border-r-8 border-b-8 md:border-b-0 border-black dark:border-[#ccff00] relative overflow-hidden group">
           <div className="relative z-10">
-            <a href="/" className="text-4xl font-black tracking-tighter hover:underline">
+            <a href="/" className="text-3xl md:text-4xl font-black tracking-tighter hover:underline">
               ECOPIN<span className="text-[#3300FF]">.AI</span>
             </a>
           </div>
 
-          <div className="relative z-10 mt-20 mb-10">
-            <h2 className="text-5xl font-black uppercase tracking-tighter leading-none mb-6 transition-transform origin-left">
-              Pasig SWMO <br /> Portal
+          <div className="relative z-10 mt-10 md:mt-20 mb-6 md:mb-10">
+            <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none mb-4 md:mb-6 transition-transform origin-left">
+              Pasig SWMO <br className="hidden md:block" /> Portal
             </h2>
             <p className="font-mono text-sm font-bold border-black">
               MONITOR, MANAGE, AND RESOLVE ENVIRONMENTAL CONCERNS ACROSS THE CITY WITH AI-POWERED REPORTING.
@@ -129,9 +129,9 @@ export default function AuthPage() {
         </div>
 
         {/* Right Panel - Form */}
-        <div className="p-8 md:p-12 flex flex-col justify-center bg-white dark:bg-black relative">
-          <div className="mb-10 relative">
-            <h1 className="text-5xl font-black text-black dark:text-white mb-2 uppercase tracking-tighter glitch-text hover:cursor-crosshair w-fit" data-text="SIGN IN">
+        <div className="p-6 md:p-12 flex flex-col justify-center bg-white dark:bg-black relative">
+          <div className="mb-8 md:mb-10 relative">
+            <h1 className="text-4xl md:text-5xl font-black text-black dark:text-white mb-2 uppercase tracking-tighter glitch-text hover:cursor-crosshair w-fit" data-text="SIGN IN">
               SIGN IN
             </h1>
             <p className="font-mono text-sm font-bold text-gray-500 dark:text-gray-400">

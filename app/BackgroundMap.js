@@ -16,11 +16,13 @@ export default function BackgroundMap({ isDark }) {
     : `https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png${apiKey}`;
 
   return (
-    <div className="absolute inset-0 z-0 pointer-events-auto" style={{ filter: isDark ? 'grayscale(100%) contrast(1.2)' : 'grayscale(100%) contrast(1.2)' }}>
+    <div className="absolute inset-0 z-0 pointer-events-none" style={{ filter: isDark ? 'grayscale(100%) contrast(1.2)' : 'grayscale(100%) contrast(1.2)' }}>
       <MapContainer
         center={position}
-        zoom={30}
+        zoom={14}
         scrollWheelZoom={false}
+        dragging={false}
+        doubleClickZoom={false}
         zoomControl={false}
         attributionControl={false}
         className="w-full h-full"

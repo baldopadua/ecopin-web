@@ -124,6 +124,7 @@ const InteractiveMapParticles = ({ isDark }) => {
 export default function Home() {
   const [theme, setTheme] = useState('dark');
   const [phoneRotation, setPhoneRotation] = useState({ x: 0, y: 0 });
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     const lenis = new Lenis({
@@ -174,7 +175,7 @@ export default function Home() {
       style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
     >
       {/* Background System */}
-      <div className="absolute inset-0 z-0 bg-white dark:bg-black transition-colors duration-300">
+      <div className="absolute top-0 left-0 right-0 h-screen z-0 bg-white dark:bg-black transition-colors duration-300 overflow-hidden">
         <BackgroundMap isDark={isDark} />
         <InteractiveMapParticles isDark={isDark} />
 
@@ -234,10 +235,47 @@ export default function Home() {
 
           <a href="/auth" className="px-6 py-2 bg-[#ccff00] text-black text-sm font-black uppercase tracking-widest border-2 border-black dark:border-[#ccff00] hover:bg-black hover:text-[#ccff00] dark:hover:bg-white dark:hover:text-black transition-colors">Login</a>
         </nav>
+
+        {/* Mobile Menu Button */}
+        <button
+          className="md:hidden p-2 border-2 border-black dark:border-[#ccff00] text-black dark:text-[#ccff00] hover:bg-black hover:text-[#ccff00] dark:hover:bg-[#ccff00] dark:hover:text-black transition-colors z-[60]"
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          title="Toggle Menu"
+        >
+          {isMenuOpen ? (
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          ) : (
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          )}
+        </button>
       </header>
 
+      {/* Mobile Menu Overlay */}
+      {isMenuOpen && (
+        <div className="fixed inset-0 z-[55] bg-white dark:bg-black flex flex-col items-center justify-center p-6 transition-colors duration-300">
+          <nav className="flex flex-col gap-8 items-center w-full">
+            <a href="#about" onClick={() => setIsMenuOpen(false)} className="text-3xl font-black uppercase tracking-widest hover:text-[#ccff00] transition-colors">About</a>
+            <a href="#features" onClick={() => setIsMenuOpen(false)} className="text-3xl font-black uppercase tracking-widest hover:text-[#ccff00] transition-colors">Features</a>
+            
+            {/* Theme Toggler in Mobile Menu */}
+            <button
+              onClick={toggleTheme}
+              className="mt-4 p-4 border-4 border-black dark:border-[#ccff00] hover:bg-black hover:text-[#ccff00] dark:hover:bg-[#ccff00] dark:hover:text-black transition-colors flex items-center justify-center gap-4 text-xl font-black uppercase"
+            >
+              {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+            </button>
+
+            <a href="/auth" onClick={() => setIsMenuOpen(false)} className="mt-8 px-12 py-4 bg-[#ccff00] text-black text-2xl font-black uppercase tracking-widest border-4 border-black dark:border-[#ccff00] w-full text-center hover:bg-black hover:text-[#ccff00] transition-colors">Login</a>
+          </nav>
+        </div>
+      )}
+
       {/* Hero Section */}
-      <section id="home" className="relative z-10 flex flex-col items-center justify-center min-h-[90vh] px-6 text-center pointer-events-none">
+      <section id="home" className="relative z-10 flex flex-col items-center justify-center min-h-[90vh] px-6 text-center pointer-events-none pt-24 md:pt-0 pb-16 md:pb-0">
         {/* Large abstract glowing arc */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] md:w-[700px] md:h-[700px] rounded-full border-[40px] md:border-[80px] border-[#ccff00] blur-xl opacity-60 dark:opacity-40 mix-blend-difference pointer-events-none"></div>
 
@@ -317,20 +355,21 @@ export default function Home() {
           </div>
 
           <div
-            className="relative h-[700px] border-8 border-black dark:border-[#ccff00] bg-gray-100 dark:bg-[#111] flex items-center justify-center group [perspective:1000px] overflow-visible"
+            className="relative h-[500px] lg:h-[700px] border-8 border-black dark:border-[#ccff00] bg-gray-100 dark:bg-[#111] flex items-center justify-center group [perspective:1000px] overflow-visible"
             onMouseMove={handlePhoneMouseMove}
             onMouseLeave={handlePhoneMouseLeave}
           >
             {/* Background pattern for the box */}
             <div className="absolute inset-0 opacity-20 dark:opacity-20 mix-blend-multiply dark:mix-blend-normal overflow-hidden" style={{ backgroundImage: 'repeating-linear-gradient(45deg, #ccff00 0, #ccff00 2px, transparent 2px, transparent 10px)' }}></div>
 
-            {/* 3D Phone Mockup - Increased Size */}
-            <div
-              className="w-[360px] h-[780px] border-[12px] border-black dark:border-[#222] rounded-[3.5rem] relative overflow-hidden bg-black shadow-[20px_20px_0px_0px_rgba(0,0,0,0.4)] dark:shadow-[30px_30px_0px_0px_rgba(204,255,0,0.15)] transition-transform duration-100 ease-out flex flex-col items-center justify-center px-8 z-10"
-              style={{
-                transform: `rotateX(${phoneRotation.x}deg) rotateY(${phoneRotation.y}deg)`,
-              }}
-            >
+            {/* 3D Phone Mockup - Scaled for mobile */}
+            <div className="transform scale-[0.6] md:scale-100">
+              <div
+                className="w-[360px] h-[780px] border-[12px] border-black dark:border-[#222] rounded-[3.5rem] relative overflow-hidden bg-black shadow-[20px_20px_0px_0px_rgba(0,0,0,0.4)] dark:shadow-[30px_30px_0px_0px_rgba(204,255,0,0.15)] transition-transform duration-100 ease-out flex flex-col items-center justify-center px-8 z-10"
+                style={{
+                  transform: `rotateX(${phoneRotation.x}deg) rotateY(${phoneRotation.y}deg)`,
+                }}
+              >
               <div className="absolute top-0 inset-x-0 h-7 bg-black dark:bg-[#222] rounded-b-2xl w-40 mx-auto z-20"></div>
 
               <div className="w-full flex flex-col items-center justify-center h-full pt-16 pb-10 relative z-10">
@@ -357,6 +396,7 @@ export default function Home() {
                   Don't have an account? <span className="text-[#ccff00] cursor-pointer hover:underline">Sign Up</span>
                 </div>
               </div>
+            </div>
             </div>
 
             {/* Floating UI Chips with Authentic SVG Emojis - Positioned securely above phone via z-30 */}
@@ -445,47 +485,15 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Expanded Detailed Footer */}
-      <footer className="py-20 px-6 bg-black border-t-8 border-[#ccff00] text-white">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
-          {/* Brand Info */}
-          <div className="md:col-span-2">
-            <div className="text-[#ccff00] font-black text-5xl mb-4">ECOPIN<span className="text-white">.AI</span></div>
-            <p className="font-sans font-regular text-gray-400 max-w-sm mb-6 leading-relaxed">
-              A Crowdsourced Geospatial Platform for Transparent Environmental Reporting and Rapid Institutional Detection for the Pasig City Solid Waste Management Office.
-            </p>
-            <div className="inline-block border-2 border-[#ccff00] text-[#ccff00] font-mono text-sm px-3 py-1 font-bold">
-              SYSTEM: ONLINE
-            </div>
+      {/* Simple Footer */}
+      <footer className="py-12 px-6 bg-black border-t-8 border-[#ccff00] text-white">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+          <div>
+            <div className="text-[#ccff00] font-black text-3xl mb-1">ECOPIN<span className="text-white">.AI</span></div>
+            <p className="font-mono text-gray-400 text-sm">Solid Waste Management Office - Pasig City</p>
           </div>
-
-          {/* Quick Links */}
-          <div className="flex flex-col gap-4">
-            <h4 className="text-xl font-black uppercase tracking-widest text-[#ccff00] mb-2 border-b-2 border-gray-800 pb-2">Navigation</h4>
-            <a href="#home" className="font-mono text-gray-300 hover:text-white hover:translate-x-2 transition-transform">Home</a>
-            <a href="#about" className="font-mono text-gray-300 hover:text-white hover:translate-x-2 transition-transform">How It Works</a>
-            <a href="#features" className="font-mono text-gray-300 hover:text-white hover:translate-x-2 transition-transform">System Features</a>
-            <a href="#download" className="font-mono text-gray-300 hover:text-white hover:translate-x-2 transition-transform">Download App</a>
-            <a href="/auth" className="font-mono text-gray-300 hover:text-white hover:translate-x-2 transition-transform">Citizen Login</a>
-          </div>
-
-          {/* Legal / Contact */}
-          <div className="flex flex-col gap-4">
-            <h4 className="text-xl font-black uppercase tracking-widest text-[#ccff00] mb-2 border-b-2 border-gray-800 pb-2">Information</h4>
-            <a href="#" className="font-mono text-gray-300 hover:text-white transition-colors">Privacy Policy</a>
-            <a href="#" className="font-mono text-gray-300 hover:text-white transition-colors">Terms of Service</a>
-            <a href="#" className="font-mono text-gray-300 hover:text-white transition-colors">SWMO Contact</a>
-            <a href="#" className="font-mono text-gray-300 hover:text-white transition-colors">Pasig City Gov</a>
-          </div>
-        </div>
-
-        {/* Copyright Bar */}
-        <div className="max-w-7xl mx-auto mt-20 pt-8 border-t-2 border-gray-900 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="text-gray-500 font-mono text-sm uppercase tracking-widest">
-            © 2026 ECOPIN. ALL RIGHTS RESERVED.
-          </div>
-          <div className="text-gray-500 font-mono text-sm uppercase tracking-widest text-right">
-            PASIG CITY // ALL SYSTEMS GO.
+          <div className="text-gray-500 font-mono text-xs uppercase tracking-widest text-center md:text-right">
+            © 2026 ECOPIN.<br className="md:hidden" /> ALL RIGHTS RESERVED.
           </div>
         </div>
       </footer>
