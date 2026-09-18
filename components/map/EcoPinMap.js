@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react'
 import React from 'react'
 import { useRouter } from 'next/navigation'
-import { MapContainer, TileLayer, Marker, Popup, Polygon, Circle, useMapEvents, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, Polygon, Circle, useMapEvents, useMap, Polyline } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet.heat'
 import wkx from 'wkx'
@@ -401,6 +401,52 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
     }
   }, [validationStatusFilter])
 
+  // Pre-process reports to handle exactly overlapping pins (Spiderfy pattern)
+  const processedReportsInfo = useMemo(() => {
+    const coordsMap = {}
+    const parsedReports = filteredReports.map(report => {
+      let lat, lng
+      if (report.latitude && report.longitude) {
+        lat = report.latitude
+        lng = report.longitude
+      } else if (report.location) {
+        try {
+          if (typeof report.location === 'string' && report.location.startsWith('{')) {
+            const geoJSON = JSON.parse(report.location)
+            if (geoJSON.type === 'Point' && geoJSON.coordinates) {
+              lng = geoJSON.coordinates[0]
+              lat = geoJSON.coordinates[1]
+            }
+          } else if (typeof report.location === 'string') {
+            const buffer = Buffer.from(report.location, 'hex')
+            const geometry = wkx.Geometry.parse(buffer)
+            if (geometry && geometry.x && geometry.y) {
+              lng = geometry.x
+              lat = geometry.y
+            }
+          } else if (Buffer.isBuffer(report.location)) {
+            const geometry = wkx.Geometry.parse(report.location)
+            if (geometry && geometry.x && geometry.y) {
+              lng = geometry.x
+              lat = geometry.y
+            }
+          }
+        } catch (error) {
+          console.error('Error parsing location for report', report.id, ':', error)
+        }
+      }
+
+      if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
+        const key = report.cluster_id ? `cluster_${report.cluster_id}` : `coord_${lat.toFixed(4)},${lng.toFixed(4)}`
+        if (!coordsMap[key]) coordsMap[key] = []
+        coordsMap[key].push(report.id)
+      }
+      return { ...report, parsedLat: lat, parsedLng: lng }
+    })
+
+    return { parsedReports, coordsMap }
+  }, [filteredReports])
+
   const handleMarkerClick = useCallback((reportId) => {
     if (selectionMode && onReportSelect) {
       onReportSelect(reportId)
@@ -658,60 +704,52 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
           })}
 
           {/* Report Pins */}
-          {showPins && filteredReports.map((report) => {
+          {showPins && processedReportsInfo.parsedReports.map((report) => {
             // Hide individual pins that belong to clusters when zoomed out AND clusters are enabled
             // Show them when zoomed in OR when clusters are disabled
             if (report.cluster_id && showClusters && zoom <= 15) {
-              console.log('Hiding cluster member pin:', report.id, 'cluster_id:', report.cluster_id, 'zoom:', zoom)
               return null
             }
-            let latitude, longitude
-
-            // reports_view has latitude and longitude columns directly
-            if (report.latitude && report.longitude) {
-              latitude = report.latitude
-              longitude = report.longitude
-            }
-            // Fallback to parsing location field
-            else if (report.location) {
-              try {
-                // Handle GeoJSON format from reports_view
-                if (typeof report.location === 'string' && report.location.startsWith('{')) {
-                  const geoJSON = JSON.parse(report.location)
-                  if (geoJSON.type === 'Point' && geoJSON.coordinates) {
-                    longitude = geoJSON.coordinates[0]
-                    latitude = geoJSON.coordinates[1]
-                  }
-                }
-                // Handle hex string format - convert to Buffer first
-                else if (typeof report.location === 'string') {
-                  const buffer = Buffer.from(report.location, 'hex')
-                  const geometry = wkx.Geometry.parse(buffer)
-                  if (geometry && geometry.x && geometry.y) {
-                    longitude = geometry.x
-                    latitude = geometry.y
-                  }
-                }
-                // Handle Buffer format
-                else if (Buffer.isBuffer(report.location)) {
-                  const geometry = wkx.Geometry.parse(report.location)
-                  if (geometry && geometry.x && geometry.y) {
-                    longitude = geometry.x
-                    latitude = geometry.y
-                  }
-                }
-              } catch (error) {
-                console.error('Error parsing location for report', report.id, ':', error)
-              }
-            }
+            
+            let latitude = report.parsedLat
+            let longitude = report.parsedLng
+            let originalLat = latitude
+            let originalLng = longitude
+            let isSpiderfied = false
 
             if (latitude && longitude && !isNaN(latitude) && !isNaN(longitude)) {
+              // Spiderfy overlapping pins
+              const key = report.cluster_id ? `cluster_${report.cluster_id}` : `coord_${latitude.toFixed(4)},${longitude.toFixed(4)}`
+              const overlappingIds = processedReportsInfo.coordsMap[key]
+              
+              if (overlappingIds && overlappingIds.length > 1 && (zoom > 15 || !showClusters)) {
+                const index = overlappingIds.indexOf(report.id)
+                const total = overlappingIds.length
+                
+                // Radius scales with zoom so the visual pixel offset remains constant
+                const radius = 0.0004 * Math.pow(2, 17 - zoom)
+                const angle = (index / total) * Math.PI * 2
+                
+                latitude += Math.sin(angle) * radius
+                longitude += Math.cos(angle) * radius
+                isSpiderfied = true
+              }
+              
               const isRemoving = removingIds.has(report.id)
 
               return (
-                <Marker
-                  key={report.id}
-                  position={[latitude, longitude]}
+                <React.Fragment key={report.id}>
+                  {isSpiderfied && (
+                    <Polyline 
+                      positions={[[originalLat, originalLng], [latitude, longitude]]} 
+                      color="var(--text-muted, #999)" 
+                      weight={2} 
+                      opacity={0.6}
+                      dashArray="4 4"
+                    />
+                  )}
+                  <Marker
+                    position={[latitude, longitude]}
                   icon={createIcon(report.status, isRemoving, selectedReportsSet.has(report.id))}
                   eventHandlers={{
                     mouseover: (e) => {
@@ -766,6 +804,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                     </div>
                   </Popup>
                 </Marker>
+                </React.Fragment>
               )
             }
             return null

@@ -1,10 +1,10 @@
 'use client'
-import { useEffect, useState, useMemo } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, Polygon, useMapEvents } from 'react-leaflet'
+import React, { useEffect, useState, useMemo } from 'react'
+import { MapContainer, TileLayer, Marker, Popup, Polygon, useMapEvents, Polyline } from 'react-leaflet'
 import L from 'leaflet'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
-import { fetchValidatedReports, fetchIssueTypes, fetchClusters } from '@/lib/api'
+import { fetchValidatedReports, fetchIssueTypes, fetchClusters, fetchReportEvidence } from '@/lib/api'
 import { supabase } from '@/lib/supabase'
 
 if (typeof window !== 'undefined' && !window.Buffer) {
@@ -13,6 +13,25 @@ if (typeof window !== 'undefined' && !window.Buffer) {
 
 const PASIG_CENTER = [14.5802, 121.0850]
 const DEFAULT_ZOOM = 14
+
+const ImageWithLoader = ({ src, alt, className }) => {
+  const [loaded, setLoaded] = useState(false)
+  return (
+    <div className={`relative ${className} bg-gray-200 dark:bg-[#222]`}>
+      {!loaded && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-8 h-8 border-4 border-[#ccff00] border-t-black dark:border-t-white rounded-full animate-spin"></div>
+        </div>
+      )}
+      <img 
+        src={src} 
+        alt={alt} 
+        className={`w-full h-full object-cover ${loaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`} 
+        onLoad={() => setLoaded(true)} 
+      />
+    </div>
+  )
+}
 
 // Redesigned Map Pin: Easier to see, still brutalist (a sharp square with a thick border and inner dot)
 const createBrutalistIcon = (status, isSelected = false) => {
@@ -95,6 +114,21 @@ export default function PublicMap({ isDark }) {
   const [issueTypeFilter, setIssueTypeFilter] = useState('all')
   const [showFilterPanel, setShowFilterPanel] = useState(false)
   const [selectedReportId, setSelectedReportId] = useState(null)
+  
+  // Details Panel State
+  const [detailedReport, setDetailedReport] = useState(null)
+  const [detailedEvidence, setDetailedEvidence] = useState([])
+
+  const handleViewDetails = async (report) => {
+    setDetailedReport(report)
+    setDetailedEvidence([])
+    try {
+      const evidence = await fetchReportEvidence(report.id)
+      setDetailedEvidence(evidence || [])
+    } catch (e) {
+      console.error(e)
+    }
+  }
 
   useEffect(() => {
     import('@/lib/leaflet-fix')
@@ -184,6 +218,29 @@ export default function PublicMap({ isDark }) {
     return map
   }, [filteredReports])
 
+  const processedReportsInfo = useMemo(() => {
+    const coordsMap = {}
+    const parsedReports = filteredReports.map(report => {
+      let lat, lng
+      if (report.latitude && report.longitude) {
+        lat = report.latitude
+        lng = report.longitude
+      } else if (report.location) {
+        const geom = parseGeometry(report.location)
+        if (geom) { lat = geom[0]; lng = geom[1] }
+      }
+
+      if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
+        const key = report.cluster_id ? `cluster_${report.cluster_id}` : `coord_${lat.toFixed(4)},${lng.toFixed(4)}`
+        if (!coordsMap[key]) coordsMap[key] = []
+        coordsMap[key].push(report.id)
+      }
+      return { ...report, parsedLat: lat, parsedLng: lng }
+    })
+
+    return { parsedReports, coordsMap }
+  }, [filteredReports])
+
   if (!mounted) return <div className="h-full w-full bg-black flex items-center justify-center text-[#ccff00] font-black text-4xl uppercase glitch-text" data-text="LOADING MAP...">LOADING MAP...</div>
 
   const apiKey = process.env.NEXT_PUBLIC_CARTO_API_KEY ? `?key=${process.env.NEXT_PUBLIC_CARTO_API_KEY}` : '';
@@ -218,6 +275,13 @@ export default function PublicMap({ isDark }) {
         .custom-brutalist-marker:hover div, .custom-brutalist-cluster:hover div {
           transform: translateY(-2px) translateX(-2px);
           box-shadow: 6px 6px 0px 0px rgba(0,0,0,1) !important;
+        }
+        @keyframes slideInLeft {
+          from { transform: translateX(-100%); }
+          to { transform: translateX(0); }
+        }
+        .animate-slide-in-left {
+          animation: slideInLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
       `}</style>
 
@@ -293,25 +357,47 @@ export default function PublicMap({ isDark }) {
           })}
 
           {/* Render Individual Pins */}
-          {filteredReports.map((report) => {
-            // Hide if it's in a cluster and we're zoomed out
-            if (report.cluster_id && zoom <= 15) return null
+          {processedReportsInfo.parsedReports.map((report) => {
+            // Hide if it's in a valid cluster (>= 2 reports) and we're zoomed out
+            const isInValidCluster = filteredClusters.some(c => c.id === report.cluster_id)
+            if (isInValidCluster && zoom <= 15) return null
 
-            let latitude, longitude
-            if (report.latitude && report.longitude) {
-              latitude = report.latitude
-              longitude = report.longitude
-            } else if (report.location) {
-              const geom = parseGeometry(report.location)
-              if (geom) { latitude = geom[0]; longitude = geom[1] }
-            }
+            let latitude = report.parsedLat
+            let longitude = report.parsedLng
+            let originalLat = latitude
+            let originalLng = longitude
+            let isSpiderfied = false
 
             if (latitude && longitude && !isNaN(latitude) && !isNaN(longitude)) {
+              const key = report.cluster_id ? `cluster_${report.cluster_id}` : `coord_${latitude.toFixed(4)},${longitude.toFixed(4)}`
+              const overlappingIds = processedReportsInfo.coordsMap[key]
+
+              if (overlappingIds && overlappingIds.length > 1 && zoom > 15) {
+                const index = overlappingIds.indexOf(report.id)
+                const total = overlappingIds.length
+                
+                const radius = 0.0004 * Math.pow(2, 17 - zoom)
+                const angle = (index / total) * Math.PI * 2
+                
+                latitude += Math.sin(angle) * radius
+                longitude += Math.cos(angle) * radius
+                isSpiderfied = true
+              }
+
               return (
-                <Marker
-                  key={report.id}
-                  position={[latitude, longitude]}
-                  icon={createBrutalistIcon(report.status, selectedReportId === report.id)}
+                <React.Fragment key={report.id}>
+                  {isSpiderfied && (
+                    <Polyline 
+                      positions={[[originalLat, originalLng], [latitude, longitude]]} 
+                      color={isDark ? "#ccff00" : "#000000"} 
+                      weight={2} 
+                      opacity={0.8}
+                      dashArray="4 4"
+                    />
+                  )}
+                  <Marker
+                    position={[latitude, longitude]}
+                    icon={createBrutalistIcon(report.status, selectedReportId === report.id)}
                   eventHandlers={{ click: () => setSelectedReportId(report.id) }}
                 >
                   <Popup>
@@ -326,13 +412,21 @@ export default function PublicMap({ isDark }) {
                         {report.description?.substring(0, 100)}{report.description?.length > 100 ? '...' : ''}
                       </p>
                       
-                      <div className="flex justify-between items-center mt-4 font-mono text-xs font-bold">
+                      <div className="flex justify-between items-center mt-4 mb-4 font-mono text-xs font-bold">
                         <span className="uppercase">{report.status?.replace(/_/g, ' ')}</span>
                         <span>{new Date(report.created_at).toLocaleDateString()}</span>
                       </div>
+                      
+                      <button 
+                        onClick={() => handleViewDetails(report)}
+                        className="w-full bg-black text-[#ccff00] dark:bg-[#ccff00] dark:text-black border-2 border-black font-black uppercase py-2 hover:bg-gray-800 dark:hover:bg-yellow-400 transition-colors"
+                      >
+                        SEE FULL DETAILS
+                      </button>
                     </div>
                   </Popup>
                 </Marker>
+                </React.Fragment>
               )
             }
             return null
@@ -406,6 +500,86 @@ export default function PublicMap({ isDark }) {
               <div className="font-mono text-xs font-bold text-gray-500 uppercase">
                 SHOWING {filteredReports.length} / {reports?.length || 0} REPORTS
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Brutalist Details Panel (Left Side) */}
+        {detailedReport && (
+          <div className="animate-slide-in-left absolute top-0 left-0 h-full w-full sm:w-[450px] bg-white dark:bg-black border-r-0 sm:border-r-8 border-black dark:border-[#ccff00] z-[1002] flex flex-col">
+            <div className="p-6 border-b-8 border-black dark:border-[#ccff00] flex justify-between items-center bg-black text-[#ccff00] dark:bg-[#ccff00] dark:text-black">
+              <h3 className="font-black text-2xl uppercase tracking-tighter">REPORT DETAILS</h3>
+              <button
+                onClick={() => setDetailedReport(null)}
+                className="w-10 h-10 border-4 border-[#ccff00] dark:border-black flex items-center justify-center hover:bg-[#ccff00] hover:text-black dark:hover:bg-black dark:hover:text-[#ccff00] transition-colors font-black"
+              >
+                X
+              </button>
+            </div>
+            
+            <div className="p-6 flex-1 overflow-y-auto bg-white dark:bg-black text-black dark:text-white">
+              <div className="inline-block bg-[#ccff00] text-black font-mono text-xs font-bold px-2 py-1 mb-4 border-2 border-black">
+                {detailedReport.issue_type?.replace(/_/g, ' ').toUpperCase()}
+              </div>
+              <h2 className="font-black text-3xl uppercase tracking-tighter mb-4 leading-none break-words">
+                {detailedReport.title}
+              </h2>
+              
+              <div className="font-mono text-sm font-bold border-l-4 border-black dark:border-[#ccff00] pl-4 mb-6">
+                <p className="mb-1">STATUS: <span className="uppercase text-[#ff0000] dark:text-[#ccff00]">{detailedReport.status?.replace(/_/g, ' ')}</span></p>
+                <p>DATE: {new Date(detailedReport.created_at).toLocaleDateString()}</p>
+              </div>
+
+              <div className="mb-8 border-4 border-black dark:border-[#ccff00] p-4 bg-gray-100 dark:bg-[#111]">
+                <p className="font-medium text-lg leading-relaxed whitespace-pre-wrap">
+                  {detailedReport.description || 'No description provided.'}
+                </p>
+              </div>
+
+              {/* Citizen Photos */}
+              <div className="mb-8">
+                <h4 className="font-black text-xl uppercase border-b-4 border-black dark:border-[#ccff00] pb-2 mb-4">
+                  CITIZEN EVIDENCE
+                </h4>
+                {detailedEvidence.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    {detailedEvidence.map((img, i) => (
+                      <div key={i} className="border-4 border-black dark:border-[#ccff00]">
+                        <ImageWithLoader src={img.url} alt="Evidence" className="w-full h-32" />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="font-mono text-sm text-gray-500 font-bold uppercase">No initial photos attached.</p>
+                )}
+              </div>
+
+              {/* Staff Before / After */}
+              {(detailedReport.before_photo_url || detailedReport.after_photo_url) && (
+                <div className="mb-8">
+                  <h4 className="font-black text-xl uppercase border-b-4 border-black dark:border-[#ccff00] pb-2 mb-4">
+                    OFFICIAL RESOLUTION
+                  </h4>
+                  <div className="grid grid-cols-1 gap-6">
+                    {detailedReport.before_photo_url && (
+                      <div>
+                        <span className="inline-block bg-black text-white dark:bg-white dark:text-black font-mono text-xs font-bold px-2 py-1 mb-2">BEFORE</span>
+                        <div className="border-4 border-black dark:border-[#ccff00]">
+                          <ImageWithLoader src={detailedReport.before_photo_url} alt="Before" className="w-full h-48" />
+                        </div>
+                      </div>
+                    )}
+                    {detailedReport.after_photo_url && (
+                      <div>
+                        <span className="inline-block bg-[#ccff00] text-black font-mono text-xs font-bold px-2 py-1 mb-2">AFTER</span>
+                        <div className="border-4 border-black dark:border-[#ccff00]">
+                          <ImageWithLoader src={detailedReport.after_photo_url} alt="After" className="w-full h-48" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
