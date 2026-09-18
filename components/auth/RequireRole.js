@@ -9,12 +9,17 @@ import React from 'react';
  * @param {string|string[]} props.allowedRole - Role name or array of role names that are permitted.
  * @param {React.ReactNode} props.children - Content to render when authorized.
  */
-export function RequireRole({ allowedRole, children }) {
+export function RequireRole({ allowedRole, allowedRoles, children }) {
   const user = useUser();
 //   console.log("user role: ", user?.role);
   const role = user?.role ?? 'guest';
-  const allowed = allowedRole?.toString() === role;
-  console.log("Allowed: ", allowed);
+  
+  // Handle both allowedRole (singular) and allowedRoles (array)
+  const rolesToCheck = allowedRoles || allowedRole;
+  const rolesArray = Array.isArray(rolesToCheck) ? rolesToCheck : [rolesToCheck];
+  
+  const allowed = rolesArray.includes(role);
+  console.log("Allowed: ", allowed, "User role:", role, "Required roles:", rolesArray);
   if (allowed) {
     return <>{children}</>;
   }
