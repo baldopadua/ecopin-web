@@ -81,9 +81,16 @@ export default function AuthPage() {
 
   return (
     <main
-      className="min-h-screen bg-white dark:bg-black text-black dark:text-white relative flex items-center justify-center p-6 selection:bg-[#ccff00] selection:text-black transition-colors duration-300"
+      className="min-h-screen bg-white dark:bg-black text-black dark:text-white relative flex flex-col items-center justify-center p-4 md:p-6 selection:bg-[#ccff00] selection:text-black transition-colors duration-300"
       style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
     >
+      {/* Desktop Back Button */}
+      <button 
+        onClick={() => router.push('/')}
+        className="hidden md:block absolute top-8 left-8 z-50 font-mono text-base font-bold uppercase bg-white dark:bg-black text-black dark:text-white border-4 border-black dark:border-[#ccff00] px-4 py-2 hover:bg-[#ccff00] hover:text-black dark:hover:bg-[#ccff00] dark:hover:text-black transition-all shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:shadow-[6px_6px_0px_0px_rgba(204,255,0,0.5)] hover:shadow-none hover:translate-x-[6px] hover:translate-y-[6px]"
+      >
+        [← Back]
+      </button>
       {/* Subtle Map Pattern Overlay */}
       <div
         className="absolute inset-0 opacity-40 pointer-events-none"
@@ -100,23 +107,33 @@ export default function AuthPage() {
       </div>
 
       {/* Auth Container */}
-      <div className="w-full max-w-5xl mx-auto grid md:grid-cols-2 border-8 border-black dark:border-[#ccff00] bg-white dark:bg-black shadow-[20px_20px_0px_0px_rgba(0,0,0,1)] dark:shadow-[20px_20px_0px_0px_rgba(204,255,0,0.5)] relative z-10 animate-fade-in-up">
+      <div className="w-full max-w-5xl mx-auto grid md:grid-cols-2 border-4 md:border-8 border-black dark:border-[#ccff00] bg-white dark:bg-black shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] md:shadow-[20px_20px_0px_0px_rgba(0,0,0,1)] dark:shadow-[10px_10px_0px_0px_rgba(204,255,0,0.5)] md:dark:shadow-[20px_20px_0px_0px_rgba(204,255,0,0.5)] relative z-10 animate-fade-in-up mt-4 md:mt-0">
 
         {/* Left Panel - Branding */}
-        <div className="flex flex-col justify-between p-6 md:p-12 bg-[#ccff00] text-black border-r-0 md:border-r-8 border-b-8 md:border-b-0 border-black dark:border-[#ccff00] relative overflow-hidden group">
-          <div className="relative z-10">
+        <div className="flex flex-col justify-between p-6 md:p-12 bg-[#ccff00] text-black border-r-0 md:border-r-8 border-b-4 md:border-b-0 border-black dark:border-[#ccff00] relative overflow-hidden group">
+          <div className="relative z-10 hidden md:block">
             <a href="/" className="text-3xl md:text-4xl font-black tracking-tighter hover:underline">
               ECOPIN<span className="text-[#3300FF]">.AI</span>
             </a>
           </div>
 
-          <div className="relative z-10 mt-10 md:mt-20 mb-6 md:mb-10">
-            <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none mb-4 md:mb-6 transition-transform origin-left">
-              Pasig SWMO <br className="hidden md:block" /> Portal
-            </h2>
-            <p className="font-mono text-sm font-bold border-black">
-              MONITOR, MANAGE, AND RESOLVE ENVIRONMENTAL CONCERNS ACROSS THE CITY WITH AI-POWERED REPORTING.
-            </p>
+          <div className="relative z-10 mt-0 md:mt-20 mb-6 md:mb-10 flex flex-row md:flex-col items-center md:items-start justify-between gap-4">
+            <div>
+              <h2 className="text-2xl sm:text-3xl md:text-5xl font-black uppercase tracking-tighter leading-none mb-0 md:mb-6 transition-transform origin-left">
+                Pasig SWMO <br className="hidden md:block" /> Portal
+              </h2>
+              <p className="font-mono text-sm font-bold border-black hidden md:block mt-6">
+                MONITOR, MANAGE, AND RESOLVE ENVIRONMENTAL CONCERNS ACROSS THE CITY WITH AI-POWERED REPORTING.
+              </p>
+            </div>
+            
+            {/* Mobile Back Button */}
+            <button 
+              onClick={() => router.push('/')}
+              className="md:hidden shrink-0 font-mono text-sm font-bold uppercase bg-white dark:bg-black text-black dark:text-white border-2 border-black dark:border-[#ccff00] px-3 py-1.5 hover:bg-[#ccff00] hover:text-black dark:hover:bg-[#ccff00] dark:hover:text-black transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(204,255,0,0.5)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px]"
+            >
+              [← Back]
+            </button>
           </div>
 
           <div className="relative z-10 flex items-center gap-3 font-mono text-xs font-bold uppercase">
@@ -130,11 +147,11 @@ export default function AuthPage() {
 
         {/* Right Panel - Form */}
         <div className="p-6 md:p-12 flex flex-col justify-center bg-white dark:bg-black relative">
-          <div className="mb-8 md:mb-10 relative">
-            <h1 className="text-4xl md:text-5xl font-black text-black dark:text-white mb-2 uppercase tracking-tighter glitch-text hover:cursor-crosshair w-fit" data-text="SIGN IN">
+          <div className="mb-6 md:mb-10 relative">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-black dark:text-white mb-2 uppercase tracking-tighter glitch-text hover:cursor-crosshair w-fit" data-text="SIGN IN">
               SIGN IN
             </h1>
-            <p className="font-mono text-sm font-bold text-gray-500 dark:text-gray-400">
+            <p className="font-mono text-sm font-bold text-gray-500 dark:text-gray-400 hidden md:block">
               ENTER YOUR CREDENTIALS TO ACCESS THE DASHBOARD
             </p>
           </div>
