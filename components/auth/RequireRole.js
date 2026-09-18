@@ -24,7 +24,7 @@ export function RequireRole({ allowedRole, allowedRoles, children }) {
     return <>{children}</>;
   }
   return (
-    <div className="flex h-screen items-center justify-center bg-surface dark:bg-[#0a0f08]">
+    <div className="flex h-screen items-center justify-center bg-surface-elevated dark:bg-[#0a0f08]">
       <div className="text-center p-8">
         <h2 className="text-2xl font-bold mb-4 text-text-primary">Access Denied</h2>
         <p className="text-text-secondary">You do not have permission to view this page.</p>

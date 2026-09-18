@@ -382,7 +382,7 @@ function SpatialAnalysisContent() {
           {activeTab === 'current' ? 'Hotspot Map' : 'Historical Map View'}
         </h2>
         {loading && !currentData ? (
-          <div className="flex items-center justify-center h-[500px] bg-surface-alt rounded-xl border border-border">
+          <div className="flex items-center justify-center h-[500px] bg-surface-elevated rounded-xl border border-border">
             <p className="text-text-muted">Loading data...</p>
           </div>
         ) : (
@@ -402,7 +402,7 @@ function SpatialAnalysisContent() {
             {activeTab === 'current' ? 'Cluster Details' : 'Historical Hotspots'}
           </h2>
           {activeTab === 'current' && (
-            <div className="text-sm text-text-muted bg-surface-alt px-3 py-1.5 rounded-lg border border-border">
+            <div className="text-sm text-text-muted bg-surface-elevated px-3 py-1.5 rounded-lg border border-border">
               Powered by DBSCAN · reports within 150 m are grouped into a cluster
             </div>
           )}

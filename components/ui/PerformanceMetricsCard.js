@@ -98,7 +98,7 @@ export default function PerformanceMetricsCard({ completedTasks = 18, totalTasks
             const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
             return (
               <div key={index} className="flex-1 flex flex-col items-center">
-                <div className="w-full bg-surface dark:bg-surface-elevated rounded-t-sm relative" style={{ height: '100%' }}>
+                <div className="w-full bg-surface-elevated dark:bg-surface-elevated rounded-t-sm relative" style={{ height: '100%' }}>
                   <div
                     className="absolute bottom-0 w-full bg-accent-green rounded-t-sm transition-all duration-500"
                     style={{ height: `${height}%` }}

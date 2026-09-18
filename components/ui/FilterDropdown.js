@@ -27,7 +27,7 @@ export default function FilterDropdown({ label, value, onChange, options }) {
         </svg>
       </button>
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-border rounded-lg shadow-lg z-50 overflow-hidden">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-surface-elevated border border-border rounded-lg shadow-lg z-50 overflow-hidden">
           {options.map((option) => (
             <button
               key={option.value}

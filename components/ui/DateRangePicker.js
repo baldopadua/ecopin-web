@@ -25,7 +25,7 @@ export default function DateRangePicker({
           type="date"
           value={startDate}
           onChange={(e) => handleStartDateChange(e.target.value)}
-          className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-text-primary"
+          className="w-full px-3 py-2 border border-border rounded-lg bg-surface-elevated text-text-primary"
         />
       </div>
       <div className="flex items-end pb-2 text-text-muted">—</div>
@@ -35,7 +35,7 @@ export default function DateRangePicker({
           type="date"
           value={endDate}
           onChange={(e) => handleEndDateChange(e.target.value)}
-          className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-text-primary"
+          className="w-full px-3 py-2 border border-border rounded-lg bg-surface-elevated text-text-primary"
         />
       </div>
     </div>

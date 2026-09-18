@@ -23,7 +23,7 @@ export default function ClustersPage() {
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 8
+  const itemsPerPage = 6
 
   useEffect(() => {
     Promise.all([

@@ -159,7 +159,7 @@ export default function ClusterDetailPage() {
       case 'waiting_for_feedback':
         return 'bg-info/10 text-info border-info/30'
       case 'closed':
-        return 'bg-surface text-text-muted border-border'
+        return 'bg-surface-elevated text-text-muted border-border'
       case 'pending_owner_consent':
         return 'bg-warning/10 text-warning border-warning/30'
       default:
@@ -176,7 +176,7 @@ export default function ClusterDetailPage() {
       case 'low':
         return 'bg-info/10 text-info border-info/30'
       default:
-        return 'bg-surface text-text-muted border-border'
+        return 'bg-surface-elevated text-text-muted border-border'
     }
   }
 
@@ -194,7 +194,7 @@ export default function ClusterDetailPage() {
       case 'rejected':
         return 'bg-error/10 text-error border-error/30'
       default:
-        return 'bg-surface text-text-muted border-border'
+        return 'bg-surface-elevated text-text-muted border-border'
     }
   }
 
@@ -328,7 +328,7 @@ export default function ClusterDetailPage() {
                 {reports.map((report) => (
                   <tr
                     key={report.id}
-                    className="border-b border-border cursor-pointer hover:bg-surface transition-colors"
+                    className="border-b border-border cursor-pointer hover:bg-surface-elevated transition-colors"
                     onClick={() => handleRowClick(report.id)}
                   >
                     <td className="py-3 px-4">
@@ -361,7 +361,7 @@ export default function ClusterDetailPage() {
       {/* Create Task Modal */}
       {showCreateTaskModal && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-          <div className="bg-surface dark:bg-surface-elevated rounded-lg p-6 w-full max-w-md">
+          <div className="bg-surface-elevated dark:bg-surface-elevated rounded-lg p-6 w-full max-w-md">
             <h3 className="text-xl font-bold mb-4">Create Cleanup Task</h3>
             <div className="mb-4">
               <label className="block text-sm font-medium mb-2">Task Title</label>

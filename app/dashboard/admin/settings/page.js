@@ -122,7 +122,7 @@ export default function SystemSettings() {
               max="32"
               value={settings.password_min_length}
               onChange={(e) => handleChange('password_min_length', parseInt(e.target.value))}
-              className="w-full p-3 border border-border rounded-lg bg-surface text-text-primary"
+              className="w-full p-3 border border-border rounded-lg bg-surface-elevated text-text-primary"
             />
             <p className="text-xs text-text-muted mt-1">
               Minimum: 6 characters, Maximum: 32 characters
@@ -203,7 +203,7 @@ export default function SystemSettings() {
               max="1440"
               value={settings.session_timeout_minutes}
               onChange={(e) => handleChange('session_timeout_minutes', e.target.value === '' ? '' : parseInt(e.target.value))}
-              className="w-full p-3 border border-border rounded-lg bg-surface text-text-primary"
+              className="w-full p-3 border border-border rounded-lg bg-surface-elevated text-text-primary"
             />
             <p className="text-xs text-text-muted mt-1">
               Users will be logged out after this period of inactivity

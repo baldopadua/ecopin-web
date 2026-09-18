@@ -532,7 +532,7 @@ export default function ReportDetailPage() {
               <div className="card">
                 <h2 className="text-xl font-bold text-text-primary mb-4">Evidence Photos</h2>
                 {evidence.length === 0 ? (
-                  <div className="h-48 bg-surface rounded-lg flex items-center justify-center border border-dashed border-border">
+                  <div className="h-48 bg-surface-elevated rounded-lg flex items-center justify-center border border-dashed border-border">
                     <div className="text-center">
                       <svg className="w-12 h-12 text-text-muted mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -676,7 +676,7 @@ export default function ReportDetailPage() {
               {/* Audit Log - Moved to main content */}
               <div className="card">
                 <h2 className="text-xl font-bold text-text-primary mb-4">Activity Log</h2>
-                <div className="bg-surface p-4 rounded-lg border border-border">
+                <div className="bg-surface-elevated p-4 rounded-lg border border-border">
                   <p className="text-text-muted text-sm">
                     Activity log is now managed through cleanup tasks.
                   </p>
@@ -757,7 +757,7 @@ export default function ReportDetailPage() {
                           ? 'bg-warning/10 text-warning border-warning/30'
                           : report.property_owner_consent_status === 'denied'
                             ? 'bg-error/10 text-error border-error/30'
-                            : 'bg-surface text-text-muted border-border'
+                            : 'bg-surface-elevated text-text-muted border-border'
                     }`}>
                       {report.property_owner_consent_status.replace(/_/g, ' ').toUpperCase()}
                     </span>

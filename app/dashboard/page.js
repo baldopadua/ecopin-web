@@ -387,7 +387,7 @@ export default function DashboardPage() {
       case 'completed': return 'bg-success/10 text-success border-success/30'
       case 'pending': return 'bg-info/10 text-info border-info/30'
       case 'waiting_for_feedback': return 'bg-info/10 text-info border-info/30'
-      case 'closed': return 'bg-surface text-text-muted border-border'
+      case 'closed': return 'bg-surface-elevated text-text-muted border-border'
       case 'pending_owner_consent': return 'bg-warning/10 text-warning border-warning/30'
       default: return 'bg-error/10 text-error border-error/30'
     }
@@ -402,7 +402,7 @@ export default function DashboardPage() {
       case 'manual_review':
       case 'Manual_Review': return 'bg-info/10 text-info border-info/30'
       case 'rejected': return 'bg-error/10 text-error border-error/30'
-      default: return 'bg-surface text-text-muted border-border'
+      default: return 'bg-surface-elevated text-text-muted border-border'
     }
   }
 
@@ -519,7 +519,7 @@ export default function DashboardPage() {
                           <span className="text-text-muted">Progress</span>
                           <span className="text-text-secondary">{resolvedCount} / {task.reports.length} resolved</span>
                         </div>
-                        <div className="w-full bg-surface dark:bg-surface-elevated rounded-full h-2">
+                        <div className="w-full bg-surface-elevated dark:bg-surface-elevated rounded-full h-2">
                           <div
                             className="bg-success h-2 rounded-full transition-all"
                             style={{ width: `${progressPercentage}%` }}
@@ -615,7 +615,7 @@ export default function DashboardPage() {
                           <span className="text-text-muted">Progress</span>
                           <span className="text-text-secondary">{resolvedCount} / {task.reports.length} resolved</span>
                         </div>
-                        <div className="w-full bg-surface dark:bg-surface-elevated rounded-full h-2">
+                        <div className="w-full bg-surface-elevated dark:bg-surface-elevated rounded-full h-2">
                           <div
                             className="bg-accent-green h-2 rounded-full transition-all"
                             style={{ width: `${progressPercentage}%` }}
@@ -678,7 +678,7 @@ export default function DashboardPage() {
                 </thead>
                 <tbody>
                   {currentReports.map((report) => (
-                    <tr key={report.id} className="border-b border-border hover:bg-surface transition-colors">
+                    <tr key={report.id} className="border-b border-border hover:bg-surface-elevated transition-colors">
                       <td className="py-3 px-4">
                         <div className="font-medium text-text-primary">{report.title}</div>
                         <div className="text-sm text-text-muted line-clamp-1">{report.description}</div>

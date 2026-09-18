@@ -57,8 +57,9 @@ export default function DashboardLayout({ children }) {
   }, [pathname])
 
   if (!user) return (
-    <div className="flex h-screen bg-background dark:bg-[#0a0f08]">
-      <aside className="w-64 bg-surface dark:bg-[#0a0f08] border-r border-border h-screen flex flex-col animate-pulse">
+    <div className="flex h-screen bg-white dark:bg-[#000000] relative">
+      <div className="absolute inset-0 bg-grid-pattern opacity-40 pointer-events-none z-0"></div>
+      <aside className="w-64 bg-white dark:bg-[#141414] border-r-2 border-[#1a1a1a] dark:border-[#333333] h-screen flex flex-col animate-pulse z-10 relative">
         <div className="p-6 border-b border-border">
           <div className="h-6 w-24 rounded bg-border/50" />
         </div>
@@ -71,11 +72,12 @@ export default function DashboardLayout({ children }) {
           ))}
         </nav>
       </aside>
-      <main className="flex-1 overflow-auto bg-surface dark:bg-[#0a0f08] p-8">
-        <div className="mb-8 animate-pulse">
-          <div className="h-8 w-48 rounded bg-border/50 mb-2" />
-          <div className="h-4 w-64 rounded bg-border/50" />
-        </div>
+      <main className="flex-1 overflow-auto bg-transparent z-10 relative">
+        <div className="p-8">
+          <div className="mb-8 animate-pulse">
+            <div className="h-8 w-48 rounded bg-border/50 mb-2" />
+            <div className="h-4 w-64 rounded bg-border/50" />
+          </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="card animate-pulse">
@@ -85,16 +87,17 @@ export default function DashboardLayout({ children }) {
             </div>
           ))}
         </div>
-        <div className="card animate-pulse">
-          <div className="h-6 w-32 rounded bg-border/50 mb-4" />
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex gap-4 py-3 border-b border-border/30">
-              <div className="h-3 flex-1 rounded bg-border/50" />
-              <div className="h-3 flex-1 rounded bg-border/50" />
-              <div className="h-3 w-20 rounded bg-border/50" />
-              <div className="h-3 w-20 rounded bg-border/50" />
-            </div>
-          ))}
+          <div className="card animate-pulse">
+            <div className="h-6 w-32 rounded bg-border/50 mb-4" />
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex gap-4 py-3 border-b border-border/30">
+                <div className="h-3 flex-1 rounded bg-border/50" />
+                <div className="h-3 flex-1 rounded bg-border/50" />
+                <div className="h-3 w-20 rounded bg-border/50" />
+                <div className="h-3 w-20 rounded bg-border/50" />
+              </div>
+            ))}
+          </div>
         </div>
       </main>
     </div>
@@ -103,9 +106,10 @@ export default function DashboardLayout({ children }) {
   return (
     <SessionProvider>
       <UserProvider user={user}>
-        <div className="flex h-screen bg-background dark:bg-[#0a0f08]">
+        <div className="flex h-screen bg-white dark:bg-[#000000] relative">
+          <div className="absolute inset-0 bg-grid-pattern opacity-40 pointer-events-none z-0"></div>
           <Sidebar />
-          <main className="flex-1 overflow-auto bg-surface dark:bg-[#0a0f08]">
+          <main className="flex-1 overflow-auto bg-transparent z-10 relative">
             {children}
           </main>
         </div>

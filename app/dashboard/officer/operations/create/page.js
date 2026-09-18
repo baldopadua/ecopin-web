@@ -306,7 +306,7 @@ export default function CreateCustomCleanupTaskPage() {
                             className="w-10 h-10 rounded-full object-cover border border-border"
                           />
                         ) : (
-                          <div className="w-10 h-10 rounded-full bg-surface border border-border flex items-center justify-center text-text-muted font-medium">
+                          <div className="w-10 h-10 rounded-full bg-surface-elevated border border-border flex items-center justify-center text-text-muted font-medium">
                             {crew.full_name?.[0]?.toUpperCase() || 'U'}
                           </div>
                         )}

@@ -815,190 +815,128 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
         {!hideFilterPanel && !showFilterPanel && (
           <button
             onClick={() => setShowFilterPanel(true)}
-            className="absolute top-4 right-4 z-[1001] bg-surface/95 backdrop-blur-sm border border-border/50 rounded-xl shadow-lg px-4 py-2.5 text-sm font-medium text-text-primary hover:bg-surface hover:shadow-xl transition-all"
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[1001] bg-[#ccff00] border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] rounded-none px-6 py-3 text-black font-black uppercase tracking-widest hover:translate-y-1 hover:translate-x-1 hover:shadow-none transition-all"
           >
-            Show Filters
+            Filters
           </button>
         )}
 
         {/* Filter Panel */}
         {!hideFilterPanel && showFilterPanel && (
-          <div className="absolute top-4 right-4 w-72 bg-surface/95 backdrop-blur-md border border-border/50 rounded-2xl shadow-xl max-h-[calc(100%-2rem)] overflow-hidden z-[1000] flex flex-col">
-            <div className="sticky top-0 bg-surface/95 backdrop-blur-md px-4 pt-4 pb-3 border-b border-border/50 z-10 rounded-t-2xl flex justify-between items-center">
-              <h3 className="font-bold text-text-primary text-base tracking-tight">Map Filters</h3>
+          <div className="absolute bottom-6 left-6 right-6 bg-surface-elevated border-4 border-black dark:border-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] z-[1000] p-3 flex flex-col gap-3">
+            
+            <div className="flex justify-between items-center border-b-2 border-border pb-2">
+              <div className="flex gap-4 items-center">
+                <h3 className="font-black text-text-primary uppercase tracking-widest text-sm">Map Filters</h3>
+                <span className="text-xs font-bold font-mono bg-[#ccff00] text-black px-2 py-0.5 border-2 border-black">
+                  {loading ? 'LOADING...' : `${filteredReports.length} REPORTS / ${clusters.length} CLUSTERS`}
+                </span>
+              </div>
               <button
                 onClick={() => setShowFilterPanel(false)}
-                className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-surface text-text-muted hover:text-text-primary transition-colors"
+                className="font-black hover:text-error transition-colors text-sm"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                [ X ]
               </button>
             </div>
-            <div className="p-4 overflow-y-auto flex-1">
-
-            {/* Map Layers */}
-            <div className="mb-5">
-              <h4 className="text-[11px] font-semibold text-text-muted mb-3 uppercase tracking-widest">Map Layers</h4>
-              <div className="space-y-1">
-                <label className="flex items-center justify-between cursor-pointer py-1.5 px-2 rounded-lg hover:bg-surface/80 transition-colors group">
-                  <span className="text-sm text-text-primary">Report Pins</span>
-                  <div className="relative">
-                    <input
-                      type="checkbox"
-                      checked={showPins}
-                      onChange={(e) => setShowPins(e.target.checked)}
-                      className="sr-only"
-                    />
-                    <div className={`w-10 h-5 rounded-full transition-colors ${showPins ? 'bg-accent-green' : 'bg-text-muted/30'}`}>
-                      <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white dark:bg-surface-elevated rounded-full shadow-sm transition-transform ${showPins ? 'translate-x-5' : 'translate-x-0'}`}></div>
-                    </div>
-                  </div>
-                </label>
-                <label className="flex items-center justify-between cursor-pointer py-1.5 px-2 rounded-lg hover:bg-surface/80 transition-colors group">
-                  <span className="text-sm text-text-primary">Report Clusters</span>
-                  <div className="relative">
-                    <input
-                      type="checkbox"
-                      checked={showClusters}
-                      onChange={(e) => setShowClusters(e.target.checked)}
-                      className="sr-only"
-                    />
-                    <div className={`w-10 h-5 rounded-full transition-colors ${showClusters ? 'bg-accent-green' : 'bg-text-muted/30'}`}>
-                      <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white dark:bg-surface-elevated rounded-full shadow-sm transition-transform ${showClusters ? 'translate-x-5' : 'translate-x-0'}`}></div>
-                    </div>
-                  </div>
-                </label>
-                <label className="flex items-center justify-between cursor-pointer py-1.5 px-2 rounded-lg hover:bg-surface/80 transition-colors group">
-                  <span className="text-sm text-text-primary">Heatmap Overlay</span>
-                  <div className="relative">
-                    <input
-                      type="checkbox"
-                      checked={showHeatmap}
-                      onChange={(e) => setShowHeatmap(e.target.checked)}
-                      className="sr-only"
-                    />
-                    <div className={`w-10 h-5 rounded-full transition-colors ${showHeatmap ? 'bg-accent-green' : 'bg-text-muted/30'}`}>
-                      <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white dark:bg-surface-elevated rounded-full shadow-sm transition-transform ${showHeatmap ? 'translate-x-5' : 'translate-x-0'}`}></div>
-                    </div>
-                  </div>
-                </label>
+            
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+              
+              {/* Map Layers */}
+              <div className="flex items-center gap-3 border-r-2 border-border pr-6">
+                  {[
+                    { label: 'Pins', state: showPins, set: setShowPins },
+                    { label: 'Clusters', state: showClusters, set: setShowClusters },
+                    { label: 'Heatmap', state: showHeatmap, set: setShowHeatmap },
+                  ].map(layer => (
+                    <label key={layer.label} className="flex items-center gap-1.5 cursor-pointer group">
+                      <input type="checkbox" checked={layer.state} onChange={(e) => layer.set(e.target.checked)} className="sr-only" />
+                      <div className={`w-4 h-4 border-2 border-black dark:border-white flex items-center justify-center transition-colors ${layer.state ? 'bg-[#ccff00]' : 'bg-transparent'}`}>
+                        {layer.state && <div className="w-2 h-2 bg-black" />}
+                      </div>
+                      <span className="text-xs font-bold uppercase tracking-wider">{layer.label}</span>
+                    </label>
+                  ))}
               </div>
-            </div>
 
-            {/* Status Filter */}
-            <div className="mb-5">
-              <h4 className="text-[11px] font-semibold text-text-muted mb-3 uppercase tracking-widest">Status</h4>
-              <div className="space-y-1">
-                {[
-                  { value: 'all', label: 'All', color: null },
-                  { value: 'unresolved', label: 'Unresolved', color: 'var(--error)' },
-                  { value: 'in_progress', label: 'In Progress', color: 'var(--warning)' },
-                  { value: 'resolved', label: 'Resolved', color: 'var(--success)' },
-                ].map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setStatusFilter(opt.value)}
-                    className={`flex items-center gap-2.5 w-full py-2 px-3 rounded-xl text-sm transition-all ${
-                      statusFilter === opt.value
-                        ? 'bg-accent-green/10 text-accent-green font-medium'
-                        : 'text-text-primary hover:bg-surface/80'
-                    }`}
-                  >
-                    {opt.color && <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{backgroundColor: opt.color}}></span>}
-                    {!opt.color && <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 border-2 border-text-muted"></span>}
-                    {opt.label}
-                  </button>
-                ))}
+              {/* Status */}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Status:</span>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-2 py-1 text-xs font-bold uppercase tracking-wider bg-surface-elevated border-2 border-black dark:border-white text-text-primary rounded-none cursor-pointer focus:outline-none focus:bg-[#ccff00] focus:text-black focus:border-black"
+                >
+                  <option value="all">ALL</option>
+                  <option value="unresolved">UNRESOLVED</option>
+                  <option value="in_progress">IN PROGRESS</option>
+                  <option value="resolved">RESOLVED</option>
+                </select>
               </div>
-            </div>
 
-            {/* Validation Status Filter */}
-            <div className="mb-5">
-              <h4 className="text-[11px] font-semibold text-text-muted mb-3 uppercase tracking-widest">Validation</h4>
-              <div className="space-y-1">
-                {[
-                  { value: 'validated', label: 'Validated' },
-                  { value: 'manual_review', label: 'Pending / Manual Review' },
-                  { value: 'all', label: 'All' },
-                ].map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setValidationStatusFilter(opt.value)}
-                    className={`w-full py-2 px-3 rounded-xl text-sm text-left transition-all ${
-                      validationStatusFilter === opt.value
-                        ? 'bg-accent-green/10 text-accent-green font-medium'
-                        : 'text-text-primary hover:bg-surface/80'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+              {/* Validation */}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Validation:</span>
+                <select
+                  value={validationStatusFilter}
+                  onChange={(e) => setValidationStatusFilter(e.target.value)}
+                  className="px-2 py-1 text-xs font-bold uppercase tracking-wider bg-surface-elevated border-2 border-black dark:border-white text-text-primary rounded-none cursor-pointer focus:outline-none focus:bg-[#ccff00] focus:text-black focus:border-black"
+                >
+                  <option value="all">ALL</option>
+                  <option value="validated">VALIDATED</option>
+                  <option value="manual_review">MANUAL</option>
+                </select>
               </div>
-            </div>
 
-            {/* Issue Type Filter */}
-            <div className="mb-5">
-              <h4 className="text-[11px] font-semibold text-text-muted mb-3 uppercase tracking-widest">Issue Type</h4>
-              <select
-                value={issueTypeFilter}
-                onChange={(e) => setIssueTypeFilter(e.target.value)}
-                className="w-full px-3 py-2 text-sm bg-surface/80 border border-border/50 rounded-xl text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-green/20 focus:border-accent-green/40 transition-all appearance-none cursor-pointer"
-              >
-                <option value="all">All Types</option>
-                {issueTypes.map(type => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Date Range Filter */}
-            <div className="mb-5">
-              <h4 className="text-[11px] font-semibold text-text-muted mb-3 uppercase tracking-widest">Date Range</h4>
-              <div className="space-y-2">
-                <div>
-                  <label className="text-[11px] text-text-muted block mb-1.5 uppercase tracking-wide">From</label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-surface/80 border border-border/50 rounded-xl text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-green/20 focus:border-accent-green/40 transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] text-text-muted block mb-1.5 uppercase tracking-wide">To</label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-surface/80 border border-border/50 rounded-xl text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-green/20 focus:border-accent-green/40 transition-all"
-                  />
-                </div>
+              {/* Issue Type */}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Type:</span>
+                <select
+                  value={issueTypeFilter}
+                  onChange={(e) => setIssueTypeFilter(e.target.value)}
+                  className="max-w-[150px] px-2 py-1 text-xs font-bold uppercase tracking-wider bg-surface-elevated border-2 border-black dark:border-white text-text-primary rounded-none cursor-pointer focus:outline-none focus:bg-[#ccff00] focus:text-black focus:border-black"
+                >
+                  <option value="all">ALL</option>
+                  {issueTypes.map(type => (
+                    <option key={type} value={type}>{type.replace(/_/g, ' ')}</option>
+                  ))}
+                </select>
               </div>
-            </div>
 
-            {/* Reset Filters Button */}
-            {(statusFilter !== 'all' || validationStatusFilter !== 'all' || issueTypeFilter !== 'all' || startDate || endDate) && (
-              <button
-                onClick={() => {
-                  setStatusFilter('all')
-                  setValidationStatusFilter('all')
-                  setIssueTypeFilter('all')
-                  setStartDate('')
-                  setEndDate('')
-                }}
-                className="btn-secondary whitespace-nowrap cursor-pointer"
-              >
-                Reset Filters
-              </button>
-            )}
+              {/* Date Range */}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">From:</span>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-28 px-2 py-1 text-xs font-bold uppercase bg-surface-elevated border-2 border-black dark:border-white text-text-primary rounded-none focus:outline-none focus:bg-[#ccff00] focus:text-black focus:border-black"
+                />
+                <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">To:</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-28 px-2 py-1 text-xs font-bold uppercase bg-surface-elevated border-2 border-black dark:border-white text-text-primary rounded-none focus:outline-none focus:bg-[#ccff00] focus:text-black focus:border-black"
+                />
+              </div>
+              
+              {/* Reset Filters */}
+              {(statusFilter !== 'all' || validationStatusFilter !== 'all' || issueTypeFilter !== 'all' || startDate || endDate) && (
+                <button
+                  onClick={() => {
+                    setStatusFilter('all')
+                    setValidationStatusFilter('all')
+                    setIssueTypeFilter('all')
+                    setStartDate('')
+                    setEndDate('')
+                  }}
+                  className="ml-auto px-3 py-1.5 text-xs font-black bg-error text-white uppercase tracking-widest border-2 border-black dark:border-white hover:translate-y-[2px] hover:translate-x-[2px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] hover:shadow-none transition-all"
+                >
+                  Reset
+                </button>
+              )}
 
-            {/* Report Count */}
-            <div className="pt-4 border-t border-border/50">
-              <p className="text-xs text-text-muted text-center">
-                {loading ? 'Loading...' : `${filteredReports.length} reports, ${clusters.length} clusters`}
-              </p>
-            </div>
             </div>
           </div>
         )}

@@ -539,7 +539,7 @@ export default function ProfilePage() {
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-surface border border-border rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4">
+          <div className="bg-surface-elevated border border-border rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4">
             <h3 className="text-lg font-bold text-text-primary mb-2">Log Out</h3>
             <p className="text-sm text-text-muted mb-6">Are you sure you want to log out of your account?</p>
             <div className="flex gap-3">

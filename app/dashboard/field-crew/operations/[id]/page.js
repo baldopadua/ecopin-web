@@ -1019,7 +1019,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
                     <div className="card no-hover">
                       <h2 className="text-xl font-bold text-text-primary mb-4">Evidence Photos</h2>
                       {loadingEvidence[report.id] ? (
-                        <div className="animate-pulse h-48 bg-surface rounded-lg"></div>
+                        <div className="animate-pulse h-48 bg-surface-elevated rounded-lg"></div>
                       ) : evidenceErrors[report.id] ? (
                         <div className="text-center py-8">
                           <p className="text-error mb-3">Failed to load evidence</p>
@@ -1047,7 +1047,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
                           ))}
                         </div>
                       ) : (
-                        <div className="h-48 bg-surface rounded-lg flex items-center justify-center border border-dashed border-border">
+                        <div className="h-48 bg-surface-elevated rounded-lg flex items-center justify-center border border-dashed border-border">
                           <p className="text-text-muted">No evidence images available</p>
                         </div>
                       )}
@@ -1139,7 +1139,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
                             value={noteText}
                             onChange={(e) => setNoteText(e.target.value)}
                             placeholder="Enter your note..."
-                            className="w-full p-3 border border-border rounded-lg bg-surface text-text-primary resize-none"
+                            className="w-full p-3 border border-border rounded-lg bg-surface-elevated text-text-primary resize-none"
                             rows={3}
                           />
                           <div className="flex gap-2">
@@ -1174,7 +1174,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
                           {agencyResponses
                             .filter(r => r.action_type === 'manual_note')
                             .map((response, index) => (
-                              <div key={index} className="p-3 bg-surface rounded-lg border border-border">
+                              <div key={index} className="p-3 bg-surface-elevated rounded-lg border border-border">
                                 <p className="text-sm text-text-primary">{response.action_details}</p>
                                 <p className="text-xs text-text-muted mt-1">
                                   {new Date(response.created_at).toLocaleString()}
@@ -1218,7 +1218,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
                           </table>
                         </div>
                       ) : (
-                        <div className="bg-surface p-4 rounded-lg border border-border">
+                        <div className="bg-surface-elevated p-4 rounded-lg border border-border">
                           <p className="text-text-muted text-sm">
                             No activity logged for this report yet.
                           </p>
@@ -1263,7 +1263,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
                               className="w-10 h-10 rounded-full object-cover border border-border"
                             />
                           ) : (
-                            <div className="w-10 h-10 rounded-full bg-surface border border-border flex items-center justify-center text-text-muted font-medium">
+                            <div className="w-10 h-10 rounded-full bg-surface-elevated border border-border flex items-center justify-center text-text-muted font-medium">
                               {crew.full_name?.[0]?.toUpperCase() || 'U'}
                             </div>
                           )}
@@ -1288,7 +1288,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
                           {reports.filter(r => r.stage === 'resolved').length} / {reports.length}
                         </span>
                       </div>
-                       <div className="w-full bg-surface dark:bg-surface-elevated rounded-full h-2.5">
+                       <div className="w-full bg-surface-elevated dark:bg-surface-elevated rounded-full h-2.5">
                         <div
                           className="bg-accent-green h-2.5 rounded-full transition-all"
                           style={{ width: `${(reports.filter(r => r.stage === 'resolved').length / reports.length) * 100}%` }}
@@ -1339,7 +1339,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
                             {updatingLifecycle ? 'Updating...' : 'Update Lifecycle Stage'}
                           </button>
                           {showLifecycleDropdown && (
-                            <div className="absolute bottom-full left-0 right-0 mb-2 bg-surface border border-border rounded-lg shadow-lg z-50">
+                            <div className="absolute bottom-full left-0 right-0 mb-2 bg-surface-elevated border border-border rounded-lg shadow-lg z-50">
                               <button
                                 onClick={() => handleLifecycleStageUpdate(report.id, 'resolved')}
                                 disabled={report.stage !== 'responded' || !isAssigned}

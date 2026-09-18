@@ -69,19 +69,22 @@ export default function StatusBadge({
       displayLabel = label || formatStatusLabel(status)
       break
     default:
-      colorClass = 'bg-surface text-text-muted border-border'
+      colorClass = 'bg-surface-elevated text-text-muted border-border'
       displayLabel = label || formatStatusLabel(status)
   }
 
   const sizeClasses = {
-    small: 'px-2 py-0.5 rounded-sm text-xs',
-    medium: 'px-2.5 py-1 rounded-sm text-sm',
-    large: 'px-3 py-1.5 rounded-sm text-sm'
+    small: 'px-2 py-0.5 text-xs',
+    medium: 'px-2.5 py-1 text-sm',
+    large: 'px-4 py-1.5 text-base'
   }
 
   return (
-    <span className={`${sizeClasses[size]} font-medium tracking-wide border whitespace-nowrap ${colorClass} ${className}`}>
-      {displayLabel}
+    <span className={`inline-flex items-center gap-2 ${sizeClasses[size]} font-black uppercase tracking-[0.15em] border-2 border-current whitespace-nowrap ${colorClass} ${className}`}>
+      <span className="text-[0.7em] opacity-50 font-mono font-bold leading-none transform -skew-x-12">
+        //
+      </span>
+      <span className="translate-y-[1px]">{displayLabel}</span>
     </span>
   )
 }

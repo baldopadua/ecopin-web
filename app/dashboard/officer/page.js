@@ -96,7 +96,7 @@ export default function OfficerHomepage() {
         loading={loading}
       >
         {/* Active Tasks */}
-        <div className="bg-surface border-2 border-border rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] p-6 mb-8">
+        <div className="bg-surface-elevated border-2 border-border rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] p-6 mb-8">
           <div className="flex justify-between items-center mb-6 border-b-2 border-border pb-3">
             <h2 className="text-xl font-bold text-text-primary">Active Tasks</h2>
             <button
@@ -153,7 +153,7 @@ export default function OfficerHomepage() {
 
         {/* Recently Completed */}
         {!loading && recentCompleted.length > 0 && (
-          <div className="bg-surface border-2 border-border rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] p-6">
+          <div className="bg-surface-elevated border-2 border-border rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] p-6">
             <h2 className="text-xl font-bold text-text-primary mb-4 border-b-2 border-border pb-3">Recently Completed</h2>
             <DataTable
               columns={completedTaskColumns}
