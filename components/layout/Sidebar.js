@@ -17,7 +17,8 @@ import {
     Settings, 
     ScrollText,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    Route
 } from 'lucide-react'
 
 const citizenNavigation = [
@@ -31,6 +32,7 @@ const officerNavigation = [
     { name: 'Map Grid', href: '/dashboard/map-grid', icon: Map },
     { name: 'Hotzone Intel', href: '/dashboard/officer/hotzone-intel', icon: Target },
     { name: 'Operations', href: '/dashboard/officer/operations', icon: Wrench },
+    { name: 'Optimization', href: '/dashboard/officer/optimization', icon: Route },
     { name: 'Raw Data', href: '/dashboard/raw-data', icon: Database },
     { name: 'Sys Logs', href: '/dashboard/officer/sys-logs', icon: Terminal },
     { name: 'Metrics', href: '/dashboard/officer/metrics', icon: Activity },
@@ -48,6 +50,7 @@ const adminNavigation = [
     { name: 'Command Center', href: '/dashboard/admin', icon: LayoutDashboard },
     { name: 'Users', href: '/dashboard/admin/users', icon: Users },
     { name: 'System', href: '/dashboard/admin/settings', icon: Settings },
+    { name: 'Optimization', href: '/dashboard/admin/optimization-settings', icon: Route },
     { name: 'Audit Logs', href: '/dashboard/admin/audit-logs', icon: ScrollText },
     { name: 'Spatial Scan', href: '/dashboard/spatial-scan', icon: Scan },
 ]

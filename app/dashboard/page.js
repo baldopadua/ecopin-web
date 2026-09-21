@@ -134,31 +134,28 @@ export default function DashboardPage() {
           }))
 
           // Fetch reports for each task to calculate progress
-          const tasksWithReportsData = await Promise.all(
-            inProgressTasks.map(async (task) => {
-              let reportsData = []
-              if (task.is_custom && task.report_ids && task.report_ids.length > 0) {
-                reportsData = await fetchReportsByIds(task.report_ids)
-              } else if (task.cluster_id) {
-                reportsData = await fetchReportsByClusterId(task.cluster_id)
-              }
-              return { ...task, reports: reportsData }
-            })
-          )
+          // We already have all reports in 'data', so we can just filter locally!
+          const tasksWithReportsData = inProgressTasks.map((task) => {
+            let reportsData = []
+            if (task.is_custom && task.report_ids && task.report_ids.length > 0) {
+              reportsData = data.filter(r => task.report_ids.includes(r.id))
+            } else if (task.cluster_id) {
+              reportsData = data.filter(r => r.cluster_id === task.cluster_id)
+            }
+            return { ...task, reports: reportsData }
+          })
           setTasksWithReports(tasksWithReportsData)
 
           // Fetch reports for completed tasks
-          const completedTasksWithReportsData = await Promise.all(
-            recentCompletedTasks.map(async (task) => {
-              let reportsData = []
-              if (task.is_custom && task.report_ids && task.report_ids.length > 0) {
-                reportsData = await fetchReportsByIds(task.report_ids)
-              } else if (task.cluster_id) {
-                reportsData = await fetchReportsByClusterId(task.cluster_id)
-              }
-              return { ...task, reports: reportsData }
-            })
-          )
+          const completedTasksWithReportsData = recentCompletedTasks.map((task) => {
+            let reportsData = []
+            if (task.is_custom && task.report_ids && task.report_ids.length > 0) {
+              reportsData = data.filter(r => task.report_ids.includes(r.id))
+            } else if (task.cluster_id) {
+              reportsData = data.filter(r => r.cluster_id === task.cluster_id)
+            }
+            return { ...task, reports: reportsData }
+          })
           setCompletedTasksWithReports(completedTasksWithReportsData)
         } catch (taskError) {
           console.error('Failed to load cleanup tasks:', taskError)
