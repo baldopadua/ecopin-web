@@ -30,7 +30,8 @@ export default function FieldCrewTasksPage() {
   useEffect(() => {
     const loadTasks = async () => {
       try {
-        const data = await fetchCleanupTasks(assignmentFilter === 'assigned_to_me')
+        // Always fetch all tasks and filter client-side to ensure reliability
+        const data = await fetchCleanupTasks(false)
         setTasks(data)
         setFilteredTasks(data)
       } catch (error) {
@@ -40,7 +41,7 @@ export default function FieldCrewTasksPage() {
       }
     }
     loadTasks()
-  }, [assignmentFilter])
+  }, [])
 
   // Apply filters
   useEffect(() => {
@@ -58,11 +59,15 @@ export default function FieldCrewTasksPage() {
       filtered = filtered.filter(t => t.status === statusFilter)
     }
 
-    // No need for client-side assignment filter - backend handles it
+    if (assignmentFilter === 'assigned_to_me') {
+      filtered = filtered.filter(t => 
+        t.assigned_crew_ids && t.assigned_crew_ids.includes(currentUserId)
+      )
+    }
 
     setFilteredTasks(filtered)
     setCurrentPage(1)
-  }, [searchQuery, statusFilter, tasks])
+  }, [searchQuery, statusFilter, assignmentFilter, tasks, currentUserId])
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredTasks.length / itemsPerPage)

@@ -19,8 +19,12 @@ export default function FieldCrewHomepage() {
   useEffect(() => {
     const loadTasks = async () => {
       try {
-        const data = await fetchCleanupTasks(true)
-        setTasks(data)
+        const data = await fetchCleanupTasks(false)
+        const currentUserId = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}').id : null
+        
+        // Filter tasks locally to ensure assigned tasks show up properly
+        const myTasks = data.filter(t => t.assigned_crew_ids && t.assigned_crew_ids.includes(currentUserId))
+        setTasks(myTasks)
       } catch (error) {
         console.error('Failed to load tasks:', error)
       } finally {
