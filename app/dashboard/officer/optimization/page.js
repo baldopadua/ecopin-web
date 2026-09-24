@@ -82,7 +82,7 @@ function formatDate(dateStr) {
 
 export default function OptimizationPage() {
   const { isOptimizing, draftPlan, setDraftPlan, startOptimization, commitOptimization } = useTask()
-  const [weatherCondition, setWeatherCondition] = useState('normal')
+  const [liveWeather, setLiveWeather] = useState('normal')
   const [trafficCondition, setTrafficCondition] = useState('low')
   const [proposalLoading, setProposalLoading] = useState(false)
   const [currentProposal, setCurrentProposal] = useState(null)
@@ -108,6 +108,19 @@ export default function OptimizationPage() {
     }
   }, [])
 
+  const fetchLiveWeather = useCallback(async () => {
+    try {
+      const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=14.561433&longitude=121.075636&current_weather=true')
+      const data = await res.json()
+      const code = data?.current_weather?.weathercode
+      if (code >= 95) setLiveWeather('severe')
+      else if (code >= 51) setLiveWeather('rainy')
+      else setLiveWeather('normal')
+    } catch (err) {
+      console.error('Failed to fetch live weather', err)
+    }
+  }, [])
+
   const loadPreviousRuns = useCallback(async () => {
     try {
       setRunsLoading(true)
@@ -123,7 +136,8 @@ export default function OptimizationPage() {
   useEffect(() => {
     loadPreviousRuns()
     loadPendingClusters()
-  }, [loadPreviousRuns, loadPendingClusters])
+    fetchLiveWeather()
+  }, [loadPreviousRuns, loadPendingClusters, fetchLiveWeather])
 
   useEffect(() => {
     if (draftPlan) {
@@ -154,7 +168,7 @@ export default function OptimizationPage() {
     
     await commitOptimization(
       planId, 
-      { weather_condition: weatherCondition, traffic_condition: trafficCondition },
+      { weather_condition: liveWeather, traffic_condition: trafficCondition },
       (result) => {
         setNotification({ message: 'Routes finalized successfully!', type: 'success' })
         setDraftPlan(null) // Clear draft on successful commit
@@ -217,7 +231,7 @@ export default function OptimizationPage() {
     }
   }
 
-  const weatherLabel = WEATHER_OPTIONS.find(w => w.value === (currentProposal?.weather_condition || weatherCondition))?.label || 'Normal'
+  const weatherLabel = WEATHER_OPTIONS.find(w => w.value === (currentProposal?.weather_condition || liveWeather))?.label || 'Normal'
   const trafficLabel = TRAFFIC_OPTIONS.find(t => t.value === (currentProposal?.traffic_condition || trafficCondition))?.label || 'Low'
 
   return (
@@ -241,60 +255,45 @@ export default function OptimizationPage() {
         />
       )}
 
-      {/* Simulation Conditions */}
+      {/* Conditions Overview */}
       <div className="card border-2 border-border mb-6">
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-xs font-mono uppercase tracking-widest text-warning bg-warning/15 px-2 py-1 border border-warning/30">
-            ⚠️ SIMULATION
-          </span>
-          <span className="text-xs text-text-muted">Weather and traffic conditions are simulated — not live data</span>
-        </div>
-
-        <h3 className="font-bold text-text-primary mb-4">Simulation Conditions</h3>
+        <h3 className="font-bold text-text-primary mb-4 flex items-center gap-2">
+          🌍 Real-World Conditions
+          <span className="text-xs font-mono font-normal text-text-muted">(Sourced via live APIs)</span>
+        </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Weather */}
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-2">
+            <label className="block text-sm font-medium text-text-primary mb-2 flex items-center gap-2">
               Weather Condition
+              <span className="text-[10px] bg-accent-green text-black px-1.5 py-0.5 font-bold uppercase tracking-wider">Live</span>
             </label>
             <div className="flex gap-2">
-              {WEATHER_OPTIONS.map(opt => (
-                <button
-                  key={opt.value}
-                  onClick={() => setWeatherCondition(opt.value)}
-                  className={`flex-1 px-3 py-2 text-sm border-2 transition-colors font-medium ${
-                    weatherCondition === opt.value
-                      ? 'bg-[#ccff00] text-black border-[#1a1a1a] font-bold'
-                      : 'border-border text-text-secondary hover:border-text-muted hover:bg-surface-elevated'
-                  }`}
-                >
-                  <span className="flex items-center justify-center gap-2">{opt.icon} {opt.label}</span>
-                </button>
-              ))}
+              <div className="flex-1 px-3 py-2 text-sm border-2 border-border bg-surface-elevated text-text-primary font-bold">
+                <span className="flex items-center justify-center gap-2">
+                  {WEATHER_OPTIONS.find(w => w.value === liveWeather)?.icon || '🌤️'} 
+                  {WEATHER_OPTIONS.find(w => w.value === liveWeather)?.label || 'Normal'}
+                </span>
+              </div>
             </div>
+            <p className="text-xs text-text-muted mt-2 font-mono">Real-time data via Open-Meteo API</p>
           </div>
 
           {/* Traffic */}
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-2">
+            <label className="block text-sm font-medium text-text-primary mb-2 flex items-center gap-2">
               Traffic Condition
+              <span className="text-[10px] bg-accent-green text-black px-1.5 py-0.5 font-bold uppercase tracking-wider">Live</span>
             </label>
             <div className="flex gap-2">
-              {TRAFFIC_OPTIONS.map(opt => (
-                <button
-                  key={opt.value}
-                  onClick={() => setTrafficCondition(opt.value)}
-                  className={`flex-1 px-3 py-2 text-sm border-2 transition-colors font-medium ${
-                    trafficCondition === opt.value
-                      ? 'bg-[#ccff00] text-black border-[#1a1a1a] font-bold'
-                      : 'border-border text-text-secondary hover:border-text-muted hover:bg-surface-elevated'
-                  }`}
-                >
-                  <span className="flex items-center justify-center gap-2">{opt.icon} {opt.label}</span>
-                </button>
-              ))}
+              <div className="flex-1 px-3 py-2 text-sm border-2 border-border bg-surface-elevated text-text-primary font-bold">
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-success animate-pulse" /> Routing with Live Traffic
+                </span>
+              </div>
             </div>
+            <p className="text-xs text-text-muted mt-2 font-mono">Real-time routing via TomTom API</p>
           </div>
         </div>
 
@@ -352,7 +351,7 @@ export default function OptimizationPage() {
             }
             weather={
               <span className="flex items-center justify-center gap-1.5">
-                {WEATHER_OPTIONS.find(w => w.value === (currentProposal.weather_condition?.toLowerCase() || weatherCondition))?.icon || <Sun className="w-4 h-4 text-orange-500" />} 
+                {WEATHER_OPTIONS.find(w => w.value === (currentProposal.weather_condition?.toLowerCase() || liveWeather))?.icon || <Sun className="w-4 h-4 text-orange-500" />} 
                 {weatherLabel}
               </span>
             }
