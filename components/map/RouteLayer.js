@@ -81,9 +81,14 @@ export default function RouteLayer({ routes = [] }) {
       if (waypoints.length === 0) return null
 
       // Build polyline positions from waypoints
-      const positions = waypoints
-        .filter(wp => wp.latitude && wp.longitude)
-        .map(wp => [parseFloat(wp.latitude), parseFloat(wp.longitude)])
+      const positions = []
+      waypoints.forEach((wp) => {
+        if (wp.polyline && wp.polyline.length > 0) {
+          positions.push(...wp.polyline.map(p => [parseFloat(p.latitude), parseFloat(p.longitude)]))
+        } else if (wp.latitude && wp.longitude) {
+          positions.push([parseFloat(wp.latitude), parseFloat(wp.longitude)])
+        }
+      })
 
       const depotWaypoints = waypoints.filter(wp => wp.waypoint_type === 'depot_start' || wp.waypoint_type === 'depot_end')
       const taskWaypoints = waypoints.filter(wp => wp.waypoint_type === 'task')
