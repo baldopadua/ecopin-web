@@ -4,7 +4,7 @@ import PageHeader from '@/components/layout/PageHeader'
 import { fetchPublicReports, fetchSatisfactionAnalytics } from '@/lib/api'
 import { SkeletonLine, SkeletonStatCard, SkeletonChartCard } from '@/components/ui/Skeleton'
 import { OfficerGuard } from '@/components/auth/RequireRole'
-import { Bar, Pie, Line } from 'react-chartjs-2'
+import { Bar, Doughnut, Line } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -28,8 +28,8 @@ ChartJS.register(
   Legend
 )
 
-const COLORS = ['#6B8F4A', '#D4A843', '#C75050', '#6A9BD8', '#A78BDA', '#D68AB8']
-const SATISFACTION_COLORS = ['#C75050', '#D4A843', '#D4C76A', '#8FBF5A', '#6BBF6B']
+const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899']
+const SATISFACTION_COLORS = ['#EF4444', '#F59E0B', '#9CA3AF', '#3B82F6', '#10B981']
 const SATISFACTION_LABELS = ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied']
 
 export default function AnalyticsPage() {
@@ -227,7 +227,7 @@ export default function AnalyticsPage() {
       {
         label: 'Reports',
         data: weeklyVolumeData.map(d => d.count),
-        backgroundColor: '#6B8F4A',
+        backgroundColor: '#10B981',
         borderRadius: 4,
       }
     ]
@@ -249,8 +249,8 @@ export default function AnalyticsPage() {
       {
         label: 'Resolution Rate (%)',
         data: resolutionRateData.map(d => d.rate),
-        borderColor: '#6A9BD8',
-        backgroundColor: '#6A9BD8',
+        borderColor: '#3B82F6',
+        backgroundColor: 'rgba(59, 130, 246, 0.5)',
         tension: 0.1,
       }
     ]
@@ -280,11 +280,11 @@ export default function AnalyticsPage() {
     <OfficerGuard>
       <div className="p-8">
       <PageHeader
-        title="Analytics"
-        subtitle="View analytics and insights"
+        title="Metrics"
+        subtitle="View metrics and insights"
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Analytics' }
+          { label: 'Metrics' }
         ]}
       />
 
@@ -303,56 +303,56 @@ export default function AnalyticsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-surface-elevated border-2 border-border border-l-8 border-l-[var(--accent-green)] rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] p-6 hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all cursor-pointer">
+          <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
             <div className="mb-2">
               <span className="text-xs font-mono tracking-widest uppercase text-text-muted">Total Reports</span>
             </div>
             <p className="text-4xl font-black text-text-primary uppercase">{stats.total}</p>
           </div>
 
-          <div className="bg-surface-elevated border-2 border-border border-l-8 border-l-[var(--error)] rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] p-6 hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all cursor-pointer">
+          <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
             <div className="mb-2">
               <span className="text-xs font-mono tracking-widest uppercase text-text-muted">Unresolved</span>
             </div>
             <p className="text-4xl font-black text-text-primary uppercase">{stats.unresolved}</p>
           </div>
 
-          <div className="bg-surface-elevated border-2 border-border border-l-8 border-l-[var(--warning)] rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] p-6 hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all cursor-pointer">
+          <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
             <div className="mb-2">
               <span className="text-xs font-mono tracking-widest uppercase text-text-muted">In Progress</span>
             </div>
             <p className="text-4xl font-black text-text-primary uppercase">{stats.inProgress}</p>
           </div>
 
-          <div className="bg-surface-elevated border-2 border-border border-l-8 border-l-[var(--success)] rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] p-6 hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all cursor-pointer">
+          <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
             <div className="mb-2">
               <span className="text-xs font-mono tracking-widest uppercase text-text-muted">Resolved Today</span>
             </div>
             <p className="text-4xl font-black text-text-primary uppercase">{stats.resolvedToday}</p>
           </div>
 
-          <div className="bg-surface-elevated border-2 border-border border-l-8 border-l-[var(--accent-green-dark)] rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] p-6 hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all cursor-pointer">
+          <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
             <div className="mb-2">
               <span className="text-xs font-mono tracking-widest uppercase text-text-muted">Avg. Resolution Time</span>
             </div>
             <p className="text-4xl font-black text-text-primary uppercase">{stats.avgResolutionTime}</p>
           </div>
 
-          <div className="bg-surface-elevated border-2 border-border border-l-8 border-l-[var(--accent-green)] rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] p-6 hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all cursor-pointer">
+          <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
             <div className="mb-2">
               <span className="text-xs font-mono tracking-widest uppercase text-text-muted">Resolution Rate</span>
             </div>
             <p className="text-4xl font-black text-text-primary uppercase">{`${stats.resolutionRate}%`}</p>
           </div>
 
-          <div className="bg-surface-elevated border-2 border-border border-l-8 border-l-[var(--warning)] rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] p-6 hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all cursor-pointer">
+          <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
             <div className="mb-2">
               <span className="text-xs font-mono tracking-widest uppercase text-text-muted">Waiting for Feedback</span>
             </div>
             <p className="text-4xl font-black text-text-primary uppercase">{stats.waitingForFeedback}</p>
           </div>
 
-          <div className="bg-surface-elevated border-2 border-border border-l-8 border-l-[var(--error)] rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] p-6 hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all cursor-pointer">
+          <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
             <div className="mb-2">
               <span className="text-xs font-mono tracking-widest uppercase text-text-muted">Overdue Reports</span>
             </div>
@@ -364,7 +364,7 @@ export default function AnalyticsPage() {
       {/* Charts Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {/* Reports per Week Bar Chart */}
-        <div className="bg-surface-elevated border-2 border-border rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] p-6">
+        <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
           <h2 className="text-2xl font-black uppercase tracking-tighter text-text-primary mb-6 border-b-2 border-border pb-4">Reports per Week</h2>
           <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
@@ -380,7 +380,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Resolution Rate Bar Chart */}
-        <div className="bg-surface-elevated border-2 border-border rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] p-6">
+        <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
           <h2 className="text-2xl font-black uppercase tracking-tighter text-text-primary mb-6 border-b-2 border-border pb-4">Resolution Rate (%)</h2>
           <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
@@ -390,13 +390,13 @@ export default function AnalyticsPage() {
             ) : resolutionRateData.length === 0 ? (
               <div className="chart-placeholder">No data available for the selected period</div>
             ) : (
-              <Bar data={resolutionRateChartData} options={{ maintainAspectRatio: false }} />
+              <Line data={resolutionRateChartData} options={{ maintainAspectRatio: false }} />
             )}
           </div>
         </div>
 
         {/* Reports by Issue Type Pie Chart */}
-        <div className="bg-surface-elevated border-2 border-border rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] p-6">
+        <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
           <h2 className="text-2xl font-black uppercase tracking-tighter text-text-primary mb-6 border-b-2 border-border pb-4">Reports by Issue Type</h2>
           <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
@@ -406,13 +406,13 @@ export default function AnalyticsPage() {
             ) : issueTypeData.length === 0 ? (
               <div className="chart-placeholder">No data available</div>
             ) : (
-              <Pie data={issueTypeChartData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
+              <Doughnut data={issueTypeChartData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
             )}
           </div>
         </div>
 
         {/* Satisfaction Distribution Pie Chart */}
-        <div className="bg-surface-elevated border-2 border-border rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] p-6">
+        <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
           <h2 className="text-2xl font-black uppercase tracking-tighter text-text-primary mb-6 border-b-2 border-border pb-4">Satisfaction Distribution</h2>
           <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
@@ -422,13 +422,13 @@ export default function AnalyticsPage() {
             ) : !satisfactionChartData || satisfactionData.total === 0 ? (
               <div className="chart-placeholder">No ratings available</div>
             ) : (
-              <Pie data={satisfactionChartData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
+              <Doughnut data={satisfactionChartData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
             )}
           </div>
         </div>
 
         {/* Reports by Status Pie Chart */}
-        <div className="bg-surface-elevated border-2 border-border rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] p-6">
+        <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
           <h2 className="text-2xl font-black uppercase tracking-tighter text-text-primary mb-6 border-b-2 border-border pb-4">Reports by Status</h2>
           <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
@@ -438,7 +438,7 @@ export default function AnalyticsPage() {
             ) : statusData.length === 0 ? (
               <div className="chart-placeholder">No data available</div>
             ) : (
-              <Pie data={statusChartData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
+              <Doughnut data={statusChartData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
             )}
           </div>
         </div>

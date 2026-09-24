@@ -21,11 +21,11 @@ function MapContent() {
     <div className="h-screen flex flex-col">
       <div className="p-8 pb-0">
         <PageHeader 
-          title="Map View"
+          title="Map Grid"
           subtitle="View validated environmental reports on the map"
           breadcrumbs={[
             { label: 'Dashboard', href: '/dashboard' },
-            { label: 'Map View' }
+            { label: 'Map Grid' }
           ]}
         />
       </div>

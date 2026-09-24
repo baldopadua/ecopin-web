@@ -4,6 +4,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import Sidebar from '@/components/layout/Sidebar'
 import { UserProvider } from '@/components/auth/UserContext'
 import { SessionProvider } from '@/components/auth/SessionProvider'
+import { TaskProvider } from '@/components/context/TaskContext'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL + '/api/auth'
 
@@ -106,13 +107,15 @@ export default function DashboardLayout({ children }) {
   return (
     <SessionProvider>
       <UserProvider user={user}>
-        <div className="flex h-screen bg-white dark:bg-[#000000] relative">
-          <div className="absolute inset-0 bg-grid-pattern opacity-40 pointer-events-none z-0"></div>
-          <Sidebar />
-          <main className="flex-1 overflow-auto bg-transparent z-10 relative">
-            {children}
-          </main>
-        </div>
+        <TaskProvider>
+          <div className="flex h-screen bg-white dark:bg-[#000000] relative">
+            <div className="absolute inset-0 bg-grid-pattern opacity-40 pointer-events-none z-0"></div>
+            <Sidebar />
+            <main className="flex-1 overflow-auto bg-transparent z-10 relative">
+              {children}
+            </main>
+          </div>
+        </TaskProvider>
       </UserProvider>
     </SessionProvider>
   )

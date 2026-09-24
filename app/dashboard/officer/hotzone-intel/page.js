@@ -162,11 +162,11 @@ export default function ClustersPage() {
     <OfficerGuard>
       <div className="p-8">
         <PageHeader
-          title="Clusters"
+          title="Hotzone Intel"
           subtitle="Grouped reports of similar environmental issues"
           breadcrumbs={[
             { label: 'Dashboard', href: '/dashboard' },
-            { label: 'Clusters' }
+            { label: 'Hotzone Intel' }
           ]}
         />
 

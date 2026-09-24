@@ -5,6 +5,9 @@ import { fetchFilteredReports, fetchAvailableCrew } from '@/lib/api'
 import { createCustomCleanupTask } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
+import Button from '@/components/ui/Button'
+import Input from '@/components/ui/Input'
+import Checkbox from '@/components/ui/Checkbox'
 import { OfficerGuard } from '@/components/auth/RequireRole'
 import dynamic from 'next/dynamic'
 
@@ -253,18 +256,13 @@ export default function CreateCustomCleanupTaskPage() {
           <div className="card">
             <h2 className="text-lg font-bold text-text-primary mb-4">Task Details</h2>
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">
-                  Task Title *
-                </label>
-                <input
-                  type="text"
-                  value={taskTitle}
-                  onChange={(e) => setTaskTitle(e.target.value)}
-                  placeholder="Enter task title"
-                  className="w-full input"
-                />
-              </div>
+              <Input
+                label="Task Title *"
+                type="text"
+                value={taskTitle}
+                onChange={(e) => setTaskTitle(e.target.value)}
+                placeholder="Enter task title"
+              />
               <div>
                 <label className="block text-sm font-medium text-text-primary mb-2">
                   Description
@@ -285,10 +283,9 @@ export default function CreateCustomCleanupTaskPage() {
                   {availableCrew.length === 0 ? (
                     <p className="text-sm text-text-muted">No field crew members available</p>
                   ) : (
-                    availableCrew.map(crew => (
-                      <label key={crew.id} className="flex items-center space-x-3 p-2 hover:bg-surface-elevated rounded-lg cursor-pointer transition-colors">
-                        <input
-                          type="checkbox"
+                      <div key={crew.id} className="flex items-center space-x-3 p-2 hover:bg-surface-elevated rounded-lg transition-colors">
+                        <Checkbox
+                          id={`crew-${crew.id}`}
                           checked={selectedCrewIds.includes(crew.id)}
                           onChange={(e) => {
                             if (e.target.checked) {
@@ -297,24 +294,24 @@ export default function CreateCustomCleanupTaskPage() {
                               setSelectedCrewIds(prev => prev.filter(id => id !== crew.id))
                             }
                           }}
-                          className="rounded border-border text-accent-green focus:ring-accent-green"
                         />
-                        {crew.avatar_url ? (
-                          <img
-                            src={crew.avatar_url}
-                            alt={crew.full_name}
-                            className="w-10 h-10 rounded-full object-cover border border-border"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-surface-elevated border border-border flex items-center justify-center text-text-muted font-medium">
-                            {crew.full_name?.[0]?.toUpperCase() || 'U'}
+                        <label htmlFor={`crew-${crew.id}`} className="flex items-center gap-3 cursor-pointer flex-1">
+                          {crew.avatar_url ? (
+                            <img
+                              src={crew.avatar_url}
+                              alt={crew.full_name}
+                              className="w-10 h-10 rounded-none object-cover border border-border"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-none bg-accent-green flex items-center justify-center text-white font-bold text-lg">
+                              {crew.full_name?.[0]?.toUpperCase() || 'U'}
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-text-primary">{crew.full_name}</p>
                           </div>
-                        )}
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-text-primary">{crew.full_name}</p>
-                        </div>
-                      </label>
-                    ))
+                        </label>
+                      </div>
                   )}
                 </div>
               </div>
@@ -332,19 +329,20 @@ export default function CreateCustomCleanupTaskPage() {
                   </span>
                 </div>
               </div>
-              <button
+              <Button
                 onClick={handleCreateTask}
                 disabled={creating || selectedReports.size === 0 || !taskTitle.trim() || selectedCrewIds.length === 0}
-                className="btn-primary w-full"
+                className="w-full"
               >
                 {creating ? 'Creating Task...' : 'Create Cleanup Task'}
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="secondary"
                 onClick={() => router.back()}
-                className="btn-secondary w-full"
+                className="w-full"
               >
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
         </div>

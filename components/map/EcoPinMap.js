@@ -9,6 +9,7 @@ import wkx from 'wkx'
 import { Buffer } from 'buffer'
 import { fetchValidatedReports, fetchIssueTypes, fetchClusters } from '@/lib/api'
 import { supabase } from '@/lib/supabase'
+import Button from '@/components/ui/Button'
 
 // Polyfill Buffer for browser environment
 if (typeof window !== 'undefined' && !window.Buffer) {
@@ -813,17 +814,25 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
 
         {/* Filter Panel Toggle Button */}
         {!hideFilterPanel && !showFilterPanel && (
-          <button
-            onClick={() => setShowFilterPanel(true)}
-            className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[1001] bg-[#ccff00] border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] rounded-none px-6 py-3 text-black font-black uppercase tracking-widest hover:translate-y-1 hover:translate-x-1 hover:shadow-none transition-all"
-          >
-            Filters
-          </button>
+          <div className="absolute bottom-6 left-6 z-[1000]">
+            <Button
+              variant="secondary"
+              className="flex items-center gap-2 shadow-lg"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowFilterPanel(true);
+              }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              Show Filters
+            </Button>
+          </div>
         )}
-
         {/* Filter Panel */}
         {!hideFilterPanel && showFilterPanel && (
-          <div className="absolute bottom-6 left-6 right-6 bg-surface-elevated border-4 border-black dark:border-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] z-[1000] p-3 flex flex-col gap-3">
+          <div className="absolute bottom-6 left-6 right-6 bg-surface-elevated border-4 border-black dark:border-white z-[1000] p-3 flex flex-col gap-3">
             
             <div className="flex justify-between items-center border-b-2 border-border pb-2">
               <div className="flex gap-4 items-center">
@@ -851,8 +860,12 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                   ].map(layer => (
                     <label key={layer.label} className="flex items-center gap-1.5 cursor-pointer group">
                       <input type="checkbox" checked={layer.state} onChange={(e) => layer.set(e.target.checked)} className="sr-only" />
-                      <div className={`w-4 h-4 border-2 border-black dark:border-white flex items-center justify-center transition-colors ${layer.state ? 'bg-[#ccff00]' : 'bg-transparent'}`}>
-                        {layer.state && <div className="w-2 h-2 bg-black" />}
+                      <div className={`w-4 h-4 border-2 flex items-center justify-center transition-colors ${layer.state ? 'bg-primary border-primary' : 'border-border bg-surface-elevated'}`}>
+                        {layer.state && (
+                          <svg className="w-3 h-3 text-white dark:text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
                       </div>
                       <span className="text-xs font-bold uppercase tracking-wider">{layer.label}</span>
                     </label>
@@ -931,7 +944,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                     setStartDate('')
                     setEndDate('')
                   }}
-                  className="ml-auto px-3 py-1.5 text-xs font-black bg-error text-white uppercase tracking-widest border-2 border-black dark:border-white hover:translate-y-[2px] hover:translate-x-[2px] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] hover:shadow-none transition-all"
+                  className="ml-auto px-3 py-1.5 text-xs font-black bg-error text-white uppercase tracking-widest border-2 border-black dark:border-white hover:bg-error/80 transition-all"
                 >
                   Reset
                 </button>

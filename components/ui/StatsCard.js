@@ -27,8 +27,7 @@ export default function StatsCard({
 
   return (
     <div
-      className={`bg-surface-elevated border-2 border-border rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] p-6 ${borderLeft ? 'border-l-8' : ''} ${onClick ? 'hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all cursor-pointer' : ''} ${className}`}
-      style={borderLeft ? { borderLeftColor: borderColor } : {}}
+      className={`bg-surface-elevated border-2 border-border rounded-none p-6 ${onClick ? 'hover:bg-surface transition-all cursor-pointer' : ''} ${className}`}
       onClick={onClick}
     >
       <div className="flex items-start justify-between">

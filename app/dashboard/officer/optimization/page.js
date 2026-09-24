@@ -5,12 +5,16 @@ import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
 import RouteInfoHeader from '@/components/ui/RouteInfoHeader'
 import { SkeletonForm } from '@/components/ui/Skeleton'
+import { useTask } from '@/components/context/TaskContext'
+import { Sun, CloudRain, CloudLightning, Circle } from 'lucide-react'
 import {
-  runOptimization,
+  generatePlan,
+  commitPlan,
   getOptimizationRuns,
   getOptimizationRunById,
   approveOptimization,
   discardOptimization,
+  fetchWorkQueue,
 } from '@/lib/api/optimization'
 
 // Dynamic import for Leaflet components (SSR-incompatible)
@@ -28,15 +32,15 @@ const RouteLayer = dynamic(
 )
 
 const WEATHER_OPTIONS = [
-  { value: 'normal', label: 'Normal', icon: '☀️' },
-  { value: 'heavy_rain', label: 'Heavy Rain', icon: '🌧️' },
-  { value: 'storm', label: 'Storm', icon: '⛈️' },
+  { value: 'normal', label: 'Normal', icon: <Sun className="w-4 h-4 text-orange-500" /> },
+  { value: 'heavy_rain', label: 'Heavy Rain', icon: <CloudRain className="w-4 h-4 text-blue-500" /> },
+  { value: 'storm', label: 'Storm', icon: <CloudLightning className="w-4 h-4 text-purple-500" /> },
 ]
 
 const TRAFFIC_OPTIONS = [
-  { value: 'low', label: 'Low', icon: '🟢' },
-  { value: 'moderate', label: 'Moderate', icon: '🟡' },
-  { value: 'heavy', label: 'Heavy', icon: '🔴' },
+  { value: 'low', label: 'Low', icon: <Circle className="w-4 h-4 text-success fill-success" /> },
+  { value: 'moderate', label: 'Moderate', icon: <Circle className="w-4 h-4 text-warning fill-warning" /> },
+  { value: 'heavy', label: 'Heavy', icon: <Circle className="w-4 h-4 text-error fill-error" /> },
 ]
 
 const PRIORITY_STYLES = {
@@ -77,6 +81,7 @@ function formatDate(dateStr) {
 }
 
 export default function OptimizationPage() {
+  const { isOptimizing, draftPlan, setDraftPlan, startOptimization, commitOptimization } = useTask()
   const [weatherCondition, setWeatherCondition] = useState('normal')
   const [trafficCondition, setTrafficCondition] = useState('low')
   const [proposalLoading, setProposalLoading] = useState(false)
@@ -87,7 +92,21 @@ export default function OptimizationPage() {
   const [actionLoading, setActionLoading] = useState(null)
   const [notification, setNotification] = useState(null)
   const [expandedRun, setExpandedRun] = useState(null)
+  const [viewLoading, setViewLoading] = useState(null)
   const [loadingProgress, setLoadingProgress] = useState({ percent: 0, message: '' })
+  const [pendingClusters, setPendingClusters] = useState(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const runsPerPage = 10
+
+  const loadPendingClusters = useCallback(async () => {
+    try {
+      const data = await fetchWorkQueue({ limit: 100 })
+      const queue = Array.isArray(data) ? data : (data.queue || [])
+      setPendingClusters(queue.length)
+    } catch (err) {
+      console.error('Failed to load pending clusters', err)
+    }
+  }, [])
 
   const loadPreviousRuns = useCallback(async () => {
     try {
@@ -103,70 +122,53 @@ export default function OptimizationPage() {
 
   useEffect(() => {
     loadPreviousRuns()
-  }, [loadPreviousRuns])
+    loadPendingClusters()
+  }, [loadPreviousRuns, loadPendingClusters])
+
+  useEffect(() => {
+    if (draftPlan) {
+      setCurrentProposal(draftPlan)
+      setCurrentProposalRoutes([])
+    }
+  }, [draftPlan])
 
   const handleGenerate = async () => {
-    try {
-      setProposalLoading(true)
-      setLoadingProgress({ percent: 10, message: 'Scanning for unresolved clusters...' })
-      setCurrentProposal(null)
-      setCurrentProposalRoutes([])
-      setNotification(null)
+    setCurrentProposal(null)
+    setCurrentProposalRoutes([])
+    setNotification(null)
 
-      // Simulated loading steps for officer visibility
-      const loadingSteps = [
-        { percent: 25, message: 'Calculating MCDA priority scores...' },
-        { percent: 45, message: 'Mapping hotzones to cleanup tasks...' },
-        { percent: 60, message: 'Finding available field crews...' },
-        { percent: 80, message: 'Executing greedy assignment algorithm...' },
-        { percent: 90, message: 'Generating simulated routes & ETA...' },
-      ]
-      let stepIndex = 0
-      const progressInterval = setInterval(() => {
-        if (stepIndex < loadingSteps.length) {
-          setLoadingProgress(loadingSteps[stepIndex])
-          stepIndex++
+    await startOptimization(
+      (result) => {
+        if (result.plan) {
+          setCurrentProposal({ ...result.plan, status: 'draft_plan', selectedCount: result.selectedCount, omittedCount: result.omittedLoggedCount })
+          setCurrentProposalRoutes([]) 
+          loadPendingClusters()
+          loadPreviousRuns()
         }
-      }, 1500)
-
-      const result = await runOptimization({
-        weather_condition: weatherCondition,
-        traffic_condition: trafficCondition,
-      })
-
-      clearInterval(progressInterval)
-
-      if (result.optimization_run) {
-        setCurrentProposal(result.optimization_run)
-
-        // Fetch the full run with routes
-        const fullRun = await getOptimizationRunById(result.optimization_run.id)
-        setCurrentProposal(fullRun)
-
-        // Load waypoints for each route
-        if (fullRun.routes && fullRun.routes.length > 0) {
-          const routesWithWaypoints = []
-          for (const route of fullRun.routes) {
-            const routeDetail = await import('@/lib/api/optimization').then(m => m.getRouteById ? m : m)
-            // Use the route data from the run response directly
-            routesWithWaypoints.push(route)
-          }
-          setCurrentProposalRoutes(fullRun.routes)
-        }
-
-        setLoadingProgress({ percent: 100, message: 'Optimization pipeline completed!' })
-        setNotification({ message: 'Optimization proposal generated successfully', type: 'success' })
-        await loadPreviousRuns()
-      } else {
-        setLoadingProgress({ percent: 100, message: 'Done' })
-        setNotification({ message: result.message || 'No tasks to optimize', type: 'info' })
       }
-    } catch (err) {
-      console.error('Optimization error:', err)
-      setNotification({ message: err.message || 'Failed to generate optimization', type: 'error' })
-    } finally {
-      setProposalLoading(false)
-    }
+    )
+  }
+
+  const handleCommitPlan = async (planId) => {
+    setActionLoading('commit')
+    
+    await commitOptimization(
+      planId, 
+      { weather_condition: weatherCondition, traffic_condition: trafficCondition },
+      (result) => {
+        setNotification({ message: 'Routes finalized successfully!', type: 'success' })
+        setDraftPlan(null) // Clear draft on successful commit
+        loadPreviousRuns()
+        if (result.optimization_run && result.optimization_run.id) {
+          handleViewRun(result.optimization_run.id)
+        }
+        setActionLoading(null)
+      },
+      (error) => {
+        setNotification({ message: error.message || 'Failed to commit plan', type: 'error' })
+        setActionLoading(null)
+      }
+    )
   }
 
   const handleApprove = async (runId) => {
@@ -203,12 +205,15 @@ export default function OptimizationPage() {
       return
     }
     try {
+      setViewLoading(runId)
       const fullRun = await getOptimizationRunById(runId)
       setCurrentProposal(fullRun)
       setCurrentProposalRoutes(fullRun.routes || [])
       setExpandedRun(runId)
     } catch (err) {
       setNotification({ message: 'Failed to load run details', type: 'error' })
+    } finally {
+      setViewLoading(null)
     }
   }
 
@@ -264,7 +269,7 @@ export default function OptimizationPage() {
                       : 'border-border text-text-secondary hover:border-text-muted hover:bg-surface-elevated'
                   }`}
                 >
-                  {opt.icon} {opt.label}
+                  <span className="flex items-center justify-center gap-2">{opt.icon} {opt.label}</span>
                 </button>
               ))}
             </div>
@@ -286,7 +291,7 @@ export default function OptimizationPage() {
                       : 'border-border text-text-secondary hover:border-text-muted hover:bg-surface-elevated'
                   }`}
                 >
-                  {opt.icon} {opt.label}
+                  <span className="flex items-center justify-center gap-2">{opt.icon} {opt.label}</span>
                 </button>
               ))}
             </div>
@@ -295,12 +300,13 @@ export default function OptimizationPage() {
 
         {/* Generate Button and Progress */}
         <div className="mt-6">
-          <button
-            onClick={handleGenerate}
-            disabled={proposalLoading}
-            className="btn-primary px-6 py-3 w-full md:w-auto text-base font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {proposalLoading ? (
+          <div className="flex flex-col md:flex-row md:items-center gap-4">
+            <button
+              onClick={handleGenerate}
+              disabled={isOptimizing}
+              className="btn-primary px-6 py-3 w-full md:w-auto text-base font-bold disabled:opacity-50 flex items-center justify-center gap-2 shadow-none hover:translate-x-0 hover:translate-y-0 hover:shadow-none"
+            >
+              {isOptimizing ? (
               <span className="flex items-center gap-2 justify-center">
                 <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
@@ -309,29 +315,22 @@ export default function OptimizationPage() {
                 Processing...
               </span>
             ) : (
-              '🚀 Generate Optimization'
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                  <path d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm.53 5.47a.75.75 0 00-1.06 0l-3 3a.75.75 0 101.06 1.06l1.72-1.72v5.69a.75.75 0 001.5 0v-5.69l1.72 1.72a.75.75 0 101.06-1.06l-3-3z" />
+                </svg>
+                Generate Optimization
+              </>
             )}
-          </button>
-
-          {proposalLoading && (
-            <div className="mt-4 p-4 border-2 border-border bg-surface-elevated max-w-xl">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-xs font-mono font-bold text-accent-green uppercase">
-                  {loadingProgress.message}
-                </span>
-                <span className="text-xs font-mono text-text-muted">{loadingProgress.percent}%</span>
+            </button>
+            
+            {!isOptimizing && pendingClusters !== null && (
+              <div className="text-sm font-medium text-text-secondary border-2 border-border bg-surface-elevated px-4 py-2 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-accent-green"></span>
+                <span className="font-bold text-text-primary">{pendingClusters}</span> clusters awaiting dispatch
               </div>
-              <div className="w-full h-2 bg-black/20 dark:bg-white/10 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-[#ccff00] transition-all duration-500 ease-out"
-                  style={{ width: `${loadingProgress.percent}%` }}
-                ></div>
-              </div>
-              <p className="text-xs text-text-muted mt-2">
-                Estimated time remaining: ~{Math.max(1, Math.round((100 - loadingProgress.percent) / 10))}s
-              </p>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -347,9 +346,22 @@ export default function OptimizationPage() {
 
           {/* Route Info Header */}
           <RouteInfoHeader
-            eta={formatDuration(currentProposal.total_estimated_duration_min || currentProposalRoutes.reduce((sum, r) => sum + (r.total_duration_min || 0), 0))}
-            weather={`${WEATHER_OPTIONS.find(w => w.value === currentProposal.weather_condition)?.icon || '☀️'} ${weatherLabel}`}
-            traffic={trafficLabel}
+            eta={currentProposal.status === 'draft_plan' 
+              ? formatDuration((currentProposal.capacityUtilized || 0) / Math.max(1, currentProposal.total_crews_available || 1)) 
+              : formatDuration((currentProposal.total_estimated_duration_min || currentProposalRoutes.reduce((sum, r) => sum + (r.total_duration_min || 0), 0)) / Math.max(1, currentProposalRoutes.length || currentProposal.num_crews || 1))
+            }
+            weather={
+              <span className="flex items-center justify-center gap-1.5">
+                {WEATHER_OPTIONS.find(w => w.value === (currentProposal.weather_condition?.toLowerCase() || weatherCondition))?.icon || <Sun className="w-4 h-4 text-orange-500" />} 
+                {weatherLabel}
+              </span>
+            }
+            traffic={
+              <span className="flex items-center justify-center gap-1.5">
+                {TRAFFIC_OPTIONS.find(t => t.value === (currentProposal.traffic_condition?.toLowerCase() || trafficCondition))?.icon || <Circle className="w-4 h-4 text-success fill-success" />} 
+                {trafficLabel}
+              </span>
+            }
             isSimulated={true}
           />
 
@@ -357,22 +369,25 @@ export default function OptimizationPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-surface-elevated border-2 border-border p-3">
               <p className="text-xs font-mono uppercase tracking-wider text-text-muted">Tasks</p>
-              <p className="text-2xl font-black text-text-primary">{currentProposal.num_tasks_optimized || 0}</p>
+              <p className="text-2xl font-black text-text-primary">{currentProposal.num_tasks_optimized || currentProposal.selectedCount || 0}</p>
             </div>
             <div className="bg-surface-elevated border-2 border-border p-3">
               <p className="text-xs font-mono uppercase tracking-wider text-text-muted">Crews</p>
-              <p className="text-2xl font-black text-text-primary">{currentProposal.num_crews || 0}</p>
+              <p className="text-2xl font-black text-text-primary">{currentProposal.num_crews || currentProposal.total_crews_available || 0}</p>
             </div>
             <div className="bg-surface-elevated border-2 border-border p-3">
               <p className="text-xs font-mono uppercase tracking-wider text-text-muted">Est. Distance</p>
               <p className="text-2xl font-black text-text-primary">
-                {formatDistance(currentProposalRoutes.reduce((sum, r) => sum + (r.total_distance_meters || 0), 0))}
+                {currentProposal.status === 'draft_plan' ? 'TBD' : formatDistance(currentProposalRoutes.reduce((sum, r) => sum + (r.total_distance_meters || 0), 0))}
               </p>
             </div>
             <div className="bg-surface-elevated border-2 border-border p-3">
-              <p className="text-xs font-mono uppercase tracking-wider text-text-muted">Est. Duration</p>
+              <p className="text-xs font-mono uppercase tracking-wider text-text-muted">Est. Duration (Avg/Crew)</p>
               <p className="text-2xl font-black text-text-primary">
-                {formatDuration(currentProposalRoutes.reduce((sum, r) => sum + (r.total_duration_min || 0), 0))}
+                {currentProposal.status === 'draft_plan' 
+                  ? formatDuration((currentProposal.capacityUtilized || 0) / Math.max(1, currentProposal.total_crews_available || 1)) 
+                  : formatDuration((currentProposalRoutes.reduce((sum, r) => sum + (r.total_duration_min || 0), 0)) / Math.max(1, currentProposalRoutes.length || currentProposal.num_crews || 1))
+                }
               </p>
             </div>
           </div>
@@ -404,7 +419,48 @@ export default function OptimizationPage() {
             </div>
           )}
 
-          {/* Approve / Discard Buttons */}
+          {/* Commit Plan Button for draft plans */}
+          {currentProposal.status === 'draft_plan' && (
+            <div className="mt-6 pt-4 border-t-2 border-border">
+              <div className="p-4 bg-info/10 text-info border border-info mb-4">
+                <strong>Draft Plan Generated</strong>
+                <p className="text-sm">This plan selects exactly the workload your crews can handle today based on their available hours. Routes and tasks will only be generated once committed.</p>
+                <ul className="list-disc ml-5 mt-2 text-sm font-mono">
+                  <li>Tasks Selected for Dispatch: {currentProposal.selectedCount}</li>
+                  <li>Tasks Deferred due to lack of capacity: {currentProposal.omittedCount}</li>
+                </ul>
+              </div>
+              <button
+                onClick={() => handleCommitPlan(currentProposal.id)}
+                disabled={actionLoading}
+                className="w-full px-6 py-3 bg-success text-white font-bold border-2 border-success hover:bg-success/80 transition-colors disabled:opacity-50"
+              >
+                {actionLoading === 'commit' ? 'Routing Tasks...' : '✅ Commit Plan & Generate Routes'}
+              </button>
+
+              {actionLoading === 'commit' && (
+                <div className="mt-4 p-4 border-2 border-border bg-surface-elevated w-full">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-xs font-mono font-bold text-success uppercase">
+                      {loadingProgress.message}
+                    </span>
+                    <span className="text-xs font-mono text-text-muted">{loadingProgress.percent}%</span>
+                  </div>
+                  <div className="w-full h-2 bg-black/20 dark:bg-white/10 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-success transition-all duration-500 ease-out"
+                      style={{ width: `${loadingProgress.percent}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-text-muted mt-2">
+                    Estimated time remaining: ~{Math.max(1, Math.round((100 - loadingProgress.percent) / 8))}s
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Approve / Discard Buttons for generated optimization runs */}
           {currentProposal.status === 'proposed' && (
             <div className="flex gap-4 mt-6 pt-4 border-t-2 border-border">
               <button
@@ -435,6 +491,7 @@ export default function OptimizationPage() {
         ) : previousRuns.length === 0 ? (
           <p className="text-text-muted text-sm">No optimization runs yet. Generate your first proposal above.</p>
         ) : (
+          <div className="flex flex-col gap-4">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -448,7 +505,7 @@ export default function OptimizationPage() {
                 </tr>
               </thead>
               <tbody>
-                {previousRuns.map(run => (
+                {previousRuns.slice((currentPage - 1) * runsPerPage, currentPage * runsPerPage).map(run => (
                   <tr key={run.id} className="border-b border-border/50 hover:bg-surface-elevated transition-colors">
                     <td className="py-3 text-text-primary font-mono text-xs">{formatDate(run.created_at)}</td>
                     <td className="py-3">
@@ -458,16 +515,29 @@ export default function OptimizationPage() {
                     </td>
                     <td className="py-3 text-text-primary">{run.num_tasks_optimized}</td>
                     <td className="py-3 text-text-secondary">
-                      {WEATHER_OPTIONS.find(w => w.value === run.weather_condition)?.icon} {run.weather_condition}
+                      <span className="flex items-center gap-2">
+                        {WEATHER_OPTIONS.find(w => w.value === (run.weather_condition?.toLowerCase() || 'normal'))?.icon || <Sun className="w-4 h-4 text-orange-500" />} 
+                        {WEATHER_OPTIONS.find(w => w.value === (run.weather_condition?.toLowerCase() || 'normal'))?.label || 'Normal'}
+                      </span>
                     </td>
                     <td className="py-3 text-text-secondary">
-                      {TRAFFIC_OPTIONS.find(t => t.value === run.traffic_condition)?.icon} {run.traffic_condition}
+                      <span className="flex items-center gap-2">
+                        {TRAFFIC_OPTIONS.find(t => t.value === (run.traffic_condition?.toLowerCase() || 'low'))?.icon || <Circle className="w-4 h-4 text-success fill-success" />} 
+                        {TRAFFIC_OPTIONS.find(t => t.value === (run.traffic_condition?.toLowerCase() || 'low'))?.label || 'Low'}
+                      </span>
                     </td>
                     <td className="py-3">
                       <button
                         onClick={() => handleViewRun(run.id)}
-                        className="text-xs text-accent-green hover:underline font-mono uppercase tracking-wider"
+                        disabled={viewLoading === run.id}
+                        className="text-xs text-accent-green hover:underline font-mono uppercase tracking-wider flex items-center gap-1 cursor-pointer disabled:opacity-50"
                       >
+                        {viewLoading === run.id && (
+                          <svg className="animate-spin h-3 w-3 inline" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                        )}
                         {expandedRun === run.id ? 'COLLAPSE' : 'VIEW'}
                       </button>
                     </td>
@@ -475,6 +545,32 @@ export default function OptimizationPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+          
+          {/* Pagination Controls */}
+          {previousRuns.length > runsPerPage && (
+            <div className="flex justify-between items-center mt-4">
+              <span className="text-xs text-text-muted font-mono uppercase">
+                Showing {(currentPage - 1) * runsPerPage + 1}-{Math.min(currentPage * runsPerPage, previousRuns.length)} of {previousRuns.length}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 bg-surface-elevated border-2 border-border text-xs font-bold disabled:opacity-50"
+                >
+                  Prev
+                </button>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(Math.ceil(previousRuns.length / runsPerPage), p + 1))}
+                  disabled={currentPage >= Math.ceil(previousRuns.length / runsPerPage)}
+                  className="px-3 py-1 bg-surface-elevated border-2 border-border text-xs font-bold disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
           </div>
         )}
       </div>
@@ -488,7 +584,7 @@ function CrewRouteCard({ route, index, color }) {
   const taskWaypoints = waypoints.filter(w => w.waypoint_type === 'task')
 
   return (
-    <div className="border-2 border-border bg-surface-elevated" style={{ borderLeftColor: color, borderLeftWidth: '4px' }}>
+    <div className="border-2 border-border bg-surface-elevated">
       <div className="p-4">
         <div className="flex items-center justify-between mb-3">
           <h4 className="font-bold text-text-primary flex items-center gap-2">

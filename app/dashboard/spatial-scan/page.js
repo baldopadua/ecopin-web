@@ -253,11 +253,11 @@ function SpatialAnalysisContent() {
 
   return (
     <DashboardLayout
-      title="Spatial Analysis"
+      title="Spatial Scan"
       subtitle="Density-based clustering to identify critical environmental hotspots"
       breadcrumbs={[
-        { label: 'Dashboard', href: '/dashboard/officer' },
-        { label: 'Spatial Analysis' }
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Spatial Scan' }
       ]}
       stats={stats}
       loading={loading}
@@ -294,7 +294,7 @@ function SpatialAnalysisContent() {
 
       {/* Controls based on active tab */}
       {activeTab === 'current' ? (
-        <div className="card no-hover mb-8 flex items-center justify-between">
+        <div className="bg-surface-elevated border-2 border-border p-6 mb-8 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">
@@ -316,21 +316,26 @@ function SpatialAnalysisContent() {
             <button
               onClick={handleGenerateForecast}
               disabled={generating || loading}
-              className="btn-primary"
+              className="btn-primary flex items-center justify-center gap-2 px-6 py-2 shadow-none hover:shadow-none hover:translate-x-0 hover:translate-y-0"
             >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                <path fillRule="evenodd" d="M9 4.5a.75.75 0 01.721.544l.813 2.846a3.75 3.75 0 002.576 2.576l2.846.813a.75.75 0 010 1.442l-2.846.813a3.75 3.75 0 00-2.576 2.576l-.813 2.846a.75.75 0 01-1.442 0l-.813-2.846a3.75 3.75 0 00-2.576-2.576l-2.846-.813a.75.75 0 010-1.442l2.846-.813A3.75 3.75 0 007.466 7.89l.813-2.846A.75.75 0 019 4.5z" clipRule="evenodd" />
+              </svg>
               {generating ? 'Generating...' : 'Generate Forecast'}
             </button>
             <button
               onClick={loadCurrentPredictions}
               disabled={loading || generating}
-              className="btn-secondary"
+              className="btn-secondary p-2 flex items-center justify-center shadow-none hover:shadow-none hover:translate-x-0 hover:translate-y-0" title="Refresh"
             >
-              Refresh
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+              </svg>
             </button>
           </div>
         </div>
       ) : (
-        <div className="card no-hover mb-8 flex flex-wrap items-end justify-between gap-4 relative z-50">
+        <div className="bg-surface-elevated border-2 border-border p-6 mb-8 flex flex-wrap items-end justify-between gap-4 relative z-50">
           <div className="flex gap-4">
             <div>
               <label className="block text-sm font-medium text-text-primary mb-2">
@@ -377,7 +382,7 @@ function SpatialAnalysisContent() {
       )}
 
       {/* Map */}
-      <div className="card no-hover mb-8">
+      <div className="bg-surface-elevated border-2 border-border p-6 mb-8">
         <h2 className="text-xl font-bold text-text-primary mb-6">
           {activeTab === 'current' ? 'Hotspot Map' : 'Historical Map View'}
         </h2>
