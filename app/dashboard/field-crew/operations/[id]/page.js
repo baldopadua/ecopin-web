@@ -1,7 +1,7 @@
 'use client'
 import React, { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { fetchCleanupTaskById, uploadCleanupPhoto, markCleanupTaskComplete, fetchReportsByClusterId, batchCompleteReportsByCluster, updateReportStatus, fetchReportsByIds, updateReportValidation, fetchReportEvidence, updateLifecycleStage, logAgencyResponse, fetchAgencyResponses, fetchAvailableCrew } from '@/lib/api'
+import { fetchCleanupTaskById, uploadCleanupPhoto, markCleanupTaskComplete, fetchReportsByClusterId, batchCompleteReportsByCluster, updateReportStatus, fetchReportsByIds, updateReportValidation, fetchReportEvidence, updateLifecycleStage, logAgencyResponse, fetchAgencyResponses, fetchAvailableCrew, updateReportDetails } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
@@ -79,6 +79,12 @@ export default function FieldCrewCleanupTaskDetailPage() {
   const [agencyResponses, setAgencyResponses] = useState([])
   const [availableCrew, setAvailableCrew] = useState([])
   const [isAssigned, setIsAssigned] = useState(false)
+  
+  // Edit Report Details State
+  const [isEditingDetails, setIsEditingDetails] = useState(false)
+  const [updatingDetails, setUpdatingDetails] = useState(false)
+  const [editFormData, setEditFormData] = useState({})
+  
   const router = useRouter()
   const params = useParams()
   const taskId = params.id
@@ -139,6 +145,34 @@ export default function FieldCrewCleanupTaskDetailPage() {
     }
     loadAvailableCrew()
   }, [])
+
+  const handleSaveDetails = async (reportId) => {
+    if (!isAssigned) {
+      setNotification({ message: 'You are not assigned to this task', type: 'error' })
+      return
+    }
+
+    setUpdatingDetails(true)
+    try {
+      await updateReportDetails(reportId, editFormData)
+      
+      // Refresh reports
+      let reportsData = []
+      if (task.is_custom && task.report_ids) {
+        reportsData = await fetchReportsByIds(task.report_ids)
+      } else if (task.cluster_id) {
+        reportsData = await fetchReportsByClusterId(task.cluster_id)
+      }
+      setReports(reportsData)
+      setIsEditingDetails(false)
+      setNotification({ message: 'Report details updated successfully', type: 'success' })
+    } catch (error) {
+      console.error('Failed to update details:', error)
+      setNotification({ message: 'Failed to update report details. Please try again.', type: 'error' })
+    } finally {
+      setUpdatingDetails(false)
+    }
+  }
 
   const handleMarkComplete = async () => {
     if (!isAssigned) {
@@ -727,7 +761,8 @@ export default function FieldCrewCleanupTaskDetailPage() {
           subtitle={task.title}
           breadcrumbs={[
             { label: 'Dashboard', href: '/dashboard/field-crew' },
-            { label: 'Cleanup Tasks', href: '/dashboard/field-crew/tasks' },
+            { label: 'My Route', href: '/dashboard/field-crew/my-route' },
+            { label: 'Operations', href: '/dashboard/field-crew/tasks' },
             { label: `Task #${task.id}` }
           ]}
         />
@@ -941,77 +976,197 @@ export default function FieldCrewCleanupTaskDetailPage() {
                       </div>
                     </div>
 
-                    {/* Report Title & Description */}
+                    {/* Editable Report Details */}
                     <div className="card">
-                      <h2 className="text-2xl font-bold text-text-primary">{report.title}</h2>
-                      <p className="text-text-muted mt-2">{report.description}</p>
-                    </div>
-
-                    {/* Report Details */}
-                    <div className="card">
-                      <h2 className="text-xl font-bold text-text-primary mb-4">Report Details</h2>
-                      <div className="space-y-3">
-                        <div>
-                          <p className="text-xs text-text-muted">Report ID</p>
-                          <p className="text-text-primary font-medium text-sm">{report.id}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-text-muted">Location</p>
-                          <p className="text-text-primary font-medium text-sm">
-                            {report.latitude && report.longitude
-                              ? `${report.latitude.toFixed(6)}, ${report.longitude.toFixed(6)}`
-                              : 'Not available'
-                            }
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-text-muted">Submitted</p>
-                          <p className="text-text-primary font-medium text-sm">
-                            {new Date(report.created_at).toLocaleString('en-US', {
-                              month: 'long',
-                              day: 'numeric',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-text-muted">Last Updated</p>
-                          <p className="text-text-primary font-medium text-sm">
-                            {new Date(report.updated_at).toLocaleString('en-US', {
-                              month: 'long',
-                              day: 'numeric',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </p>
-                        </div>
-                        <div className="pt-3 border-t border-border">
-                          <p className="text-xs text-text-muted mb-2">Reporter Information</p>
-                          <div className="space-y-2">
+                      <div className="flex justify-between items-start mb-4">
+                        <h2 className="text-xl font-bold text-text-primary">Report Details</h2>
+                        {isAssigned && !isEditingDetails && (
+                          <button
+                            onClick={() => setIsEditingDetails(true)}
+                            className="px-3 py-1 bg-surface-elevated border border-border text-xs rounded hover:bg-border transition-colors"
+                          >
+                            Edit Details
+                          </button>
+                        )}
+                        {isEditingDetails && (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleSaveDetails(report.id)}
+                              disabled={updatingDetails}
+                              className="px-3 py-1 bg-accent-green text-white text-xs rounded hover:bg-accent-green-dark transition-colors disabled:opacity-50"
+                            >
+                              {updatingDetails ? 'Saving...' : 'Save'}
+                            </button>
+                            <button
+                              onClick={() => setIsEditingDetails(false)}
+                              disabled={updatingDetails}
+                              className="px-3 py-1 bg-surface-elevated border border-border text-xs rounded hover:bg-border transition-colors disabled:opacity-50"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {isEditingDetails ? (
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-xs font-medium text-text-muted mb-1">Description</label>
+                            <textarea
+                              value={editFormData.description}
+                              onChange={(e) => setEditFormData({...editFormData, description: e.target.value})}
+                              className="w-full p-2 border border-border rounded bg-surface-elevated text-sm"
+                              rows={3}
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <p className="text-xs text-text-muted">Name</p>
-                              <p className="text-text-primary font-medium text-sm">
-                                {report.profiles?.data_consent === true
-                                  ? (report.profiles?.full_name || report.user_full_name || 'Anonymous')
-                                  : 'Information not disclosed'
-                                }
-                              </p>
+                              <label className="block text-xs font-medium text-text-muted mb-1">Issue Type</label>
+                              <select
+                                value={editFormData.issue_type}
+                                onChange={(e) => setEditFormData({...editFormData, issue_type: e.target.value})}
+                                className="w-full p-2 border border-border rounded bg-surface-elevated text-sm"
+                              >
+                                <option value="waste">Waste</option>
+                                <option value="flooding">Flooding</option>
+                                <option value="pollution">Pollution</option>
+                                <option value="infrastructure">Infrastructure</option>
+                              </select>
                             </div>
                             <div>
-                              <p className="text-xs text-text-muted">User ID</p>
-                              <p className="text-text-primary font-medium text-sm">
-                                {report.profiles?.data_consent === true
-                                  ? (report.user_id || 'N/A')
-                                  : 'Information not disclosed'
-                                }
-                              </p>
+                              <label className="block text-xs font-medium text-text-muted mb-1">Severity</label>
+                              <select
+                                value={editFormData.severity}
+                                onChange={(e) => setEditFormData({...editFormData, severity: e.target.value})}
+                                className="w-full p-2 border border-border rounded bg-surface-elevated text-sm"
+                              >
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                                <option value="critical">Critical</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-text-muted mb-1">Street</label>
+                              <input
+                                type="text"
+                                value={editFormData.street}
+                                onChange={(e) => setEditFormData({...editFormData, street: e.target.value})}
+                                className="w-full p-2 border border-border rounded bg-surface-elevated text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-text-muted mb-1">Landmark</label>
+                              <input
+                                type="text"
+                                value={editFormData.landmark}
+                                onChange={(e) => setEditFormData({...editFormData, landmark: e.target.value})}
+                                className="w-full p-2 border border-border rounded bg-surface-elevated text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-text-muted mb-1">District</label>
+                              <input
+                                type="text"
+                                value={editFormData.district}
+                                onChange={(e) => setEditFormData({...editFormData, district: e.target.value})}
+                                className="w-full p-2 border border-border rounded bg-surface-elevated text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-text-muted mb-1">City</label>
+                              <input
+                                type="text"
+                                value={editFormData.city}
+                                onChange={(e) => setEditFormData({...editFormData, city: e.target.value})}
+                                className="w-full p-2 border border-border rounded bg-surface-elevated text-sm"
+                              />
                             </div>
                           </div>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="space-y-4">
+                          <div>
+                            <h2 className="text-2xl font-bold text-text-primary">{report.title}</h2>
+                            <p className="text-text-muted mt-2">{report.description || 'No description provided.'}</p>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-4 border-t border-border">
+                            <div>
+                              <p className="text-xs text-text-muted">Issue Type</p>
+                              <p className="text-text-primary font-medium text-sm capitalize">{report.issue_type?.replace(/_/g, ' ') || 'Unknown'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-text-muted">Severity</p>
+                              <p className="text-text-primary font-medium text-sm capitalize">{report.severity || 'Unknown'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-text-muted">Coordinates</p>
+                              <p className="text-text-primary font-medium text-sm">
+                                {report.latitude && report.longitude
+                                  ? `${report.latitude.toFixed(6)}, ${report.longitude.toFixed(6)}`
+                                  : 'Not available'
+                                }
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-text-muted">Street</p>
+                              <p className="text-text-primary font-medium text-sm">{report.street || 'N/A'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-text-muted">Landmark</p>
+                              <p className="text-text-primary font-medium text-sm">{report.landmark || 'N/A'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-text-muted">Location</p>
+                              <p className="text-text-primary font-medium text-sm">{report.district ? `${report.district}, ` : ''}{report.city || 'N/A'}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
+                            <div>
+                              <p className="text-xs text-text-muted">Submitted</p>
+                              <p className="text-text-primary font-medium text-sm">
+                                {new Date(report.created_at).toLocaleString('en-US', {
+                                  month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-text-muted">Last Updated</p>
+                              <p className="text-text-primary font-medium text-sm">
+                                {new Date(report.updated_at).toLocaleString('en-US', {
+                                  month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="pt-4 border-t border-border">
+                            <p className="text-xs text-text-muted mb-2">Reporter Information</p>
+                            <div className="flex justify-between">
+                              <div>
+                                <p className="text-xs text-text-muted">Name</p>
+                                <p className="text-text-primary font-medium text-sm">
+                                  {report.profiles?.data_consent === true
+                                    ? (report.profiles?.full_name || report.user_full_name || 'Anonymous')
+                                    : 'Information not disclosed'
+                                  }
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-text-muted">User ID</p>
+                                <p className="text-text-primary font-medium text-sm">
+                                  {report.profiles?.data_consent === true
+                                    ? (report.user_id || 'N/A')
+                                    : 'Information not disclosed'
+                                  }
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
 

@@ -155,8 +155,8 @@ function MapCenter({ centerLat, centerLng }) {
   return null
 }
 
-export default function EcoPinMap({ centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode = false, selectedReports = [], onReportSelect, hideFilterPanel = false, onReportClick, onClusterSelect }) {
-  console.log('EcoPinMap props:', { centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode, hideFilterPanel })
+export default function EcoPinMap({ centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode = false, selectedReports = [], onReportSelect, hideFilterPanel = false, hidePins = false, hideClusters = false, onReportClick, onClusterSelect, children }) {
+  console.log('EcoPinMap props:', { centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode, hideFilterPanel, hidePins, hideClusters })
   
   const [mounted, setMounted] = useState(false)
   const [reports, setReports] = useState([])
@@ -551,7 +551,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
           <HeatmapLayer heatPoints={heatPoints} showHeatmap={showHeatmap} />
 
           {/* Cluster Markers (shown when zoomed out) */}
-          {showClusters && zoom <= 15 && filteredClusters.map((cluster) => {
+          {!hideClusters && showClusters && zoom <= 15 && filteredClusters.map((cluster) => {
             const center = parseGeometry(cluster.center)
             if (!center) return null
 
@@ -633,7 +633,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
           })}
 
           {/* Cluster Polygons (shown when zoomed in - connects actual report pins) */}
-          {showClusters && zoom > 15 && filteredClusters.map((cluster) => {
+          {!hideClusters && showClusters && zoom > 15 && filteredClusters.map((cluster) => {
             const memberReports = filteredClusterReports[cluster.id]
             console.log('Cluster polygon check:', cluster.id, 'memberReports:', memberReports, 'zoom:', zoom)
             if (!memberReports || memberReports.length < 2) return null
@@ -810,6 +810,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
             }
             return null
           })}
+          {children}
         </MapContainer>
 
         {/* Filter Panel Toggle Button */}

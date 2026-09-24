@@ -41,6 +41,7 @@ const officerNavigation = [
 ]
 
 const fieldCrewNavigation = [
+    { name: 'My Route', href: '/dashboard/field-crew/my-route', icon: Route },
     { name: 'Command Center', href: '/dashboard/field-crew', icon: LayoutDashboard },
     { name: 'Map Grid', href: '/dashboard/map-grid', icon: Map },
     { name: 'Operations', href: '/dashboard/field-crew/tasks', icon: Wrench },

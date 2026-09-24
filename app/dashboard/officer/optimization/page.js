@@ -81,7 +81,7 @@ function formatDate(dateStr) {
 }
 
 export default function OptimizationPage() {
-  const { isOptimizing, draftPlan, setDraftPlan, startOptimization, commitOptimization } = useTask()
+  const { isOptimizing, optimizationProgress, draftPlan, setDraftPlan, startOptimization, commitOptimization } = useTask()
   const [liveWeather, setLiveWeather] = useState('normal')
   const [trafficCondition, setTrafficCondition] = useState('low')
   const [proposalLoading, setProposalLoading] = useState(false)
@@ -330,6 +330,21 @@ export default function OptimizationPage() {
               </div>
             )}
           </div>
+          
+          {isOptimizing && (
+            <div className="mt-6">
+              <div className="flex justify-between text-sm font-bold text-text-primary mb-2 font-mono uppercase tracking-wider">
+                <span>{optimizationProgress.message || 'Processing...'}</span>
+                <span>{optimizationProgress.percent || 0}%</span>
+              </div>
+              <div className="w-full bg-border h-4 border-2 border-border">
+                <div 
+                  className="bg-[#ccff00] h-full transition-all duration-300 border-r-2 border-border" 
+                  style={{ width: `${optimizationProgress.percent || 0}%` }}
+                ></div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
