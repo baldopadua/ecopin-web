@@ -978,6 +978,25 @@ export default function FieldCrewCleanupTaskDetailPage() {
 
                     {/* Editable Report Details */}
                     <div className="card">
+                      {/* Action Intent Banner */}
+                      <div className={`mb-6 p-4 border-2 rounded-lg flex items-center justify-center gap-3 ${
+                        report.validation_status === 'pending'
+                          ? 'bg-info/10 text-info border-info/30'
+                          : 'bg-success/10 text-success border-success/30'
+                      }`}>
+                        <span className="text-2xl">{report.validation_status === 'pending' ? '🔍' : '🧹'}</span>
+                        <div>
+                          <h3 className="font-bold text-lg font-mono uppercase tracking-wider">
+                            ACTION REQUIRED: {report.validation_status === 'pending' ? 'VALIDATE ONLY' : 'FULL CLEANUP'}
+                          </h3>
+                          <p className="text-sm opacity-90">
+                            {report.validation_status === 'pending'
+                              ? 'This report is unverified. Provide a verification photo to acknowledge it.'
+                              : 'This report is verified. Provide before & after photos to document cleanup.'}
+                          </p>
+                        </div>
+                      </div>
+
                       <div className="flex justify-between items-start mb-4">
                         <h2 className="text-xl font-bold text-text-primary">Report Details</h2>
                         {isAssigned && !isEditingDetails && (
@@ -1209,11 +1228,11 @@ export default function FieldCrewCleanupTaskDetailPage() {
 
                       {report.status !== 'closed' && report.status !== 'resolved' && report.validation_status !== 'rejected' && !(report.on_private_property && report.property_owner_consent_status === 'denied') && (
                         <>
-                          <h3 className="text-lg font-semibold text-text-primary mt-6 mb-3">Before & After Photos</h3>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <h3 className="text-lg font-semibold text-text-primary mt-6 mb-3">Required Evidence</h3>
+                          <div className={`grid grid-cols-1 gap-4 ${report.validation_status === 'pending' ? 'md:grid-cols-1 max-w-2xl' : 'md:grid-cols-2'}`}>
                             <div className="p-4 border border-border rounded-lg">
                               <div className="flex justify-between items-center mb-3">
-                                <h4 className="font-semibold">Before Photo</h4>
+                                <h4 className="font-semibold">{report.validation_status === 'pending' ? 'Verification Photo' : 'Before Photo'}</h4>
                                 {report.before_photo_url && (
                                   <button
                                     onClick={() => handleReportPhotoDelete(report.id, 'before')}
@@ -1246,40 +1265,43 @@ export default function FieldCrewCleanupTaskDetailPage() {
                               {uploadingReportPhotos[`${report.id}-before`] && <p className="mt-2 text-sm text-text-muted">Uploading...</p>}
                             </div>
 
-                            <div className="p-4 border border-border rounded-lg">
-                              <div className="flex justify-between items-center mb-3">
-                                <h4 className="font-semibold">After Photo</h4>
-                                {report.after_photo_url && (
-                                  <button
-                                    onClick={() => handleReportPhotoDelete(report.id, 'after')}
-                                    disabled={!isAssigned}
-                                    className="p-1.5 text-text-muted hover:text-error hover:bg-error/10 rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                                    title="Delete photo"
-                                  >
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                                    </svg>
-                                  </button>
+                            {/* Only show After Photo for verified cleanup reports */}
+                            {report.validation_status !== 'pending' && (
+                              <div className="p-4 border border-border rounded-lg">
+                                <div className="flex justify-between items-center mb-3">
+                                  <h4 className="font-semibold">After Photo</h4>
+                                  {report.after_photo_url && (
+                                    <button
+                                      onClick={() => handleReportPhotoDelete(report.id, 'after')}
+                                      disabled={!isAssigned}
+                                      className="p-1.5 text-text-muted hover:text-error hover:bg-error/10 rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                      title="Delete photo"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                      </svg>
+                                    </button>
+                                  )}
+                                </div>
+                                {report.after_photo_url ? (
+                                  <img
+                                    src={report.after_photo_url}
+                                    alt="After"
+                                    className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 border border-border"
+                                    onClick={() => setLightboxImage({ url: report.after_photo_url, type: 'after', index: 0 })}
+                                  />
+                                ) : (
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    disabled={uploadingReportPhotos[`${report.id}-after`] || !isAssigned}
+                                    onChange={(e) => e.target.files[0] && handleReportPhotoUpload(report.id, 'after', e.target.files[0])}
+                                    className="w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                                  />
                                 )}
+                                {uploadingReportPhotos[`${report.id}-after`] && <p className="mt-2 text-sm text-text-muted">Uploading...</p>}
                               </div>
-                              {report.after_photo_url ? (
-                                <img
-                                  src={report.after_photo_url}
-                                  alt="After"
-                                  className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 border border-border"
-                                  onClick={() => setLightboxImage({ url: report.after_photo_url, type: 'after', index: 0 })}
-                                />
-                              ) : (
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  disabled={uploadingReportPhotos[`${report.id}-after`] || !isAssigned}
-                                  onChange={(e) => e.target.files[0] && handleReportPhotoUpload(report.id, 'after', e.target.files[0])}
-                                  className="w-full disabled:opacity-50 disabled:cursor-not-allowed"
-                                />
-                              )}
-                              {uploadingReportPhotos[`${report.id}-after`] && <p className="mt-2 text-sm text-text-muted">Uploading...</p>}
-                            </div>
+                            )}
                           </div>
                         </>
                       )}
@@ -1473,67 +1495,41 @@ export default function FieldCrewCleanupTaskDetailPage() {
                     <div className="mt-6 pt-4 border-t border-border">
                       <h2 className="text-lg font-bold text-text-primary mb-4">Actions</h2>
                       <div className="space-y-3">
-                        {/* Reject Report for Manual Review */}
-                        {(report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review') && report.status !== 'closed' && report.status !== 'resolved' && report.validation_status !== 'rejected' && !(report.on_private_property && report.property_owner_consent_status === 'denied') && (
-                          <button
-                            onClick={() => handleRejectReport(report.id)}
-                            disabled={validatingReport === report.id || !isAssigned}
-                            className="w-full px-4 py-2 bg-error text-white rounded-lg hover:bg-error/80 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                          >
-                            {validatingReport === report.id ? 'Rejecting...' : 'Reject Report'}
-                          </button>
+                        {/* Action Buttons based on Validation Status */}
+                        {report.validation_status === 'pending' ? (
+                          <div className="space-y-3">
+                            <button
+                              onClick={() => handleValidateReport(report.id)}
+                              disabled={validatingReport === report.id || !isAssigned}
+                              className="w-full px-4 py-3 bg-info text-white rounded-lg hover:bg-info/90 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg shadow-sm"
+                            >
+                              {validatingReport === report.id ? 'Processing...' : '✅ Validate & Acknowledge'}
+                            </button>
+                            {report.status !== 'closed' && report.status !== 'resolved' && (
+                              <button
+                                onClick={() => handleRejectReport(report.id)}
+                                disabled={validatingReport === report.id || !isAssigned}
+                                className="w-full px-4 py-2 border-2 border-error text-error bg-transparent rounded-lg hover:bg-error hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                              >
+                                {validatingReport === report.id ? 'Rejecting...' : '❌ Reject Report'}
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            <button
+                              onClick={() => handleLifecycleStageUpdate(report.id, 'resolved')}
+                              disabled={report.stage === 'resolved' || !isAssigned}
+                              className={`w-full px-4 py-3 text-white rounded-lg font-bold text-lg transition-all shadow-sm ${
+                                report.stage === 'resolved' 
+                                  ? 'bg-success/50 cursor-not-allowed' 
+                                  : 'bg-success hover:bg-[var(--success-dark)]'
+                              }`}
+                            >
+                              {report.stage === 'resolved' ? '✓ Cleanup Completed' : '✅ Mark Cleanup Complete'}
+                            </button>
+                          </div>
                         )}
-
-                        {/* Lifecycle Stage Control */}
-                        <div className="relative" ref={lifecycleDropdownRef}>
-                          <button
-                            onClick={() => setShowLifecycleDropdown(!showLifecycleDropdown)}
-                            disabled={!isAssigned}
-                            className="w-full px-4 py-2 border-2 border-border text-text-primary rounded-lg hover:bg-surface-elevated font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {updatingLifecycle ? 'Updating...' : 'Update Lifecycle Stage'}
-                          </button>
-                          {showLifecycleDropdown && (
-                            <div className="absolute bottom-full left-0 right-0 mb-2 bg-surface-elevated border border-border rounded-lg shadow-lg z-50">
-                              <button
-                                onClick={() => handleLifecycleStageUpdate(report.id, 'resolved')}
-                                disabled={report.stage !== 'responded' || !isAssigned}
-                                className={`w-full px-4 py-3 text-left border-b border-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${report.stage === 'resolved'
-                                  ? 'bg-success/10 text-success font-semibold cursor-not-allowed'
-                                  : report.stage === 'responded'
-                                    ? 'text-text-primary hover:bg-success/5'
-                                    : 'text-text-muted cursor-not-allowed'
-                                }`}
-                              >
-                                <span className="font-medium">Resolved</span>
-                              </button>
-                              <button
-                                onClick={() => handleLifecycleStageUpdate(report.id, 'responded')}
-                                disabled={report.stage !== 'acknowledged' || !isAssigned}
-                                className={`w-full px-4 py-3 text-left border-b border-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${report.stage === 'responded'
-                                  ? 'bg-warning/10 text-warning font-semibold cursor-not-allowed'
-                                  : report.stage === 'acknowledged'
-                                    ? 'text-text-primary hover:bg-warning/5'
-                                    : 'text-text-muted cursor-not-allowed'
-                                }`}
-                              >
-                                <span className="font-medium">Responded</span>
-                              </button>
-                              <button
-                                onClick={() => handleLifecycleStageUpdate(report.id, 'acknowledged')}
-                                disabled={report.stage !== 'submitted' || !isAssigned}
-                                className={`w-full px-4 py-3 text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${report.stage === 'acknowledged'
-                                  ? 'bg-info/10 text-info font-semibold cursor-not-allowed'
-                                  : report.stage === 'submitted'
-                                    ? 'text-text-primary hover:bg-info/5'
-                                    : 'text-text-muted cursor-not-allowed'
-                                }`}
-                              >
-                                <span className="font-medium">Acknowledged</span>
-                              </button>
-                            </div>
-                          )}
-                        </div>
 
                         {/* View on Map Button */}
                         {(() => {

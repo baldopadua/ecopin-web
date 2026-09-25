@@ -6,7 +6,7 @@ import Notification from '@/components/ui/Notification'
 import RouteInfoHeader from '@/components/ui/RouteInfoHeader'
 import { SkeletonForm } from '@/components/ui/Skeleton'
 import { useTask } from '@/components/context/TaskContext'
-import { Sun, CloudRain, CloudLightning, Circle } from 'lucide-react'
+import { Sun, CloudRain, CloudLightning, Circle, Globe, Map, Check, CheckCircle2, XCircle, Ruler, Timer } from 'lucide-react'
 import {
   generatePlan,
   commitPlan,
@@ -32,9 +32,9 @@ const RouteLayer = dynamic(
 )
 
 const WEATHER_OPTIONS = [
-  { value: 'normal', label: 'Normal', icon: <Sun className="w-4 h-4 text-orange-500" /> },
-  { value: 'heavy_rain', label: 'Heavy Rain', icon: <CloudRain className="w-4 h-4 text-blue-500" /> },
-  { value: 'storm', label: 'Storm', icon: <CloudLightning className="w-4 h-4 text-purple-500" /> },
+  { value: 'normal', label: 'Normal', icon: <Sun className="w-4 h-4 text-warning" /> },
+  { value: 'heavy_rain', label: 'Heavy Rain', icon: <CloudRain className="w-4 h-4 text-info" /> },
+  { value: 'storm', label: 'Storm', icon: <CloudLightning className="w-4 h-4 text-purple" /> },
 ]
 
 const TRAFFIC_OPTIONS = [
@@ -44,10 +44,10 @@ const TRAFFIC_OPTIONS = [
 ]
 
 const PRIORITY_STYLES = {
-  urgent: 'bg-red-500/20 text-red-400 border-red-500/30',
-  high: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
-  medium: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-  low: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  urgent: 'bg-error/20 text-error border-error/30',
+  high: 'bg-warning/20 text-warning border-warning/30',
+  medium: 'bg-info/20 text-info border-info/30',
+  low: 'bg-success/20 text-success border-success/30',
 }
 
 const STATUS_STYLES = {
@@ -58,7 +58,7 @@ const STATUS_STYLES = {
   failed: 'bg-error/20 text-error border-error/30',
 }
 
-const CREW_COLORS = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B']
+const CREW_COLORS = ['#85D22D', '#0288D1', '#8B5CF6', '#F9A825', '#457113']
 
 function formatDistance(meters) {
   if (!meters) return '—'
@@ -93,7 +93,6 @@ export default function OptimizationPage() {
   const [notification, setNotification] = useState(null)
   const [expandedRun, setExpandedRun] = useState(null)
   const [viewLoading, setViewLoading] = useState(null)
-  const [loadingProgress, setLoadingProgress] = useState({ percent: 0, message: '' })
   const [pendingClusters, setPendingClusters] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
   const runsPerPage = 10
@@ -258,7 +257,7 @@ export default function OptimizationPage() {
       {/* Conditions Overview */}
       <div className="card border-2 border-border mb-6">
         <h3 className="font-bold text-text-primary mb-4 flex items-center gap-2">
-          🌍 Real-World Conditions
+          <Globe className="w-5 h-5" /> Real-World Conditions
           <span className="text-xs font-mono font-normal text-text-muted">(Sourced via live APIs)</span>
         </h3>
 
@@ -272,7 +271,7 @@ export default function OptimizationPage() {
             <div className="flex gap-2">
               <div className="flex-1 px-3 py-2 text-sm border-2 border-border bg-surface-elevated text-text-primary font-bold">
                 <span className="flex items-center justify-center gap-2">
-                  {WEATHER_OPTIONS.find(w => w.value === liveWeather)?.icon || '🌤️'} 
+                  {WEATHER_OPTIONS.find(w => w.value === liveWeather)?.icon || <Sun className="w-4 h-4 text-orange-500" />} 
                   {WEATHER_OPTIONS.find(w => w.value === liveWeather)?.label || 'Normal'}
                 </span>
               </div>
@@ -424,7 +423,7 @@ export default function OptimizationPage() {
           {currentProposalRoutes.length > 0 && (
             <div className="mb-6">
               <h4 className="font-bold text-text-primary mb-3 flex items-center gap-2">
-                🗺️ Route Map
+                <Map className="w-5 h-5" /> Route Map
                 <span className="text-xs font-mono text-text-muted">(polylines are straight-line estimates)</span>
               </h4>
               <div className="border-2 border-border" style={{ height: '400px' }}>
@@ -449,28 +448,8 @@ export default function OptimizationPage() {
                 disabled={actionLoading}
                 className="w-full px-6 py-3 bg-success text-white font-bold border-2 border-success hover:bg-success/80 transition-colors disabled:opacity-50"
               >
-                {actionLoading === 'commit' ? 'Routing Tasks...' : '✅ Commit Plan & Generate Routes'}
+                {actionLoading === 'commit' ? 'Routing Tasks...' : <span className="flex items-center justify-center"><Check className="w-5 h-5 mr-2" /> Commit Plan & Generate Routes</span>}
               </button>
-
-              {actionLoading === 'commit' && (
-                <div className="mt-4 p-4 border-2 border-border bg-surface-elevated w-full">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs font-mono font-bold text-success uppercase">
-                      {loadingProgress.message}
-                    </span>
-                    <span className="text-xs font-mono text-text-muted">{loadingProgress.percent}%</span>
-                  </div>
-                  <div className="w-full h-2 bg-black/20 dark:bg-white/10 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-success transition-all duration-500 ease-out"
-                      style={{ width: `${loadingProgress.percent}%` }}
-                    ></div>
-                  </div>
-                  <p className="text-xs text-text-muted mt-2">
-                    Estimated time remaining: ~{Math.max(1, Math.round((100 - loadingProgress.percent) / 8))}s
-                  </p>
-                </div>
-              )}
             </div>
           )}
 
@@ -482,14 +461,14 @@ export default function OptimizationPage() {
                 disabled={actionLoading}
                 className="flex-1 px-6 py-3 bg-success text-white font-bold border-2 border-success hover:bg-success/80 transition-colors disabled:opacity-50"
               >
-                {actionLoading === 'approve' ? 'Approving...' : '✅ Approve Optimization'}
+                {actionLoading === 'approve' ? 'Approving...' : <span className="flex items-center justify-center"><CheckCircle2 className="w-5 h-5 mr-2" /> Approve Optimization</span>}
               </button>
               <button
                 onClick={() => handleDiscard(currentProposal.id)}
                 disabled={actionLoading}
                 className="flex-1 px-6 py-3 bg-transparent text-error font-bold border-2 border-error hover:bg-error/10 transition-colors disabled:opacity-50"
               >
-                {actionLoading === 'discard' ? 'Discarding...' : '❌ Discard'}
+                {actionLoading === 'discard' ? 'Discarding...' : <span className="flex items-center justify-center"><XCircle className="w-5 h-5 mr-2" /> Discard</span>}
               </button>
             </div>
           )}
@@ -597,18 +576,55 @@ function CrewRouteCard({ route, index, color }) {
   const waypoints = route.waypoints || []
   const taskWaypoints = waypoints.filter(w => w.waypoint_type === 'task')
 
+  let scoutingCount = 0
+  let cleanupCount = 0
+  let mixedCount = 0
+
+  taskWaypoints.forEach(wp => {
+    const type = wp.cleanup_tasks?.task_type || 'Cleanup'
+    if (type === 'Scouting') scoutingCount++
+    else if (type === 'Cleanup') cleanupCount++
+    else mixedCount++
+  })
+
+  let dominantType = 'Cleanup'
+  let badgeStyle = 'bg-success/20 text-success border-success/30'
+  let badgeIcon = '🚛'
+  
+  if (scoutingCount > 0 && cleanupCount === 0 && mixedCount === 0) {
+    dominantType = 'Scouting'
+    badgeStyle = 'bg-info/20 text-info border-info/30'
+    badgeIcon = '🔍'
+  } else if (cleanupCount > 0 && scoutingCount === 0 && mixedCount === 0) {
+    dominantType = 'Cleanup'
+  } else if (taskWaypoints.length > 0) {
+    dominantType = 'Mixed'
+    badgeStyle = 'bg-purple/20 text-purple border-purple/30'
+    badgeIcon = '🔄'
+  }
+
   return (
     <div className="border-2 border-border bg-surface-elevated">
       <div className="p-4">
         <div className="flex items-center justify-between mb-3">
-          <h4 className="font-bold text-text-primary flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: color }}></span>
-            {crewName}
-            <span className="text-xs text-text-muted font-mono">({route.task_count || taskWaypoints.length} tasks)</span>
-          </h4>
+          <div className="flex flex-col gap-2">
+            <h4 className="font-bold text-text-primary flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full" style={{ backgroundColor: color }}></span>
+              {crewName}
+              <span className="text-xs text-text-muted font-mono">({route.task_count || taskWaypoints.length} tasks)</span>
+            </h4>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs px-2 py-0.5 border font-bold font-mono tracking-wide ${badgeStyle}`}>
+                {badgeIcon} {dominantType} Route
+              </span>
+              <span className="text-[10px] font-mono text-text-muted uppercase tracking-wider">
+                ({scoutingCount} Scout, {cleanupCount} Clean, {mixedCount} Mix)
+              </span>
+            </div>
+          </div>
           <div className="flex gap-4 text-xs font-mono text-text-muted">
-            <span>📏 {formatDistance(route.total_distance_meters)}</span>
-            <span>⏱️ {formatDuration(route.total_duration_min)}</span>
+            <span className="flex items-center"><Ruler className="w-4 h-4 mr-1" /> {formatDistance(route.total_distance_meters)}</span>
+            <span className="flex items-center"><Timer className="w-4 h-4 mr-1" /> {formatDuration(route.total_duration_min)}</span>
           </div>
         </div>
 
@@ -622,10 +638,19 @@ function CrewRouteCard({ route, index, color }) {
                 >
                   {wp.sequence_order || wpIdx + 1}
                 </span>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 flex items-center gap-2">
                   <span className="text-text-primary truncate block">
                     Task #{wp.cleanup_task_id?.slice(0, 8)}...
                   </span>
+                  {wp.cleanup_tasks?.task_type && (
+                    <span className={`text-[10px] uppercase font-bold font-mono tracking-wider px-1.5 py-0.5 border ${
+                      wp.cleanup_tasks.task_type === 'Scouting' ? 'bg-info/10 text-info border-info/20' :
+                      wp.cleanup_tasks.task_type === 'Cleanup' ? 'bg-success/10 text-success border-success/20' :
+                      'bg-purple/10 text-purple border-purple/20'
+                    }`}>
+                      {wp.cleanup_tasks.task_type}
+                    </span>
+                  )}
                 </div>
                 <span className="text-xs text-text-muted font-mono whitespace-nowrap">
                   +{formatDistance(wp.distance_from_previous_meters)} | +{formatDuration(wp.estimated_time_from_previous_min)}

@@ -197,8 +197,8 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
   }, [filteredReports])
 
   // Filter states
-  const [showPins, setShowPins] = useState(true)
-  const [showClusters, setShowClusters] = useState(true)
+  const [showPins, setShowPins] = useState(!hidePins)
+  const [showClusters, setShowClusters] = useState(!hideClusters)
   const [showHeatmap, setShowHeatmap] = useState(false)
   const [statusFilter, setStatusFilter] = useState(initialStatus || 'all')
   

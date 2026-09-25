@@ -9,6 +9,8 @@ import { FieldCrewGuard } from '@/components/auth/RequireRole'
 import PageHeader from '@/components/layout/PageHeader'
 import RouteLayer from '@/components/map/RouteLayer'
 
+const MicroRouteLayer = dynamic(() => import('@/components/map/MicroRouteLayer'), { ssr: false })
+
 // Dynamically import the map to avoid SSR issues
 const EcoPinMap = dynamic(() => import('@/components/map/EcoPinMap'), {
   ssr: false,
@@ -197,6 +199,51 @@ export default function MyRoutePage() {
                             </span>
                           </div>
 
+                          {taskInfo?.reports && taskInfo.reports.length > 0 && (
+                            <div className="mb-4 mt-2 border-t-2 border-border pt-3">
+                              <h5 className="text-xs font-bold font-mono tracking-widest mb-2 text-text-muted">MICRO-ROUTE SEQUENCE</h5>
+                              <ul className="space-y-2">
+                                {(()=>{
+                                  let orderedReports = [...taskInfo.reports];
+                                  if (taskInfo.report_sequence && taskInfo.report_sequence.length > 0) {
+                                    orderedReports.sort((a, b) => {
+                                      let idxA = taskInfo.report_sequence.indexOf(a.id);
+                                      let idxB = taskInfo.report_sequence.indexOf(b.id);
+                                      if (idxA === -1) idxA = 999;
+                                      if (idxB === -1) idxB = 999;
+                                      return idxA - idxB;
+                                    });
+                                  }
+                                  return orderedReports.map((r, rIdx) => (
+                                    <li key={r.id} className="flex flex-col gap-1 text-xs mb-3">
+                                      <div className="flex gap-2 items-start">
+                                        <span className={`font-bold font-mono border px-1.5 py-0.5 rounded min-w-[24px] text-center shrink-0 ${
+                                          r.validation_status === 'pending' ? 'bg-info text-white border-info' : 'bg-success text-white border-success'
+                                        }`}>
+                                          {wp.sequence_order}.{rIdx + 1}
+                                        </span>
+                                        <span className={r.status === 'resolved' ? 'line-through text-text-muted flex-1' : 'text-text-primary uppercase flex-1 font-bold'}>
+                                          {r.issue_type?.replace(/_/g, ' ')}
+                                        </span>
+                                      </div>
+                                      <div className="ml-8 mt-1">
+                                        {r.validation_status === 'pending' ? (
+                                           <span className="inline-flex items-center gap-1 px-2 py-1 bg-info/10 text-info font-mono font-bold text-[10px] uppercase border border-info/30 rounded-sm">
+                                             🔍 Acknowledge & Validate
+                                           </span>
+                                        ) : (
+                                           <span className="inline-flex items-center gap-1 px-2 py-1 bg-success/10 text-success font-mono font-bold text-[10px] uppercase border border-success/30 rounded-sm">
+                                             🧹 Start Cleanup
+                                           </span>
+                                        )}
+                                      </div>
+                                    </li>
+                                  ))
+                                })()}
+                              </ul>
+                            </div>
+                          )}
+
                           <button 
                             className={`w-full py-2 px-4 rounded font-bold text-sm transition-all ${
                               isCompleted 
@@ -209,7 +256,11 @@ export default function MyRoutePage() {
                               }
                             }}
                           >
-                            {isCompleted ? 'COMPLETED' : inProgress ? 'RESUME TASK' : 'START TASK'}
+                            {isCompleted ? 'COMPLETED' : 
+                             inProgress ? 'RESUME TASK' : 
+                             taskInfo?.task_type === 'Scouting' ? '🔍 START VALIDATION' : 
+                             taskInfo?.task_type === 'Mixed' ? '🔄 START MIXED OPERATION' : 
+                             '🧹 START CLEANUP'}
                           </button>
                         </div>
                       </div>
@@ -231,6 +282,7 @@ export default function MyRoutePage() {
               showHeatmap={false}
             >
               <RouteLayer routes={routeLayerData} />
+              <MicroRouteLayer tasks={tasks} routeWaypoints={myRoute?.waypoints || []} />
             </EcoPinMap>
           </div>
         </div>
