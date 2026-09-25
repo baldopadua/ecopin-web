@@ -13,6 +13,7 @@ import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
+import { useUser } from '@/components/auth/UserContext'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
 
@@ -24,6 +25,7 @@ if (typeof window !== 'undefined' && !window.Buffer) {
 export default function ReportDetailPage() {
   const params = useParams()
   const router = useRouter()
+  const user = useUser()
   const reportId = params.id
 
   const [report, setReport] = useState(null)
@@ -59,6 +61,12 @@ export default function ReportDetailPage() {
       console.log('Data consent value:', reportData?.profiles?.data_consent)
       console.log('Evidence data:', evidenceData)
       if (reportData) {
+        // Access Control: Field crew cannot view incomplete raw reports
+        if (user?.role === 'field_crew' && reportData.lifecycle_stage !== 'completed') {
+          setError('Access Denied: Field crews can only view raw report details after the operation is complete. Please use the Operations workspace.')
+          return
+        }
+        
         setReport(reportData)
         setEvidence(evidenceData)
         setAgencyResponses([])

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
+import { getSystemSettings } from '@/lib/api'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL + '/api'
 
@@ -14,6 +15,14 @@ export default function ProfilePage() {
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
   const router = useRouter()
+
+  const [passwordSettings, setPasswordSettings] = useState({
+    password_min_length: 8,
+    password_require_uppercase: true,
+    password_require_lowercase: true,
+    password_require_numbers: true,
+    password_require_special_chars: true
+  })
 
   const [formData, setFormData] = useState({
     full_name: '',
@@ -66,11 +75,14 @@ export default function ProfilePage() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/profile`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
+      const [response, settings] = await Promise.all([
+        fetch(`${API_BASE_URL}/profile`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }),
+        getSystemSettings()
+      ])
 
       if (!response.ok) {
         throw new Error('Failed to load profile')
@@ -83,6 +95,9 @@ export default function ProfilePage() {
         avatar_url: data.profile.avatar_url || '',
         email: data.profile.email || ''
       })
+      if (settings) {
+        setPasswordSettings(settings)
+      }
     } catch (error) {
       console.error('Failed to load profile:', error)
       setError('Failed to load profile')
@@ -102,19 +117,23 @@ export default function ProfilePage() {
   }
 
   const validatePassword = (password) => {
-    const minLength = 8
-    const hasUpperCase = /[A-Z]/.test(password)
-    const hasLowerCase = /[a-z]/.test(password)
-    const hasNumbers = /\d/.test(password)
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password)
+    const minLength = passwordSettings.password_min_length || 8
 
-    const requirements = [
-      { met: password.length >= minLength, text: `At least ${minLength} characters long` },
-      { met: hasUpperCase, text: 'At least one uppercase letter' },
-      { met: hasLowerCase, text: 'At least one lowercase letter' },
-      { met: hasNumbers, text: 'At least one number' },
-      { met: hasSpecialChar, text: 'At least one special character' }
-    ]
+    const requirements = []
+    requirements.push({ met: password.length >= minLength, text: `At least ${minLength} characters long` })
+
+    if (passwordSettings.password_require_uppercase) {
+      requirements.push({ met: /[A-Z]/.test(password), text: 'At least one uppercase letter' })
+    }
+    if (passwordSettings.password_require_lowercase) {
+      requirements.push({ met: /[a-z]/.test(password), text: 'At least one lowercase letter' })
+    }
+    if (passwordSettings.password_require_numbers) {
+      requirements.push({ met: /\d/.test(password), text: 'At least one number' })
+    }
+    if (passwordSettings.password_require_special_chars) {
+      requirements.push({ met: /[!@#$%^&*(),.?":{}|<>]/.test(password), text: 'At least one special character' })
+    }
 
     const allMet = requirements.every(r => r.met)
     const metCount = requirements.filter(r => r.met).length
@@ -241,6 +260,13 @@ export default function ProfilePage() {
     const file = e.target.files[0]
     if (!file) return
 
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp']
+    if (!validTypes.includes(file.type) || file.size > 5 * 1024 * 1024) {
+      setError('JPEG, JPG, PNG, WEBP (Max 5MB)')
+      e.target.value = ''
+      return
+    }
+
     setUploadingAvatar(true)
     setError(null)
 
@@ -301,53 +327,39 @@ export default function ProfilePage() {
 
       <div className="space-y-6 max-w-3xl mx-auto">
         {/* Profile Card - Avatar + Name + Email */}
-        <div className="card p-6 mt-8">
+        <div className="bg-surface-elevated border-2 border-border rounded-none p-6 mt-8">
           <div className="flex items-center gap-6 mb-6">
             <div className="relative group flex-shrink-0">
-              {formData.avatar_url ? (
-                <img
-                  src={formData.avatar_url}
-                  alt="Avatar"
-                  className="w-20 h-20 rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-20 h-20 rounded-full bg-accent-green flex items-center justify-center text-white font-bold text-2xl">
-                  {formData.full_name?.[0]?.toUpperCase() || 'U'}
-                </div>
-              )}
-              {formData.avatar_url && (
-                <button
-                  onClick={handleRemoveAvatar}
-                  disabled={uploadingAvatar}
-                  className="absolute -top-1 -right-1 w-6 h-6 bg-error text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-error/80 disabled:opacity-50"
-                  title="Remove avatar"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <label htmlFor="avatar-upload" className="block relative cursor-pointer">
+                {formData.avatar_url ? (
+                  <img
+                    src={formData.avatar_url}
+                    alt="Avatar"
+                    className="w-20 h-20 rounded-none object-cover"
+                  />
+                ) : (
+                  <div className="w-20 h-20 rounded-none bg-accent-green flex items-center justify-center text-white font-bold text-2xl">
+                    {formData.full_name?.[0]?.toUpperCase() || 'U'}
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-none">
+                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                   </svg>
-                </button>
-              )}
+                </div>
+              </label>
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="text-xl font-bold text-text-primary truncate">{formData.full_name || 'User'}</h2>
               <p className="text-sm text-text-muted truncate">{formData.email || 'No email provided'}</p>
-              <div className="mt-3">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarUpload}
-                  disabled={uploadingAvatar}
-                  className="hidden"
-                  id="avatar-upload"
-                />
-                <label
-                  htmlFor="avatar-upload"
-                  className="btn-secondary cursor-pointer inline-block text-xs py-1.5 px-3"
-                >
-                  {uploadingAvatar ? 'Uploading...' : 'Change Avatar'}
-                </label>
-                <span className="text-xs text-text-muted ml-2">JPEG, JPG, PNG, WEBP (Max 5MB)</span>
-              </div>
+              <input
+                type="file"
+                accept="image/jpeg, image/png, image/webp"
+                onChange={handleAvatarUpload}
+                disabled={uploadingAvatar}
+                className="hidden"
+                id="avatar-upload"
+              />
             </div>
           </div>
 
@@ -381,7 +393,7 @@ export default function ProfilePage() {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="btn-primary"
+              className="btn-primary shadow-none hover:shadow-none hover:translate-x-0 hover:translate-y-0"
             >
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
@@ -389,7 +401,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Password Card */}
-        <div className="card p-6">
+        <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-text-primary">Password</h2>
             <button
@@ -430,7 +442,7 @@ export default function ProfilePage() {
                 {passwordData.new_password && (
                   <div className="mt-2">
                     <div className="flex gap-1 mb-2">
-                      {[1, 2, 3, 4, 5].map((i) => (
+                      {Array.from({ length: validatePassword(passwordData.new_password).requirements.length }, (_, i) => i + 1).map((i) => (
                         <div
                           key={i}
                           className={`h-1 flex-1 rounded ${
@@ -500,7 +512,7 @@ export default function ProfilePage() {
 
         {/* Appearance + Logout Row */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="card p-4">
+          <div className="bg-surface-elevated border-2 border-border rounded-none p-4">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-sm font-semibold text-text-primary">Dark Mode</h2>
@@ -508,18 +520,18 @@ export default function ProfilePage() {
               </div>
               <button
                 onClick={() => toggleTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="relative w-12 h-6 rounded-full transition-colors duration-300 cursor-pointer"
+                className="relative w-12 h-6 rounded-none transition-colors duration-300 cursor-pointer"
                 style={{ backgroundColor: theme === 'dark' ? 'var(--primary)' : '#9CA3AF' }}
               >
                 <div
-                  className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-300"
+                  className="absolute top-0.5 w-5 h-5 bg-white rounded-none shadow-none transition-transform duration-300"
                   style={{ transform: theme === 'dark' ? 'translateX(26px)' : 'translateX(2px)' }}
                 />
               </button>
             </div>
           </div>
 
-          <div className="card p-4">
+          <div className="bg-surface-elevated border-2 border-border rounded-none p-4">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-sm font-semibold text-text-primary">Log Out</h2>
@@ -527,7 +539,7 @@ export default function ProfilePage() {
               </div>
               <button
                 onClick={() => setShowLogoutModal(true)}
-                className="px-4 py-1.5 bg-error/10 text-error border border-error/30 rounded-lg hover:bg-error/20 font-medium text-sm transition-colors cursor-pointer"
+                className="px-4 py-1.5 bg-error/10 text-error border-2 border-error/30 rounded-none hover:bg-error/20 font-medium text-sm transition-colors cursor-pointer"
               >
                 Log Out
               </button>
@@ -539,19 +551,19 @@ export default function ProfilePage() {
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-surface-elevated border border-border rounded-2xl shadow-xl p-6 w-full max-w-sm mx-4">
+          <div className="bg-surface-elevated border-2 border-border rounded-none shadow-none p-6 w-full max-w-sm mx-4">
             <h3 className="text-lg font-bold text-text-primary mb-2">Log Out</h3>
             <p className="text-sm text-text-muted mb-6">Are you sure you want to log out of your account?</p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowLogoutModal(false)}
-                className="flex-1 px-4 py-2 border border-border rounded-lg text-text-primary hover:bg-surface-elevated font-medium transition-colors"
+                className="flex-1 px-4 py-2 border-2 border-border rounded-none text-text-primary hover:bg-surface-elevated font-medium transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleLogout}
-                className="flex-1 px-4 py-2 bg-error text-white rounded-lg hover:bg-error/80 font-medium transition-colors"
+                className="flex-1 px-4 py-2 bg-error text-white rounded-none hover:bg-error/80 font-medium transition-colors"
               >
                 Log Out
               </button>

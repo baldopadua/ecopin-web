@@ -154,11 +154,11 @@ export default function ReportsPage() {
   return (
     <div className="p-8">
       <PageHeader 
-        title="Reports"
+        title="Raw Data"
         subtitle="View and manage environmental reports"
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Reports' }
+          { label: 'Raw Data' }
         ]}
       />
 

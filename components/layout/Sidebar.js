@@ -4,20 +4,23 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useUser } from '../auth/UserContext'
 import { OfficerGuard, FieldCrewGuard } from '../auth/RequireRole'
-import { 
-    LayoutDashboard, 
-    Map, 
-    Target, 
-    Wrench, 
-    Database, 
-    Terminal, 
-    Activity, 
-    Scan, 
-    Users, 
-    Settings, 
+import { useTask } from '../context/TaskContext'
+import {
+    LayoutDashboard,
+    Map,
+    Target,
+    Wrench,
+    Database,
+    Terminal,
+    Activity,
+    Scan,
+    Users,
+    Settings,
     ScrollText,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    Route,
+    CloudLightning
 } from 'lucide-react'
 
 const citizenNavigation = [
@@ -30,7 +33,7 @@ const officerNavigation = [
     { name: 'Command Center', href: '/dashboard/officer', icon: LayoutDashboard },
     { name: 'Map Grid', href: '/dashboard/map-grid', icon: Map },
     { name: 'Hotzone Intel', href: '/dashboard/officer/hotzone-intel', icon: Target },
-    { name: 'Operations', href: '/dashboard/officer/operations', icon: Wrench },
+    { name: 'Optimization', href: '/dashboard/officer/optimization', icon: CloudLightning },
     { name: 'Raw Data', href: '/dashboard/raw-data', icon: Database },
     { name: 'Sys Logs', href: '/dashboard/officer/sys-logs', icon: Terminal },
     { name: 'Metrics', href: '/dashboard/officer/metrics', icon: Activity },
@@ -38,6 +41,7 @@ const officerNavigation = [
 ]
 
 const fieldCrewNavigation = [
+    { name: 'My Route', href: '/dashboard/field-crew/my-route', icon: Route },
     { name: 'Command Center', href: '/dashboard/field-crew', icon: LayoutDashboard },
     { name: 'Map Grid', href: '/dashboard/map-grid', icon: Map },
     { name: 'Operations', href: '/dashboard/field-crew/tasks', icon: Wrench },
@@ -48,6 +52,7 @@ const adminNavigation = [
     { name: 'Command Center', href: '/dashboard/admin', icon: LayoutDashboard },
     { name: 'Users', href: '/dashboard/admin/users', icon: Users },
     { name: 'System', href: '/dashboard/admin/settings', icon: Settings },
+    { name: 'Optimization', href: '/dashboard/admin/optimization-settings', icon: Route },
     { name: 'Audit Logs', href: '/dashboard/admin/audit-logs', icon: ScrollText },
     { name: 'Spatial Scan', href: '/dashboard/spatial-scan', icon: Scan },
 ]
@@ -55,6 +60,7 @@ const adminNavigation = [
 export default function Sidebar() {
     const pathname = usePathname()
     const user = useUser()
+    const { isOptimizing } = useTask()
     const [isCollapsed, setIsCollapsed] = useState(false)
 
     const renderNavItems = (navigation) => {
@@ -71,9 +77,14 @@ export default function Sidebar() {
                         } ${isCollapsed ? 'justify-center px-2' : ''}`}
                     title={isCollapsed ? item.name : undefined}
                 >
-                    {Icon && (
+                    {Icon && item.name === 'Optimization' && isOptimizing ? (
+                        <svg className="animate-spin w-5 h-5 min-w-[20px] min-h-[20px] text-accent-green" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                    ) : Icon ? (
                         <Icon className={`w-5 h-5 min-w-[20px] min-h-[20px] ${isActive ? 'stroke-[2.5px]' : 'stroke-2'}`} />
-                    )}
+                    ) : null}
                     {!isCollapsed && <span className="whitespace-nowrap">{item.name}</span>}
                 </Link>
             );
@@ -90,7 +101,7 @@ export default function Sidebar() {
                         ECOPIN<span className="text-[#3300FF]">.AI</span>
                     </Link>
                 )}
-                <button 
+                <button
                     onClick={() => setIsCollapsed(!isCollapsed)}
                     className="p-1.5 border-2 border-transparent hover:border-border hover:bg-surface-elevated text-text-secondary transition-colors rounded"
                     title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}

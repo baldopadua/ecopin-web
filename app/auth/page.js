@@ -42,6 +42,7 @@ export default function AuthPage() {
 
       if (data.token) {
         localStorage.setItem('authToken', data.token);
+        localStorage.setItem('lastActivity', Date.now().toString());
       }
 
       console.log('Authentication successful:', data);
@@ -157,9 +158,10 @@ export default function AuthPage() {
           </div>
 
           <div className="space-y-6" suppressHydrationWarning>
-            <div suppressHydrationWarning>
+            <div>
               <label className="block font-mono text-sm font-bold text-black dark:text-[#ccff00] mb-2 uppercase">Email Address</label>
               <input
+                suppressHydrationWarning
                 ref={emailRef}
                 type="email"
                 placeholder="YOU@PASIGCITY.GOV.PH"
@@ -171,8 +173,9 @@ export default function AuthPage() {
             </div>
             <div>
               <label className="block font-mono text-sm font-bold text-black dark:text-[#ccff00] mb-2 uppercase">Password</label>
-              <div className="relative" suppressHydrationWarning>
+              <div className="relative">
                 <input
+                  suppressHydrationWarning
                   ref={passwordRef}
                   type={showPassword ? 'text' : 'password'}
                   placeholder="ENTER PASSWORD"

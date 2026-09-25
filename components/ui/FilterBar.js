@@ -1,6 +1,8 @@
 'use client'
 import FilterDropdown from './FilterDropdown'
 import DateRangePicker from './DateRangePicker'
+import Input from './Input'
+import Button from './Button'
 
 /**
  * Universal Filter Bar component for consistent filter/search UI
@@ -24,17 +26,16 @@ export default function FilterBar({
     (showDateRange && (dateRange.start || dateRange.end))
 
   return (
-    <div className={`bg-surface-elevated border-2 border-border rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] p-4 mb-6 ${sticky ? 'sticky top-[120px] z-10 border-l-8 border-l-[var(--accent-green)]' : ''} ${className}`}>
+    <div className={`bg-surface-elevated border-2 border-border rounded-none p-4 mb-6 ${sticky ? 'sticky top-[120px] z-10' : ''} ${className}`}>
       <div className="flex flex-wrap items-center gap-4">
         {/* Search Input */}
         {onSearchChange && (
           <div className="flex-1 min-w-[200px]">
-            <input
+            <Input
               type="text"
               placeholder={searchPlaceholder}
               value={searchValue}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="input"
             />
           </div>
         )}
@@ -61,12 +62,13 @@ export default function FilterBar({
 
         {/* Reset Button */}
         {onReset && hasActiveFilters && (
-          <button
+          <Button
             onClick={onReset}
-            className="btn-secondary whitespace-nowrap cursor-pointer"
+            variant="secondary"
+            className="whitespace-nowrap"
           >
             Reset Filters
-          </button>
+          </Button>
         )}
 
         {/* Results Count */}

@@ -1,12 +1,17 @@
 'use client'
 import React, { useEffect, useState, useRef } from 'react'
+import { ArrowLeft, Eye, Camera, Upload, ChevronRight } from 'lucide-react'
 import { useRouter, useParams } from 'next/navigation'
-import { fetchCleanupTaskById, uploadCleanupPhoto, markCleanupTaskComplete, fetchReportsByClusterId, batchCompleteReportsByCluster, updateReportStatus, fetchReportsByIds, updateReportValidation, fetchReportEvidence, updateLifecycleStage, logAgencyResponse, fetchAgencyResponses, fetchAvailableCrew } from '@/lib/api'
+import { fetchCleanupTaskById, uploadCleanupPhoto, markCleanupTaskComplete, fetchReportsByClusterId, batchCompleteReportsByCluster, updateReportStatus, fetchReportsByIds, updateReportValidation, fetchReportEvidence, updateLifecycleStage, logAgencyResponse, fetchAgencyResponses, fetchAvailableCrew, updateReportDetails } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
 import Notification from '@/components/ui/Notification'
 import { FieldCrewGuard } from '@/components/auth/RequireRole'
+import { useUser } from '@/components/auth/UserContext'
+import PhotoGalleryCard from '@/components/ui/PhotoGalleryCard'
+import EcoPinMap from '@/components/map/EcoPinMap'
+import MicroRouteLayer from '@/components/map/MicroRouteLayer'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
 
@@ -79,9 +84,16 @@ export default function FieldCrewCleanupTaskDetailPage() {
   const [agencyResponses, setAgencyResponses] = useState([])
   const [availableCrew, setAvailableCrew] = useState([])
   const [isAssigned, setIsAssigned] = useState(false)
+  
+  // Edit Report Details State
+  const [isEditingDetails, setIsEditingDetails] = useState(false)
+  const [updatingDetails, setUpdatingDetails] = useState(false)
+  const [editFormData, setEditFormData] = useState({})
+  
   const router = useRouter()
   const params = useParams()
   const taskId = params.id
+  const user = useUser()
 
   useEffect(() => {
     const loadTask = async () => {
@@ -89,7 +101,6 @@ export default function FieldCrewCleanupTaskDetailPage() {
         const data = await fetchCleanupTaskById(taskId)
         
         // Check if current user is assigned to this task
-        const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : null
         const assigned = data.assigned_crew_ids && data.assigned_crew_ids.length > 0 && user?.id && data.assigned_crew_ids.includes(user.id)
         setIsAssigned(assigned)
         
@@ -116,7 +127,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
       }
     }
     loadTask()
-  }, [taskId])
+  }, [taskId, user?.id])
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -139,6 +150,34 @@ export default function FieldCrewCleanupTaskDetailPage() {
     }
     loadAvailableCrew()
   }, [])
+
+  const handleSaveDetails = async (reportId) => {
+    if (!isAssigned) {
+      setNotification({ message: 'You are not assigned to this task', type: 'error' })
+      return
+    }
+
+    setUpdatingDetails(true)
+    try {
+      await updateReportDetails(reportId, editFormData)
+      
+      // Refresh reports
+      let reportsData = []
+      if (task.is_custom && task.report_ids) {
+        reportsData = await fetchReportsByIds(task.report_ids)
+      } else if (task.cluster_id) {
+        reportsData = await fetchReportsByClusterId(task.cluster_id)
+      }
+      setReports(reportsData)
+      setIsEditingDetails(false)
+      setNotification({ message: 'Report details updated successfully', type: 'success' })
+    } catch (error) {
+      console.error('Failed to update details:', error)
+      setNotification({ message: 'Failed to update report details. Please try again.', type: 'error' })
+    } finally {
+      setUpdatingDetails(false)
+    }
+  }
 
   const handleMarkComplete = async () => {
     if (!isAssigned) {
@@ -232,12 +271,6 @@ export default function FieldCrewCleanupTaskDetailPage() {
   const handleMarkReportComplete = async (reportId) => {
     const report = reports.find(r => r.id === reportId)
     
-    // Check if the report is validated
-    if (report.validation_status !== 'validated') {
-      setNotification({ message: 'Please validate this report before marking it as complete.', type: 'warning' })
-      return
-    }
-    
     // Check if the report has both before and after photos
     if (!report.before_photo_url || !report.after_photo_url) {
       setNotification({ message: 'Please upload both before and after photos for this report before marking it as complete.', type: 'warning' })
@@ -260,16 +293,36 @@ export default function FieldCrewCleanupTaskDetailPage() {
       if (viewMode === 'detail' && selectedReportId) {
         const reportStillExists = reportsData.find(r => r.id === selectedReportId)
         if (!reportStillExists) {
-          // Report no longer exists, go back to table view
           setViewMode('table')
           setSelectedReportId(null)
         }
       }
       
-      setNotification({ message: 'Report marked as complete!', type: 'success' })
+      setNotification({ message: 'Cleanup completed successfully! Waiting for citizen to close.', type: 'success' })
     } catch (error) {
       console.error('Failed to mark report complete:', error)
       setNotification({ message: 'Failed to mark report complete. Please try again.', type: 'error' })
+    } finally {
+      setCompletingReportId(null)
+    }
+  }
+
+  const handleUpdateStatus = async (reportId, newStatus) => {
+    setCompletingReportId(reportId)
+    try {
+      await updateReportStatus(reportId, newStatus)
+      // Refresh reports
+      let reportsData = []
+      if (task.is_custom && task.report_ids) {
+        reportsData = await fetchReportsByIds(task.report_ids)
+      } else if (task.cluster_id) {
+        reportsData = await fetchReportsByClusterId(task.cluster_id)
+      }
+      setReports(reportsData)
+      setNotification({ message: `Report marked as ${newStatus}!`, type: 'success' })
+    } catch (error) {
+      console.error('Failed to update status:', error)
+      setNotification({ message: 'Failed to update status. Please try again.', type: 'error' })
     } finally {
       setCompletingReportId(null)
     }
@@ -623,39 +676,6 @@ export default function FieldCrewCleanupTaskDetailPage() {
     }
   }
 
-  const getPhotosByType = (type) => {
-    const photos = []
-    if (type === 'before' && task.before_photo_url) {
-      photos.push({ url: task.before_photo_url, label: 'Task Before' })
-    }
-    if (type === 'after' && task.after_photo_url) {
-      photos.push({ url: task.after_photo_url, label: 'Task After' })
-    }
-    reports.forEach(report => {
-      if (type === 'before' && report.before_photo_url) {
-        photos.push({ url: report.before_photo_url, label: `Report ${report.id} Before` })
-      }
-      if (type === 'after' && report.after_photo_url) {
-        photos.push({ url: report.after_photo_url, label: `Report ${report.id} After` })
-      }
-    })
-    return photos
-  }
-
-  const handleNextPhoto = () => {
-    if (!lightboxImage) return
-    const photos = getPhotosByType(lightboxImage.type)
-    const nextIndex = (lightboxImage.index + 1) % photos.length
-    setLightboxImage({ ...lightboxImage, url: photos[nextIndex].url, index: nextIndex })
-  }
-
-  const handlePreviousPhoto = () => {
-    if (!lightboxImage) return
-    const photos = getPhotosByType(lightboxImage.type)
-    const prevIndex = (lightboxImage.index - 1 + photos.length) % photos.length
-    setLightboxImage({ ...lightboxImage, url: photos[prevIndex].url, index: prevIndex })
-  }
-
   const getReportCardColor = (status) => {
     switch (status) {
       case 'resolved':
@@ -674,30 +694,33 @@ export default function FieldCrewCleanupTaskDetailPage() {
         <SkeletonLine className="h-5 w-64" />
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-3">
-            <div className="space-y-0">
+            <div className="card no-hover">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-border">
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Title</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Issue Type</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Description</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Status</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Lifecycle</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Validation</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Actions</th>
+                      <th className="text-left py-3 px-4"><SkeletonLine className="h-4 w-12" /></th>
+                      <th className="text-left py-3 px-4"><SkeletonLine className="h-4 w-16" /></th>
+                      <th className="text-left py-3 px-4"><SkeletonLine className="h-4 w-24" /></th>
+                      <th className="text-left py-3 px-4"><SkeletonLine className="h-4 w-16" /></th>
+                      <th className="text-left py-3 px-4"><SkeletonLine className="h-4 w-20" /></th>
+                      <th className="text-left py-3 px-4"><SkeletonLine className="h-4 w-16" /></th>
+                      <th className="text-left py-3 px-4"><SkeletonLine className="h-4 w-12" /></th>
                     </tr>
                   </thead>
                   <tbody>
                     {[1, 2, 3, 4, 5].map((i) => (
                       <tr key={i} className="border-b border-border">
-                        <td className="py-3 px-4"><SkeletonLine className="h-4 w-28" /></td>
-                        <td className="py-3 px-4"><SkeletonLine className="h-4 w-20" /></td>
-                        <td className="py-3 px-4"><SkeletonLine className="h-4 w-36" /></td>
-                        <td className="py-3 px-4"><SkeletonLine className="h-5 w-20" /></td>
-                        <td className="py-3 px-4"><SkeletonLine className="h-5 w-20" /></td>
-                        <td className="py-3 px-4"><SkeletonLine className="h-5 w-24" /></td>
-                        <td className="py-3 px-4"><SkeletonLine className="h-6 w-16" /></td>
+                        <td className="py-4 px-4"><SkeletonLine className="h-4 w-32" /></td>
+                        <td className="py-4 px-4"><SkeletonLine className="h-4 w-24" /></td>
+                        <td className="py-4 px-4">
+                          <SkeletonLine className="h-4 w-full max-w-[200px] mb-2" />
+                          <SkeletonLine className="h-4 w-3/4 max-w-[150px]" />
+                        </td>
+                        <td className="py-4 px-4"><SkeletonLine className="h-6 w-20 rounded-full" /></td>
+                        <td className="py-4 px-4"><SkeletonLine className="h-6 w-24 rounded-full" /></td>
+                        <td className="py-4 px-4"><SkeletonLine className="h-6 w-24 rounded-full" /></td>
+                        <td className="py-4 px-4"><SkeletonLine className="h-8 w-24 rounded" /></td>
                       </tr>
                     ))}
                   </tbody>
@@ -705,7 +728,8 @@ export default function FieldCrewCleanupTaskDetailPage() {
               </div>
             </div>
           </div>
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 space-y-6">
+            <SkeletonCard />
             <SkeletonCard />
           </div>
         </div>
@@ -719,6 +743,9 @@ export default function FieldCrewCleanupTaskDetailPage() {
     return loc.latitude && loc.longitude;
   });
 
+  const mapCenterLat = firstReport ? parseLocation(firstReport.location, firstReport.latitude, firstReport.longitude).latitude : 14.5995
+  const mapCenterLng = firstReport ? parseLocation(firstReport.location, firstReport.latitude, firstReport.longitude).longitude : 120.9842
+
   return (
     <FieldCrewGuard>
       <div className="p-8">
@@ -727,7 +754,8 @@ export default function FieldCrewCleanupTaskDetailPage() {
           subtitle={task.title}
           breadcrumbs={[
             { label: 'Dashboard', href: '/dashboard/field-crew' },
-            { label: 'Cleanup Tasks', href: '/dashboard/field-crew/tasks' },
+            { label: 'My Route', href: '/dashboard/field-crew/my-route' },
+            { label: 'Operations', href: '/dashboard/field-crew/operations' },
             { label: `Task #${task.id}` }
           ]}
         />
@@ -752,34 +780,34 @@ export default function FieldCrewCleanupTaskDetailPage() {
                     <tbody>
                       {reports.map((report) => (
                         <tr key={report.id} className={`border-b border-border hover:bg-surface-elevated ${getReportCardColor(report.status)}`}>
-                          <td className="py-3 px-4">
+                          <td className="py-3 px-4 min-w-[150px]">
                             <span className="font-medium text-text-primary">{report.title}</span>
                           </td>
-                          <td className="py-3 px-4">
+                          <td className="py-3 px-4 min-w-[120px]">
                             <span className="text-sm text-text-secondary">{report.issue_type}</span>
                           </td>
                           <td className="py-3 px-4">
                             <span className="text-sm text-text-muted line-clamp-2 max-w-xs">{report.description || 'N/A'}</span>
                           </td>
-                          <td className="py-3 px-4">
+                          <td className="py-3 px-4 min-w-[200px]">
                             <StatusBadge status={report.status} type="report" />
                           </td>
-                          <td className="py-3 px-4">
+                          <td className="py-3 px-4 min-w-[150px]">
                             {report.stage ? (
                               <StatusBadge status={report.stage} type="lifecycle" />
                             ) : (
                               <span className="text-xs text-text-muted">N/A</span>
                             )}
                           </td>
-                          <td className="py-3 px-4">
+                          <td className="py-3 px-4 min-w-[150px]">
                             <StatusBadge status={report.validation_status} type="validation" />
                           </td>
-                          <td className="py-3 px-4">
+                          <td className="py-3 px-4 min-w-[140px]">
                             <button
                               onClick={() => handleViewReportDetail(report.id)}
-                              className="px-3 py-1 btn-secondary text-xs rounded"
+                              className="px-4 py-2 btn-secondary text-sm rounded-lg flex items-center justify-center gap-2 whitespace-nowrap"
                             >
-                              View Detail
+                              <Eye className="w-4 h-4" /> View Detail
                             </button>
                           </td>
                         </tr>
@@ -791,61 +819,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
 
               {/* Cleanup Task Photo Gallery - Only show in table view */}
               {viewMode === 'table' && (
-                <div className="card mt-6">
-                  <h2 className="text-xl font-bold text-text-primary mb-4">Photo Gallery</h2>
-                  
-                  {/* Before Photos Section */}
-                  <div className="mb-6">
-                    <h3 className="font-medium mb-3 text-text-muted">Before Photos</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {task.before_photo_url && (
-                        <div className="relative cursor-pointer" onClick={() => setLightboxImage({ url: task.before_photo_url, type: 'before', index: 0 })}>
-                          <img src={task.before_photo_url} alt="Before cleanup" className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity" />
-                          <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">Task Before</span>
-                        </div>
-                      )}
-                      {reports.filter(r => r.before_photo_url).map((report, idx) => (
-                        <div 
-                          key={`${report.id}-before`} 
-                          className="relative cursor-pointer"
-                          onClick={() => setLightboxImage({ url: report.before_photo_url, type: 'before', index: (task.before_photo_url ? 1 : 0) + idx })}
-                        >
-                          <img src={report.before_photo_url} alt={`Report ${report.title} Before`} className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity" />
-                          <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded truncate max-w-[90%]">{report.title}</span>
-                        </div>
-                      ))}
-                    </div>
-                    {(!task.before_photo_url && !reports.some(r => r.before_photo_url)) && (
-                      <p className="text-text-muted text-sm">No before photos uploaded yet</p>
-                    )}
-                  </div>
-
-                  {/* After Photos Section */}
-                  <div>
-                    <h3 className="font-medium mb-3 text-text-muted">After Photos</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {task.after_photo_url && (
-                        <div className="relative cursor-pointer" onClick={() => setLightboxImage({ url: task.after_photo_url, type: 'after', index: 0 })}>
-                          <img src={task.after_photo_url} alt="After cleanup" className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity" />
-                          <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">Task After</span>
-                        </div>
-                      )}
-                      {reports.filter(r => r.after_photo_url).map((report, idx) => (
-                        <div 
-                          key={`${report.id}-after`} 
-                          className="relative cursor-pointer"
-                          onClick={() => setLightboxImage({ url: report.after_photo_url, type: 'after', index: (task.after_photo_url ? 1 : 0) + idx })}
-                        >
-                          <img src={report.after_photo_url} alt={`Report ${report.title} After`} className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity" />
-                          <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded truncate max-w-[90%]">{report.title}</span>
-                        </div>
-                      ))}
-                    </div>
-                    {(!task.after_photo_url && !reports.some(r => r.after_photo_url)) && (
-                      <p className="text-text-muted text-sm">No after photos uploaded yet</p>
-                    )}
-                        </div>
-                      </div>
+                <PhotoGalleryCard task={task} reports={reports} />
               )}
 
               {/* Report Detail View */}
@@ -906,7 +880,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
                         </div>
                       </div>
                       <div className="flex items-center justify-center gap-0 px-4 relative">
-                        <div className="absolute top-3 left-3 right-3 h-1 bg-border -z-10" />
+                        <div className="absolute top-3 left-3 right-3 h-1 bg-border z-0" />
                         {(() => {
                           const stages = ['submitted', 'acknowledged', 'responded', 'resolved']
                           const currentIndex = stages.indexOf(report.stage)
@@ -919,7 +893,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
                           }
                           return (
                             <div
-                              className="absolute top-3 left-3 h-1 bg-[var(--accent-green)] -z-10 transition-all"
+                              className="absolute top-3 left-3 h-1 bg-[var(--accent-green)] z-0 transition-all"
                               style={{ width: lineWidthCalc }}
                             />
                           )
@@ -941,77 +915,216 @@ export default function FieldCrewCleanupTaskDetailPage() {
                       </div>
                     </div>
 
-                    {/* Report Title & Description */}
+                    {/* Editable Report Details */}
                     <div className="card">
-                      <h2 className="text-2xl font-bold text-text-primary">{report.title}</h2>
-                      <p className="text-text-muted mt-2">{report.description}</p>
-                    </div>
+                      {/* Action Intent Banner */}
+                      <div className={`mb-6 p-4 border-2 rounded-lg flex items-center justify-center gap-3 ${
+                        report.validation_status === 'pending'
+                          ? 'bg-info/10 text-info border-info/30'
+                          : 'bg-success/10 text-success border-success/30'
+                      }`}>
+                        <span className="text-2xl">{report.validation_status === 'pending' ? '🔍' : '🧹'}</span>
+                        <div>
+                          <h3 className="font-bold text-lg font-mono uppercase tracking-wider">
+                            ACTION REQUIRED: {report.validation_status === 'pending' ? 'VALIDATE ONLY' : 'FULL CLEANUP'}
+                          </h3>
+                          <p className="text-sm opacity-90">
+                            {report.validation_status === 'pending'
+                              ? 'This report is unverified. Provide a verification photo to acknowledge it.'
+                              : 'This report is verified. Provide before & after photos to document cleanup.'}
+                          </p>
+                        </div>
+                      </div>
 
-                    {/* Report Details */}
-                    <div className="card">
-                      <h2 className="text-xl font-bold text-text-primary mb-4">Report Details</h2>
-                      <div className="space-y-3">
-                        <div>
-                          <p className="text-xs text-text-muted">Report ID</p>
-                          <p className="text-text-primary font-medium text-sm">{report.id}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-text-muted">Location</p>
-                          <p className="text-text-primary font-medium text-sm">
-                            {report.latitude && report.longitude
-                              ? `${report.latitude.toFixed(6)}, ${report.longitude.toFixed(6)}`
-                              : 'Not available'
-                            }
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-text-muted">Submitted</p>
-                          <p className="text-text-primary font-medium text-sm">
-                            {new Date(report.created_at).toLocaleString('en-US', {
-                              month: 'long',
-                              day: 'numeric',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-text-muted">Last Updated</p>
-                          <p className="text-text-primary font-medium text-sm">
-                            {new Date(report.updated_at).toLocaleString('en-US', {
-                              month: 'long',
-                              day: 'numeric',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </p>
-                        </div>
-                        <div className="pt-3 border-t border-border">
-                          <p className="text-xs text-text-muted mb-2">Reporter Information</p>
-                          <div className="space-y-2">
+                      <div className="flex justify-between items-start mb-4">
+                        <h2 className="text-xl font-bold text-text-primary">Report Details</h2>
+                        {isAssigned && !isEditingDetails && (
+                          <button
+                            onClick={() => setIsEditingDetails(true)}
+                            className="px-3 py-1 bg-surface-elevated border border-border text-xs rounded hover:bg-border transition-colors"
+                          >
+                            Edit Details
+                          </button>
+                        )}
+                        {isEditingDetails && (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleSaveDetails(report.id)}
+                              disabled={updatingDetails}
+                              className="px-3 py-1 bg-accent-green text-white text-xs rounded hover:bg-accent-green-dark transition-colors disabled:opacity-50"
+                            >
+                              {updatingDetails ? 'Saving...' : 'Save'}
+                            </button>
+                            <button
+                              onClick={() => setIsEditingDetails(false)}
+                              disabled={updatingDetails}
+                              className="px-3 py-1 bg-surface-elevated border border-border text-xs rounded hover:bg-border transition-colors disabled:opacity-50"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {isEditingDetails ? (
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-xs font-medium text-text-muted mb-1">Description</label>
+                            <textarea
+                              value={editFormData.description}
+                              onChange={(e) => setEditFormData({...editFormData, description: e.target.value})}
+                              className="w-full p-2 border border-border rounded bg-surface-elevated text-sm"
+                              rows={3}
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <p className="text-xs text-text-muted">Name</p>
-                              <p className="text-text-primary font-medium text-sm">
-                                {report.profiles?.data_consent === true
-                                  ? (report.profiles?.full_name || report.user_full_name || 'Anonymous')
-                                  : 'Information not disclosed'
-                                }
-                              </p>
+                              <label className="block text-xs font-medium text-text-muted mb-1">Issue Type</label>
+                              <select
+                                value={editFormData.issue_type}
+                                onChange={(e) => setEditFormData({...editFormData, issue_type: e.target.value})}
+                                className="w-full p-2 border border-border rounded bg-surface-elevated text-sm"
+                              >
+                                <option value="waste">Waste</option>
+                                <option value="flooding">Flooding</option>
+                                <option value="pollution">Pollution</option>
+                                <option value="infrastructure">Infrastructure</option>
+                              </select>
                             </div>
                             <div>
-                              <p className="text-xs text-text-muted">User ID</p>
-                              <p className="text-text-primary font-medium text-sm">
-                                {report.profiles?.data_consent === true
-                                  ? (report.user_id || 'N/A')
-                                  : 'Information not disclosed'
-                                }
-                              </p>
+                              <label className="block text-xs font-medium text-text-muted mb-1">Severity</label>
+                              <select
+                                value={editFormData.severity}
+                                onChange={(e) => setEditFormData({...editFormData, severity: e.target.value})}
+                                className="w-full p-2 border border-border rounded bg-surface-elevated text-sm"
+                              >
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                                <option value="critical">Critical</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-text-muted mb-1">Street</label>
+                              <input
+                                type="text"
+                                value={editFormData.street}
+                                onChange={(e) => setEditFormData({...editFormData, street: e.target.value})}
+                                className="w-full p-2 border border-border rounded bg-surface-elevated text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-text-muted mb-1">Landmark</label>
+                              <input
+                                type="text"
+                                value={editFormData.landmark}
+                                onChange={(e) => setEditFormData({...editFormData, landmark: e.target.value})}
+                                className="w-full p-2 border border-border rounded bg-surface-elevated text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-text-muted mb-1">District</label>
+                              <input
+                                type="text"
+                                value={editFormData.district}
+                                onChange={(e) => setEditFormData({...editFormData, district: e.target.value})}
+                                className="w-full p-2 border border-border rounded bg-surface-elevated text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-text-muted mb-1">City</label>
+                              <input
+                                type="text"
+                                value={editFormData.city}
+                                onChange={(e) => setEditFormData({...editFormData, city: e.target.value})}
+                                className="w-full p-2 border border-border rounded bg-surface-elevated text-sm"
+                              />
                             </div>
                           </div>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="space-y-4">
+                          <div>
+                            <h2 className="text-2xl font-bold text-text-primary">{report.title}</h2>
+                            <p className="text-text-muted mt-2">{report.description || 'No description provided.'}</p>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-4 border-t border-border">
+                            <div>
+                              <p className="text-xs text-text-muted">Issue Type</p>
+                              <p className="text-text-primary font-medium text-sm capitalize">{report.issue_type?.replace(/_/g, ' ') || 'Unknown'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-text-muted">Severity</p>
+                              <p className="text-text-primary font-medium text-sm capitalize">{report.severity || 'Unknown'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-text-muted">Coordinates</p>
+                              <p className="text-text-primary font-medium text-sm">
+                                {report.latitude && report.longitude
+                                  ? `${report.latitude.toFixed(6)}, ${report.longitude.toFixed(6)}`
+                                  : 'Not available'
+                                }
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-text-muted">Street</p>
+                              <p className="text-text-primary font-medium text-sm">{report.street || 'N/A'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-text-muted">Landmark</p>
+                              <p className="text-text-primary font-medium text-sm">{report.landmark || 'N/A'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-text-muted">Location</p>
+                              <p className="text-text-primary font-medium text-sm">{report.district ? `${report.district}, ` : ''}{report.city || 'N/A'}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
+                            <div>
+                              <p className="text-xs text-text-muted">Submitted</p>
+                              <p className="text-text-primary font-medium text-sm">
+                                {new Date(report.created_at).toLocaleString('en-US', {
+                                  month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-text-muted">Last Updated</p>
+                              <p className="text-text-primary font-medium text-sm">
+                                {new Date(report.updated_at).toLocaleString('en-US', {
+                                  month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="pt-4 border-t border-border">
+                            <p className="text-xs text-text-muted mb-2">Reporter Information</p>
+                            <div className="flex justify-between">
+                              <div>
+                                <p className="text-xs text-text-muted">Name</p>
+                                <p className="text-text-primary font-medium text-sm">
+                                  {report.profiles?.data_consent === true
+                                    ? (report.profiles?.full_name || report.user_full_name || 'Anonymous')
+                                    : 'Information not disclosed'
+                                  }
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-text-muted">User ID</p>
+                                <p className="text-text-primary font-medium text-sm">
+                                  {report.profiles?.data_consent === true
+                                    ? (report.user_id || 'N/A')
+                                    : 'Information not disclosed'
+                                  }
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
 
@@ -1054,11 +1167,11 @@ export default function FieldCrewCleanupTaskDetailPage() {
 
                       {report.status !== 'closed' && report.status !== 'resolved' && report.validation_status !== 'rejected' && !(report.on_private_property && report.property_owner_consent_status === 'denied') && (
                         <>
-                          <h3 className="text-lg font-semibold text-text-primary mt-6 mb-3">Before & After Photos</h3>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <h3 className="text-lg font-semibold text-text-primary mt-6 mb-3">Required Evidence</h3>
+                          <div className={`grid grid-cols-1 gap-4 ${report.validation_status === 'pending' ? 'md:grid-cols-1 max-w-2xl' : 'md:grid-cols-2'}`}>
                             <div className="p-4 border border-border rounded-lg">
                               <div className="flex justify-between items-center mb-3">
-                                <h4 className="font-semibold">Before Photo</h4>
+                                <h4 className="font-semibold">{report.validation_status === 'pending' ? 'Verification Photo' : 'Before Photo'}</h4>
                                 {report.before_photo_url && (
                                   <button
                                     onClick={() => handleReportPhotoDelete(report.id, 'before')}
@@ -1080,51 +1193,66 @@ export default function FieldCrewCleanupTaskDetailPage() {
                                   onClick={() => setLightboxImage({ url: report.before_photo_url, type: 'before', index: 0 })}
                                 />
                               ) : (
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  disabled={uploadingReportPhotos[`${report.id}-before`] || !isAssigned}
-                                  onChange={(e) => e.target.files[0] && handleReportPhotoUpload(report.id, 'before', e.target.files[0])}
-                                  className="w-full disabled:opacity-50 disabled:cursor-not-allowed"
-                                />
+                                <label className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-border rounded-lg transition-colors ${!isAssigned || uploadingReportPhotos[`${report.id}-before`] ? 'opacity-50 cursor-not-allowed bg-surface' : 'cursor-pointer hover:bg-surface-elevated'}`}>
+                                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <Camera className="w-8 h-8 text-text-muted mb-3" />
+                                    <p className="text-sm text-text-muted font-medium">Click to upload photo</p>
+                                  </div>
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    disabled={uploadingReportPhotos[`${report.id}-before`] || !isAssigned}
+                                    onChange={(e) => e.target.files[0] && handleReportPhotoUpload(report.id, 'before', e.target.files[0])}
+                                    className="hidden"
+                                  />
+                                </label>
                               )}
                               {uploadingReportPhotos[`${report.id}-before`] && <p className="mt-2 text-sm text-text-muted">Uploading...</p>}
                             </div>
 
-                            <div className="p-4 border border-border rounded-lg">
-                              <div className="flex justify-between items-center mb-3">
-                                <h4 className="font-semibold">After Photo</h4>
-                                {report.after_photo_url && (
-                                  <button
-                                    onClick={() => handleReportPhotoDelete(report.id, 'after')}
-                                    disabled={!isAssigned}
-                                    className="p-1.5 text-text-muted hover:text-error hover:bg-error/10 rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                                    title="Delete photo"
-                                  >
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                                    </svg>
-                                  </button>
+                            {/* Only show After Photo for verified cleanup reports */}
+                            {report.validation_status !== 'pending' && (
+                              <div className="p-4 border border-border rounded-lg">
+                                <div className="flex justify-between items-center mb-3">
+                                  <h4 className="font-semibold">After Photo</h4>
+                                  {report.after_photo_url && (
+                                    <button
+                                      onClick={() => handleReportPhotoDelete(report.id, 'after')}
+                                      disabled={!isAssigned}
+                                      className="p-1.5 text-text-muted hover:text-error hover:bg-error/10 rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                      title="Delete photo"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                      </svg>
+                                    </button>
+                                  )}
+                                </div>
+                                {report.after_photo_url ? (
+                                  <img
+                                    src={report.after_photo_url}
+                                    alt="After"
+                                    className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 border border-border"
+                                    onClick={() => setLightboxImage({ url: report.after_photo_url, type: 'after', index: 0 })}
+                                  />
+                                ) : (
+                                  <label className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-border rounded-lg transition-colors ${!isAssigned || uploadingReportPhotos[`${report.id}-after`] ? 'opacity-50 cursor-not-allowed bg-surface' : 'cursor-pointer hover:bg-surface-elevated'}`}>
+                                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                      <Camera className="w-8 h-8 text-text-muted mb-3" />
+                                      <p className="text-sm text-text-muted font-medium">Click to upload photo</p>
+                                    </div>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      disabled={uploadingReportPhotos[`${report.id}-after`] || !isAssigned}
+                                      onChange={(e) => e.target.files[0] && handleReportPhotoUpload(report.id, 'after', e.target.files[0])}
+                                      className="hidden"
+                                    />
+                                  </label>
                                 )}
+                                {uploadingReportPhotos[`${report.id}-after`] && <p className="mt-2 text-sm text-text-muted">Uploading...</p>}
                               </div>
-                              {report.after_photo_url ? (
-                                <img
-                                  src={report.after_photo_url}
-                                  alt="After"
-                                  className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 border border-border"
-                                  onClick={() => setLightboxImage({ url: report.after_photo_url, type: 'after', index: 0 })}
-                                />
-                              ) : (
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  disabled={uploadingReportPhotos[`${report.id}-after`] || !isAssigned}
-                                  onChange={(e) => e.target.files[0] && handleReportPhotoUpload(report.id, 'after', e.target.files[0])}
-                                  className="w-full disabled:opacity-50 disabled:cursor-not-allowed"
-                                />
-                              )}
-                              {uploadingReportPhotos[`${report.id}-after`] && <p className="mt-2 text-sm text-text-muted">Uploading...</p>}
-                            </div>
+                            )}
                           </div>
                         </>
                       )}
@@ -1231,7 +1359,22 @@ export default function FieldCrewCleanupTaskDetailPage() {
             </div>
 
             {/* Sidebar - Task Info */}
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-1 space-y-6">
+              
+              {/* Mini Map */}
+              <div className="card p-0 overflow-hidden border-2 border-border h-[300px] relative z-0 isolate">
+                <EcoPinMap
+                  centerLat={mapCenterLat}
+                  centerLng={mapCenterLng}
+                  hideFilterPanel={true}
+                  hidePins={true}
+                  hideClusters={true}
+                  showHeatmap={false}
+                >
+                  <MicroRouteLayer tasks={[task]} routeWaypoints={[{ sequence_order: 1, cleanup_task_id: task.id }]} />
+                </EcoPinMap>
+              </div>
+
               <div className="card sticky top-[160px] self-start">
                 <div className="mb-4">
                   <h2 className="text-xl font-bold text-text-primary">{task.title}</h2>
@@ -1243,9 +1386,9 @@ export default function FieldCrewCleanupTaskDetailPage() {
                 {viewMode === 'detail' && (
                   <button
                     onClick={handleBackToTable}
-                    className="btn-secondary w-full mt-4"
+                    className="btn-secondary w-full mt-4 flex items-center justify-center gap-2"
                   >
-                    ← Back to Table
+                    <ArrowLeft className="w-4 h-4" /> Back to Table
                   </button>
                 )}
 
@@ -1318,65 +1461,54 @@ export default function FieldCrewCleanupTaskDetailPage() {
                     <div className="mt-6 pt-4 border-t border-border">
                       <h2 className="text-lg font-bold text-text-primary mb-4">Actions</h2>
                       <div className="space-y-3">
-                        {/* Reject Report for Manual Review */}
-                        {(report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review') && report.status !== 'closed' && report.status !== 'resolved' && report.validation_status !== 'rejected' && !(report.on_private_property && report.property_owner_consent_status === 'denied') && (
-                          <button
-                            onClick={() => handleRejectReport(report.id)}
-                            disabled={validatingReport === report.id || !isAssigned}
-                            className="w-full px-4 py-2 bg-error text-white rounded-lg hover:bg-error/80 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                          >
-                            {validatingReport === report.id ? 'Rejecting...' : 'Reject Report'}
-                          </button>
-                        )}
+                        {/* Action Buttons Cycled based on Report Status */}
+                        <div className="space-y-3">
+                          {(!report.status || report.status === 'submitted' || report.status === 'pending') && (
+                            <button
+                              onClick={() => handleUpdateStatus(report.id, 'acknowledged')}
+                              disabled={completingReportId === report.id || !isAssigned}
+                              className="w-full px-4 py-3 bg-info text-white rounded-lg hover:bg-info/90 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg shadow-sm"
+                            >
+                              {completingReportId === report.id ? 'Processing...' : '✅ Mark as Acknowledged'}
+                            </button>
+                          )}
 
-                        {/* Lifecycle Stage Control */}
-                        <div className="relative" ref={lifecycleDropdownRef}>
-                          <button
-                            onClick={() => setShowLifecycleDropdown(!showLifecycleDropdown)}
-                            disabled={!isAssigned}
-                            className="w-full px-4 py-2 border-2 border-border text-text-primary rounded-lg hover:bg-surface-elevated font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {updatingLifecycle ? 'Updating...' : 'Update Lifecycle Stage'}
-                          </button>
-                          {showLifecycleDropdown && (
-                            <div className="absolute bottom-full left-0 right-0 mb-2 bg-surface-elevated border border-border rounded-lg shadow-lg z-50">
-                              <button
-                                onClick={() => handleLifecycleStageUpdate(report.id, 'resolved')}
-                                disabled={report.stage !== 'responded' || !isAssigned}
-                                className={`w-full px-4 py-3 text-left border-b border-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${report.stage === 'resolved'
-                                  ? 'bg-success/10 text-success font-semibold cursor-not-allowed'
-                                  : report.stage === 'responded'
-                                    ? 'text-text-primary hover:bg-success/5'
-                                    : 'text-text-muted cursor-not-allowed'
-                                }`}
-                              >
-                                <span className="font-medium">Resolved</span>
-                              </button>
-                              <button
-                                onClick={() => handleLifecycleStageUpdate(report.id, 'responded')}
-                                disabled={report.stage !== 'acknowledged' || !isAssigned}
-                                className={`w-full px-4 py-3 text-left border-b border-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${report.stage === 'responded'
-                                  ? 'bg-warning/10 text-warning font-semibold cursor-not-allowed'
-                                  : report.stage === 'acknowledged'
-                                    ? 'text-text-primary hover:bg-warning/5'
-                                    : 'text-text-muted cursor-not-allowed'
-                                }`}
-                              >
-                                <span className="font-medium">Responded</span>
-                              </button>
-                              <button
-                                onClick={() => handleLifecycleStageUpdate(report.id, 'acknowledged')}
-                                disabled={report.stage !== 'submitted' || !isAssigned}
-                                className={`w-full px-4 py-3 text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${report.stage === 'acknowledged'
-                                  ? 'bg-info/10 text-info font-semibold cursor-not-allowed'
-                                  : report.stage === 'submitted'
-                                    ? 'text-text-primary hover:bg-info/5'
-                                    : 'text-text-muted cursor-not-allowed'
-                                }`}
-                              >
-                                <span className="font-medium">Acknowledged</span>
-                              </button>
-                            </div>
+                          {report.status === 'acknowledged' && (
+                            <button
+                              onClick={() => handleUpdateStatus(report.id, 'responded')}
+                              disabled={completingReportId === report.id || !isAssigned}
+                              className="w-full px-4 py-3 bg-purple text-white rounded-lg hover:bg-purple/90 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg shadow-sm"
+                            >
+                              {completingReportId === report.id ? 'Processing...' : '👷 Mark as Responded'}
+                            </button>
+                          )}
+
+                          {report.status === 'responded' && (
+                            <button
+                              onClick={() => handleMarkReportComplete(report.id)}
+                              disabled={completingReportId === report.id || !isAssigned}
+                              className="w-full px-4 py-3 bg-success text-white rounded-lg hover:bg-success/90 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-lg shadow-sm"
+                            >
+                              {completingReportId === report.id ? 'Processing...' : '🧹 Cleanup Completed'}
+                            </button>
+                          )}
+
+                          {report.status === 'resolved' && (
+                            <button
+                              disabled
+                              className="w-full px-4 py-3 bg-success/50 text-white rounded-lg cursor-not-allowed font-bold text-lg shadow-sm transition-all"
+                            >
+                              ✓ Waiting for Citizen to Close
+                            </button>
+                          )}
+
+                          {report.status === 'closed' && (
+                            <button
+                              disabled
+                              className="w-full px-4 py-3 bg-surface-elevated border border-border text-text-muted rounded-lg cursor-not-allowed font-bold text-lg shadow-sm"
+                            >
+                              ✓ Report Closed
+                            </button>
                           )}
                         </div>
 

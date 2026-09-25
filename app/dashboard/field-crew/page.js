@@ -9,6 +9,7 @@ import { useUser } from '@/components/auth/UserContext'
 import { FieldCrewGuard } from '@/components/auth/RequireRole'
 import PerformanceMetricsCard from '@/components/ui/PerformanceMetricsCard'
 import PriorityTasksCard from '@/components/ui/PriorityTasksCard'
+import { ClipboardList, FileText, LayoutDashboard, CheckCircle } from 'lucide-react'
 
 export default function FieldCrewHomepage() {
   const router = useRouter()
@@ -83,7 +84,8 @@ export default function FieldCrewHomepage() {
       location: t.location || 'Unknown location',
       priority: t.priority === 'urgent' ? 'high' : (t.priority || 'medium'),
       status: t.status === 'in_progress' ? 'inProgress' : 'pending',
-      time: t.estimated_time || '1.0 hr'
+      time: t.estimated_time || '1.0 hr',
+      taskType: t.task_type
     }))
 
   // Prepare feasible tasks (low/medium priority active tasks)
@@ -96,7 +98,8 @@ export default function FieldCrewHomepage() {
       location: t.location || 'Unknown location',
       priority: t.priority || 'low',
       status: t.status === 'in_progress' ? 'inProgress' : 'pending',
-      time: t.estimated_time || '1.0 hr'
+      time: t.estimated_time || '1.0 hr',
+      taskType: t.task_type
     }))
 
   const stats = [
@@ -107,8 +110,8 @@ export default function FieldCrewHomepage() {
   ]
 
   const quickActions = [
-    { label: 'View All Tasks', onClick: () => router.push('/dashboard/field-crew/tasks'), variant: 'primary' },
-    { label: 'View Reports', onClick: () => router.push('/dashboard/raw-data'), variant: 'secondary' }
+    { label: 'View All Tasks', icon: <ClipboardList className="w-4 h-4" />, onClick: () => router.push('/dashboard/field-crew/tasks'), variant: 'primary' },
+    { label: 'View Reports', icon: <FileText className="w-4 h-4" />, onClick: () => router.push('/dashboard/raw-data'), variant: 'secondary' }
   ]
 
   const formatDate = (dateString) => {
@@ -194,16 +197,24 @@ export default function FieldCrewHomepage() {
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="card animate-pulse">
-                  <div className="h-3 w-20 rounded bg-border/50 mb-3" />
-                  <div className="h-3 w-32 rounded bg-border/50 mb-2" />
-                  <div className="h-3 w-16 rounded bg-border/50" />
+                <div key={i} className="card animate-pulse flex flex-col justify-between h-[220px]">
+                  <div>
+                    <div className="flex justify-between items-start mb-3 gap-2">
+                      <div className="h-5 w-3/4 rounded bg-border/50" />
+                      <div className="h-5 w-16 rounded bg-border/50 shrink-0" />
+                    </div>
+                    <div className="h-4 w-full rounded bg-border/50 mb-2" />
+                    <div className="h-4 w-2/3 rounded bg-border/50 mb-4" />
+                    <div className="h-3 w-32 rounded bg-border/50 mb-3" />
+                  </div>
+                  <div className="h-10 w-full rounded bg-border/50" />
                 </div>
               ))}
             </div>
           ) : activeTasks.length === 0 ? (
-            <div className="text-center py-10 text-text-muted">
-              <p className="text-lg mb-1">No active tasks</p>
+            <div className="flex flex-col items-center justify-center py-16 text-text-muted border-2 border-dashed border-border rounded-xl bg-surface-elevated">
+              <CheckCircle className="w-16 h-16 mb-4 text-success/50" />
+              <p className="text-xl font-bold mb-1 text-text-primary">You're all caught up!</p>
               <p className="text-sm">You have no pending or in-progress tasks at the moment.</p>
             </div>
           ) : (
@@ -214,11 +225,22 @@ export default function FieldCrewHomepage() {
                   className="card hover:shadow-lg transition-shadow cursor-pointer"
                   onClick={() => handleTaskClick(task)}
                 >
-                  <div className="flex justify-between items-start mb-3">
-                    <h3 className="font-bold text-text-primary text-base leading-tight flex-1 mr-2">
+                  <div className="flex justify-between items-start mb-3 gap-2">
+                    <h3 className="font-bold text-text-primary text-base leading-tight flex-1">
                       {task.title}
                     </h3>
-                    <StatusBadge status={task.status} type="task" />
+                    <div className="flex flex-col items-end gap-1">
+                      <StatusBadge status={task.status} type="task" />
+                      {task.task_type && (
+                        <span className={`text-[10px] uppercase font-bold font-mono tracking-wider px-1.5 py-0.5 border rounded-sm ${
+                          task.task_type === 'Scouting' ? 'bg-info/10 text-info border-info/20' :
+                          task.task_type === 'Cleanup' ? 'bg-success/10 text-success border-success/20' :
+                          'bg-purple/10 text-purple border-purple/20'
+                        }`}>
+                          {task.task_type === 'Scouting' ? '🔍 Scout' : task.task_type === 'Cleanup' ? '🧹 Clean' : '🔄 Mix'}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <p className="text-sm text-text-muted line-clamp-2 mb-4">
                     {task.description || 'No description provided.'}

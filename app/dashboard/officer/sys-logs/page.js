@@ -134,11 +134,11 @@ export default function ResponseLogs() {
     <OfficerGuard>
       <div className="p-8">
         <PageHeader
-          title="Response Logs"
+          title="System Logs"
           subtitle="View report response actions and history"
           breadcrumbs={[
             { label: 'Dashboard', href: '/dashboard' },
-            { label: 'Response Logs' }
+            { label: 'System Logs' }
           ]}
         />
 
