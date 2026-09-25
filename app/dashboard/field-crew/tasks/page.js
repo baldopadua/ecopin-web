@@ -8,6 +8,7 @@ import DataTable from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { FieldCrewGuard } from '@/components/auth/RequireRole'
+import { useUser } from '@/components/auth/UserContext'
 
 export default function FieldCrewTasksPage() {
   const [tasks, setTasks] = useState([])
@@ -24,8 +25,9 @@ export default function FieldCrewTasksPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 8
 
-  // Get current user ID from localStorage
-  const currentUserId = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}').id : null
+  // Get current user ID from context
+  const user = useUser()
+  const currentUserId = user?.id || null
 
   useEffect(() => {
     const loadTasks = async () => {
