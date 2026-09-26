@@ -15,7 +15,8 @@ export default function DataTable({
   sortDirection = 'asc',
   onSort = null,
   className = '',
-  showHeader = true
+  showHeader = true,
+  rowClassName = ''
 }) {
   const handleSort = (key) => {
     if (!sortable || !onSort) return
@@ -56,7 +57,7 @@ export default function DataTable({
                 <thead>
                   <tr className="border-b-2 border-border">
                     {columns.map((col, index) => (
-                      <th key={index} className="text-left py-3 px-4 text-sm font-black uppercase tracking-widest text-text-primary">
+                      <th key={index} className="text-left py-3 px-4 font-mono text-xs uppercase tracking-widest text-text-muted">
                         <SkeletonLine className="h-4 w-16" />
                       </th>
                     ))}
@@ -106,7 +107,7 @@ export default function DataTable({
                 {columns.map((col, index) => (
                   <th
                     key={index}
-                    className={`text-left py-3 px-4 text-sm font-black uppercase tracking-widest text-text-primary ${
+                    className={`text-left py-3 px-4 text-xs font-mono uppercase tracking-widest text-text-muted ${
                       sortable && onSort ? 'cursor-pointer hover:text-accent-green' : ''
                     }`}
                     onClick={() => sortable && handleSort(col.key)}
@@ -126,7 +127,7 @@ export default function DataTable({
                 key={rowIndex}
                 className={`border-b-2 border-border transition-all ${
                   onRowClick ? 'cursor-pointer table-row-interactive' : ''
-                }`}
+                } ${typeof rowClassName === 'function' ? rowClassName(row, rowIndex) : rowClassName}`}
                 onClick={() => onRowClick && onRowClick(row, rowIndex)}
               >
                 {columns.map((col, colIndex) => (

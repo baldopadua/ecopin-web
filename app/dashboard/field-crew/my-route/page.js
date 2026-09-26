@@ -130,19 +130,18 @@ export default function MyRoutePage() {
                 <div className="h-20 bg-border"></div>
               </div>
             ) : !myRoute ? (
-              <div className="card bg-surface-elevated flex flex-col items-center justify-center p-8 h-full border-2 border-border text-center">
-                <div className="text-4xl mb-4">📭</div>
-                <h3 className="font-bold text-text-primary mb-2">No Active Route</h3>
+              <div className="card bg-surface-elevated flex flex-col items-center justify-center p-8 h-full border-2 border-[#1A1A1A] text-center">
+                <div className="font-mono text-text-muted tracking-widest uppercase mb-4">[ NO ACTIVE ROUTE ASSIGNED ]</div>
                 <p className="text-sm text-text-muted">You do not have an active route assigned for today, or it has not been approved yet.</p>
               </div>
             ) : (
               <>
-                <div className="card bg-surface border-2 border-border p-4 sticky top-0 z-10 shadow-sm">
+                <div className="card bg-surface border-2 border-[#1A1A1A] p-4 sticky top-0 z-10 shadow-sm" style={{ boxShadow: '2px 2px 0px 0px #1A1A1A' }}>
                   <h3 className="font-bold text-lg text-text-primary mb-1">Route Summary</h3>
-                  <div className="flex justify-between text-sm font-mono text-text-secondary">
-                    <span>Stops: {taskWaypoints.length}</span>
+                  <div className="flex justify-between text-sm font-mono tracking-widest uppercase text-text-secondary">
+                    <span>STOPS: {taskWaypoints.length}</span>
                     <span>ETA: {formatDuration(myRoute.total_duration_min)}</span>
-                    <span>Dist: {formatDistance(myRoute.total_distance_meters)}</span>
+                    <span>DIST: {formatDistance(myRoute.total_distance_meters)}</span>
                   </div>
                 </div>
 
@@ -228,11 +227,11 @@ export default function MyRoutePage() {
                                       </div>
                                       <div className="ml-8 mt-1">
                                         {r.validation_status === 'pending' ? (
-                                           <span className="inline-flex items-center gap-1 px-2 py-1 bg-info/10 text-info font-mono font-bold text-[10px] uppercase border border-info/30 rounded-sm">
+                                           <span className="inline-flex items-center gap-1 px-2 py-1 bg-info/10 text-info font-mono tracking-widest font-bold text-[10px] uppercase border border-info/30 rounded-sm">
                                              🔍 Acknowledge & Validate
                                            </span>
                                         ) : (
-                                           <span className="inline-flex items-center gap-1 px-2 py-1 bg-success/10 text-success font-mono font-bold text-[10px] uppercase border border-success/30 rounded-sm">
+                                           <span className="inline-flex items-center gap-1 px-2 py-1 bg-success/10 text-success font-mono tracking-widest font-bold text-[10px] uppercase border border-success/30 rounded-sm">
                                              🧹 Start Cleanup
                                            </span>
                                         )}
@@ -248,7 +247,7 @@ export default function MyRoutePage() {
                             className={`w-full py-2 px-4 rounded font-bold text-sm transition-all ${
                               isCompleted 
                                 ? 'bg-surface-elevated text-text-muted border-2 border-border cursor-default'
-                                : 'bg-black text-white hover:bg-gray-800'
+                                : 'bg-[#1A1A1A] text-white hover:bg-[#333333]'
                             }`}
                             onClick={() => {
                               if (!isCompleted && wp.cleanup_task_id) {
@@ -273,6 +272,7 @@ export default function MyRoutePage() {
 
           {/* Map Panel */}
           <div className="flex-1 card p-0 overflow-hidden border-2 border-border relative">
+            {/* TODO: Implement cluster visibility filter in EcoPinMap to show only task-assigned clusters. For now, hide all clusters. */}
             <EcoPinMap
               centerLat={mapCenterLat}
               centerLng={mapCenterLng}

@@ -19,7 +19,7 @@ export default function FieldCrewTasksPage() {
   // Filter states
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
-  const [assignmentFilter, setAssignmentFilter] = useState('assigned_to_me')
+  const [assignmentFilter, setAssignmentFilter] = useState('all')
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
@@ -53,8 +53,9 @@ export default function FieldCrewTasksPage() {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(t =>
         (t.title && t.title.toLowerCase().includes(query)) ||
-        (t.description && t.description.toLowerCase().includes(query))
-)
+        (t.description && t.description.toLowerCase().includes(query)) ||
+        (t.location && t.location.toLowerCase().includes(query))
+      )
     }
 
     if (statusFilter !== 'all') {
@@ -114,7 +115,7 @@ export default function FieldCrewTasksPage() {
 
         {/* Search and Filters */}
         <FilterBar
-          searchPlaceholder="Search by title or description..."
+          searchPlaceholder="Search by title, description, or location..."
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
           filters={[
@@ -147,19 +148,27 @@ export default function FieldCrewTasksPage() {
         {/* Tasks List */}
         <DataTable
           columns={[
-            { key: 'title', label: 'Title', width: '20%' },
+            { key: 'title', label: 'Title', width: '15%' },
             {
               key: 'description',
               label: 'Description',
-              width: '25%',
+              width: '20%',
               render: (value) => (
                 <span className="text-sm text-text-secondary line-clamp-2 max-w-xs">{value || '—'}</span>
               )
             },
             {
+              key: 'location',
+              label: 'Location',
+              width: '20%',
+              render: (value) => (
+                <span className="text-sm text-text-muted font-mono">{value || '—'}</span>
+              )
+            },
+            {
               key: 'assigned_crew_ids',
               label: 'Assigned',
-              width: '20%',
+              width: '15%',
               render: (value) => {
                 const count = value && value.length > 0 ? value.length : 0
                 return (
@@ -180,7 +189,7 @@ export default function FieldCrewTasksPage() {
             {
               key: 'status',
               label: 'Status',
-              width: '20%',
+              width: '15%',
               render: (value) => (
                 <StatusBadge status={value} type="task" />
               )
@@ -190,6 +199,7 @@ export default function FieldCrewTasksPage() {
           loading={loading}
           emptyMessage="No cleanup tasks match your filters"
           onRowClick={handleRowClick}
+          rowClassName="hover:border-l-4 hover:border-l-[#ccff00]"
         />
 
         {/* Pagination */}

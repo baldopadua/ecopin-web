@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { fetchValidatedReports, fetchIssueTypes } from '@/lib/api'
+import { fetchFilteredReports, fetchIssueTypes, fetchCleanupTasks } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import FilterBar from '@/components/ui/FilterBar'
 import DataTable from '@/components/ui/DataTable'
@@ -15,6 +15,7 @@ export default function FieldCrewReportsPage() {
   const [filteredReports, setFilteredReports] = useState([])
   const [issueTypes, setIssueTypes] = useState([])
   const [loading, setLoading] = useState(true)
+  const [reportTaskMap, setReportTaskMap] = useState({})
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState('')
@@ -28,26 +29,57 @@ export default function FieldCrewReportsPage() {
 
   useEffect(() => {
     Promise.all([
-      fetchValidatedReports(),
+      fetchFilteredReports(),
+      fetchCleanupTasks(true), // Only fetch assigned tasks
       fetchIssueTypes()
-    ]).then(([reportsData, typesData]) => {
-      // Filter to only verified (automatically_valid), unclustered, active reports
-      const filteredReports = reportsData.filter(report => {
-        const isVerified = report.validation_status === 'automatically_valid'
-        const isUnclustered = report.cluster_id === null
-        const isActive = report.status.toLowerCase() !== 'invalid' && 
-                         report.status.toLowerCase() !== 'resolved' && 
-                         report.status.toLowerCase() !== 'closed'
-        
-        return isVerified && isUnclustered && isActive
+    ]).then(([allReports, tasksData, typesData]) => {
+      const allowedClusterIds = new Set()
+      const allowedReportIds = new Set()
+      const taskMap = {}
+
+      tasksData.forEach(task => {
+        if (task.cluster_id) {
+          allowedClusterIds.add(String(task.cluster_id))
+        }
+        if (task.report_ids && Array.isArray(task.report_ids)) {
+          task.report_ids.forEach(rId => allowedReportIds.add(String(rId)))
+        }
+        if (task.reports) {
+          task.reports.forEach(r => {
+            if (r.cluster_id) allowedClusterIds.add(String(r.cluster_id))
+            allowedReportIds.add(String(r.id))
+          })
+        }
+      })
+
+      const assignedReports = allReports.filter(report => {
+        const cMatch = report.cluster_id && allowedClusterIds.has(String(report.cluster_id))
+        const rMatch = allowedReportIds.has(String(report.id))
+        return cMatch || rMatch
+      })
+
+      // Map report to task for routing
+      assignedReports.forEach(report => {
+        const matchingTask = tasksData.find(t => 
+          (t.cluster_id && String(t.cluster_id) === String(report.cluster_id)) ||
+          (t.report_ids && t.report_ids.map(String).includes(String(report.id))) ||
+          (t.reports && t.reports.some(r => String(r.id) === String(report.id)))
+        )
+        if (matchingTask) {
+          taskMap[report.id] = matchingTask.id
+        }
       })
 
       // Sort by newest first
-      filteredReports.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      assignedReports.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
       
-      setReports(filteredReports)
-      setFilteredReports(filteredReports)
+      setReportTaskMap(taskMap)
+      setReports(assignedReports)
+      setFilteredReports(assignedReports)
       setIssueTypes(typesData)
+      setLoading(false)
+    }).catch(error => {
+      console.error("Failed to load field crew raw data:", error)
       setLoading(false)
     })
   }, [])
@@ -100,7 +132,12 @@ export default function FieldCrewReportsPage() {
   }
 
   const handleRowClick = (report) => {
-    router.push(`/dashboard/raw-data/${report.id}`)
+    const taskId = reportTaskMap[report.id]
+    if (taskId) {
+      router.push(`/dashboard/field-crew/operations/${taskId}`)
+    } else {
+      console.warn("No assigned task found for report", report.id)
+    }
   }
 
   const handleResetFilters = () => {
@@ -176,6 +213,7 @@ export default function FieldCrewReportsPage() {
 
         {/* Reports List */}
         <DataTable
+          rowClassName="hover:border-l-4 hover:border-l-[#ccff00]"
           columns={[
             { 
               key: 'title', 

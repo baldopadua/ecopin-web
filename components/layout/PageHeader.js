@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 export default function PageHeader({ title, titleAccent, subtitle, breadcrumbs, children }) {
   return (
     <div className="sticky top-0 z-10 bg-surface-elevated dark:bg-black -mx-8 -mt-8 px-8 pt-8 pb-4 border-b-2 border-border mb-8">
@@ -7,9 +9,9 @@ export default function PageHeader({ title, titleAccent, subtitle, breadcrumbs, 
             <span key={i} className="flex items-center gap-2">
               {i > 0 && <span className="text-accent-green">/</span>}
               {crumb.href ? (
-                <a href={crumb.href} className="hover:text-accent-green hover:underline transition-colors">
+                <Link href={crumb.href} className="hover:text-accent-green hover:underline transition-colors">
                   {crumb.label}
-                </a>
+                </Link>
               ) : (
                 <span className="text-text-primary">{crumb.label}</span>
               )}

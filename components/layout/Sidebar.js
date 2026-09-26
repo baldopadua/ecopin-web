@@ -45,7 +45,7 @@ const fieldCrewNavigation = [
     { name: 'Command Center', href: '/dashboard/field-crew', icon: LayoutDashboard },
     { name: 'Map Grid', href: '/dashboard/map-grid', icon: Map },
     { name: 'Operations', href: '/dashboard/field-crew/tasks', icon: Wrench },
-    { name: 'Raw Data', href: '/dashboard/raw-data', icon: Database },
+    { name: 'Raw Data', href: '/dashboard/field-crew/raw-data', icon: Database },
 ]
 
 const adminNavigation = [
@@ -65,7 +65,8 @@ export default function Sidebar() {
 
     const renderNavItems = (navigation) => {
         return navigation.map((item) => {
-            const isActive = pathname === item.href;
+            const isRootPath = ['/dashboard/field-crew', '/dashboard/admin', '/dashboard/officer', '/dashboard/citizen'].includes(item.href);
+            const isActive = isRootPath ? pathname === item.href : pathname.startsWith(item.href);
             const Icon = item.icon;
             return (
                 <Link

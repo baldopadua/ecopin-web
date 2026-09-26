@@ -1,9 +1,11 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { Edit2, Check, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
 import { getSystemSettings } from '@/lib/api'
+import { useUser } from '@/components/auth/UserContext'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL + '/api'
 
@@ -15,6 +17,7 @@ export default function ProfilePage() {
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
   const router = useRouter()
+  const userCtx = useUser()
 
   const [passwordSettings, setPasswordSettings] = useState({
     password_min_length: 8,
@@ -36,22 +39,24 @@ export default function ProfilePage() {
     confirm_password: ''
   })
   const [changingPassword, setChangingPassword] = useState(false)
-  const [theme, setTheme] = useState('light')
+  const [theme, setTheme] = useState('system')
   const [showLogoutModal, setShowLogoutModal] = useState(false)
+  const [isEditingName, setIsEditingName] = useState(false)
 
   useEffect(() => {
-    const saved = localStorage.getItem('theme')
-    if (saved) {
-      setTheme(saved)
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setTheme('dark')
+    const saved = localStorage.getItem('theme') || 'system'
+    setTheme(saved)
+    if (saved === 'dark' || (saved === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
     }
   }, [])
 
   const toggleTheme = (newTheme) => {
     setTheme(newTheme)
     localStorage.setItem('theme', newTheme)
-    if (newTheme === 'dark') {
+    if (newTheme === 'dark' || (newTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
       document.documentElement.classList.add('dark')
     } else {
       document.documentElement.classList.remove('dark')
@@ -320,7 +325,7 @@ export default function ProfilePage() {
         title="Profile"
         subtitle="Manage your account settings"
         breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Dashboard', href: userCtx?.role === 'field_crew' ? '/dashboard/field-crew' : '/dashboard' },
           { label: 'Profile' }
         ]}
       />
@@ -338,7 +343,7 @@ export default function ProfilePage() {
                     className="w-20 h-20 rounded-none object-cover"
                   />
                 ) : (
-                  <div className="w-20 h-20 rounded-none bg-accent-green flex items-center justify-center text-white font-bold text-2xl">
+                  <div className="w-20 h-20 rounded-none bg-[#1A1A1A] dark:bg-white flex items-center justify-center text-white dark:text-black font-bold text-2xl border-2 border-[#1A1A1A] dark:border-white">
                     {formData.full_name?.[0]?.toUpperCase() || 'U'}
                   </div>
                 )}
@@ -364,46 +369,66 @@ export default function ProfilePage() {
           </div>
 
           <div className="border-t border-border pt-4">
-            <label className="block text-sm font-medium text-text-secondary mb-2">
-              Full Name
-            </label>
-            <input
-              type="text"
-              name="full_name"
-              value={formData.full_name}
-              onChange={handleInputChange}
-              className="input"
-              placeholder="Enter your full name"
-            />
+            <h3 className="font-mono text-xs uppercase tracking-widest text-text-muted mb-2">Profile Details</h3>
+            {!isEditingName ? (
+              <div className="flex items-center gap-4">
+                <span className="text-text-primary text-lg font-medium">{formData.full_name || 'N/A'}</span>
+                <button onClick={() => setIsEditingName(true)} className="p-1 hover:text-accent-green transition-colors text-text-muted">
+                  <Edit2 className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 max-w-sm">
+                <input
+                  type="text"
+                  name="full_name"
+                  value={formData.full_name}
+                  onChange={handleInputChange}
+                  className="flex-1 bg-transparent border-2 border-[#1A1A1A] dark:border-[#333] rounded-none px-3 py-1.5 focus:outline-none focus:border-[#ccff00] text-text-primary transition-colors"
+                  placeholder="Enter your full name"
+                />
+                <button
+                  onClick={async () => {
+                    await handleSave()
+                    setIsEditingName(false)
+                  }}
+                  disabled={saving}
+                  className="p-1.5 bg-accent-green text-black border-2 border-accent-green rounded-none hover:bg-transparent hover:text-accent-green transition-colors disabled:opacity-50"
+                  title="Save"
+                >
+                  <Check className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => {
+                    setFormData(prev => ({ ...prev, full_name: user?.full_name || '' }))
+                    setIsEditingName(false)
+                  }}
+                  className="p-1.5 bg-surface-elevated text-text-primary border-2 border-[#1A1A1A] dark:border-[#333] rounded-none hover:text-error transition-colors"
+                  title="Cancel"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
 
           {error && (
-            <div className="mt-4 p-3 bg-error/10 dark:bg-error/20 border border-error/20 dark:border-error/30 rounded-lg">
+            <div className="mt-4 p-3 bg-error/10 dark:bg-error/20 border-2 border-error/20 dark:border-error/30 rounded-none">
               <p className="text-sm text-error">{error}</p>
             </div>
           )}
 
           {success && (
-            <div className="mt-4 p-3 bg-success/10 dark:bg-success/20 border border-success/20 dark:border-success/30 rounded-lg">
+            <div className="mt-4 p-3 bg-success/10 dark:bg-success/20 border-2 border-success/20 dark:border-success/30 rounded-none">
               <p className="text-sm text-success">{success}</p>
             </div>
           )}
-
-          <div className="mt-6 flex justify-end">
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="btn-primary shadow-none hover:shadow-none hover:translate-x-0 hover:translate-y-0"
-            >
-              {saving ? 'Saving...' : 'Save Changes'}
-            </button>
-          </div>
         </div>
 
         {/* Password Card */}
         <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-text-primary">Password</h2>
+          <div className="flex items-center justify-between mb-4 border-b-2 border-border pb-2">
+            <h2 className="font-mono text-xs uppercase tracking-widest text-text-muted">Security</h2>
             <button
               onClick={() => setShowPasswordForm(!showPasswordForm)}
               className="btn-secondary text-sm py-1.5 px-3"
@@ -423,7 +448,7 @@ export default function ProfilePage() {
                   name="current_password"
                   value={passwordData.current_password}
                   onChange={handlePasswordInputChange}
-                  className="input"
+                  className="w-full bg-transparent border-2 border-[#1A1A1A] dark:border-[#333] rounded-none px-3 py-2 focus:outline-none focus:border-[#ccff00] text-text-primary transition-colors"
                   placeholder="Enter current password"
                 />
               </div>
@@ -436,7 +461,7 @@ export default function ProfilePage() {
                   name="new_password"
                   value={passwordData.new_password}
                   onChange={handlePasswordInputChange}
-                  className="input"
+                  className="w-full bg-transparent border-2 border-[#1A1A1A] dark:border-[#333] rounded-none px-3 py-2 focus:outline-none focus:border-[#ccff00] text-text-primary transition-colors"
                   placeholder="Enter new password"
                 />
                 {passwordData.new_password && (
@@ -486,7 +511,7 @@ export default function ProfilePage() {
                   name="confirm_password"
                   value={passwordData.confirm_password}
                   onChange={handlePasswordInputChange}
-                  className="input"
+                  className="w-full bg-transparent border-2 border-[#1A1A1A] dark:border-[#333] rounded-none px-3 py-2 focus:outline-none focus:border-[#ccff00] text-text-primary transition-colors"
                   placeholder="Confirm new password"
                 />
                 {passwordData.confirm_password && (
@@ -513,29 +538,39 @@ export default function ProfilePage() {
         {/* Appearance + Logout Row */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-surface-elevated border-2 border-border rounded-none p-4">
+            <h2 className="font-mono text-xs uppercase tracking-widest text-text-muted border-b-2 border-border pb-2 mb-4">Appearance</h2>
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-sm font-semibold text-text-primary">Dark Mode</h2>
-                <p className="text-xs text-text-muted mt-1">Switch appearance</p>
+                <p className="text-xs text-text-muted mt-1">Switch theme preference</p>
               </div>
-              <button
-                onClick={() => toggleTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="relative w-12 h-6 rounded-none transition-colors duration-300 cursor-pointer"
-                style={{ backgroundColor: theme === 'dark' ? 'var(--primary)' : '#9CA3AF' }}
-              >
-                <div
-                  className="absolute top-0.5 w-5 h-5 bg-white rounded-none shadow-none transition-transform duration-300"
-                  style={{ transform: theme === 'dark' ? 'translateX(26px)' : 'translateX(2px)' }}
-                />
-              </button>
+              <div className="flex border-2 border-[#1A1A1A] dark:border-[#333] rounded-none overflow-hidden">
+                <button
+                  onClick={() => toggleTheme('system')}
+                  className={`px-3 py-1 text-xs font-mono uppercase tracking-wider transition-colors ${theme === 'system' ? 'bg-[#1A1A1A] dark:bg-white text-white dark:text-black' : 'bg-transparent text-text-muted hover:text-text-primary'}`}
+                >
+                  Sys
+                </button>
+                <button
+                  onClick={() => toggleTheme('light')}
+                  className={`px-3 py-1 text-xs font-mono uppercase tracking-wider border-l-2 border-[#1A1A1A] dark:border-[#333] transition-colors ${theme === 'light' ? 'bg-[#1A1A1A] dark:bg-white text-white dark:text-black' : 'bg-transparent text-text-muted hover:text-text-primary'}`}
+                >
+                  Lt
+                </button>
+                <button
+                  onClick={() => toggleTheme('dark')}
+                  className={`px-3 py-1 text-xs font-mono uppercase tracking-wider border-l-2 border-[#1A1A1A] dark:border-[#333] transition-colors ${theme === 'dark' ? 'bg-[#1A1A1A] dark:bg-white text-white dark:text-black' : 'bg-transparent text-text-muted hover:text-text-primary'}`}
+                >
+                  Dk
+                </button>
+              </div>
             </div>
           </div>
 
           <div className="bg-surface-elevated border-2 border-border rounded-none p-4">
+            <h2 className="font-mono text-xs uppercase tracking-widest text-text-muted border-b-2 border-border pb-2 mb-4 text-error">Danger Zone</h2>
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-sm font-semibold text-text-primary">Log Out</h2>
-                <p className="text-xs text-text-muted mt-1">Sign out of your account</p>
+                <p className="text-xs text-text-muted mt-1">End your current session securely</p>
               </div>
               <button
                 onClick={() => setShowLogoutModal(true)}
@@ -551,7 +586,7 @@ export default function ProfilePage() {
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-surface-elevated border-2 border-border rounded-none shadow-none p-6 w-full max-w-sm mx-4">
+          <div className="bg-surface-elevated border-2 border-border rounded-none shadow-[8px_8px_0px_0px_#1a1a1a] dark:shadow-[8px_8px_0px_0px_#ccff00] p-6 w-full max-w-sm mx-4 transition-all transform hover:translate-x-[-2px] hover:translate-y-[-2px]">
             <h3 className="text-lg font-bold text-text-primary mb-2">Log Out</h3>
             <p className="text-sm text-text-muted mb-6">Are you sure you want to log out of your account?</p>
             <div className="flex gap-3">

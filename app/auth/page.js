@@ -10,6 +10,7 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [isChecking, setIsChecking] = useState(true)
   const router = useRouter()
   const [theme, setTheme] = useState('dark')
 
@@ -19,7 +20,15 @@ export default function AuthPage() {
   useEffect(() => {
     const isDarkMode = document.documentElement.classList.contains('dark')
     setTheme(isDarkMode ? 'dark' : 'light')
-  }, [])
+    
+    // Redirect to dashboard if a session already exists
+    const token = localStorage.getItem('authToken')
+    if (token) {
+      router.replace('/dashboard')
+    } else {
+      setIsChecking(false)
+    }
+  }, [router])
 
   async function handleSubmit() {
     setLoading(true); setError(null)
@@ -79,6 +88,14 @@ export default function AuthPage() {
   }
 
   const isDark = theme === 'dark'
+
+  if (isChecking) {
+    return (
+      <main className="min-h-screen bg-white dark:bg-black text-black dark:text-white relative flex flex-col items-center justify-center selection:bg-[#ccff00] selection:text-black transition-colors duration-300">
+        <div className="text-4xl font-black uppercase tracking-tighter animate-pulse text-[#ccff00]">LOADING...</div>
+      </main>
+    )
+  }
 
   return (
     <main

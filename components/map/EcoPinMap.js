@@ -155,8 +155,8 @@ function MapCenter({ centerLat, centerLng }) {
   return null
 }
 
-export default function EcoPinMap({ centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode = false, selectedReports = [], onReportSelect, hideFilterPanel = false, hidePins = false, hideClusters = false, onReportClick, onClusterSelect, children }) {
-  console.log('EcoPinMap props:', { centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode, hideFilterPanel, hidePins, hideClusters })
+export default function EcoPinMap({ centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode = false, selectedReports = [], onReportSelect, hideFilterPanel = false, hidePins = false, hideClusters = false, onReportClick, onClusterSelect, children, allowedClusterIds, allowedReportIds }) {
+  console.log('EcoPinMap props:', { centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode, hideFilterPanel, hidePins, hideClusters, allowedClusterIds, allowedReportIds })
   
   const [mounted, setMounted] = useState(false)
   const [reports, setReports] = useState([])
@@ -345,6 +345,16 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
   useEffect(() => {
     let filtered = reports.filter(r => r.validation_status !== 'rejected')
 
+    if (allowedClusterIds !== undefined || allowedReportIds !== undefined) {
+      filtered = filtered.filter(r => {
+        const cIdsString = allowedClusterIds ? allowedClusterIds.map(String) : []
+        const rIdsString = allowedReportIds ? allowedReportIds.map(String) : []
+        const clusterMatch = cIdsString.length > 0 && r.cluster_id && cIdsString.includes(String(r.cluster_id))
+        const reportMatch = rIdsString.length > 0 && rIdsString.includes(String(r.id))
+        return clusterMatch || reportMatch
+      })
+    }
+
     if (statusFilter !== 'all') {
       filtered = filtered.filter(r => r.status === statusFilter)
     }
@@ -378,7 +388,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
     } else {
       setFilteredReports(filtered)
     }
-  }, [statusFilter, issueTypeFilter, startDate, endDate, reports])
+  }, [statusFilter, issueTypeFilter, startDate, endDate, reports, allowedClusterIds, allowedReportIds])
 
   // Refetch reports when validation status filter changes
   useEffect(() => {

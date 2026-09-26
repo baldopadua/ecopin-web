@@ -126,6 +126,7 @@ export default function Home() {
   const [phoneRotation, setPhoneRotation] = useState({ x: 0, y: 0 });
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [user, setUser] = useState(null);
+  const [hasSession, setHasSession] = useState(false);
 
   useEffect(() => {
     const lenis = new Lenis({
@@ -144,6 +145,7 @@ export default function Home() {
 
     const token = localStorage.getItem('authToken');
     if (token) {
+      setHasSession(true);
       fetch(process.env.NEXT_PUBLIC_BACKEND_API_URL + '/api/auth/me', {
         headers: { 'Authorization': `Bearer ${token}` }
       })
@@ -246,13 +248,13 @@ export default function Home() {
             )}
           </button>
 
-          {user ? (
+          {hasSession ? (
             <a href="/dashboard" className="flex items-center gap-3 px-4 py-1.5 bg-[#ccff00] border-2 border-[#1a1a1a] dark:border-[#333333] hover:bg-black hover:text-[#ccff00] dark:hover:bg-white dark:hover:text-black transition-colors">
-              {user.avatar_url ? (
+              {user?.avatar_url ? (
                 <img src={user.avatar_url} alt="Avatar" className="w-6 h-6 object-cover border border-[#1a1a1a] dark:border-white" />
               ) : (
                 <div className="w-6 h-6 bg-[#1a1a1a] dark:bg-white text-white dark:text-black flex items-center justify-center font-bold text-xs border border-[#1a1a1a] dark:border-white">
-                  {user.full_name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U'}
+                  {user?.full_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
                 </div>
               )}
               <span className="text-sm font-black uppercase tracking-widest text-black inherit-text">Dashboard</span>
@@ -295,13 +297,13 @@ export default function Home() {
               {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
             </button>
 
-            {user ? (
+            {hasSession ? (
               <a href="/dashboard" onClick={() => setIsMenuOpen(false)} className="mt-8 flex items-center justify-center gap-4 px-12 py-4 bg-[#ccff00] text-black text-2xl font-black uppercase tracking-widest border-2 border-[#1a1a1a] dark:border-[#333333] w-full text-center hover:bg-black hover:text-[#ccff00] transition-colors">
-                {user.avatar_url ? (
+                {user?.avatar_url ? (
                   <img src={user.avatar_url} alt="Avatar" className="w-8 h-8 object-cover border-2 border-[#1a1a1a]" />
                 ) : (
                   <div className="w-8 h-8 bg-[#1a1a1a] text-white flex items-center justify-center font-bold text-sm border-2 border-[#1a1a1a]">
-                    {user.full_name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U'}
+                    {user?.full_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
                   </div>
                 )}
                 Dashboard
