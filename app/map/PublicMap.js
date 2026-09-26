@@ -527,7 +527,17 @@ export default function PublicMap({ isDark }) {
               
               <div className="font-mono text-sm font-bold border-l-2 border-[#1a1a1a] dark:border-[#333333] pl-4 mb-6">
                 <p className="mb-1">STATUS: <span className="uppercase text-[#ff0000] dark:text-[#ccff00]">{detailedReport.status?.replace(/_/g, ' ')}</span></p>
-                <p>DATE: {new Date(detailedReport.created_at).toLocaleDateString()}</p>
+                <p className="mb-1">DATE: {new Date(detailedReport.created_at).toLocaleDateString()}</p>
+                
+                {detailedReport.deadline_at && (
+                  <div className="mt-3 p-2 border-2 border-[#1a1a1a] dark:border-[#333333] bg-gray-100 dark:bg-[#111]">
+                    <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">Target Resolution</p>
+                    <p className={`text-sm ${detailedReport.is_overdue ? 'text-red-600 dark:text-red-400 animate-pulse' : 'text-green-600 dark:text-[#ccff00]'}`}>
+                      {new Date(detailedReport.deadline_at).toLocaleDateString()} at {new Date(detailedReport.deadline_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      {detailedReport.is_overdue && ' (OVERDUE - ESCALATED)'}
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="mb-8 border-2 border-[#1a1a1a] dark:border-[#333333] p-4 bg-gray-100 dark:bg-[#111]">
