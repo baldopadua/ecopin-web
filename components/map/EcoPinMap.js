@@ -155,7 +155,7 @@ function MapCenter({ centerLat, centerLng }) {
   return null
 }
 
-export default function EcoPinMap({ centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode = false, selectedReports = [], onReportSelect, hideFilterPanel = false, hidePins = false, hideClusters = false, onReportClick, onClusterSelect, children, allowedClusterIds, allowedReportIds }) {
+export default function EcoPinMap({ centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode = false, selectedReports = [], onReportSelect, hideFilterPanel = false, hidePins = false, hideClusters = false, onReportClick, onClusterSelect, children, allowedClusterIds, allowedReportIds, externalStatusFilter, externalIssueTypeFilter, externalShowPins, externalShowClusters, externalShowHeatmap }) {
   console.log('EcoPinMap props:', { centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode, hideFilterPanel, hidePins, hideClusters, allowedClusterIds, allowedReportIds })
   
   const [mounted, setMounted] = useState(false)
@@ -216,6 +216,15 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
   const [endDate, setEndDate] = useState('')
   const [showFilterPanel, setShowFilterPanel] = useState(true)
   const [isDark, setIsDark] = useState(false)
+
+  // Sync with external props if provided
+  useEffect(() => {
+    if (externalStatusFilter !== undefined) setStatusFilter(externalStatusFilter)
+    if (externalIssueTypeFilter !== undefined) setIssueTypeFilter(externalIssueTypeFilter)
+    if (externalShowPins !== undefined) setShowPins(externalShowPins)
+    if (externalShowClusters !== undefined) setShowClusters(externalShowClusters)
+    if (externalShowHeatmap !== undefined) setShowHeatmap(externalShowHeatmap)
+  }, [externalStatusFilter, externalIssueTypeFilter, externalShowPins, externalShowClusters, externalShowHeatmap])
 
   useEffect(() => {
     const html = document.documentElement
@@ -458,19 +467,13 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
     return { parsedReports, coordsMap }
   }, [filteredReports])
 
-  const handleMarkerClick = useCallback((reportId) => {
-    if (selectionMode && onReportSelect) {
-      onReportSelect(reportId)
-      return // Don't navigate or call onReportClick in selection mode
-    }
-    
+  const handlePopupRouting = useCallback((reportId) => {
     if (onReportClick) {
       onReportClick(reportId)
-      return // Don't navigate if onReportClick is provided
+      return
     }
-    
     router.push(`/dashboard/raw-data/${reportId}`)
-  }, [selectionMode, onReportSelect, onReportClick, router])
+  }, [onReportClick, router])
 
   if (!mounted) return <p>Loading map...</p>
 
@@ -572,22 +575,13 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                 position={center}
                 icon={createClusterIcon(cluster)}
                 eventHandlers={{
-                  mouseover: (e) => {
-                    const marker = e.target
-                    marker.openPopup()
-                  },
-                  mouseout: (e) => {
-                    const marker = e.target
-                    marker.closePopup()
-                  },
-                  click: () => {
+                  click: (e) => {
                     if (selectionMode && onClusterSelect) {
+                      e.originalEvent.stopPropagation()
                       const memberReports = filteredClusterReports[cluster.id]
                       if (memberReports && memberReports.length > 0) {
                         onClusterSelect(memberReports.map(r => r.id))
                       }
-                    } else {
-                      router.push(`/dashboard/officer/hotzone-intel/${cluster.id}`)
                     }
                   }
                 }}
@@ -763,15 +757,12 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                     position={[latitude, longitude]}
                   icon={createIcon(report.status, isRemoving, selectedReportsSet.has(report.id))}
                   eventHandlers={{
-                    mouseover: (e) => {
-                      const marker = e.target
-                      marker.openPopup()
-                    },
-                    mouseout: (e) => {
-                      const marker = e.target
-                      marker.closePopup()
-                    },
-                    click: () => handleMarkerClick(report.id)
+                    click: (e) => {
+                      if (selectionMode && onReportSelect) {
+                        e.originalEvent.stopPropagation()
+                        onReportSelect(report.id)
+                      }
+                    }
                   }}
                 >
                   <Popup>
@@ -806,10 +797,10 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                       </div>
                       {!selectionMode && (
                         <button
-                          onClick={() => handleMarkerClick(report.id)}
+                          onClick={(e) => { e.stopPropagation(); handlePopupRouting(report.id); }}
                           className="mt-2 w-full text-xs bg-accent-green text-white py-1 rounded hover:bg-accent-green-dark"
                         >
-                          Click to View Details
+                          View Full Details
                         </button>
                       )}
                     </div>

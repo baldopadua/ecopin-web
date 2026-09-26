@@ -31,11 +31,11 @@ const citizenNavigation = [
 
 const officerNavigation = [
     { name: 'Command Center', href: '/dashboard/officer', icon: LayoutDashboard },
-    { name: 'Map Grid', href: '/dashboard/map-grid', icon: Map },
+    { name: 'Map Grid', href: '/dashboard/officer/map-grid', icon: Map },
     { name: 'Hotzone Intel', href: '/dashboard/officer/hotzone-intel', icon: Target },
+    { name: 'Operations', href: '/dashboard/officer/operations', icon: Wrench },
     { name: 'Optimization', href: '/dashboard/officer/optimization', icon: CloudLightning },
-    { name: 'Raw Data', href: '/dashboard/raw-data', icon: Database },
-    { name: 'Sys Logs', href: '/dashboard/officer/sys-logs', icon: Terminal },
+    { name: 'Reports', href: '/dashboard/officer/reports', icon: Database },
     { name: 'Metrics', href: '/dashboard/officer/metrics', icon: Activity },
     { name: 'Spatial Scan', href: '/dashboard/spatial-scan', icon: Scan },
 ]
@@ -53,6 +53,7 @@ const adminNavigation = [
     { name: 'Users', href: '/dashboard/admin/users', icon: Users },
     { name: 'System', href: '/dashboard/admin/settings', icon: Settings },
     { name: 'Optimization', href: '/dashboard/admin/optimization-settings', icon: Route },
+    { name: 'Sys Logs', href: '/dashboard/admin/sys-logs', icon: Terminal },
     { name: 'Audit Logs', href: '/dashboard/admin/audit-logs', icon: ScrollText },
     { name: 'Spatial Scan', href: '/dashboard/spatial-scan', icon: Scan },
 ]

@@ -7,7 +7,8 @@ import FilterBar from '@/components/ui/FilterBar'
 import DataTable from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
 import StatusBadge from '@/components/ui/StatusBadge'
-import { OfficerGuard } from '@/components/auth/RequireRole'
+import { AdminGuard } from '@/components/auth/RequireRole'
+import ExportButton from '@/components/ui/ExportButton'
 
 export default function ResponseLogs() {
   const router = useRouter()
@@ -131,16 +132,19 @@ export default function ResponseLogs() {
   ]
 
   return (
-    <OfficerGuard>
+    <AdminGuard>
       <div className="p-8">
         <PageHeader
           title="System Logs"
           subtitle="View report response actions and history"
           breadcrumbs={[
             { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Admin', href: '/dashboard/admin' },
             { label: 'System Logs' }
           ]}
-        />
+        >
+          <ExportButton data={logs} filename="system_logs.csv" className="text-xs tracking-widest bg-surface-elevated" />
+        </PageHeader>
 
         {/* Filters */}
         <FilterBar
@@ -195,6 +199,6 @@ export default function ResponseLogs() {
           />
         )}
       </div>
-    </OfficerGuard>
+    </AdminGuard>
   )
 }

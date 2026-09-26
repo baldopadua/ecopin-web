@@ -4,7 +4,11 @@ import { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, GeoJSON, useMap, Marker } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import 'leaflet.heat';
+
+if (typeof window !== 'undefined') {
+  window.L = L;
+  require('leaflet.heat');
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Heatmap Layer
@@ -141,9 +145,24 @@ function MapBoundsFitter({ geojsonData, heatmapData }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Map Focus Manager
+// ─────────────────────────────────────────────────────────────────────────────
+function MapFocusManager({ focusedItem }) {
+  const map = useMap();
+
+  useEffect(() => {
+     if (focusedItem?.properties?.center_lat && focusedItem?.properties?.center_lng) {
+        map.flyTo([focusedItem.properties.center_lat, focusedItem.properties.center_lng], 16, { animate: true, duration: 1.5 });
+     }
+  }, [focusedItem, map]);
+
+  return null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Main Map Component
 // ─────────────────────────────────────────────────────────────────────────────
-export default function HotspotForecastMap({ predictions, timeHorizon }) {
+export default function HotspotForecastMap({ predictions, timeHorizon, viewModeOverride, focusedItem, hideUI }) {
   const [geojsonData, setGeoJsonData] = useState(null);
   const [heatmapData, setHeatmapData] = useState(null);
   const [viewMode, setViewMode] = useState('both');
@@ -181,12 +200,17 @@ export default function HotspotForecastMap({ predictions, timeHorizon }) {
     const fill = { high: '#ef4444', medium: '#f97316', low: '#22c55e' }[risk] || '#22c55e';
     const stroke = { high: '#b91c1c', medium: '#c2410c', low: '#15803d' }[risk] || '#15803d';
 
+    const isFocused = focusedItem && (
+        focusedItem.properties?.region_id === feature.properties?.region_id || 
+        focusedItem.properties?.rank === feature.properties?.rank
+    );
+
     return {
-      fillColor: fill,
-      color: stroke,
-      weight: 2,
-      opacity: 0.9,
-      fillOpacity: 0.25 + score * 0.3,
+      fillColor: isFocused ? '#ccff00' : fill,
+      color: isFocused ? '#ccff00' : stroke,
+      weight: isFocused ? 4 : 2,
+      opacity: isFocused ? 1 : 0.9,
+      fillOpacity: isFocused ? 0.6 : (0.25 + score * 0.3),
       dashArray: null,
     };
   };
@@ -242,10 +266,14 @@ export default function HotspotForecastMap({ predictions, timeHorizon }) {
 
   // Force viewMode to clusters if no heatmap data is available
   useEffect(() => {
+    if (viewModeOverride) {
+      setViewMode(viewModeOverride);
+      return;
+    }
     if (heatmapFeatures.length === 0 && viewMode !== 'clusters') {
       setViewMode('clusters');
     }
-  }, [heatmapFeatures.length, viewMode]);
+  }, [heatmapFeatures.length, viewMode, viewModeOverride]);
 
   const showClusters = viewMode === 'clusters' || viewMode === 'both';
   const showHeatmap = viewMode === 'heatmap' || viewMode === 'both';
@@ -293,6 +321,7 @@ export default function HotspotForecastMap({ predictions, timeHorizon }) {
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       {/* View mode toggle */}
+      {!hideUI && (
       <div style={{
         position: 'absolute', top: 12, right: 12, zIndex: 400,
         background: 'var(--surface-elevated)', borderRadius: '8px', padding: '6px',
@@ -310,9 +339,10 @@ export default function HotspotForecastMap({ predictions, timeHorizon }) {
           </div>
         )}
       </div>
+      )}
 
       {/* Cluster count badge */}
-      {clusterFeatures.length > 0 && (
+      {!hideUI && clusterFeatures.length > 0 && (
         <div style={{
           position: 'absolute', top: 12, left: 12, zIndex: 1000,
           background: 'white', borderRadius: 10, boxShadow: '0 2px 12px rgba(0,0,0,.15)',
@@ -344,6 +374,7 @@ export default function HotspotForecastMap({ predictions, timeHorizon }) {
         />
 
         <MapBoundsFitter geojsonData={geojsonData} heatmapData={heatmapData} />
+        <MapFocusManager focusedItem={focusedItem} />
 
         {/* Heatmap layer */}
         {showHeatmap && heatmapData && <HeatmapLayer heatmapData={heatmapData} />}

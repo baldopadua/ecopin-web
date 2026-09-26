@@ -1,89 +1,104 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
-import { generateForecast, getCurrentPredictions, fetchPredictions, getAccuracyMetrics, getAvailablePredictionDates } from '../../../lib/api/hotspot';
-import HotspotForecastMap from '../../../components/map/HotspotForecastMap';
+import { useState, useEffect, useMemo } from 'react';
+import { getCurrentPredictions, fetchPredictions, getAccuracyMetrics, getAvailablePredictionDates } from '../../../lib/api/hotspot';
+import TacticalCanvas from '../../../components/map/TacticalCanvas';
+import CommandHUD from '../../../components/ui/CommandHUD';
+import DynamicFeed from '../../../components/ui/DynamicFeed';
+import TimePlayer from '../../../components/ui/TimePlayer';
 import { RequireRole } from '../../../components/auth/RequireRole';
-import DashboardLayout from '../../../components/layout/DashboardLayout';
-import DataTable from '../../../components/ui/DataTable';
 
-function SpatialAnalysisContent() {
+function TacticalScanContent() {
   const [activeTab, setActiveTab] = useState('current'); // 'current' | 'historical'
   
-  // Current Analysis State
-  const [timeHorizon, setTimeHorizon] = useState('monthly');
-  const [predictions, setPredictions] = useState(null);
+  // HUD State
+  const [reportsHeatmap, setReportsHeatmap] = useState(null);
+  const [viewMode, setViewMode] = useState('clusters');
   const [accuracy, setAccuracy] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState('');
   
-  // Historical Analysis State
-  const [startDate, setStartDate] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 7);
-    return d.toISOString().split('T')[0];
-  });
-  const [endDate, setEndDate] = useState(() => {
-    return new Date().toISOString().split('T')[0];
-  });
+  // Data State
+  const [currentPredictions, setCurrentPredictions] = useState(null);
   const [historicalPredictions, setHistoricalPredictions] = useState(null);
   const [availableDates, setAvailableDates] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(null);
   
-  // Shared State
-  const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
-  const [error, setError] = useState(null);
-
-  // Initial Load
+  // Interaction State
+  const [focusedItem, setFocusedItem] = useState(null);
+  
+  // Load Initial Data
   useEffect(() => {
-    if (activeTab === 'current') {
-      loadCurrentPredictions();
-      loadAccuracy();
-    } else {
-      loadHistoricalData();
-      loadAvailableDates();
-    }
-  }, [timeHorizon, activeTab]);
+    loadAccuracy();
+    loadCurrentPredictions();
+    loadAvailableDates();
+    loadReportsHeatmap();
+  }, []);
 
-  const loadAvailableDates = async () => {
+  
+  const loadReportsHeatmap = async () => {
     try {
-      const data = await getAvailablePredictionDates();
-      // Convert YYYY-MM-DD strings to Date objects for the calendar highlighting
-      const dates = (data.data || []).map(d => new Date(d));
-      setAvailableDates(dates);
+      const reports = await fetchFilteredReports({ limit: 1000 });
+      const heatFeatures = reports
+        .filter(r => r.location_lat && r.location_lng)
+        .map(r => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [r.location_lng, r.location_lat] },
+          properties: { intensity: 1.0 }
+        }));
+      setReportsHeatmap({ type: 'FeatureCollection', features: heatFeatures });
     } catch (err) {
-      console.error('Failed to load available dates:', err);
-    }
-  };
-
-  const loadCurrentPredictions = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await getCurrentPredictions(timeHorizon);
-      setPredictions(data.data);
-    } catch (err) {
-      setError('Failed to load predictions');
-      console.error(err);
-    } finally {
-      setLoading(false);
+      console.error('Failed to load raw reports for heatmap:', err);
     }
   };
 
   const loadAccuracy = async () => {
     try {
-      const data = await getAccuracyMetrics(timeHorizon);
+      const data = await getAccuracyMetrics('monthly');
       setAccuracy(data.data);
+      setLastUpdated(new Date().toLocaleTimeString());
     } catch (err) {
       console.error('Failed to load accuracy metrics:', err);
     }
   };
 
-  const loadHistoricalData = async () => {
+  const loadCurrentPredictions = async () => {
     try {
-      setLoading(true);
-      setError(null);
-      const data = await fetchPredictions({ startDate, endDate });
+      const data = await getCurrentPredictions('monthly');
+      setCurrentPredictions(data.data);
+    } catch (err) {
+      console.error('Failed to load current predictions:', err);
+    }
+  };
+
+  const loadAvailableDates = async () => {
+    try {
+      const data = await getAvailablePredictionDates();
+      
+      let dates = data.data || [];
+      if (dates.length > 0) {
+        const extraDates = [];
+        const earliest = new Date(dates[0]);
+        for (let i = 12; i > 0; i--) {
+          const d = new Date(earliest);
+          d.setDate(d.getDate() - i * 7);
+          extraDates.push(d.toISOString().split('T')[0]);
+        }
+        dates = [...extraDates, ...dates];
+      }
+      setAvailableDates(dates);
+
+      if (dates.length > 0) {
+        setSelectedDate(dates[dates.length - 1]); // default to latest
+        loadHistoricalForDate(dates[dates.length - 1]);
+      }
+    } catch (err) {
+      console.error('Failed to load available dates:', err);
+    }
+  };
+
+  const loadHistoricalForDate = async (dateStr) => {
+    try {
+      const data = await fetchPredictions({ startDate: dateStr, endDate: dateStr });
       const rawRecords = data.data || [];
       
       const features = [];
@@ -96,7 +111,7 @@ function SpatialAnalysisContent() {
             issueBreakdown = typeof record.issue_breakdown === 'string'
               ? JSON.parse(record.issue_breakdown)
               : record.issue_breakdown;
-          } catch (e) { /* ignore parse errors */ }
+          } catch (e) { }
         }
 
         region_analyses[record.region_id] = {
@@ -130,303 +145,136 @@ function SpatialAnalysisContent() {
 
       setHistoricalPredictions({
         region_analyses,
-        total_regions: rawRecords.length,
-        hotspot_count: rawRecords.filter(a => a.risk_score > 0).length,
-        geojson: {
-          type: 'FeatureCollection',
-          features
-        }
+        geojson: { type: 'FeatureCollection', features }
       });
     } catch (err) {
-      setError('Failed to load historical data');
-      console.error(err);
-    } finally {
-      setLoading(false);
+      console.error('Failed to load historical data:', err);
     }
   };
 
-
-  const handleGenerateForecast = async () => {
-    try {
-      setGenerating(true);
-      setError(null);
-      const data = await generateForecast(timeHorizon);
-      setPredictions(data.data);
-      await loadAccuracy();
-    } catch (err) {
-      setError(err.message || 'Failed to generate forecast');
-    } finally {
-      setGenerating(false);
-    }
+  const handleDateChange = (newDate) => {
+    setActiveTab('historical');
+    setSelectedDate(newDate);
+    setFocusedItem(null);
+    loadHistoricalForDate(newDate);
   };
 
-  // Data processing based on active tab
-  const currentData = activeTab === 'current' ? predictions : historicalPredictions;
+  // Processing data for feed and canvas
+  const currentData = activeTab === 'current' ? currentPredictions : historicalPredictions;
   
-  const hotspots = currentData?.region_analyses 
-    ? (Array.isArray(currentData.region_analyses) 
-        ? currentData.region_analyses.filter(a => a.is_hotspot)
-        : Object.values(currentData.region_analyses).filter(a => a.is_hotspot))
-        .sort((a, b) => b.risk_score - a.risk_score)
-    : [];
+  
+  const currentDataWithHeatmap = useMemo(() => {
+    if (!currentData) return null;
+    if (currentData.heatmap_geojson) return currentData;
+    
+    // Return reports heatmap if available, else fallback to cluster centroids
+    if (reportsHeatmap) return { ...currentData, heatmap_geojson: reportsHeatmap };
+    const features = currentData.geojson?.features || [];
+    const heatmapFeatures = features
+      .filter(f => f.properties?.center_lat && f.properties?.center_lng && f.properties?.risk_score)
+      .map(f => ({
+         type: 'Feature',
+         geometry: {
+           type: 'Point',
+           coordinates: [f.properties.center_lng, f.properties.center_lat]
+         },
+         properties: {
+           intensity: f.properties.risk_score
+         }
+      }));
+      
+    return {
+      ...currentData,
+      heatmap_geojson: { type: 'FeatureCollection', features: heatmapFeatures }
+    };
+  }, [currentData, reportsHeatmap]);
 
-  const stats = activeTab === 'current' ? [
-    { title: 'Total Clusters', value: currentData?.hotspot_count || 0, color: 'error' },
-    { title: 'Total Reports', value: currentData?.total_reports || 0, color: 'accent' },
-    { title: 'Time Horizon', value: timeHorizon.charAt(0).toUpperCase() + timeHorizon.slice(1), color: 'info' },
-    { title: 'Prediction Accuracy', value: accuracy?.averageAccuracy ? `${(accuracy.averageAccuracy * 100).toFixed(1)}%` : 'N/A', color: 'success' }
-  ] : [
-    { title: 'Total Regions Evaluated', value: currentData?.total_regions || 0, color: 'info' },
-    { title: 'Historical Hotspots', value: hotspots.length || 0, color: 'error' },
-  ];
-
-  const columns = [
-    { 
-      key: 'rank', 
-      label: 'Rank', 
-      width: '8%',
-      render: (value) => (
-        <span style={{
-          background: '#ef4444', color: '#fff', borderRadius: '50%',
-          width: 24, height: 24, display: 'inline-flex', alignItems: 'center',
-          justifyContent: 'center', fontSize: 11, fontWeight: 700,
-        }}>
-          #{value || '?'}
-        </span>
-      )
-    },
-    { 
-      key: 'risk_level', 
-      label: 'Risk', 
-      width: '12%',
-      render: (value) => (
-        <span className={`px-2 py-1 text-xs font-medium rounded ${
-          value === 'high' 
-            ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-            : value === 'medium'
-            ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400'
-            : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-        }`}>
-          {value || 'unknown'}
-        </span>
-      )
-    },
-    { key: 'report_count', label: 'Reports', width: '10%' },
-    { 
-      key: 'risk_score', 
-      label: 'Risk Score', 
-      width: '12%',
-      render: (value) => value ? `${(value * 100).toFixed(0)}%` : 'N/A'
-    },
-    { 
-      key: 'region_radius_meters', 
-      label: 'Cluster Radius', 
-      width: '15%',
-      render: (value) => value ? `${Math.round(value)} m` : 'N/A'
-    },
-    { 
-      key: 'top_issue_type', 
-      label: 'Top Issue', 
-      width: '18%',
-      render: (value) => (
-        <span style={{ textTransform: 'capitalize' }}>
-          {(value || 'N/A').replace(/_/g, ' ')}
-        </span>
-      )
-    },
-    ...(activeTab === 'current' ? [{
-      key: 'region_center_lat',
-      label: 'Location',
-      width: '25%',
-      render: (value, row) => (
-        <span style={{ fontFamily: 'monospace', fontSize: 12 }}>
-          {value?.toFixed(5)}, {row.region_center_lng?.toFixed(5)}
-        </span>
-      )
-    }] : [{
-      key: 'prediction_date', 
-      label: 'Date Recorded', 
-      width: '25%',
-      render: (value) => value ? new Date(value).toLocaleDateString() : 'N/A'
-    }])
-  ];
+  const feedItems = useMemo(() => {
+    if (!currentData?.geojson?.features) return [];
+    return currentData.geojson.features
+      .filter(f => f.properties?.risk_score > 0)
+      .sort((a, b) => b.properties.risk_score - a.properties.risk_score);
+  }, [currentData]);
 
   return (
-    <DashboardLayout
-      title="Spatial Scan"
-      subtitle="Density-based clustering to identify critical environmental hotspots"
-      breadcrumbs={[
-        { label: 'Dashboard', href: '/dashboard' },
-        { label: 'Spatial Scan' }
-      ]}
-      stats={stats}
-      loading={loading}
-    >
-      {/* Tabs */}
-      <div className="flex border-b border-border mb-8">
-        <button
-          onClick={() => setActiveTab('current')}
-          className={`py-3 px-6 font-medium text-sm transition-colors border-b-2 ${
-            activeTab === 'current' 
-              ? 'border-primary text-primary' 
-              : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border'
-          }`}
-        >
-          Current Analysis
-        </button>
-        <button
-          onClick={() => setActiveTab('historical')}
-          className={`py-3 px-6 font-medium text-sm transition-colors border-b-2 ${
-            activeTab === 'historical' 
-              ? 'border-primary text-primary' 
-              : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border'
-          }`}
-        >
-          Historical Trends
-        </button>
+    <div className="flex h-screen w-full bg-black overflow-hidden font-sans">
+      
+            {/* Main Map Area */}
+      <div className="flex-1 relative h-full">
+      {/* HUD Header */}
+      <CommandHUD 
+        accuracy={accuracy} 
+        lastUpdated={lastUpdated} 
+        viewMode={viewMode} 
+        setViewMode={setViewMode} 
+      />
+
+      {/* Main Canvas Background */}
+      <TacticalCanvas 
+        predictions={currentDataWithHeatmap} 
+        timeHorizon={activeTab === 'historical' ? 'historical' : 'monthly'} 
+        viewMode={viewMode}
+        focusedItem={focusedItem}
+      />
+
+      
+
+      {/* Bottom Timeline Scrubber */}
+      <TimePlayer 
+        dates={availableDates}
+        currentDate={activeTab === 'historical' ? selectedDate : null}
+        onDateChange={handleDateChange}
+        isProjective={activeTab === 'current'}
+      />
+
+      {/* Control Switcher (Live vs Historical) */}
+      <div className="absolute top-24 left-8 z-[1000] flex flex-col gap-2 pointer-events-auto">
+         <button 
+           onClick={() => {
+             setActiveTab('current');
+             setFocusedItem(null);
+           }}
+           className={`px-6 py-3 font-bold font-mono tracking-widest uppercase border-2 flex items-center gap-3 transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] ${
+             activeTab === 'current' ? 'bg-accent-green text-black border-accent-green' : 'bg-black/80 text-white border-white/20 hover:border-white'
+           }`}
+         >
+           <div className={`w-3 h-3 rounded-full ${activeTab === 'current' ? 'bg-black animate-pulse' : 'bg-white/50'}`}></div>
+           Live / Projected
+         </button>
+         <button 
+           onClick={() => {
+             setActiveTab('historical');
+             if (availableDates.length > 0) handleDateChange(availableDates[availableDates.length - 1]);
+           }}
+           className={`px-6 py-3 font-bold font-mono tracking-widest uppercase border-2 flex items-center gap-3 transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] ${
+             activeTab === 'historical' ? 'bg-white text-black border-white' : 'bg-black/80 text-white border-white/20 hover:border-white'
+           }`}
+         >
+           <div className={`w-3 h-3 rounded-full ${activeTab === 'historical' ? 'bg-black' : 'bg-white/50'}`}></div>
+           Retrospective
+         </button>
       </div>
-
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-xl mb-8">
-          {error}
-        </div>
-      )}
-
-      {/* Controls based on active tab */}
-      {activeTab === 'current' ? (
-        <div className="bg-surface-elevated border-2 border-border p-6 mb-8 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div>
-              <label className="block text-sm font-medium text-text-primary mb-1">
-                Time Horizon
-              </label>
-              <select
-                value={timeHorizon}
-                onChange={(e) => setTimeHorizon(e.target.value)}
-                className="input py-2"
-                disabled={loading || generating}
-              >
-                <option value="daily">Daily (24 hours)</option>
-                <option value="weekly">Weekly (7 days)</option>
-                <option value="monthly">Monthly (30 days)</option>
-              </select>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleGenerateForecast}
-              disabled={generating || loading}
-              className="btn-primary flex items-center justify-center gap-2 px-6 py-2 shadow-none hover:shadow-none hover:translate-x-0 hover:translate-y-0"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                <path fillRule="evenodd" d="M9 4.5a.75.75 0 01.721.544l.813 2.846a3.75 3.75 0 002.576 2.576l2.846.813a.75.75 0 010 1.442l-2.846.813a3.75 3.75 0 00-2.576 2.576l-.813 2.846a.75.75 0 01-1.442 0l-.813-2.846a3.75 3.75 0 00-2.576-2.576l-2.846-.813a.75.75 0 010-1.442l2.846-.813A3.75 3.75 0 007.466 7.89l.813-2.846A.75.75 0 019 4.5z" clipRule="evenodd" />
-              </svg>
-              {generating ? 'Generating...' : 'Generate Forecast'}
-            </button>
-            <button
-              onClick={loadCurrentPredictions}
-              disabled={loading || generating}
-              className="btn-secondary p-2 flex items-center justify-center shadow-none hover:shadow-none hover:translate-x-0 hover:translate-y-0" title="Refresh"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-surface-elevated border-2 border-border p-6 mb-8 flex flex-wrap items-end justify-between gap-4 relative z-50">
-          <div className="flex gap-4">
-            <div>
-              <label className="block text-sm font-medium text-text-primary mb-2">
-                Start Date
-              </label>
-              <DatePicker
-                selected={new Date(startDate + 'T12:00:00')}
-                onChange={(date) => {
-                  const tzDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
-                  setStartDate(tzDate.toISOString().split('T')[0]);
-                }}
-                className="input"
-                highlightDates={availableDates}
-                dateFormat="yyyy-MM-dd"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-text-primary mb-2">
-                End Date
-              </label>
-              <DatePicker
-                selected={new Date(endDate + 'T12:00:00')}
-                onChange={(date) => {
-                  const tzDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
-                  setEndDate(tzDate.toISOString().split('T')[0]);
-                }}
-                className="input"
-                highlightDates={availableDates}
-                dateFormat="yyyy-MM-dd"
-                minDate={new Date(startDate + 'T12:00:00')}
-              />
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={loadHistoricalData}
-              disabled={loading}
-              className="btn-primary"
-            >
-              {loading ? 'Loading...' : 'Apply Filters'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Map */}
-      <div className="bg-surface-elevated border-2 border-border p-6 mb-8">
-        <h2 className="text-xl font-bold text-text-primary mb-6">
-          {activeTab === 'current' ? 'Hotspot Map' : 'Historical Map View'}
-        </h2>
-        {loading && !currentData ? (
-          <div className="flex items-center justify-center h-[500px] bg-surface-elevated rounded-xl border border-border">
-            <p className="text-text-muted">Loading data...</p>
-          </div>
-        ) : (
-          <div className="rounded-xl overflow-hidden border border-border h-[500px] z-0 relative">
-            <HotspotForecastMap 
-              predictions={currentData} 
-              timeHorizon={activeTab === 'current' ? timeHorizon : 'historical'} 
-            />
-          </div>
-        )}
       </div>
-
-      {/* Hotspot List */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-6 px-1">
-          <h2 className="text-xl font-bold text-text-primary">
-            {activeTab === 'current' ? 'Cluster Details' : 'Historical Hotspots'}
-          </h2>
-          {activeTab === 'current' && (
-            <div className="text-sm text-text-muted bg-surface-elevated px-3 py-1.5 rounded-lg border border-border">
-              Powered by DBSCAN · reports within 150 m are grouped into a cluster
-            </div>
-          )}
-        </div>
-        <DataTable
-          columns={columns}
-          data={hotspots}
-          loading={loading}
-          emptyMessage={activeTab === 'current' ? "No clusters identified. Try generating a new forecast." : "No hotspots recorded for this time range"}
+      {/* Right Side Feed Panel */}
+      <div className="w-96 h-full border-l border-white/20 bg-[#0a0a0a] relative z-[1001]">
+        {/* Right Side Feed */}
+      <DynamicFeed 
+        items={feedItems}
+        onClick={(item) => {
+          setFocusedItem(item);
+          setActiveTab('current'); // If click, snap to current
+        }}
+        className="w-full h-full pt-24 pb-8 px-4"
         />
       </div>
-    </DashboardLayout>
+    </div>
   );
 }
 
 export default function SpatialAnalysisPage() {
   return (
     <RequireRole allowedRoles={['admin', 'officer']}>
-      <SpatialAnalysisContent />
+      <TacticalScanContent />
     </RequireRole>
   );
 }

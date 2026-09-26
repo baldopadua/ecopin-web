@@ -1,0 +1,25 @@
+
+'use client'
+import React from 'react'
+import HotspotForecastMap from './HotspotForecastMap'
+
+export default function TacticalCanvas({ predictions, timeHorizon, viewMode, focusedItem }) {
+  return (
+    <div className="absolute inset-0 bg-[#0a0a0a] z-0 overflow-hidden" 
+         style={{ 
+            backgroundImage: `linear-gradient(rgba(204, 255, 0, 0.05) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(204, 255, 0, 0.05) 1px, transparent 1px)`,
+            backgroundSize: '40px 40px' 
+         }}>
+      <div className="absolute inset-0 opacity-80 mix-blend-screen">
+         <HotspotForecastMap 
+           predictions={predictions} 
+           timeHorizon={timeHorizon} 
+           viewModeOverride={viewMode} 
+           focusedItem={focusedItem} 
+           hideUI={true}
+         />
+      </div>
+    </div>
+  )
+}

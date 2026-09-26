@@ -5,82 +5,33 @@ import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
 import RouteInfoHeader from '@/components/ui/RouteInfoHeader'
 import { SkeletonForm } from '@/components/ui/Skeleton'
+import EvidenceGallery from '@/components/ui/EvidenceGallery'
+import Pagination from '@/components/ui/Pagination'
 import { useTask } from '@/components/context/TaskContext'
 import { Sun, CloudRain, CloudLightning, Circle, Globe, Map, Check, CheckCircle2, XCircle, Ruler, Timer } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { 
+  WEATHER_OPTIONS, 
+  TRAFFIC_OPTIONS, 
+  STATUS_STYLES, 
+  CREW_COLORS, 
+  formatDistance, 
+  formatDuration, 
+  formatDate,
+  CrewRouteCard, 
+  RouteMapView 
+} from '@/components/optimization/RouteComponents'
 import {
   generatePlan,
   commitPlan,
   getOptimizationRuns,
-  getOptimizationRunById,
-  approveOptimization,
-  discardOptimization,
   fetchWorkQueue,
 } from '@/lib/api/optimization'
 
-// Dynamic import for Leaflet components (SSR-incompatible)
-const MapContainer = dynamic(
-  () => import('react-leaflet').then(m => m.MapContainer),
-  { ssr: false }
-)
-const TileLayer = dynamic(
-  () => import('react-leaflet').then(m => m.TileLayer),
-  { ssr: false }
-)
-const RouteLayer = dynamic(
-  () => import('@/components/map/RouteLayer'),
-  { ssr: false }
-)
 
-const WEATHER_OPTIONS = [
-  { value: 'normal', label: 'Normal', icon: <Sun className="w-4 h-4 text-warning" /> },
-  { value: 'heavy_rain', label: 'Heavy Rain', icon: <CloudRain className="w-4 h-4 text-info" /> },
-  { value: 'storm', label: 'Storm', icon: <CloudLightning className="w-4 h-4 text-purple" /> },
-]
-
-const TRAFFIC_OPTIONS = [
-  { value: 'low', label: 'Low', icon: <Circle className="w-4 h-4 text-success fill-success" /> },
-  { value: 'moderate', label: 'Moderate', icon: <Circle className="w-4 h-4 text-warning fill-warning" /> },
-  { value: 'heavy', label: 'Heavy', icon: <Circle className="w-4 h-4 text-error fill-error" /> },
-]
-
-const PRIORITY_STYLES = {
-  urgent: 'bg-error/20 text-error border-error/30',
-  high: 'bg-warning/20 text-warning border-warning/30',
-  medium: 'bg-info/20 text-info border-info/30',
-  low: 'bg-success/20 text-success border-success/30',
-}
-
-const STATUS_STYLES = {
-  proposed: 'bg-warning/20 text-warning border-warning/30',
-  approved: 'bg-success/20 text-success border-success/30',
-  discarded: 'bg-text-muted/20 text-text-muted border-text-muted/30',
-  draft: 'bg-info/20 text-info border-info/30',
-  failed: 'bg-error/20 text-error border-error/30',
-}
-
-const CREW_COLORS = ['#85D22D', '#0288D1', '#8B5CF6', '#F9A825', '#457113']
-
-function formatDistance(meters) {
-  if (!meters) return '—'
-  return meters >= 1000 ? `${(meters / 1000).toFixed(1)} km` : `${Math.round(meters)} m`
-}
-
-function formatDuration(minutes) {
-  if (!minutes) return '—'
-  const h = Math.floor(minutes / 60)
-  const m = Math.round(minutes % 60)
-  return h > 0 ? `${h}h ${m}m` : `${m}m`
-}
-
-function formatDate(dateStr) {
-  if (!dateStr) return '—'
-  return new Date(dateStr).toLocaleString('en-PH', {
-    year: 'numeric', month: 'short', day: 'numeric',
-    hour: '2-digit', minute: '2-digit'
-  })
-}
 
 export default function OptimizationPage() {
+  const router = useRouter()
   const { isOptimizing, optimizationProgress, draftPlan, setDraftPlan, startOptimization, commitOptimization } = useTask()
   const [liveWeather, setLiveWeather] = useState('normal')
   const [trafficCondition, setTrafficCondition] = useState('low')
@@ -91,10 +42,9 @@ export default function OptimizationPage() {
   const [runsLoading, setRunsLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(null)
   const [notification, setNotification] = useState(null)
-  const [expandedRun, setExpandedRun] = useState(null)
-  const [viewLoading, setViewLoading] = useState(null)
   const [pendingClusters, setPendingClusters] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
+  const [showRequeueConfirm, setShowRequeueConfirm] = useState(false)
   const runsPerPage = 10
 
   const loadPendingClusters = useCallback(async () => {
@@ -173,7 +123,7 @@ export default function OptimizationPage() {
         setDraftPlan(null) // Clear draft on successful commit
         loadPreviousRuns()
         if (result.optimization_run && result.optimization_run.id) {
-          handleViewRun(result.optimization_run.id)
+          router.push('/dashboard/officer/optimization/' + result.optimization_run.id)
         }
         setActionLoading(null)
       },
@@ -212,27 +162,14 @@ export default function OptimizationPage() {
     }
   }
 
-  const handleViewRun = async (runId) => {
-    if (expandedRun === runId) {
-      setExpandedRun(null)
-      return
-    }
-    try {
-      setViewLoading(runId)
-      const fullRun = await getOptimizationRunById(runId)
-      setCurrentProposal(fullRun)
-      setCurrentProposalRoutes(fullRun.routes || [])
-      setExpandedRun(runId)
-    } catch (err) {
-      setNotification({ message: 'Failed to load run details', type: 'error' })
-    } finally {
-      setViewLoading(null)
-    }
+  const handleViewRun = (runId) => {
+    router.push('/dashboard/officer/optimization/' + runId)
   }
 
   const weatherLabel = WEATHER_OPTIONS.find(w => w.value === (currentProposal?.weather_condition || liveWeather))?.label || 'Normal'
   const trafficLabel = TRAFFIC_OPTIONS.find(t => t.value === (currentProposal?.traffic_condition || trafficCondition))?.label || 'Low'
 
+  const pendingProposal = previousRuns.find(r => r.status === 'proposed')
   return (
     <div className="p-8">
       <PageHeader
@@ -246,12 +183,81 @@ export default function OptimizationPage() {
         ]}
       />
 
+      {pendingProposal && (
+        <div className="mb-6 p-4 border-2 border-warning bg-warning/10 flex items-center justify-between">
+          <div>
+            <h3 className="text-warning font-bold uppercase tracking-wider text-sm flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-warning animate-pulse"></span>
+              Action Required: Pending Proposal
+            </h3>
+            <p className="text-xs text-text-primary mt-1 font-mono">
+              You have an optimization plan generated on {formatDate(pendingProposal.created_at)} waiting for approval.
+            </p>
+          </div>
+          <button
+            onClick={() => handleViewRun(pendingProposal.id)}
+            className="px-4 py-2 bg-warning text-black font-bold uppercase text-xs hover:bg-warning/80 transition-colors"
+          >
+            Review & Approve
+          </button>
+        </div>
+      )}
+
+
+      {pendingProposal && (
+        <div className="mb-6 p-4 border-2 border-warning bg-warning/10 flex items-center justify-between">
+          <div>
+            <h3 className="text-warning font-bold uppercase tracking-wider text-sm flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-warning animate-pulse"></span>
+              Action Required: Pending Proposal
+            </h3>
+            <p className="text-xs text-text-primary mt-1 font-mono">
+              You have an optimization plan generated on {formatDate(pendingProposal.created_at)} waiting for approval.
+            </p>
+          </div>
+          <button
+            onClick={() => handleViewRun(pendingProposal.id)}
+            className="px-4 py-2 bg-warning text-black font-bold uppercase text-xs hover:bg-warning/80 transition-colors"
+          >
+            Review & Approve
+          </button>
+        </div>
+      )}
+
       {notification && (
         <Notification
           message={notification.message}
           type={notification.type}
           onClose={() => setNotification(null)}
         />
+      )}
+
+      {/* Requeue Confirm Modal */}
+      {showRequeueConfirm && (
+        <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4">
+          <div className="bg-surface-elevated border-2 border-warning max-w-lg w-full p-6 shadow-[8px_8px_0px_0px_#F59E0B]">
+            <h3 className="text-xl font-black uppercase tracking-tighter text-warning mb-2 flex items-center gap-2">
+              <XCircle className="w-6 h-6" /> Re-queuing Warning
+            </h3>
+            <p className="text-text-primary mb-6">
+              Pre-assigned tasks will be re-evaluated. Old tasks not completed will be re-dispatched along with new tasks. Do you want to proceed and generate a new optimization?
+            </p>
+            <div className="flex gap-4">
+              <button 
+                onClick={handleGenerate}
+                className="btn-primary bg-warning text-black border-warning flex-1 py-3 font-bold uppercase tracking-widest text-xs hover:bg-white transition-colors"
+              >
+                Confirm & Re-queue
+              </button>
+              <button 
+                onClick={() => setShowRequeueConfirm(false)}
+                className="btn-secondary flex-1 py-3 font-bold uppercase tracking-widest text-xs"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Conditions Overview */}
@@ -348,7 +354,7 @@ export default function OptimizationPage() {
       </div>
 
       {/* Current Proposal Result */}
-      {currentProposal && (
+      {currentProposal && currentProposal.status === 'draft_plan' && (
         <div className="card border-2 border-border mb-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-text-primary text-lg">Proposal Result</h3>
@@ -418,6 +424,41 @@ export default function OptimizationPage() {
               ))}
             </div>
           )}
+
+          {/* Task-Time Histogram */}
+          {currentProposalRoutes.length > 0 && (
+            <div className="mb-6">
+              <h4 className="font-bold text-text-primary mb-3 flex items-center gap-2">
+                <Timer className="w-5 h-5" /> Task-Time Histogram
+                <span className="text-xs font-mono text-text-muted">(Est. workload distribution)</span>
+              </h4>
+              <div className="bg-surface-elevated border-2 border-border p-4 h-48 flex items-end gap-2">
+                {currentProposalRoutes.map((r, i) => {
+                  const getDur = (route) => route.total_duration_min || (route.task_count * 25) || (route.waypoints?.length * 15) || 0;
+                  const maxDur = Math.max(...currentProposalRoutes.map(route => getDur(route) || 1));
+                  const dur = getDur(r);
+                  const heightPct = Math.max(8, (dur / maxDur) * 100);
+                  const color = CREW_COLORS[i % CREW_COLORS.length];
+                  return (
+                    <div key={r.id} className="flex-1 flex flex-col items-center gap-2 group pt-6">
+                      <div className="w-full bg-black/10 dark:bg-white/5 relative h-full flex items-end rounded-t-sm">
+                        <div 
+                          className="w-full transition-all duration-500 hover:brightness-110 relative rounded-t-sm"
+                          style={{ height: `${heightPct}%`, backgroundColor: color }}
+                        >
+                           <div className="absolute -top-7 left-1/2 transform -translate-x-1/2 bg-surface text-text-primary border border-border text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap font-mono shadow-sm">
+                             {formatDuration(dur)}
+                           </div>
+                        </div>
+                      </div>
+                      <span className="text-xs font-mono text-text-muted truncate max-w-full px-1">{r.field_crews?.name || `Crew ${i+1}`}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
 
           {/* Route Map (Phase 12.3) */}
           {currentProposalRoutes.length > 0 && (
@@ -520,18 +561,12 @@ export default function OptimizationPage() {
                       </span>
                     </td>
                     <td className="py-3">
+
                       <button
                         onClick={() => handleViewRun(run.id)}
-                        disabled={viewLoading === run.id}
-                        className="text-xs text-accent-green hover:underline font-mono uppercase tracking-wider flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                        className="text-xs text-accent-green hover:underline font-mono uppercase tracking-wider flex items-center gap-1 cursor-pointer"
                       >
-                        {viewLoading === run.id && (
-                          <svg className="animate-spin h-3 w-3 inline" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                          </svg>
-                        )}
-                        {expandedRun === run.id ? 'COLLAPSE' : 'VIEW'}
+                        VIEW
                       </button>
                     </td>
                   </tr>
@@ -542,26 +577,14 @@ export default function OptimizationPage() {
           
           {/* Pagination Controls */}
           {previousRuns.length > runsPerPage && (
-            <div className="flex justify-between items-center mt-4">
-              <span className="text-xs text-text-muted font-mono uppercase">
-                Showing {(currentPage - 1) * runsPerPage + 1}-{Math.min(currentPage * runsPerPage, previousRuns.length)} of {previousRuns.length}
-              </span>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="px-3 py-1 bg-surface-elevated border-2 border-border text-xs font-bold disabled:opacity-50"
-                >
-                  Prev
-                </button>
-                <button
-                  onClick={() => setCurrentPage(p => Math.min(Math.ceil(previousRuns.length / runsPerPage), p + 1))}
-                  disabled={currentPage >= Math.ceil(previousRuns.length / runsPerPage)}
-                  className="px-3 py-1 bg-surface-elevated border-2 border-border text-xs font-bold disabled:opacity-50"
-                >
-                  Next
-                </button>
-              </div>
+            <div className="mt-4">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={Math.ceil(previousRuns.length / runsPerPage)}
+                onPageChange={setCurrentPage}
+                itemsPerPage={runsPerPage}
+                totalItems={previousRuns.length}
+              />
             </div>
           )}
           </div>
@@ -570,140 +593,4 @@ export default function OptimizationPage() {
     </div>
   )
 }
-
-function CrewRouteCard({ route, index, color }) {
-  const crewName = route.field_crews?.name || `Crew ${index + 1}`
-  const waypoints = route.waypoints || []
-  const taskWaypoints = waypoints.filter(w => w.waypoint_type === 'task')
-
-  let scoutingCount = 0
-  let cleanupCount = 0
-  let mixedCount = 0
-
-  taskWaypoints.forEach(wp => {
-    const type = wp.cleanup_tasks?.task_type || 'Cleanup'
-    if (type === 'Scouting') scoutingCount++
-    else if (type === 'Cleanup') cleanupCount++
-    else mixedCount++
-  })
-
-  let dominantType = 'Cleanup'
-  let badgeStyle = 'bg-success/20 text-success border-success/30'
-  let badgeIcon = '🚛'
-  
-  if (scoutingCount > 0 && cleanupCount === 0 && mixedCount === 0) {
-    dominantType = 'Scouting'
-    badgeStyle = 'bg-info/20 text-info border-info/30'
-    badgeIcon = '🔍'
-  } else if (cleanupCount > 0 && scoutingCount === 0 && mixedCount === 0) {
-    dominantType = 'Cleanup'
-  } else if (taskWaypoints.length > 0) {
-    dominantType = 'Mixed'
-    badgeStyle = 'bg-purple/20 text-purple border-purple/30'
-    badgeIcon = '🔄'
-  }
-
-  return (
-    <div className="border-2 border-border bg-surface-elevated">
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex flex-col gap-2">
-            <h4 className="font-bold text-text-primary flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full" style={{ backgroundColor: color }}></span>
-              {crewName}
-              <span className="text-xs text-text-muted font-mono">({route.task_count || taskWaypoints.length} tasks)</span>
-            </h4>
-            <div className="flex items-center gap-2">
-              <span className={`text-xs px-2 py-0.5 border font-bold font-mono tracking-wide ${badgeStyle}`}>
-                {badgeIcon} {dominantType} Route
-              </span>
-              <span className="text-[10px] font-mono text-text-muted uppercase tracking-wider">
-                ({scoutingCount} Scout, {cleanupCount} Clean, {mixedCount} Mix)
-              </span>
-            </div>
-          </div>
-          <div className="flex gap-4 text-xs font-mono text-text-muted">
-            <span className="flex items-center"><Ruler className="w-4 h-4 mr-1" /> {formatDistance(route.total_distance_meters)}</span>
-            <span className="flex items-center"><Timer className="w-4 h-4 mr-1" /> {formatDuration(route.total_duration_min)}</span>
-          </div>
-        </div>
-
-        {taskWaypoints.length > 0 ? (
-          <div className="space-y-2">
-            {taskWaypoints.map((wp, wpIdx) => (
-              <div key={wp.id || wpIdx} className="flex items-center gap-3 text-sm p-2 border border-border/50 hover:bg-black/10 dark:hover:bg-white/5 transition-colors">
-                <span
-                  className="w-6 h-6 flex items-center justify-center text-xs font-bold text-white rounded-full"
-                  style={{ backgroundColor: color }}
-                >
-                  {wp.sequence_order || wpIdx + 1}
-                </span>
-                <div className="flex-1 min-w-0 flex items-center gap-2">
-                  <span className="text-text-primary truncate block">
-                    Task #{wp.cleanup_task_id?.slice(0, 8)}...
-                  </span>
-                  {wp.cleanup_tasks?.task_type && (
-                    <span className={`text-[10px] uppercase font-bold font-mono tracking-wider px-1.5 py-0.5 border ${
-                      wp.cleanup_tasks.task_type === 'Scouting' ? 'bg-info/10 text-info border-info/20' :
-                      wp.cleanup_tasks.task_type === 'Cleanup' ? 'bg-success/10 text-success border-success/20' :
-                      'bg-purple/10 text-purple border-purple/20'
-                    }`}>
-                      {wp.cleanup_tasks.task_type}
-                    </span>
-                  )}
-                </div>
-                <span className="text-xs text-text-muted font-mono whitespace-nowrap">
-                  +{formatDistance(wp.distance_from_previous_meters)} | +{formatDuration(wp.estimated_time_from_previous_min)}
-                </span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-xs text-text-muted">Route waypoint details not loaded</p>
-        )}
-      </div>
-    </div>
-  )
-}
-
-const PLP_CENTER = [14.561433, 121.075636]
-
-function RouteMapView({ routes }) {
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    import('@/lib/leaflet-fix')
-    setMounted(true)
-  }, [])
-
-  const routeData = useMemo(() => {
-    if (!routes) return []
-    return routes.map((route, idx) => ({
-      ...route,
-      crewName: route.field_crews?.name || `Crew ${idx + 1}`,
-      color: CREW_COLORS[idx % CREW_COLORS.length],
-    }))
-  }, [routes])
-
-  if (!mounted) {
-    return (
-      <div className="flex items-center justify-center h-full bg-surface-elevated text-text-muted">
-        Loading map...
-      </div>
-    )
-  }
-
-  return (
-    <MapContainer
-      center={PLP_CENTER}
-      zoom={14}
-      style={{ height: '100%', width: '100%' }}
-    >
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
-      />
-      <RouteLayer routes={routeData} />
-    </MapContainer>
-  )
-}
+

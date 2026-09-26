@@ -8,6 +8,7 @@ import Notification from '@/components/ui/Notification'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Checkbox from '@/components/ui/Checkbox'
+import Pagination from '@/components/ui/Pagination'
 import { OfficerGuard } from '@/components/auth/RequireRole'
 import dynamic from 'next/dynamic'
 
@@ -51,9 +52,27 @@ export default function CreateCustomCleanupTaskPage() {
   const [creating, setCreating] = useState(false)
   const [notification, setNotification] = useState(null)
   const [taskTitle, setTaskTitle] = useState('')
+  const [taskPriority, setTaskPriority] = useState('medium')
   const [taskDescription, setTaskDescription] = useState('')
   const [availableCrew, setAvailableCrew] = useState([])
   const [selectedCrewIds, setSelectedCrewIds] = useState([])
+  const [reportSearch, setReportSearch] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
+
+  const filteredReports = useMemo(() => {
+    return reports.filter(r => 
+      (r.title && r.title.toLowerCase().includes(reportSearch.toLowerCase())) ||
+      (r.issue_type && r.issue_type.toLowerCase().includes(reportSearch.toLowerCase())) ||
+      (r.id && r.id.toLowerCase().includes(reportSearch.toLowerCase()))
+    )
+  }, [reports, reportSearch])
+
+  const totalPages = Math.ceil(filteredReports.length / itemsPerPage)
+  const paginatedReports = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage
+    return filteredReports.slice(startIndex, startIndex + itemsPerPage)
+  }, [filteredReports, currentPage])
 
   useEffect(() => {
     loadReports()
@@ -128,6 +147,7 @@ export default function CreateCustomCleanupTaskPage() {
         report_ids: Array.from(selectedReports),
         title: taskTitle,
         description: taskDescription,
+        priority: taskPriority,
         assigned_crew_ids: selectedCrewIds
       })
       setNotification({ message: 'Custom cleanup task created successfully', type: 'success' })
@@ -179,10 +199,10 @@ export default function CreateCustomCleanupTaskPage() {
             )}
           </div>
 
-          {/* Selected Reports Table */}
-          <div className="card">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold text-text-primary">Selected Reports ({selectedReports.size})</h2>
+          {/* Reports List Table */}
+          <div className="card flex flex-col h-[500px]">
+            <div className="flex justify-between items-center mb-4 shrink-0">
+              <h2 className="text-lg font-bold text-text-primary">Reports ({selectedReports.size} selected)</h2>
               {selectedReports.size > 0 && (
                 <button
                   onClick={() => setSelectedReports(new Set())}
@@ -192,48 +212,73 @@ export default function CreateCustomCleanupTaskPage() {
                 </button>
               )}
             </div>
+            
+            <div className="mb-4 shrink-0">
+              <Input
+                placeholder="Search reports by title, type, or ID..."
+                value={reportSearch}
+                onChange={(e) => {
+                  setReportSearch(e.target.value)
+                  setCurrentPage(1)
+                }}
+              />
+            </div>
+
             {loading ? (
-              <p className="text-text-muted">Loading reports...</p>
-            ) : selectedReports.size === 0 ? (
-              <p className="text-text-muted">No reports selected. Click on map pins to select reports.</p>
+              <p className="text-text-muted shrink-0">Loading reports...</p>
+            ) : filteredReports.length === 0 ? (
+              <p className="text-text-muted shrink-0">No reports found.</p>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="flex-1 overflow-y-auto min-h-0 border border-border rounded-lg">
                 <table className="w-full">
-                  <thead>
+                  <thead className="sticky top-0 bg-surface z-10 shadow-sm">
                     <tr className="border-b border-border">
+                      <th className="text-left py-3 px-4 w-12"></th>
                       <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Title</th>
                       <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Issue Type</th>
                       <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Description</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Remove</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {reports.filter(report => selectedReports.has(report.id)).map(report => (
-                      <tr key={report.id} className="border-b border-border hover:bg-surface-elevated">
-                        <td className="py-3 px-4">
-                          <span className="font-medium text-text-primary">{report.title}</span>
+                    {paginatedReports.map(report => (
+                      <tr 
+                        key={report.id} 
+                        className={`border-b border-border hover:bg-surface-elevated cursor-pointer transition-colors ${selectedReports.has(report.id) ? 'bg-accent-green/5 hover:bg-accent-green/10' : ''}`}
+                        onClick={() => toggleReportSelection(report.id)}
+                      >
+                        <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            id={`report-cb-${report.id}`}
+                            checked={selectedReports.has(report.id)}
+                            onChange={() => toggleReportSelection(report.id)}
+                          />
                         </td>
                         <td className="py-3 px-4">
-                          <span className="text-sm text-text-secondary">{report.issue_type}</span>
+                          <span className="font-medium text-text-primary">{report.title}</span>
+                          <span className="block text-xs font-mono text-text-muted">#{report.id.substring(0, 6)}</span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="text-sm text-text-secondary capitalize">{(report.issue_type || '').replace(/_/g, ' ')}</span>
                         </td>
                         <td className="py-3 px-4">
                           <span className="text-sm text-text-muted line-clamp-2 max-w-xs">{report.description || 'N/A'}</span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <button
-                            onClick={() => toggleReportSelection(report.id)}
-                            className="p-1.5 text-text-muted hover:text-error hover:bg-error/10 rounded-lg transition-colors cursor-pointer"
-                            title="Remove report"
-                          >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                            </svg>
-                          </button>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+
+            {totalPages > 1 && (
+              <div className="pt-4 border-t border-border mt-4 shrink-0">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                  itemsPerPage={itemsPerPage}
+                  totalItems={filteredReports.length}
+                />
               </div>
             )}
           </div>
@@ -246,9 +291,9 @@ export default function CreateCustomCleanupTaskPage() {
             <h3 className="font-semibold text-text-primary mb-2">Instructions</h3>
             <ul className="text-sm text-text-secondary space-y-1">
               <li>• Click on report pins on the map to select them</li>
-              <li>• Or use the checkboxes in the table below</li>
-              <li>• Select any unresolved reports for the cleanup task</li>
-              <li>• Enter a title for your cleanup task</li>
+              <li>• Or use the checkboxes in the table below (you can search!)</li>
+              <li>• You can select multiple unresolved reports to group them</li>
+              <li>• Enter a title, priority, and assign field crew</li>
               <li>• Click "Create Cleanup Task" to finalize</li>
             </ul>
           </div>
@@ -277,12 +322,29 @@ export default function CreateCustomCleanupTaskPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-text-primary mb-2">
+                  Priority Level *
+                </label>
+                <div className="flex gap-4">
+                   {['low', 'medium', 'high'].map(p => (
+                     <button
+                       key={p}
+                       onClick={() => setTaskPriority(p)}
+                       className={`flex-1 py-2 text-xs font-mono font-bold uppercase tracking-widest border-2 ${taskPriority === p ? (p==='high' ? 'bg-error text-white border-error' : p==='medium' ? 'bg-warning text-black border-warning' : 'bg-success text-white border-success') : 'bg-transparent text-text-muted border-border hover:border-white'}`}
+                     >
+                       {p}
+                     </button>
+                   ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text-primary mb-2">
                   Assign to Field Crew *
                 </label>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {availableCrew.length === 0 ? (
                     <p className="text-sm text-text-muted">No field crew members available</p>
                   ) : (
+                    availableCrew.map(crew => (
                       <div key={crew.id} className="flex items-center space-x-3 p-2 hover:bg-surface-elevated rounded-lg transition-colors">
                         <Checkbox
                           id={`crew-${crew.id}`}
@@ -312,6 +374,7 @@ export default function CreateCustomCleanupTaskPage() {
                           </div>
                         </label>
                       </div>
+                    ))
                   )}
                 </div>
               </div>
@@ -329,20 +392,19 @@ export default function CreateCustomCleanupTaskPage() {
                   </span>
                 </div>
               </div>
-              <Button
+              <button
                 onClick={handleCreateTask}
                 disabled={creating || selectedReports.size === 0 || !taskTitle.trim() || selectedCrewIds.length === 0}
-                className="w-full"
+                className="w-full btn-primary py-3 font-bold uppercase tracking-widest text-xs"
               >
                 {creating ? 'Creating Task...' : 'Create Cleanup Task'}
-              </Button>
-              <Button
-                variant="secondary"
+              </button>
+              <button
                 onClick={() => router.back()}
-                className="w-full"
+                className="w-full btn-secondary py-3 font-bold uppercase tracking-widest text-xs"
               >
                 Cancel
-              </Button>
+              </button>
             </div>
           </div>
         </div>

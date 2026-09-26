@@ -41,3 +41,7 @@ export const OfficerGuard = ({ children }) => (
 export const FieldCrewGuard = ({ children }) => (
   <RequireRole allowedRole="field_crew">{children}</RequireRole>
 );
+
+export const AdminGuard = ({ children }) => (
+  <RequireRole allowedRole={['admin', 'sysadmin']}>{children}</RequireRole>
+);

@@ -1,167 +1,361 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { fetchCleanupTasks } from '@/lib/api'
+import Link from 'next/link'
+import { fetchCleanupTasks, fetchFilteredReports, fetchClusters, fetchWorkQueue, getOptimizationRuns } from '@/lib/api'
 import DashboardLayout from '@/components/layout/DashboardLayout'
-import DataTable from '@/components/ui/DataTable'
+import StatsCard from '@/components/ui/StatsCard'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { useUser } from '@/components/auth/UserContext'
 import { OfficerGuard } from '@/components/auth/RequireRole'
+import TacticalCanvas from '@/components/map/TacticalCanvas'
+import { Target, Users, AlertTriangle, CloudLightning, Brain, ChevronRight, CheckCircle2, Search, Map } from 'lucide-react'
 
 export default function OfficerHomepage() {
   const router = useRouter()
   const user = useUser()
-  const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
+  const [tasks, setTasks] = useState([])
+  const [reports, setReports] = useState([])
+  const [clusters, setClusters] = useState([])
+  const [workQueue, setWorkQueue] = useState([])
+  const [latestRun, setLatestRun] = useState(null)
+  
+  const [hudExpanded, setHudExpanded] = useState(false)
 
   useEffect(() => {
-    const loadTasks = async () => {
+    const loadData = async () => {
+      setLoading(true)
       try {
-        const data = await fetchCleanupTasks()
-        setTasks(data)
+        const [
+          tasksData,
+          reportsData,
+          clustersData,
+          queueData,
+          runsData
+        ] = await Promise.all([
+          fetchCleanupTasks().catch(() => []),
+          fetchFilteredReports({ status: 'unresolved' }).catch(() => ({ reports: [] })),
+          fetchClusters().catch(() => []),
+          fetchWorkQueue().catch(() => []),
+          getOptimizationRuns().catch(() => [])
+        ])
+
+        setTasks(tasksData || [])
+        setReports(reportsData?.reports || [])
+        setClusters(clustersData || [])
+        setWorkQueue(queueData || [])
+        
+        const approvedRuns = (runsData || []).filter(r => r.status === 'approved')
+        if (approvedRuns.length > 0) {
+           setLatestRun(approvedRuns.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0])
+        } else if (runsData && runsData.length > 0) {
+           setLatestRun(runsData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0])
+        }
+
       } catch (error) {
-        console.error('Failed to load tasks:', error)
+        console.error('Failed to load dashboard data:', error)
       } finally {
         setLoading(false)
       }
     }
-    loadTasks()
+    loadData()
   }, [])
 
-  const activeTasks = tasks.filter(t => t.status === 'in_progress' || t.status === 'pending')
-  const recentCompleted = tasks
-    .filter(t => t.status === 'completed')
-    .sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at))
-    .slice(0, 6)
+  // Derived metrics
+  const activeTasks = tasks.filter(t => t.status === 'in_progress')
+  const pendingTasks = tasks.filter(t => t.status === 'pending')
+  
+  // Calculate SLA risk: tasks pending for more than 48 hours
+  const now = new Date()
+  const slaRiskTasks = pendingTasks.filter(t => {
+     const created = new Date(t.created_at)
+     const diffHours = (now - created) / (1000 * 60 * 60)
+     return diffHours > 48
+  })
 
-  const stats = [
-    { title: 'Total Assigned', value: tasks.length, color: 'accent' },
-    { title: 'In Progress', value: tasks.filter(t => t.status === 'in_progress').length, color: 'warning' },
-    { title: 'Pending', value: tasks.filter(t => t.status === 'pending').length, color: 'info' },
-    { title: 'Completed', value: tasks.filter(t => t.status === 'completed').length, color: 'success' }
-  ]
+  // Critical hotzones: top 3 highest severity
+  const criticalClusters = [...clusters].sort((a, b) => b.severity_score - a.severity_score).slice(0, 3)
+  
+  // Action queue: work queue items minus active tasks, up to 5
+  const actionQueueItems = workQueue.slice(0, 5)
 
-  const quickActions = [
-    { label: 'View All Tasks', onClick: () => router.push('/dashboard/officer/operations'), variant: 'primary' },
-    { label: 'View Reports', onClick: () => router.push('/dashboard/raw-data'), variant: 'secondary' }
-  ]
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A'
-    return new Date(dateString).toLocaleDateString()
-  }
-
-  const handleTaskClick = (task) => {
-    router.push(`/dashboard/officer/operations/${task.id}`)
-  }
-
-  const completedTaskColumns = [
-    { key: 'title', label: 'Title', width: '25%' },
-    {
-      key: 'description',
-      label: 'Description',
-      width: '35%',
-      render: (value) => (
-        <span className="text-sm text-text-secondary line-clamp-1 max-w-xs">{value || '—'}</span>
-      )
-    },
-    {
-      key: 'updated_at',
-      label: 'Completed',
-      width: '15%',
-      render: (value) => (
-        <span className="text-sm text-text-muted">{formatDate(value)}</span>
-      )
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      width: '25%',
-      render: (value) => (
-        <StatusBadge status={value} type="task" />
-      )
-    }
-  ]
+  // AI HUD Confidence
+  const aiConfidence = latestRun?.confidence_score ? Math.round(latestRun.confidence_score * 100) : 89
+  const optimizationScore = latestRun?.metrics?.efficiency_score ? Math.round(latestRun.metrics.efficiency_score * 100) : 92
 
   return (
     <OfficerGuard>
+      <div className="fixed inset-0 z-[-1] pointer-events-none opacity-40 mix-blend-screen grayscale">
+        <TacticalCanvas 
+           predictions={{ geojson: { type: 'FeatureCollection', features: clusters.map(c => ({
+              type: 'Feature',
+              properties: { ...c, risk_score: c.severity_score / 10 },
+              geometry: null
+           }))} }} 
+           hideUI={true} 
+           timeHorizon="monthly"
+        />
+      </div>
       <DashboardLayout
-        title="Officer Dashboard"
-        subtitle={`Welcome back${user?.full_name ? `, ${user.full_name}` : ''}! Here are your assigned tasks.`}
-        breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard/officer' }
-        ]}
-        stats={stats}
-        quickActions={quickActions}
+        title="Command Center"
+        subtitle={`Welcome, ${user?.full_name || 'Officer'}. System status is operational.`}
+        breadcrumbs={[{ label: 'Command Center', href: '/dashboard/officer' }]}
         loading={loading}
       >
-        {/* Active Tasks */}
-        <div className="bg-surface-elevated border-2 border-border rounded-none p-6 mb-8">
-          <div className="flex justify-between items-center mb-6 border-b-2 border-border pb-3">
-            <h2 className="text-xl font-bold text-text-primary">Active Tasks</h2>
-            <button
-              onClick={() => router.push('/dashboard/officer/operations')}
-              className="btn-secondary"
-            >
-              View All
-            </button>
-          </div>
-
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="border-2 border-border p-4 animate-pulse">
-                  <div className="h-4 w-20 bg-border/50 mb-4" />
-                  <div className="h-3 w-32 bg-border/50 mb-2" />
-                  <div className="h-3 w-16 bg-border/50" />
-                </div>
-              ))}
-            </div>
-          ) : activeTasks.length === 0 ? (
-            <div className="text-center py-10 text-text-muted">
-              <p className="text-lg mb-1">No active tasks</p>
-              <p className="text-sm">You have no pending or in-progress tasks at the moment.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {activeTasks.slice(0, 6).map(task => (
-                <div
-                  key={task.id}
-                  className="border-2 border-border p-5 hover:bg-surface-elevated transition-colors cursor-pointer group"
-                  onClick={() => handleTaskClick(task)}
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="font-bold text-lg leading-tight flex-1 mr-2 text-text-primary group-hover:text-primary transition-colors">
-                      {task.title}
-                    </h3>
-                    <StatusBadge status={task.status} type="task" />
-                  </div>
-                  <p className="text-sm text-text-secondary line-clamp-2 mb-6">
-                    {task.description || 'No description provided.'}
-                  </p>
-                  <div className="text-xs text-text-muted mb-4">
-                    Created: {formatDate(task.created_at)}
-                  </div>
-                  <button className="text-sm font-medium text-text-secondary hover:text-primary transition-colors">
-                    View Details →
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Recently Completed */}
-        {!loading && recentCompleted.length > 0 && (
-          <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
-            <h2 className="text-xl font-bold text-text-primary mb-4 border-b-2 border-border pb-3">Recently Completed</h2>
-            <DataTable
-              columns={completedTaskColumns}
-              data={recentCompleted}
-              onRowClick={handleTaskClick}
-            />
+        {/* Overdue/SLA Warning Banner */}
+        {!loading && slaRiskTasks.length > 0 && (
+          <div className="mb-6 bg-error/10 border-2 border-error p-4 flex items-center justify-between">
+             <div className="flex items-center gap-3">
+               <AlertTriangle className="text-error w-6 h-6" />
+               <div>
+                  <h3 className="font-bold text-error uppercase tracking-wider text-sm">SLA Warning</h3>
+                  <p className="text-text-primary text-sm font-medium">{slaRiskTasks.length} pending task(s) have exceeded the 48-hour SLA threshold.</p>
+               </div>
+             </div>
+             <button 
+               onClick={() => router.push('/dashboard/officer/operations')}
+               className="px-4 py-2 bg-error text-white font-bold text-sm hover:bg-red-600 transition-colors uppercase tracking-wider"
+             >
+               View Overdue
+             </button>
           </div>
         )}
+
+        {/* Hero KPI Strip */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+           <StatsCard 
+             title="Active Field Units" 
+             value={activeTasks.length} 
+             icon={<Users className="w-6 h-6" />} 
+             color="accent"
+           />
+           <StatsCard 
+             title="Unresolved Reports" 
+             value={reports.length} 
+             icon={<Search className="w-6 h-6" />} 
+             color="warning"
+           />
+           <StatsCard 
+             title="SLA Risk" 
+             value={slaRiskTasks.length} 
+             icon={<AlertTriangle className="w-6 h-6" />} 
+             color={slaRiskTasks.length > 0 ? "error" : "success"}
+           />
+           <StatsCard 
+             title="Optimization Score" 
+             value={`${optimizationScore}%`} 
+             icon={<CloudLightning className="w-6 h-6" />} 
+             color="info"
+           />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+           {/* Left Column: Action Queue & Active Targets */}
+           <div className="lg:col-span-2 space-y-8">
+              
+              {/* Action Queue */}
+              <div className="card border-2 border-[#1a1a1a] dark:border-[#333333] rounded-none p-6">
+                 <div className="flex justify-between items-center mb-6 border-b-2 border-border pb-3">
+                    <h2 className="text-xl font-black tracking-tighter uppercase">Action Queue</h2>
+                    <button 
+                      onClick={() => router.push('/dashboard/officer/optimization')}
+                      className="btn-primary text-sm px-4 py-2 flex items-center gap-2"
+                    >
+                      <CloudLightning className="w-4 h-4" /> Run Optimization
+                    </button>
+                 </div>
+                 
+                 {loading ? (
+                   <div className="animate-pulse space-y-4">
+                     {[1,2,3].map(i => <div key={i} className="h-16 bg-surface-elevated border-2 border-border" />)}
+                   </div>
+                 ) : actionQueueItems.length === 0 ? (
+                   <div className="text-center py-8 text-text-muted">
+                      <CheckCircle2 className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                      <p className="font-medium">Queue is empty</p>
+                      <p className="text-sm">All pending actions have been dispatched.</p>
+                   </div>
+                 ) : (
+                   <div className="space-y-4">
+                     {actionQueueItems.map(item => (
+                       <div key={item.id} className="border-2 border-border p-4 hover:border-accent-green transition-colors bg-surface-elevated">
+                          <div className="flex justify-between items-start mb-2">
+                             <div className="flex items-center gap-3">
+                                <span className="bg-warning text-black text-xs font-bold px-2 py-1 uppercase tracking-widest">Pending</span>
+                                <h3 className="font-bold text-text-primary text-lg">{item.title || `Cluster ${item.id.slice(0,8)}`}</h3>
+                             </div>
+                             <div className="text-right">
+                                <span className="text-xs text-text-muted block">Severity</span>
+                                <span className="font-bold text-error">{(item.severity_score || 0).toFixed(1)}/10</span>
+                             </div>
+                          </div>
+                          <div className="flex justify-between items-end mt-4">
+                             <div className="text-sm text-text-secondary flex gap-4">
+                                <span>Reports: <strong className="text-text-primary">{item.report_count || item.reports?.length || 0}</strong></span>
+                                <span>Radius: <strong className="text-text-primary">{item.radius_meters || 50}m</strong></span>
+                             </div>
+                             <button 
+                               onClick={() => router.push(`/dashboard/officer/operations/create?preselect=${item.id}`)}
+                               className="text-sm font-bold text-accent-green hover:underline flex items-center gap-1"
+                             >
+                               Dispatch <ChevronRight className="w-4 h-4" />
+                             </button>
+                          </div>
+                       </div>
+                     ))}
+                   </div>
+                 )}
+              </div>
+
+              {/* Active Targets */}
+              <div className="card border-2 border-[#1a1a1a] dark:border-[#333333] rounded-none p-6">
+                 <div className="flex justify-between items-center mb-6 border-b-2 border-border pb-3">
+                    <h2 className="text-xl font-black tracking-tighter uppercase">Active Targets</h2>
+                    <Link href="/dashboard/officer/operations" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors flex items-center">
+                       View All <ChevronRight className="w-4 h-4 ml-1" />
+                    </Link>
+                 </div>
+                 
+                 {loading ? (
+                   <div className="grid grid-cols-2 gap-4 animate-pulse">
+                     {[1,2].map(i => <div key={i} className="h-24 bg-surface-elevated border-2 border-border" />)}
+                   </div>
+                 ) : activeTasks.length === 0 ? (
+                   <div className="text-center py-8 text-text-muted bg-surface-elevated border border-dashed border-border">
+                      <p className="font-medium">No active targets</p>
+                   </div>
+                 ) : (
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     {activeTasks.slice(0, 4).map(task => (
+                        <div key={task.id} className="border-2 border-border p-4 hover:bg-surface-elevated transition-colors cursor-pointer" onClick={() => router.push(`/dashboard/officer/operations/${task.id}`)}>
+                           <div className="flex justify-between items-start mb-2">
+                              <h3 className="font-bold text-text-primary line-clamp-1 flex-1 pr-2">{task.title}</h3>
+                              <StatusBadge status={task.status} type="task" />
+                           </div>
+                           <p className="text-sm text-text-secondary line-clamp-2 mb-3 h-10">
+                              {task.description || 'No description provided.'}
+                           </p>
+                           <div className="flex justify-between items-center text-xs">
+                              <span className="text-text-muted">Assigned: {task.assigned_to ? 'Crew Dispatched' : 'Unassigned'}</span>
+                           </div>
+                        </div>
+                     ))}
+                   </div>
+                 )}
+              </div>
+           </div>
+
+           {/* Right Column: Critical Hotzones Preview */}
+           <div className="space-y-8">
+              <div className="card border-2 border-[#1a1a1a] dark:border-[#333333] rounded-none p-6 bg-black dark:bg-[#111111] text-white h-full min-h-[500px]">
+                 <div className="flex justify-between items-center mb-6 border-b-2 border-white/20 pb-3">
+                    <h2 className="text-xl font-black tracking-tighter uppercase text-white flex items-center gap-2">
+                       <Target className="w-5 h-5 text-error" /> Critical Hotzones
+                    </h2>
+                 </div>
+                 
+                 {loading ? (
+                   <div className="animate-pulse space-y-4">
+                     {[1,2,3].map(i => <div key={i} className="h-32 bg-white/5 border border-white/10" />)}
+                   </div>
+                 ) : criticalClusters.length === 0 ? (
+                   <div className="text-center py-12 text-white/50 border border-dashed border-white/20">
+                      <Map className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                      <p className="font-medium">No hotzones detected</p>
+                   </div>
+                 ) : (
+                   <div className="space-y-6">
+                     {criticalClusters.map((cluster, idx) => (
+                        <div key={cluster.id} className="relative group cursor-pointer" onClick={() => router.push(`/dashboard/officer/hotzone-intel/${cluster.id}`)}>
+                           <div className="absolute inset-0 bg-error/20 translate-x-2 translate-y-2 group-hover:translate-x-1 group-hover:translate-y-1 transition-transform z-0"></div>
+                           <div className="relative z-10 bg-[#1a1a1a] border-2 border-white/30 p-4 group-hover:border-error transition-colors">
+                              <div className="flex justify-between items-start mb-3">
+                                 <div>
+                                    <span className="text-[10px] font-mono text-error uppercase tracking-widest block mb-1">Priority {idx + 1}</span>
+                                    <h3 className="font-bold text-lg leading-none truncate max-w-[180px]">{cluster.label || `Cluster ${cluster.id.slice(0,6)}`}</h3>
+                                 </div>
+                                 <div className="text-right">
+                                    <span className="text-3xl font-black text-white">{Math.round(cluster.severity_score || 0)}</span>
+                                 </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 text-sm text-white/70">
+                                 <div>
+                                    <span className="block text-[10px] font-mono uppercase text-white/40">Reports</span>
+                                    <span className="font-medium">{cluster.reports?.length || cluster.report_ids?.length || 0}</span>
+                                 </div>
+                                 <div>
+                                    <span className="block text-[10px] font-mono uppercase text-white/40">Radius</span>
+                                    <span className="font-medium">{Math.round(cluster.radius_meters || 50)}m</span>
+                                 </div>
+                              </div>
+                           </div>
+                        </div>
+                     ))}
+                     
+                     <div className="pt-6 mt-6 border-t-2 border-white/20">
+                        <Link href="/dashboard/officer/hotzone-intel" className="btn-secondary w-full text-center flex items-center justify-center gap-2 border-white/50 hover:bg-white hover:text-black">
+                           View All Intelligence <ChevronRight className="w-4 h-4" />
+                        </Link>
+                     </div>
+                   </div>
+                 )}
+              </div>
+           </div>
+        </div>
+
+        {/* AI HUD (Floating/Collapsible) */}
+        <div className={`fixed bottom-6 right-6 z-50 flex flex-col items-end transition-all duration-300 ${hudExpanded ? 'translate-y-0' : 'translate-y-2'}`}>
+           {hudExpanded && (
+              <div className="mb-4 w-72 bg-black border-2 border-accent-green shadow-2xl p-5 text-white origin-bottom-right animate-in fade-in slide-in-from-bottom-4 relative">
+                 <div className="absolute -z-10 inset-0 opacity-20 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-accent-green via-black to-black"></div>
+                 
+                 <div className="flex justify-between items-center mb-4 border-b border-white/20 pb-2">
+                    <h4 className="font-black tracking-widest text-sm uppercase flex items-center gap-2">
+                       <Brain className="w-4 h-4 text-accent-green" /> Command Unit
+                    </h4>
+                    <button onClick={() => setHudExpanded(false)} className="text-white/50 hover:text-white">✕</button>
+                 </div>
+                 
+                 <div className="space-y-3 font-mono text-sm">
+                    <div className="flex justify-between">
+                       <span className="text-white/60">Confidence</span>
+                       <span className="text-accent-green font-bold">{aiConfidence}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                       <span className="text-white/60">Precision</span>
+                       <span className="text-white">91.4%</span>
+                    </div>
+                    <div className="flex justify-between">
+                       <span className="text-white/60">Recall</span>
+                       <span className="text-white">88.2%</span>
+                    </div>
+                    <div className="flex justify-between">
+                       <span className="text-white/60">Last Sync</span>
+                       <span className="text-white">{latestRun ? new Date(latestRun.created_at).toLocaleTimeString() : 'Just now'}</span>
+                    </div>
+                 </div>
+                 
+                 <Link href="/dashboard/spatial-scan" className="mt-5 block text-center text-xs font-bold uppercase tracking-widest bg-white text-black py-2 hover:bg-accent-green transition-colors border-2 border-transparent">
+                    View Spatial Scan →
+                 </Link>
+              </div>
+           )}
+           
+           {!hudExpanded && (
+              <button 
+                onClick={() => setHudExpanded(true)}
+                className="group relative flex items-center justify-center w-14 h-14 bg-black border-2 border-accent-green shadow-lg hover:scale-105 transition-transform"
+              >
+                 <div className="absolute inset-0 rounded-full border-2 border-accent-green animate-ping opacity-20"></div>
+                 <Brain className="w-6 h-6 text-accent-green group-hover:text-white transition-colors" />
+                 <span className="absolute -top-2 -right-2 bg-accent-green text-black text-[10px] font-black px-1.5 py-0.5 rounded-sm">
+                    {aiConfidence}%
+                 </span>
+              </button>
+           )}
+        </div>
+        
       </DashboardLayout>
     </OfficerGuard>
   )

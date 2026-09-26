@@ -55,7 +55,7 @@ function createTaskReportIcon(label, color, isCompleted) {
       font-weight: bold;
       color: ${isCompleted ? color : (color === '#ccff00' || color === '#00FFFF' || color === '#00FF66' ? 'black' : 'white')};
       box-shadow: 0 2px 4px rgba(0,0,0,0.4);
-    ">${label}</div>`,
+    "></div>`,
     iconSize: [24, 24],
     iconAnchor: [12, 12],
   })

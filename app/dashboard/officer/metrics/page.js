@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import PageHeader from '@/components/layout/PageHeader'
-import { fetchPublicReports, fetchSatisfactionAnalytics } from '@/lib/api'
+import { fetchPublicReports, fetchSatisfactionAnalytics, getAccuracyMetrics } from '@/lib/api'
 import { SkeletonLine, SkeletonStatCard, SkeletonChartCard } from '@/components/ui/Skeleton'
 import { OfficerGuard } from '@/components/auth/RequireRole'
 import { Bar, Doughnut, Line } from 'react-chartjs-2'
@@ -359,6 +359,22 @@ export default function AnalyticsPage() {
             <p className="text-4xl font-black text-text-primary uppercase">{stats.overdue}</p>
           </div>
         </div>
+      )}
+
+      {/* Resolution Rate Progress */}
+      {!loading && (
+         <div className="mb-8 bg-surface-elevated border-2 border-border rounded-none p-6">
+            <h2 className="text-sm font-black uppercase tracking-tighter text-text-muted mb-4">Resolution Progress</h2>
+            <div className="flex justify-between items-end mb-2">
+               <span className="text-2xl font-black uppercase tracking-tighter">{stats.resolutionRate}% of all reports resolved</span>
+            </div>
+            <div className="w-full bg-[#1a1a1a] h-4 relative border border-[#333333]">
+               <div 
+                 className={`h-full ${stats.resolutionRate >= 70 ? 'bg-accent-green' : stats.resolutionRate >= 40 ? 'bg-warning' : 'bg-error'} transition-all duration-1000`} 
+                 style={{ width: `${stats.resolutionRate}%` }}
+               />
+            </div>
+         </div>
       )}
 
       {/* Charts Section */}
