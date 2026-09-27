@@ -15,6 +15,7 @@ export default function FloatingParticles({ isDark }) {
     
     // Mouse interaction state
     let target = { x: null, y: null, active: false };
+    let clickCooldown = false;
 
     const resize = () => {
       canvas.width = window.innerWidth;
@@ -25,6 +26,9 @@ export default function FloatingParticles({ isDark }) {
     resize();
     
     const handleMouseClick = (e) => {
+      if (clickCooldown) return; // Prevent spamming
+      clickCooldown = true;
+
       target.x = e.clientX;
       target.y = e.clientY;
       target.active = true;
@@ -42,7 +46,14 @@ export default function FloatingParticles({ isDark }) {
       });
 
       // Release target after a short burst so they start returning home
-      setTimeout(() => { target.active = false; }, 800);
+      setTimeout(() => { 
+        target.active = false; 
+        
+        // Wait for them to rubber-band home before allowing another click
+        setTimeout(() => {
+          clickCooldown = false;
+        }, 1200);
+      }, 800);
     };
     
     window.addEventListener('click', handleMouseClick);

@@ -89,13 +89,13 @@ export default function Home() {
           style={{
             backgroundImage: isDark
               ? 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)'
-              : 'linear-gradient(rgba(0,82,204,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,82,204,0.05) 1px, transparent 1px)',
+              : 'linear-gradient(rgba(0,82,204,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(0,82,204,0.08) 1px, transparent 1px)',
             backgroundSize: '40px 40px',
             backgroundPosition: 'center center',
           }}
         ></div>
         {/* Soft radial gradient to ensure text readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#F8FAFC]/90 via-[#F8FAFC]/50 to-[#F8FAFC] dark:from-[#0B1120]/90 dark:via-[#0B1120]/60 dark:to-[#0B1120] transition-colors duration-300"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-[#F8FAFC]/80 via-[#F8FAFC]/30 to-[#F8FAFC]/90 dark:from-[#0B1120]/80 dark:via-[#0B1120]/30 dark:to-[#0B1120]/90 transition-colors duration-300"></div>
       </div>
 
       {/* Header */}

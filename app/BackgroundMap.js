@@ -13,10 +13,10 @@ export default function BackgroundMap({ isDark }) {
   const apiKey = process.env.NEXT_PUBLIC_CARTO_API_KEY ? `?key=${process.env.NEXT_PUBLIC_CARTO_API_KEY}` : '';
   const mapUrl = isDark
     ? `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png${apiKey}`
-    : `https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png${apiKey}`;
+    : `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png${apiKey}`;
 
   return (
-    <div className="absolute inset-0 z-0 pointer-events-none" style={{ filter: isDark ? 'grayscale(100%) contrast(1.2)' : 'grayscale(100%) contrast(1.2)' }}>
+    <div className="absolute inset-0 z-0 pointer-events-none" style={{ filter: isDark ? 'grayscale(100%) contrast(1.2)' : 'grayscale(100%) contrast(1.1)' }}>
       <MapContainer
         center={position}
         zoom={14}
