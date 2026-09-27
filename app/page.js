@@ -1,132 +1,19 @@
 'use client';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Lenis from 'lenis';
 import dynamic from 'next/dynamic';
+import FloatingParticles from '@/components/ui/FloatingParticles';
 
 const BackgroundMap = dynamic(() => import('./BackgroundMap'), {
   ssr: false,
 });
 
-// Interactive Particle Background Component
-const InteractiveMapParticles = ({ isDark }) => {
-  const canvasRef = useRef(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let animationFrameId;
-    let particles = [];
-    let mouse = { x: -1000, y: -1000 };
-
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    window.addEventListener('resize', resize);
-    resize();
-
-    class Particle {
-      constructor() {
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height;
-        this.vx = (Math.random() - 0.5) * 1.5;
-        this.vy = (Math.random() - 0.5) * 1.5;
-        this.size = Math.random() * 2 + 0.5;
-        this.history = [];
-      }
-      update() {
-        this.x += this.vx;
-        this.y += this.vy;
-
-        if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
-        if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
-
-        const dx = mouse.x - this.x;
-        const dy = mouse.y - this.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-
-        if (dist < 200) {
-          this.vx += dx * 0.0005;
-          this.vy += dy * 0.0005;
-        }
-
-        const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
-        if (speed > 3) {
-          this.vx = (this.vx / speed) * 3;
-          this.vy = (this.vy / speed) * 3;
-        }
-
-        this.history.push({ x: this.x, y: this.y });
-        if (this.history.length > 25) this.history.shift();
-      }
-      draw() {
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        // neon green for particles.
-        ctx.fillStyle = '#ccff00';
-        ctx.fill();
-
-        if (this.history.length > 1) {
-          ctx.beginPath();
-          ctx.moveTo(this.history[0].x, this.history[0].y);
-          for (let i = 1; i < this.history.length; i++) {
-            ctx.lineTo(this.history[i].x, this.history[i].y);
-          }
-          ctx.strokeStyle = `rgba(204, 255, 0, 0.4)`;
-          ctx.lineWidth = 1;
-          ctx.stroke();
-        }
-      }
-    }
-
-    for (let i = 0; i < 70; i++) {
-      particles.push(new Particle());
-    }
-
-    const handleMouseMove = (e) => {
-      const rect = canvas.getBoundingClientRect();
-      mouse.x = e.clientX - rect.left;
-      mouse.y = e.clientY - rect.top;
-    };
-
-    const handleMouseLeave = () => {
-      mouse.x = -1000;
-      mouse.y = -1000;
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    document.body.addEventListener('mouseleave', handleMouseLeave);
-
-    const animate = () => {
-      // Clear the canvas completely so the background map is visible
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      particles.forEach(p => {
-        p.update();
-        p.draw();
-      });
-      animationFrameId = requestAnimationFrame(animate);
-    };
-    animate();
-
-    return () => {
-      window.removeEventListener('resize', resize);
-      window.removeEventListener('mousemove', handleMouseMove);
-      document.body.removeEventListener('mouseleave', handleMouseLeave);
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, [isDark]);
-
-  return <canvas ref={canvasRef} className="absolute inset-0 z-0 opacity-80" />;
-};
-
 export default function Home() {
-  const [theme, setTheme] = useState('dark');
-  const [phoneRotation, setPhoneRotation] = useState({ x: 0, y: 0 });
+  const [theme, setTheme] = useState('light');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [hasSession, setHasSession] = useState(false);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     const lenis = new Lenis({
@@ -171,71 +58,60 @@ export default function Home() {
     }
   };
 
-  const handlePhoneMouseMove = (e) => {
+  const handleMouseMove = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left - rect.width / 2;
-    const y = e.clientY - rect.top - rect.height / 2;
-    setPhoneRotation({ x: -y / 20, y: x / 20 });
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    // Calculate rotation (-15 to 15 degrees)
+    const rotateX = ((y - centerY) / centerY) * -15; 
+    const rotateY = ((x - centerX) / centerX) * 15;
+    setTilt({ x: rotateX, y: rotateY });
   };
 
-  const handlePhoneMouseLeave = () => {
-    setPhoneRotation({ x: 0, y: 0 });
+  const handleMouseLeave = () => {
+    setTilt({ x: 0, y: 0 });
   };
 
   const isDark = theme === 'dark';
 
   return (
-    <main
-      className="min-h-screen bg-white text-black dark:bg-black dark:text-white relative overflow-hidden selection:bg-[#ccff00] selection:text-black transition-colors duration-300"
-      style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
-    >
+    <main className="min-h-screen bg-[#F8FAFC] dark:bg-[#0B1120] text-[#0F172A] dark:text-white relative overflow-hidden selection:bg-[#E6F0FF] selection:text-[#0052CC] transition-colors duration-300">
+      
       {/* Background System */}
-      <div className="absolute top-0 left-0 right-0 h-screen z-0 bg-white dark:bg-black transition-colors duration-300 overflow-hidden">
+      <div className="absolute top-0 left-0 right-0 h-screen z-0 bg-[#F8FAFC] dark:bg-[#0B1120] overflow-hidden pointer-events-none transition-colors duration-300">
         <BackgroundMap isDark={isDark} />
-        <InteractiveMapParticles isDark={isDark} />
-
-        {/* Subtle Map Pattern Overlay - Turned up opacity */}
-        <div
-          className="absolute inset-0 opacity-40 dark:opacity-40 pointer-events-none"
+        <FloatingParticles isDark={isDark} />
+        
+        {/* Subtle Civic Pattern Overlay */}
+        <div className="absolute inset-0 opacity-40 dark:opacity-20"
           style={{
             backgroundImage: isDark
-              ? 'linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px)'
-              : 'linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px)',
-            backgroundSize: '100px 100px',
+              ? 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)'
+              : 'linear-gradient(rgba(0,82,204,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,82,204,0.05) 1px, transparent 1px)',
+            backgroundSize: '40px 40px',
             backgroundPosition: 'center center',
           }}
-        >
-          {/* Crosshairs & Coordinates */}
-          <div className="absolute top-1/4 left-1/4 w-8 h-8 border-t border-l border-[#1a1a1a] dark:border-[#333333] opacity-80"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-8 h-8 border-b border-r border-[#1a1a1a] dark:border-[#333333] opacity-80"></div>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-black dark:text-[#ccff00] text-2xl font-light tracking-widest">+</div>
-          <div className="absolute top-[30%] right-[20%] text-black dark:text-[#ccff00] text-2xl font-light tracking-widest">+</div>
-          <div className="absolute bottom-[20%] left-[15%] text-black dark:text-[#ccff00] text-2xl font-light tracking-widest">+</div>
-          <div className="absolute bottom-10 left-10 font-mono text-xs text-black dark:text-[#ccff00] font-bold">
-            35° 42' 55" N / 139° 47' 07" E<br />
-            INTERZONE // SECTOR 7
-          </div>
-        </div>
+        ></div>
+        {/* Soft radial gradient to ensure text readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#F8FAFC]/90 via-[#F8FAFC]/50 to-[#F8FAFC] dark:from-[#0B1120]/90 dark:via-[#0B1120]/60 dark:to-[#0B1120] transition-colors duration-300"></div>
       </div>
 
-      {/* Solid green blocks intersecting - brutalist geometry */}
-      <div className="absolute top-0 right-0 w-64 md:w-96 h-64 bg-[#ccff00] z-0 hidden md:block mix-blend-difference"></div>
-      <div className="absolute bottom-20 left-0 w-48 h-64 bg-[#ccff00] z-0 hidden md:block mix-blend-difference"></div>
-
       {/* Header */}
-      <header className="relative z-50 flex items-center justify-between p-6 md:px-12 border-b-2 border-[#1a1a1a] dark:border-[#333333] bg-white dark:bg-black transition-colors duration-300">
+      <header className="relative z-50 flex items-center justify-between p-4 md:px-8 bg-white dark:bg-[#1E293B] border-b border-[#E2E8F0] dark:border-[#334155] shadow-sm transition-colors duration-300">
         <a href="#home" className="cursor-pointer">
-          <img src="/Full Logo Light.png" alt="EcoPin" className="h-10 md:h-14 w-auto dark:hidden" />
-          <img src="/Full Logo Dark.png" alt="EcoPin" className="h-10 md:h-14 w-auto hidden dark:block" />
+          <img src="/Full Logo Light.png" alt="EcoPin" className="h-10 md:h-12 w-auto dark:hidden" />
+          <img src="/Full Logo Dark.png" alt="EcoPin" className="h-10 md:h-12 w-auto hidden dark:block" />
         </a>
         <nav className="hidden md:flex gap-8 items-center">
-          <a href="#about" className="text-sm font-bold uppercase tracking-widest hover:text-[#ccff00] hover:bg-black dark:hover:bg-white dark:hover:text-black px-2 py-1 transition-all">About</a>
-          <a href="#features" className="text-sm font-bold uppercase tracking-widest hover:text-[#ccff00] hover:bg-black dark:hover:bg-white dark:hover:text-black px-2 py-1 transition-all">Features</a>
+          <a href="#about" className="text-sm font-semibold text-[#475569] dark:text-[#94A3B8] hover:text-[#0052CC] dark:hover:text-white transition-colors">About</a>
+          <a href="#features" className="text-sm font-semibold text-[#475569] dark:text-[#94A3B8] hover:text-[#0052CC] dark:hover:text-white transition-colors">Features</a>
 
-          {/* Theme Toggler with SVG */}
+          {/* Theme Toggler */}
           <button
             onClick={toggleTheme}
-            className="p-2 border-2 border-[#1a1a1a] dark:border-[#333333] hover:bg-black hover:text-[#ccff00] dark:hover:bg-[#ccff00] dark:hover:text-black transition-colors flex items-center justify-center"
+            className="p-2 text-[#475569] dark:text-[#94A3B8] hover:text-[#0052CC] dark:hover:text-white transition-colors flex items-center justify-center rounded-full hover:bg-[#F8FAFC] dark:hover:bg-[#334155]"
             title="Toggle Theme"
           >
             {theme === 'dark' ? (
@@ -250,26 +126,25 @@ export default function Home() {
           </button>
 
           {hasSession ? (
-            <a href="/dashboard" className="flex items-center gap-3 px-4 py-1.5 bg-[#ccff00] border-2 border-[#1a1a1a] dark:border-[#333333] hover:bg-black hover:text-[#ccff00] dark:hover:bg-white dark:hover:text-black transition-colors">
+            <a href="/dashboard" className="flex items-center gap-3 px-4 py-2 bg-white dark:bg-[#1E293B] border border-[#E2E8F0] dark:border-[#334155] rounded-lg shadow-sm hover:border-[#0052CC] dark:hover:border-white transition-all">
               {user?.avatar_url ? (
-                <img src={user.avatar_url} alt="Avatar" className="w-6 h-6 object-cover border border-[#1a1a1a] dark:border-white" />
+                <img src={user.avatar_url} alt="Avatar" className="w-6 h-6 object-cover rounded-full" />
               ) : (
-                <div className="w-6 h-6 bg-[#1a1a1a] dark:bg-white text-white dark:text-black flex items-center justify-center font-bold text-xs border border-[#1a1a1a] dark:border-white">
+                <div className="w-6 h-6 bg-[#0052CC] text-white rounded-full flex items-center justify-center font-bold text-xs">
                   {user?.full_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
                 </div>
               )}
-              <span className="text-sm font-black uppercase tracking-widest text-black inherit-text">Dashboard</span>
+              <span className="text-sm font-bold text-[#0F172A] dark:text-white">Dashboard</span>
             </a>
           ) : (
-            <a href="/auth" className="px-6 py-2 bg-[#ccff00] text-black text-sm font-black uppercase tracking-widest border-2 border-[#1a1a1a] dark:border-[#333333] hover:bg-black hover:text-[#ccff00] dark:hover:bg-white dark:hover:text-black transition-colors">Login</a>
+            <a href="/auth" className="px-5 py-2 bg-[#0052CC] text-white text-sm font-semibold rounded-md hover:bg-[#0747A6] shadow-sm transition-colors">Login</a>
           )}
         </nav>
 
         {/* Mobile Menu Button */}
         <button
-          className="md:hidden p-2 border-2 border-[#1a1a1a] dark:border-[#333333] text-black dark:text-[#ccff00] hover:bg-black hover:text-[#ccff00] dark:hover:bg-[#ccff00] dark:hover:text-black transition-colors z-[60]"
+          className="md:hidden p-2 text-[#475569] dark:text-[#94A3B8] hover:text-[#0052CC] dark:hover:text-white transition-colors z-[60]"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
-          title="Toggle Menu"
         >
           {isMenuOpen ? (
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -285,324 +160,225 @@ export default function Home() {
 
       {/* Mobile Menu Overlay */}
       {isMenuOpen && (
-        <div className="fixed inset-0 z-[55] bg-white dark:bg-black flex flex-col items-center justify-center p-6 transition-colors duration-300">
+        <div className="fixed inset-0 z-[55] bg-white dark:bg-[#0B1120] flex flex-col items-center justify-center p-6 transition-colors duration-300">
           <nav className="flex flex-col gap-8 items-center w-full">
-            <a href="#about" onClick={() => setIsMenuOpen(false)} className="text-3xl font-black uppercase tracking-widest hover:text-[#ccff00] transition-colors">About</a>
-            <a href="#features" onClick={() => setIsMenuOpen(false)} className="text-3xl font-black uppercase tracking-widest hover:text-[#ccff00] transition-colors">Features</a>
+            <a href="#about" onClick={() => setIsMenuOpen(false)} className="text-2xl font-bold text-[#0F172A] dark:text-white hover:text-[#0052CC] dark:hover:text-[#0052CC]">About</a>
+            <a href="#features" onClick={() => setIsMenuOpen(false)} className="text-2xl font-bold text-[#0F172A] dark:text-white hover:text-[#0052CC] dark:hover:text-[#0052CC]">Features</a>
             
             {/* Theme Toggler in Mobile Menu */}
             <button
               onClick={toggleTheme}
-              className="mt-4 p-4 border-2 border-[#1a1a1a] dark:border-[#333333] hover:bg-black hover:text-[#ccff00] dark:hover:bg-[#ccff00] dark:hover:text-black transition-colors flex items-center justify-center gap-4 text-xl font-black uppercase"
+              className="mt-4 p-4 border border-[#E2E8F0] dark:border-[#334155] hover:border-[#0052CC] dark:hover:border-white rounded-xl w-full flex items-center justify-center gap-4 text-lg font-bold text-[#0F172A] dark:text-white transition-colors"
             >
-              {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+              {theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             </button>
 
             {hasSession ? (
-              <a href="/dashboard" onClick={() => setIsMenuOpen(false)} className="mt-8 flex items-center justify-center gap-4 px-12 py-4 bg-[#ccff00] text-black text-2xl font-black uppercase tracking-widest border-2 border-[#1a1a1a] dark:border-[#333333] w-full text-center hover:bg-black hover:text-[#ccff00] transition-colors">
-                {user?.avatar_url ? (
-                  <img src={user.avatar_url} alt="Avatar" className="w-8 h-8 object-cover border-2 border-[#1a1a1a]" />
-                ) : (
-                  <div className="w-8 h-8 bg-[#1a1a1a] text-white flex items-center justify-center font-bold text-sm border-2 border-[#1a1a1a]">
-                    {user?.full_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
-                  </div>
-                )}
-                Dashboard
+              <a href="/dashboard" onClick={() => setIsMenuOpen(false)} className="mt-8 flex items-center justify-center gap-4 px-8 py-3 bg-white dark:bg-[#1E293B] border border-[#E2E8F0] dark:border-[#334155] rounded-xl w-full text-center hover:border-[#0052CC] dark:hover:border-white shadow-sm transition-all">
+                <span className="text-lg font-bold text-[#0F172A] dark:text-white">Go to Dashboard</span>
               </a>
             ) : (
-              <a href="/auth" onClick={() => setIsMenuOpen(false)} className="mt-8 px-12 py-4 bg-[#ccff00] text-black text-2xl font-black uppercase tracking-widest border-2 border-[#1a1a1a] dark:border-[#333333] w-full text-center hover:bg-black hover:text-[#ccff00] transition-colors">Login</a>
+              <a href="/auth" onClick={() => setIsMenuOpen(false)} className="mt-8 px-8 py-3 bg-[#0052CC] text-white text-lg font-bold rounded-lg w-full text-center shadow-md">Login</a>
             )}
           </nav>
         </div>
       )}
 
       {/* Hero Section */}
-      <section id="home" className="relative z-10 flex flex-col items-center justify-center min-h-[90vh] px-6 text-center pointer-events-none pt-24 md:pt-0 pb-16 md:pb-0">
-        {/* Large abstract glowing arc */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] md:w-[700px] md:h-[700px] rounded-full border-[40px] md:border-[80px] border-[#ccff00] blur-xl opacity-60 dark:opacity-40 mix-blend-difference pointer-events-none"></div>
-
-        <div className="relative z-20 max-w-5xl mx-auto flex flex-col items-center pointer-events-auto">
-          {/* Brutalist highlight box */}
-          <div className="inline-block bg-[#ccff00] text-black px-8 py-2 mb-8 transform -rotate-2 border-2 border-[#1a1a1a]">
-            <span className="text-xl md:text-2xl font-black uppercase tracking-tight">Civic Tech Platform</span>
+      <section id="home" className="relative z-10 flex flex-col items-center justify-center min-h-[90vh] px-6 text-center pt-24 md:pt-0 pb-16 md:pb-0">
+        <div className="relative z-20 max-w-4xl mx-auto flex flex-col items-center">
+          
+          <div className="inline-flex items-center gap-2 bg-[#E6F0FF] dark:bg-[#0052CC]/20 text-[#0052CC] dark:text-[#E6F0FF] px-4 py-1.5 rounded-full mb-8 text-sm font-semibold border border-[#0052CC]/20 dark:border-[#0052CC]/50">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" /></svg>
+            Official Civic Tech Platform
           </div>
 
-          <h1 className="text-6xl md:text-[8rem] font-black uppercase tracking-tighter leading-[0.85] mb-10 text-black dark:text-white drop-shadow-2xl">
-            Clean the <br />
-            <span className="text-black dark:text-[#ccff00]">Streets</span>, <br />
-            Reclaim the <br />
-            <span className="text-transparent relative" style={{ WebkitTextStroke: isDark ? '2px #ccff00' : '2px #000' }}>
-              City.
-              <span className="absolute inset-0 text-black dark:text-[#ccff00] mix-blend-overlay opacity-50 blur-sm">City.</span>
-            </span>
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-8 text-[#0F172A] dark:text-white leading-tight drop-shadow-sm">
+            Clean the Streets, <br />
+            Reclaim the <span className="text-[#0052CC] dark:text-[#3B82F6]">City.</span>
           </h1>
 
-          <div className="text-lg md:text-2xl font-sans font-medium max-w-4xl mx-auto mb-12 leading-tight text-center px-4 text-black dark:text-white inline-block p-4">
-            A Crowdsourced Geospatial Platform for Transparent Environmental Reporting and Rapid Institutional Detection for the Pasig City Solid Waste Management Office.
-          </div>
+          <p className="text-lg md:text-xl font-medium max-w-3xl mx-auto mb-12 text-[#475569] dark:text-[#94A3B8] leading-relaxed">
+            A crowdsourced geospatial platform for transparent environmental reporting and rapid institutional detection for the Pasig City Solid Waste Management Office.
+          </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 w-full max-w-2xl mt-4">
-            <a href="#download" className="group relative w-full sm:w-auto px-10 py-5 bg-[#ccff00] text-black font-black uppercase text-xl md:text-2xl overflow-hidden border-2 border-[#1a1a1a] dark:border-[#333333]">
-              <span className="relative z-10 block group-hover:scale-110 transition-transform duration-200">Download App</span>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full max-w-lg">
+            <a href="#download" className="w-full sm:w-auto px-8 py-3.5 bg-[#0052CC] dark:bg-[#3B82F6] text-white font-semibold rounded-lg hover:bg-[#0747A6] dark:hover:bg-[#2563EB] shadow-md transition-all text-lg">
+              Download App
             </a>
-            <a href="/map" className="group relative w-full sm:w-auto px-10 py-5 bg-black dark:bg-black text-[#ccff00] font-black uppercase text-xl md:text-2xl overflow-hidden border-2 border-[#1a1a1a] dark:border-[#333333] hover:bg-[#ccff00] hover:text-black transition-colors">
-              <span className="relative z-10 block group-hover:scale-110 transition-transform duration-200">Live Reports</span>
+            <a href="/map" className="w-full sm:w-auto px-8 py-3.5 bg-white dark:bg-[#1E293B] text-[#0052CC] dark:text-white border border-[#0052CC] dark:border-[#334155] font-semibold rounded-lg hover:bg-[#E6F0FF] dark:hover:bg-[#334155] shadow-sm transition-all text-lg">
+              Live Reports
             </a>
           </div>
-        </div>
-
-        {/* Small floating brutalist text elements - Fixed text color in light mode */}
-        <div className="absolute top-32 left-10 text-xs font-mono uppercase text-black dark:text-[#ccff00] hidden xl:block border-2 border-[#1a1a1a] dark:border-[#333333] p-2 bg-white dark:bg-black font-bold">
-          [08] resources <br /> loaded.
-        </div>
-        <div className="absolute bottom-40 right-10 text-xs font-mono uppercase text-black dark:text-white hidden xl:block text-right border-r-2 border-[#ccff00] pr-2 font-bold bg-white/50 dark:bg-black/50 p-2">
-          @pasig_city <br /> system.init()
         </div>
       </section>
 
       {/* Marquee Divider */}
-      <div className="w-full bg-[#ccff00] text-black font-black text-2xl py-3 overflow-hidden whitespace-nowrap border-y-4 border-[#1a1a1a] dark:border-[#1a1a1a] relative z-20">
-        <div className="inline-block animate-[marquee_20s_linear_infinite]">
-          REPORT IT. TRACK IT. WATCH IT DISAPPEAR. // REPORT IT. TRACK IT. WATCH IT DISAPPEAR. // REPORT IT. TRACK IT. WATCH IT DISAPPEAR. //
+      <div className="w-full bg-[#0052CC] dark:bg-[#0747A6] text-white font-semibold text-lg py-3 overflow-hidden whitespace-nowrap shadow-inner relative z-20">
+        <div className="inline-block animate-[marquee_25s_linear_infinite]">
+          REPORT IT. TRACK IT. WATCH IT DISAPPEAR. • REPORT IT. TRACK IT. WATCH IT DISAPPEAR. • REPORT IT. TRACK IT. WATCH IT DISAPPEAR. • REPORT IT. TRACK IT. WATCH IT DISAPPEAR. • REPORT IT. TRACK IT. WATCH IT DISAPPEAR. • 
         </div>
       </div>
 
       {/* How it Works Section */}
-      <section id="about" className="relative z-10 py-32 px-6 bg-white dark:bg-black border-t-8 border-[#1a1a1a] dark:border-[#333333] transition-colors duration-300">
-        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-20 items-center">
+      <section id="about" className="relative z-10 py-24 px-6 bg-[#F8FAFC] dark:bg-[#0B1120] transition-colors duration-300">
+        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
           <div>
-            <h2 className="text-6xl md:text-8xl font-black uppercase tracking-tighter mb-12 leading-[0.9] text-black dark:text-white">
-              How it <br /> <span className="text-black bg-[#ccff00] px-4 inline-block mt-2 transform rotate-1 border-2 border-[#1a1a1a]">Works</span>
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-10 text-[#0F172A] dark:text-white">
+              How it Works
             </h2>
-            <div className="space-y-10 font-mono text-lg md:text-xl text-black dark:text-gray-300">
-              <div className="border-l-8 border-[#ccff00] pl-6 bg-black/5 dark:bg-white/5 p-4 hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
-                {/* Fixed dark mode text color for 01 */}
-                <span className="text-black dark:text-black font-black text-2xl block mb-2 tracking-widest bg-[#ccff00] inline-block px-2">01. REPORT</span>
-                <br />Citizens pin environmental issues on the map with photos and descriptions.
-              </div>
-              <div className="border-l-8 border-[#1a1a1a] dark:border-white pl-6 bg-black/5 dark:bg-white/5 p-4 hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
-                <span className="text-white bg-black dark:bg-white dark:text-black font-black text-2xl block mb-2 tracking-widest inline-block px-2">02. VALIDATE</span>
-                <br />AI automatically verifies each report for accuracy and relevance.
-              </div>
-              <div className="border-l-8 border-[#ccff00] pl-6 bg-black/5 dark:bg-white/5 p-4 hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
-                {/* Fixed dark mode text color for 03 */}
-                <span className="text-black dark:text-black font-black text-2xl block mb-2 tracking-widest bg-[#ccff00] inline-block px-2">03. PRIORITIZE</span>
-                <br />The system clusters and ranks issues based on severity and location.
-              </div>
-              <div className="border-l-8 border-[#1a1a1a] dark:border-white pl-6 bg-black/5 dark:bg-white/5 p-4 hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
-                <span className="text-white bg-black dark:bg-white dark:text-black font-black text-2xl block mb-2 tracking-widest inline-block px-2">04. ACT</span>
-                <br />SWMO assigns cleanup tasks and tracks resolution in real time.
-              </div>
+            <div className="space-y-6">
+              {[
+                { step: '01', title: 'REPORT', desc: 'Citizens pin environmental issues on the map with photos and descriptions.', color: '#0052CC', bg: '#EFF6FF', darkBg: '#1E3A8A' },
+                { step: '02', title: 'VALIDATE', desc: 'AI automatically verifies each report for accuracy and relevance.', color: '#059669', bg: '#ECFDF5', darkBg: '#064E3B' },
+                { step: '03', title: 'PRIORITIZE', desc: 'The system clusters and ranks issues based on severity and location.', color: '#D97706', bg: '#FFFBEB', darkBg: '#78350F' },
+                { step: '04', title: 'ACT', desc: 'SWMO assigns cleanup tasks and tracks resolution in real time.', color: '#0F172A', bg: '#F1F5F9', darkBg: '#334155', darkColor: '#FFFFFF' }
+              ].map((item, idx) => (
+                <div key={idx} className="flex gap-4 p-5 rounded-xl bg-white dark:bg-[#1E293B] border border-[#E2E8F0] dark:border-[#334155] shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center font-bold text-lg transition-colors" style={{ backgroundColor: isDark ? item.darkBg : item.bg, color: isDark && item.darkColor ? item.darkColor : item.color }}>
+                    {item.step}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-[#0F172A] dark:text-white mb-1">{item.title}</h3>
+                    <p className="text-[#475569] dark:text-[#94A3B8]">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div
-            className="relative h-[500px] lg:h-[700px] border-8 border-[#1a1a1a] dark:border-[#333333] bg-gray-100 dark:bg-[#111] flex items-center justify-center group [perspective:1000px] overflow-visible"
-            onMouseMove={handlePhoneMouseMove}
-            onMouseLeave={handlePhoneMouseLeave}
-          >
-            {/* Background pattern for the box */}
-            <div className="absolute inset-0 opacity-20 dark:opacity-20 mix-blend-multiply dark:mix-blend-normal overflow-hidden" style={{ backgroundImage: 'repeating-linear-gradient(45deg, #ccff00 0, #ccff00 2px, transparent 2px, transparent 10px)' }}></div>
-
-            {/* 3D Phone Mockup - Scaled for mobile */}
-            <div className="transform scale-[0.6] md:scale-100">
-              <div
-                className="w-[360px] h-[780px] border-[12px] border-[#1a1a1a] dark:border-[#222] rounded-[3.5rem] relative overflow-hidden bg-black shadow-[20px_20px_0px_0px_rgba(0,0,0,0.4)] dark:shadow-[30px_30px_0px_0px_rgba(204,255,0,0.15)] transition-transform duration-100 ease-out flex flex-col items-center justify-center px-8 z-10"
-                style={{
-                  transform: `rotateX(${phoneRotation.x}deg) rotateY(${phoneRotation.y}deg)`,
+          <div className="relative h-[600px] flex items-center justify-center lg:justify-end" style={{ perspective: '1200px' }}>
+            <div 
+              className="relative group cursor-pointer"
+              onMouseMove={handleMouseMove}
+              onMouseLeave={handleMouseLeave}
+              style={{
+                transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
+                transformStyle: 'preserve-3d',
+                transition: tilt.x === 0 && tilt.y === 0 ? 'transform 0.5s ease-out' : 'transform 0.1s ease-out'
+              }}
+            >
+              {/* Simple Clean Phone Mockup */}
+              <div 
+                className="w-[320px] h-[650px] bg-[#0F172A] rounded-[2.5rem] p-[8px] relative flex flex-col items-center transition-shadow duration-500"
+                style={{ 
+                  boxShadow: (tilt.x !== 0 || tilt.y !== 0) ? '0 40px 80px -20px rgba(0,0,0,0.5)' : '0 25px 50px -12px rgba(0,0,0,0.25)'
                 }}
               >
-              <div className="absolute top-0 inset-x-0 h-7 bg-black dark:bg-[#222] rounded-b-2xl w-40 mx-auto z-20"></div>
-
-              <div className="w-full flex flex-col items-center justify-center h-full pt-16 pb-10 relative z-10">
-                <h3 className="text-[3rem] font-bold text-white mb-12 text-center font-sans tracking-tight leading-tight">Ecopin<br />Login</h3>
-
-                <div className="w-full space-y-5">
-                  <div className="w-full bg-[#1A1A1A] border border-[#333] rounded-[1rem] p-5 text-gray-400 text-base font-sans font-medium flex items-center">
-                    Email
+                {/* Notch */}
+                <div className="absolute top-[8px] inset-x-0 h-6 bg-[#0F172A] rounded-b-xl w-32 mx-auto z-20" style={{ transform: 'translateZ(1px)' }}></div>
+                
+                {/* Screen Content */}
+                <div className="w-full h-full bg-[#F8FAFC] dark:bg-[#0B1120] rounded-[2rem] flex flex-col p-6 pt-16 relative overflow-hidden transition-colors" style={{ transform: 'translateZ(1px)' }}>
+                  <div className="flex justify-center mb-8">
+                    <img src="/Solo Logo Light.png" alt="EcoPin Logo" className="w-16 h-16 object-contain dark:hidden" />
+                    <img src="/Solo Logo Dark.png" alt="EcoPin Logo" className="w-16 h-16 object-contain hidden dark:block" />
                   </div>
-
-                  <div className="w-full bg-[#1A1A1A] border border-[#333] rounded-[1rem] p-5 text-gray-400 text-base font-sans font-medium flex items-center justify-between">
-                    <span>Password</span>
-                    <svg className="w-6 h-6 text-gray-300" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
-                    </svg>
+                  <h3 className="text-2xl font-bold text-[#0F172A] dark:text-white text-center mb-6">Welcome Back</h3>
+                  
+                  <div className="space-y-4 w-full">
+                    <div className="w-full bg-white dark:bg-[#1E293B] border border-[#E2E8F0] dark:border-[#334155] rounded-lg p-4 text-[#475569] dark:text-[#94A3B8] text-sm">
+                      Email Address
+                    </div>
+                    <div className="w-full bg-white dark:bg-[#1E293B] border border-[#E2E8F0] dark:border-[#334155] rounded-lg p-4 text-[#475569] dark:text-[#94A3B8] text-sm flex justify-between">
+                      <span>Password</span>
+                      <svg className="w-5 h-5 text-gray-400 dark:text-[#94A3B8]" fill="currentColor" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" /></svg>
+                    </div>
+                    <button className="w-full bg-[#0052CC] dark:bg-[#3B82F6] text-white font-bold py-3.5 rounded-lg mt-4 text-sm shadow-sm hover:bg-[#0747A6] dark:hover:bg-[#2563EB] transition-colors">
+                      Sign In
+                    </button>
                   </div>
-                </div>
-
-                <button className="w-full mt-8 bg-[#ccff00] text-black font-bold py-5 rounded-[1rem] text-[1.2rem] font-sans hover:bg-white transition-colors">
-                  Login
-                </button>
-
-                <div className="mt-10 text-base text-gray-300 font-sans font-medium text-center">
-                  Don't have an account? <span className="text-[#ccff00] cursor-pointer hover:underline">Sign Up</span>
                 </div>
               </div>
-            </div>
-            </div>
 
-            {/* Floating UI Chips with Authentic SVG Emojis - Positioned securely above phone via z-30 */}
-            <div className="absolute top-20 -left-12 bg-[#ccff00] text-black font-black text-xl py-4 px-8 border-2 border-[#1a1a1a] rotate-[-12deg] z-30 shadow-[8px_8px_0px_0px_#1a1a1a] dark:shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] flex items-center">
-              <svg className="w-7 h-7 mr-3 text-black inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-              </svg>
-              RESOLVED
-            </div>
-            <div className="absolute bottom-32 -right-12 bg-white dark:bg-black text-black dark:text-white font-black text-xl py-4 px-8 border-2 border-[#1a1a1a] dark:border-white rotate-[8deg] z-30 shadow-[8px_8px_0px_0px_#1a1a1a] dark:shadow-[8px_8px_0px_0px_rgba(204,255,0,1)] flex items-center">
-              <svg className="w-7 h-7 mr-3 text-red-600 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              URGENT
+              {/* Floating Badges */}
+              <div 
+                className="absolute top-20 -left-8 lg:-left-12 bg-white dark:bg-[#1E293B] text-[#059669] dark:text-[#34D399] font-bold text-sm py-2 px-4 rounded-full shadow-xl border border-[#E2E8F0] dark:border-[#334155] flex items-center gap-2 z-30"
+                style={{ transform: 'translateZ(60px)' }}
+              >
+                <div className="w-2 h-2 rounded-full bg-[#059669] dark:bg-[#34D399]"></div>
+                Issue Resolved
+              </div>
+              <div 
+                className="absolute bottom-32 -right-4 lg:-right-8 bg-white dark:bg-[#1E293B] text-[#DC2626] dark:text-[#F87171] font-bold text-sm py-2 px-4 rounded-full shadow-xl border border-[#E2E8F0] dark:border-[#334155] flex items-center gap-2 z-30"
+                style={{ transform: 'translateZ(80px)' }}
+              >
+                <div className="w-2 h-2 rounded-full bg-[#DC2626] dark:bg-[#F87171]"></div>
+                High Priority
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className="relative z-10 py-32 px-6 bg-[#ccff00] border-t-8 border-[#1a1a1a]">
-        {/* Wireframe background */}
-        <div
-          className="absolute inset-0 opacity-30 pointer-events-none"
-          style={{
-            backgroundImage: 'linear-gradient(rgba(0,0,0,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.5) 1px, transparent 1px)',
-            backgroundSize: '40px 40px'
-          }}
-        ></div>
-
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-16 border-b-2 border-[#1a1a1a] pb-8">
-            <h2 className="text-6xl md:text-8xl font-black uppercase tracking-tighter leading-[0.9] text-black">
-              System <br /> Features
+      <section id="features" className="relative z-10 py-24 px-6 bg-white dark:bg-[#1E293B] border-t border-[#E2E8F0] dark:border-[#334155] transition-colors duration-300">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-16 text-center">
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-[#0F172A] dark:text-white mb-4">
+              System Features
             </h2>
-            <div className="font-mono text-black font-bold uppercase border-2 border-[#1a1a1a] p-2 bg-[#ccff00] mt-4 md:mt-0">
-              *004 [READY]
-            </div>
+            <p className="text-[#475569] dark:text-[#94A3B8] max-w-2xl mx-auto text-lg">
+              Empowering local government and citizens with intelligent tools for a cleaner city.
+            </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-black text-white p-8 border-2 border-[#1a1a1a] shadow-[12px_12px_0px_0px_#1a1a1a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[8px_8px_0px_0px_#1a1a1a] transition-all">
-              <h3 className="text-3xl font-black uppercase tracking-tight mb-4 text-[#ccff00]">AI-Powered Validation</h3>
-              <p className="font-mono text-gray-300">Reports are automatically verified using artificial intelligence to reduce false reports and ensure data accuracy.</p>
-            </div>
-            <div className="bg-black text-white p-8 border-2 border-[#1a1a1a] shadow-[12px_12px_0px_0px_#1a1a1a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[8px_8px_0px_0px_#1a1a1a] transition-all">
-              <h3 className="text-3xl font-black uppercase tracking-tight mb-4 text-[#ccff00]">Geospatial Mapping</h3>
-              <p className="font-mono text-gray-300">Issues are pinned on an interactive map, giving SWMO a real-time geographic overview of environmental hotspots.</p>
-            </div>
-            <div className="bg-black text-white p-8 border-2 border-[#1a1a1a] shadow-[12px_12px_0px_0px_#1a1a1a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[8px_8px_0px_0px_#1a1a1a] transition-all">
-              <h3 className="text-3xl font-black uppercase tracking-tight mb-4 text-[#ccff00]">Smart Clustering</h3>
-              <p className="font-mono text-gray-300">Related reports are automatically grouped by location and type, helping authorities identify patterns and prioritize action.</p>
-            </div>
-            <div className="bg-black text-white p-8 border-2 border-[#1a1a1a] shadow-[12px_12px_0px_0px_#1a1a1a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[8px_8px_0px_0px_#1a1a1a] transition-all">
-              <h3 className="text-3xl font-black uppercase tracking-tight mb-4 text-[#ccff00]">Role-Based Access</h3>
-              <p className="font-mono text-gray-300">Separate interfaces for citizens and SWMO personnel, ensuring the right people have the right tools and access levels.</p>
-            </div>
-            <div className="bg-black text-white p-8 border-2 border-[#1a1a1a] shadow-[12px_12px_0px_0px_#1a1a1a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[8px_8px_0px_0px_#1a1a1a] transition-all">
-              <h3 className="text-3xl font-black uppercase tracking-tight mb-4 text-[#ccff00]">Cleanup Task Mgmt</h3>
-              <p className="font-mono text-gray-300">SWMO can create, assign, and track cleanup tasks directly from reported issues, closing the loop from report to resolution.</p>
-            </div>
-            <div className="bg-black text-white p-8 border-2 border-[#1a1a1a] shadow-[12px_12px_0px_0px_#1a1a1a] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[8px_8px_0px_0px_#1a1a1a] transition-all">
-              <h3 className="text-3xl font-black uppercase tracking-tight mb-4 text-[#ccff00]">Analytics Dashboard</h3>
-              <p className="font-mono text-gray-300">Comprehensive insights into report volumes, resolution rates, and environmental trends to support data-driven decisions.</p>
-            </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              { title: 'AI Validation', desc: 'Automatically verifies each report to filter out inaccuracies and false claims.', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
+              { title: 'Geospatial Map', desc: 'Real-time geographic overview of all environmental hotspots across Pasig City.', icon: 'M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064' },
+              { title: 'Smart Clustering', desc: 'Groups related reports to identify patterns and prioritize critical action areas.', icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10' },
+              { title: 'Role-Based Access', desc: 'Dedicated interfaces for citizens, field crew, and SWMO command center admins.', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
+              { title: 'Task Management', desc: 'Assign, dispatch, and track cleanup tasks from initial report to resolution.', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
+              { title: 'Analytics Dashboard', desc: 'Comprehensive data insights to support informed, data-driven LGU decisions.', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' }
+            ].map((feature, i) => (
+              <div key={i} className="bg-[#F8FAFC] dark:bg-[#0B1120] p-8 rounded-2xl border border-[#E2E8F0] dark:border-[#334155] hover:shadow-md transition-all">
+                <div className="w-12 h-12 bg-white dark:bg-[#1E293B] rounded-lg shadow-sm border border-[#E2E8F0] dark:border-[#334155] flex items-center justify-center mb-6 text-[#0052CC] dark:text-[#3B82F6]">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={feature.icon} /></svg>
+                </div>
+                <h3 className="text-xl font-bold mb-3 text-[#0F172A] dark:text-white">{feature.title}</h3>
+                <p className="text-[#475569] dark:text-[#94A3B8] leading-relaxed">{feature.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Downloads */}
-      <section id="download" className="relative z-10 py-40 px-6 bg-white dark:bg-black text-black dark:text-white text-center border-t-8 border-[#1a1a1a] dark:border-[#333333] transition-colors duration-300">
-        <div className="absolute inset-0 opacity-10 pointer-events-none mix-blend-difference" style={{ backgroundImage: 'radial-gradient(#000 2px, transparent 2px)', backgroundSize: '20px 20px' }}></div>
-
-        <h2 className="text-6xl md:text-[8rem] font-black uppercase tracking-tighter mb-8 leading-[0.8] relative z-10 flex flex-col items-center">
-          <span className="glitch-text cursor-crosshair" data-text="MAKE PASIG">MAKE PASIG</span>
-          <span className="glitch-text cursor-crosshair" data-text="GREEN AGAIN.">GREEN AGAIN.</span>
-        </h2>
-
-        <p className="text-2xl md:text-3xl font-bold max-w-4xl mx-auto mb-16 relative z-10 border-b-8 border-[#1a1a1a] dark:border-[#333333] pb-8">
-          Report, track, and manage environmental concerns in Pasig City. Available for Android devices.
-        </p>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-8 relative z-10">
-          <a href="/ecopin-app-release.apk" download className="inline-block px-12 py-6 bg-[#ccff00] text-black font-black uppercase text-3xl hover:bg-black hover:text-[#ccff00] dark:hover:bg-white dark:hover:text-black transition-all border-8 border-[#1a1a1a] dark:border-white shadow-[12px_12px_0px_0px_#1a1a1a] dark:shadow-[12px_12px_0px_0px_rgba(204,255,0,0.5)] hover:shadow-none hover:translate-x-[12px] hover:translate-y-[12px]">
-            Download App
+      <section id="download" className="py-24 px-6 bg-[#0052CC] dark:bg-[#0F172A] text-white text-center relative overflow-hidden transition-colors duration-300">
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
+        <div className="max-w-4xl mx-auto relative z-10">
+          <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">
+            Make Pasig Green Again.
+          </h2>
+          <p className="text-lg md:text-xl font-medium mb-10 text-[#E6F0FF] dark:text-[#94A3B8] max-w-2xl mx-auto">
+            Report, track, and manage environmental concerns. Available now for Android devices.
+          </p>
+          <a href="/ecopin-app-release.apk" download className="inline-block px-10 py-4 bg-white dark:bg-[#3B82F6] text-[#0052CC] dark:text-white font-bold rounded-xl text-lg hover:bg-[#F8FAFC] dark:hover:bg-[#2563EB] shadow-lg transition-all hover:-translate-y-1">
+            Download App (.apk)
           </a>
         </div>
       </section>
 
-      {/* Simple Footer */}
-      <footer className="py-12 px-6 bg-black border-t-8 border-[#ccff00] text-white">
+      {/* Footer */}
+      <footer className="py-12 px-6 bg-white dark:bg-[#1E293B] border-t border-[#E2E8F0] dark:border-[#334155] transition-colors duration-300">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div>
-            <div className="mb-4">
-              <img src="/Full Logo Dark.png" alt="EcoPin" className="h-10 md:h-14 w-auto" />
-            </div>
-            <p className="font-mono text-gray-400 text-sm">Solid Waste Management Office - Pasig City</p>
+          <div className="flex flex-col items-center md:items-start">
+            <img src="/Full Logo Light.png" alt="EcoPin" className="h-10 w-auto mb-4 dark:hidden" />
+            <img src="/Full Logo Dark.png" alt="EcoPin" className="h-10 w-auto mb-4 hidden dark:block" />
+            <p className="text-[#475569] dark:text-[#94A3B8] text-sm font-medium">Solid Waste Management Office - Pasig City</p>
           </div>
-          <div className="text-gray-500 font-mono text-xs uppercase tracking-widest text-center md:text-right">
-            © 2026 ECOPIN.<br className="md:hidden" /> ALL RIGHTS RESERVED.
+          <div className="text-[#475569] dark:text-[#94A3B8] text-sm font-medium text-center md:text-right">
+            © 2026 EcoPin LGU Platform.<br className="md:hidden" /> All Rights Reserved.
           </div>
         </div>
       </footer>
-
+      
       <style dangerouslySetInnerHTML={{
         __html: `
         @keyframes marquee {
           0% { transform: translateX(0); }
           100% { transform: translateX(-50%); }
-        }
-
-        .glitch-text {
-          position: relative;
-          display: inline-block;
-        }
-
-        .glitch-text::before,
-        .glitch-text::after {
-          content: attr(data-text);
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: #ccff00;
-          color: black;
-          opacity: 0;
-          pointer-events: none;
-        }
-
-        .glitch-text:hover::before,
-        .glitch-text:hover::after {
-          opacity: 1;
-        }
-
-        .glitch-text:hover::before {
-          left: 6px;
-          text-shadow: -2px 0 black;
-          animation: glitch-anim-1 0.2s infinite linear alternate-reverse;
-          clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
-        }
-
-        .glitch-text:hover::after {
-          left: -6px;
-          text-shadow: -2px 0 white;
-          animation: glitch-anim-2 0.3s infinite linear alternate-reverse;
-          clip-path: polygon(0 80%, 100% 20%, 100% 100%, 0 100%);
-        }
-
-        @keyframes glitch-anim-1 {
-          0% { clip-path: inset(20% 0 80% 0); transform: translate(2px, 2px); }
-          20% { clip-path: inset(60% 0 10% 0); transform: translate(-2px, -2px); }
-          40% { clip-path: inset(40% 0 50% 0); transform: translate(2px, -2px); }
-          60% { clip-path: inset(80% 0 5% 0); transform: translate(-2px, 2px); }
-          80% { clip-path: inset(10% 0 70% 0); transform: translate(2px, 2px); }
-          100% { clip-path: inset(30% 0 20% 0); transform: translate(-2px, -2px); }
-        }
-
-        @keyframes glitch-anim-2 {
-          0% { clip-path: inset(10% 0 60% 0); transform: translate(-2px, -2px); }
-          20% { clip-path: inset(30% 0 20% 0); transform: translate(2px, 2px); }
-          40% { clip-path: inset(70% 0 10% 0); transform: translate(-2px, 2px); }
-          60% { clip-path: inset(20% 0 50% 0); transform: translate(2px, -2px); }
-          80% { clip-path: inset(90% 0 5% 0); transform: translate(-2px, -2px); }
-          100% { clip-path: inset(40% 0 30% 0); transform: translate(2px, 2px); }
         }
       `}} />
     </main>
