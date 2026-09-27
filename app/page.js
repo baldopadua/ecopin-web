@@ -99,7 +99,7 @@ export default function Home() {
       </div>
 
       {/* Header */}
-      <header className="relative z-50 flex items-center justify-between p-4 md:px-8 bg-white dark:bg-[#1E293B] border-b border-[#E2E8F0] dark:border-[#334155] shadow-sm transition-colors duration-300">
+      <header className="fixed w-full top-0 left-0 z-50 flex items-center justify-between p-4 md:px-8 bg-white/95 dark:bg-[#1E293B]/95 backdrop-blur-sm border-b border-[#E2E8F0] dark:border-[#334155] shadow-sm transition-colors duration-300">
         <a href="#home" className="cursor-pointer">
           <img src="/Full Logo Light.png" alt="EcoPin" className="h-10 md:h-12 w-auto dark:hidden" />
           <img src="/Full Logo Dark.png" alt="EcoPin" className="h-10 md:h-12 w-auto hidden dark:block" />
@@ -184,8 +184,10 @@ export default function Home() {
         </div>
       )}
 
-      {/* Hero Section */}
-      <section id="home" className="relative z-10 flex flex-col items-center justify-center min-h-[90vh] px-6 text-center pt-24 md:pt-0 pb-16 md:pb-0">
+      {/* Landing Wrapper to Frame Marquee */}
+      <div className="flex flex-col min-h-screen pt-[72px] md:pt-[80px]">
+        {/* Hero Section */}
+        <section id="home" className="relative z-10 flex-grow flex flex-col items-center justify-center px-6 text-center pb-8 md:pb-0">
         <div className="relative z-20 max-w-4xl mx-auto flex flex-col items-center">
           
           <div className="inline-flex items-center gap-2 bg-[#E6F0FF] dark:bg-[#0052CC]/20 text-[#0052CC] dark:text-[#E6F0FF] px-4 py-1.5 rounded-full mb-8 text-sm font-semibold border border-[#0052CC]/20 dark:border-[#0052CC]/50">
@@ -213,14 +215,26 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Marquee Divider */}
-      <div className="w-full bg-[#0052CC] dark:bg-[#0747A6] text-white font-semibold text-lg py-3 overflow-hidden whitespace-nowrap shadow-inner relative z-20">
-        <div className="inline-block animate-[marquee_25s_linear_infinite]">
-          REPORT IT. TRACK IT. WATCH IT DISAPPEAR. • REPORT IT. TRACK IT. WATCH IT DISAPPEAR. • REPORT IT. TRACK IT. WATCH IT DISAPPEAR. • REPORT IT. TRACK IT. WATCH IT DISAPPEAR. • REPORT IT. TRACK IT. WATCH IT DISAPPEAR. • 
+          {/* Marquee Divider */}
+          <div className="w-full bg-[#0052CC] dark:bg-[#0747A6] text-white font-semibold text-lg py-3 overflow-hidden shadow-inner relative z-20 shrink-0 mt-auto flex">
+            <div className="flex animate-marquee whitespace-nowrap shrink-0">
+              <span className="pr-2">REPORT IT. TRACK IT. WATCH IT DISAPPEAR. •</span>
+              <span className="pr-2">REPORT IT. TRACK IT. WATCH IT DISAPPEAR. •</span>
+              <span className="pr-2">REPORT IT. TRACK IT. WATCH IT DISAPPEAR. •</span>
+              <span className="pr-2">REPORT IT. TRACK IT. WATCH IT DISAPPEAR. •</span>
+              <span className="pr-2">REPORT IT. TRACK IT. WATCH IT DISAPPEAR. •</span>
+            </div>
+            <div className="flex animate-marquee whitespace-nowrap shrink-0" aria-hidden="true">
+              <span className="pr-2">REPORT IT. TRACK IT. WATCH IT DISAPPEAR. •</span>
+              <span className="pr-2">REPORT IT. TRACK IT. WATCH IT DISAPPEAR. •</span>
+              <span className="pr-2">REPORT IT. TRACK IT. WATCH IT DISAPPEAR. •</span>
+              <span className="pr-2">REPORT IT. TRACK IT. WATCH IT DISAPPEAR. •</span>
+              <span className="pr-2">REPORT IT. TRACK IT. WATCH IT DISAPPEAR. •</span>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* How it Works Section */}
+        {/* How it Works Section */}
       <section id="about" className="relative z-10 py-24 px-6 bg-[#F8FAFC] dark:bg-[#0B1120] transition-colors duration-300">
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
           <div>
