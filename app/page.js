@@ -77,10 +77,10 @@ export default function Home() {
   const isDark = theme === 'dark';
 
   return (
-    <main className="min-h-screen bg-[#FDFBF7] dark:bg-[#0D0D0D] text-black dark:text-white relative overflow-hidden selection:bg-[#0052CC] selection:text-white transition-colors duration-300">
+    <main className="min-h-screen bg-[#EFE9DF] dark:bg-[#0D0D0D] text-black dark:text-white relative overflow-hidden selection:bg-[#0052CC] selection:text-white transition-colors duration-300">
       
       {/* Background System */}
-      <div className="absolute top-0 left-0 right-0 h-screen z-0 bg-[#FDFBF7] dark:bg-[#0D0D0D] overflow-hidden pointer-events-none transition-colors duration-300">
+      <div className="absolute top-0 left-0 right-0 h-screen z-0 bg-[#EFE9DF] dark:bg-[#0D0D0D] overflow-hidden pointer-events-none transition-colors duration-300">
         <BackgroundMap isDark={isDark} />
         <FloatingParticles isDark={isDark} />
         
@@ -88,11 +88,11 @@ export default function Home() {
         <div className="absolute inset-0 bg-grid-pattern opacity-50 dark:opacity-30 pointer-events-none"></div>
         
         {/* Fade to ensure text readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#FDFBF7]/90 via-[#FDFBF7]/50 to-[#FDFBF7]/90 dark:from-[#0D0D0D]/90 dark:via-[#0D0D0D]/50 dark:to-[#0D0D0D]/90 transition-colors duration-300"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-[#EFE9DF]/90 via-[#EFE9DF]/50 to-[#EFE9DF]/90 dark:from-[#0D0D0D]/90 dark:via-[#0D0D0D]/50 dark:to-[#0D0D0D]/90 transition-colors duration-300"></div>
       </div>
 
       {/* Header */}
-      <header className="fixed w-full top-0 left-0 z-50 flex items-center justify-between p-4 md:px-8 bg-[#FDFBF7] dark:bg-[#0D0D0D] border-b-[3px] border-black dark:border-white transition-colors duration-300">
+      <header className="fixed w-full top-0 left-0 z-50 flex items-center justify-between p-4 md:px-8 bg-[#EFE9DF] dark:bg-[#0D0D0D] border-b-4 border-black dark:border-white transition-colors duration-300">
         <a href="#home" className="cursor-pointer">
           <img src="/Full Logo Light.png" alt="EcoPin" className="h-10 md:h-12 w-auto dark:hidden" />
           <img src="/Full Logo Dark.png" alt="EcoPin" className="h-10 md:h-12 w-auto hidden dark:block" />
@@ -185,70 +185,91 @@ export default function Home() {
         <div className="relative z-20 w-full grid grid-cols-1 lg:grid-cols-12 gap-6 lg:h-full mt-4 md:mt-8 pb-16 lg:pb-0">
           
           {/* Main Hero Panel - Spans 8 cols */}
-          <div className="lg:col-span-8 flex flex-col justify-between bg-white dark:bg-[#1A1A1A] p-8 md:p-12 rounded-[2rem] border-[3px] md:border-4 border-black dark:border-white shadow-[8px_8px_0_#000] md:shadow-[12px_12px_0_#000] dark:shadow-[8px_8px_0_#FFFFFF] md:dark:shadow-[12px_12px_0_#FFFFFF]">
-            <div>
-              <div className="mb-6 md:mb-10 font-mono text-xs md:text-sm font-bold uppercase tracking-[0.15em] md:tracking-[0.2em] px-4 py-2 bg-white text-[#0052CC] border-[3px] border-black inline-flex items-center gap-2 shadow-[4px_4px_0_#000] max-w-full overflow-hidden text-ellipsis rounded-full">
-                <span className="w-3 h-3 rounded-full bg-[#0052CC] animate-pulse"></span>
+          <div className="lg:col-span-8 flex flex-col justify-between bg-[#EFE9DF] dark:bg-[#1A1A1A] p-8 md:p-12 border-4 border-black dark:border-white relative overflow-hidden">
+            {/* ZZZ Vertical Spine Text */}
+            <div className="absolute left-0 top-0 bottom-0 w-12 border-r-4 border-black dark:border-white bg-[#0052CC] flex items-center justify-center hidden sm:flex">
+              <span className="text-white font-black text-xl tracking-[0.3em] uppercase" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
+                ECOPIN MANUAL
+              </span>
+            </div>
+            
+            <div className="sm:pl-16 relative z-10">
+              {/* Massive ZZZ Header */}
+              <div className="text-black dark:text-white font-black text-[12vw] sm:text-[100px] leading-none tracking-tighter uppercase mb-4 opacity-10">
+                ECOPIN
+              </div>
+
+              <div className="mb-6 md:mb-10 font-mono text-xs md:text-sm font-bold uppercase tracking-[0.15em] md:tracking-[0.2em] px-4 py-2 bg-white text-[#0052CC] border-4 border-black inline-flex items-center gap-2 max-w-full overflow-hidden text-ellipsis rounded-none">
+                <span className="w-3 h-3 bg-[#0052CC] animate-pulse border-2 border-black"></span>
                 SYS.01 // CIVIC TECH PLATFORM
               </div>
 
-              <h1 className="text-[11vw] sm:text-5xl md:text-7xl lg:text-[90px] font-black uppercase tracking-tighter mb-6 md:mb-10 text-black dark:text-white leading-[0.9] drop-shadow-none">
+              <h1 className="text-[11vw] sm:text-5xl md:text-7xl lg:text-[80px] font-black uppercase tracking-tighter mb-6 md:mb-10 text-black dark:text-white leading-[0.9] drop-shadow-none">
                 Clean<br/>the Streets.<br />
-                <span className="inline-block bg-[#0052CC] text-white px-4 md:px-6 mt-2 md:mt-4 border-[3px] md:border-4 border-black dark:border-white transform -rotate-2 shadow-[6px_6px_0_#000] md:shadow-[8px_8px_0_#000] dark:shadow-[6px_6px_0_#FFFFFF] md:dark:shadow-[8px_8px_0_#FFFFFF] rounded-2xl">RECLAIM<br/>THE CITY.</span>
+                <span className="inline-block bg-[#0052CC] text-white px-4 md:px-6 mt-2 md:mt-4 border-4 border-black dark:border-white rounded-none">RECLAIM<br/>THE CITY.</span>
               </h1>
             </div>
 
-            <div className="mt-8 flex flex-col xl:flex-row items-start xl:items-end justify-between gap-6 xl:gap-10 border-t-[3px] md:border-t-4 border-black dark:border-white pt-6 md:pt-8">
-              <p className="text-base md:text-lg xl:text-xl font-bold max-w-lg text-black dark:text-white border-l-[3px] md:border-l-4 border-[#0052CC] pl-4 md:pl-6 text-left">
+            <div className="sm:pl-16 mt-8 flex flex-col xl:flex-row items-start xl:items-end justify-between gap-6 xl:gap-10 border-t-4 border-black dark:border-white pt-6 md:pt-8 relative z-10">
+              <p className="text-base md:text-lg xl:text-xl font-bold max-w-lg text-black dark:text-white border-l-4 border-[#0052CC] pl-4 md:pl-6 text-left">
                 A crowdsourced geospatial platform for transparent environmental reporting and rapid institutional detection.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 shrink-0 w-full xl:w-auto mt-2 xl:mt-0">
-                <span className="font-mono text-xs md:text-sm font-bold text-[#0052CC] dark:text-white bg-white dark:bg-[#0052CC] border-[3px] border-black dark:border-white px-4 py-1.5 rounded-full uppercase tracking-[0.1em] md:tracking-[0.2em] shadow-[4px_4px_0_#000] dark:shadow-[4px_4px_0_#FFFFFF]">
+                <span className="font-mono text-xs md:text-sm font-bold text-[#0052CC] dark:text-white bg-white dark:bg-[#0052CC] border-4 border-black dark:border-white px-4 py-1.5 rounded-none uppercase tracking-[0.1em] md:tracking-[0.2em]">
                   &gt; SYSTEM_ONLINE
                 </span>
               </div>
             </div>
+            
+            {/* ZZZ Panel Number */}
+            <div className="absolute bottom-4 right-4 bg-black text-white font-black text-2xl px-3 py-1">1</div>
           </div>
 
           {/* Right Side Bento Grid - Spans 4 cols */}
           <div className="lg:col-span-4 grid grid-cols-2 lg:flex lg:flex-col gap-3 md:gap-6">
             
             {/* Top Widget: Radar/Map CTA */}
-            <a href="/map" className="flex-1 border-[3px] lg:border-4 border-black dark:border-white bg-white dark:bg-[#1A1A1A] p-4 lg:p-6 shadow-[6px_6px_0_#000] lg:shadow-[10px_10px_0_#000] dark:shadow-[6px_6px_0_#FFFFFF] lg:dark:shadow-[10px_10px_0_#FFFFFF] relative overflow-hidden group flex flex-col justify-between min-h-[160px] lg:min-h-[300px] cursor-pointer hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[10px_10px_0_#000] lg:hover:shadow-[14px_14px_0_#000] transition-all duration-300 rounded-[2rem]">
-              <div className="absolute inset-0 bg-grid-pattern opacity-30 pointer-events-none"></div>
+            <a href="/map" className="flex-1 border-4 border-black dark:border-white bg-[#EFE9DF] dark:bg-[#1A1A1A] p-4 lg:p-6 relative overflow-hidden group flex flex-col justify-between min-h-[160px] lg:min-h-[300px] cursor-pointer hover:bg-white transition-colors duration-300 rounded-none">
+              <div className="absolute inset-0 bg-grid-pattern opacity-50 pointer-events-none"></div>
               
               <div className="relative z-10 flex justify-between items-start">
-                <div className="font-mono font-bold text-white text-[10px] lg:text-sm uppercase tracking-widest bg-[#0052CC] px-2 lg:px-3 py-1 lg:py-1.5 border-2 border-black rounded-full shadow-[2px_2px_0_#000]">
+                <div className="font-mono font-bold text-white text-[10px] lg:text-sm uppercase tracking-widest bg-[#0052CC] px-2 lg:px-3 py-1 lg:py-1.5 border-4 border-black rounded-none">
                   Live Feed
                 </div>
-                <div className="font-mono text-[8px] lg:text-xs font-bold text-white animate-pulse border-2 border-black rounded-full px-2 lg:px-3 py-1 bg-red-600 shadow-[2px_2px_0_#000]">
+                <div className="font-mono text-[8px] lg:text-xs font-bold text-white animate-pulse border-4 border-black rounded-none px-2 lg:px-3 py-1 bg-red-600">
                   REC
                 </div>
               </div>
 
               {/* Custom Map of Pasig Boundary */}
               <div className="absolute inset-0 z-0 opacity-100 group-hover:scale-[1.05] transition-all duration-500 pointer-events-none flex items-center justify-center p-4 lg:p-8 mt-6 lg:mt-4">
-                <img src="/pasig.svg" alt="Pasig City Blueprint" className="w-full h-full object-contain drop-shadow-[4px_4px_0_#000] lg:drop-shadow-[8px_8px_0_#000] transition-all duration-500" />
+                <img src="/pasig.svg" alt="Pasig City Blueprint" className="w-full h-full object-contain transition-all duration-500" />
               </div>
               
-              <div className="relative z-10 mt-auto bg-white dark:bg-black border-[3px] border-black dark:border-white p-3 lg:p-4 rounded-xl shadow-[4px_4px_0_#000] dark:shadow-[4px_4px_0_#0052CC]">
+              <div className="relative z-10 mt-auto bg-white dark:bg-black border-4 border-black dark:border-white p-3 lg:p-4 rounded-none">
                 <h3 className="text-xl lg:text-3xl font-black text-black dark:text-white uppercase leading-tight group-hover:text-[#0052CC] transition-colors">Live Map</h3>
                 <p className="font-mono text-[9px] lg:text-sm font-bold text-[#0052CC] mt-1 lg:mt-2 line-clamp-1">VIEW REPORTS ↗</p>
               </div>
+
+              {/* ZZZ Panel Number */}
+              <div className="absolute bottom-4 right-4 bg-black text-white font-black text-2xl px-3 py-1 z-20">2</div>
             </a>
 
             {/* Bottom Widget: Download CTA */}
-            <a href="#download" className="min-h-[160px] lg:h-48 border-[3px] lg:border-4 border-black dark:border-white bg-[#0052CC] p-4 lg:p-6 shadow-[6px_6px_0_#000] lg:shadow-[10px_10px_0_#000] dark:shadow-[6px_6px_0_#FFFFFF] lg:dark:shadow-[10px_10px_0_#FFFFFF] flex flex-col justify-end relative overflow-hidden group hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[10px_10px_0_#000] lg:hover:shadow-[14px_14px_0_#000] transition-all duration-300 cursor-pointer block rounded-[2rem]">
-              <div className="bg-white border-[3px] border-black p-3 lg:p-4 rounded-xl shadow-[4px_4px_0_#000] relative z-10 w-3/4">
-                <h3 className="text-[#0052CC] text-xl lg:text-3xl font-black uppercase tracking-widest transition-transform">Download</h3>
-                <p className="text-black font-mono font-bold text-[9px] lg:text-sm mt-1 lg:mt-2 transition-transform">iOS &amp; ANDROID ↗</p>
+            <a href="#download" className="min-h-[160px] lg:h-48 border-4 border-black dark:border-white bg-[#0052CC] p-4 lg:p-6 flex flex-col justify-end relative overflow-hidden group hover:bg-[#003d99] transition-colors duration-300 cursor-pointer block rounded-none">
+              <div className="bg-white border-4 border-black p-3 lg:p-4 rounded-none relative z-10 w-3/4">
+                <h3 className="text-[#0052CC] text-xl lg:text-3xl font-black uppercase tracking-widest">Download</h3>
+                <p className="text-black font-mono font-bold text-[9px] lg:text-sm mt-1 lg:mt-2">iOS &amp; ANDROID ↗</p>
               </div>
               
-              <div className="absolute top-4 right-4 lg:top-6 lg:right-6 w-10 h-10 lg:w-16 lg:h-16 bg-white border-[3px] border-black rounded-full flex items-center justify-center shadow-[4px_4px_0_#000] group-hover:scale-110 group-hover:bg-[#FFC900] transition-all duration-300">
+              <div className="absolute top-4 right-4 lg:top-6 lg:right-6 w-10 h-10 lg:w-16 lg:h-16 bg-white border-4 border-black rounded-none flex items-center justify-center group-hover:bg-[#FFC900] transition-colors duration-300 z-20">
                 <svg className="w-5 h-5 lg:w-8 lg:h-8 text-[#0052CC] group-hover:text-black pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
               </div>
+
+              {/* ZZZ Panel Number */}
+              <div className="absolute bottom-4 right-4 bg-black text-white font-black text-2xl px-3 py-1 z-20">3</div>
             </a>
 
           </div>
