@@ -77,67 +77,60 @@ export default function Home() {
   const isDark = theme === 'dark';
 
   return (
-    <main className="min-h-screen bg-[#F8FAFC] dark:bg-[#0B1120] text-[#0F172A] dark:text-white relative overflow-hidden selection:bg-[#E6F0FF] selection:text-[#0052CC] transition-colors duration-300">
+    <main className="min-h-screen bg-white dark:bg-black text-black dark:text-white relative overflow-hidden selection:bg-[#0052CC] selection:text-white transition-colors duration-300">
       
       {/* Background System */}
-      <div className="absolute top-0 left-0 right-0 h-screen z-0 bg-[#F8FAFC] dark:bg-[#0B1120] overflow-hidden pointer-events-none transition-colors duration-300">
+      <div className="absolute top-0 left-0 right-0 h-screen z-0 bg-white dark:bg-black overflow-hidden pointer-events-none transition-colors duration-300">
         <BackgroundMap isDark={isDark} />
         <FloatingParticles isDark={isDark} />
         
-        {/* Subtle Civic Pattern Overlay */}
-        <div className="absolute inset-0 opacity-40 dark:opacity-20"
-          style={{
-            backgroundImage: isDark
-              ? 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)'
-              : 'linear-gradient(rgba(0,82,204,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(0,82,204,0.08) 1px, transparent 1px)',
-            backgroundSize: '40px 40px',
-            backgroundPosition: 'center center',
-          }}
-        ></div>
-        {/* Soft radial gradient to ensure text readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#F8FAFC]/80 via-[#F8FAFC]/30 to-[#F8FAFC]/90 dark:from-[#0B1120]/80 dark:via-[#0B1120]/30 dark:to-[#0B1120]/90 transition-colors duration-300"></div>
+        {/* Brutalist Grid Overlay */}
+        <div className="absolute inset-0 bg-grid-pattern opacity-50 dark:opacity-30 pointer-events-none"></div>
+        
+        {/* Fade to ensure text readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/90 via-white/50 to-white/90 dark:from-black/90 dark:via-black/50 dark:to-black/90 transition-colors duration-300"></div>
       </div>
 
       {/* Header */}
-      <header className="fixed w-full top-0 left-0 z-50 flex items-center justify-between p-4 md:px-8 bg-white/95 dark:bg-[#1E293B]/95 backdrop-blur-sm border-b border-[#E2E8F0] dark:border-[#334155] shadow-sm transition-colors duration-300">
+      <header className="fixed w-full top-0 left-0 z-50 flex items-center justify-between p-4 md:px-8 bg-white dark:bg-black border-b-2 border-black dark:border-white transition-colors duration-300">
         <a href="#home" className="cursor-pointer">
           <img src="/Full Logo Light.png" alt="EcoPin" className="h-10 md:h-12 w-auto dark:hidden" />
           <img src="/Full Logo Dark.png" alt="EcoPin" className="h-10 md:h-12 w-auto hidden dark:block" />
         </a>
         <nav className="hidden md:flex gap-8 items-center">
-          <a href="#about" className="text-sm font-semibold text-[#475569] dark:text-[#94A3B8] hover:text-[#0052CC] dark:hover:text-white transition-colors">About</a>
-          <a href="#features" className="text-sm font-semibold text-[#475569] dark:text-[#94A3B8] hover:text-[#0052CC] dark:hover:text-white transition-colors">Features</a>
+          <a href="#about" className="text-sm font-bold uppercase tracking-widest text-black dark:text-white hover:bg-[#0052CC] hover:text-white px-3 py-1 border-2 border-transparent hover:border-black dark:hover:border-white transition-all">About</a>
+          <a href="#features" className="text-sm font-bold uppercase tracking-widest text-black dark:text-white hover:bg-[#0052CC] hover:text-white px-3 py-1 border-2 border-transparent hover:border-black dark:hover:border-white transition-all">Features</a>
 
           {/* Theme Toggler */}
           <button
             onClick={toggleTheme}
-            className="p-2 text-[#475569] dark:text-[#94A3B8] hover:text-[#0052CC] dark:hover:text-white transition-colors flex items-center justify-center rounded-full hover:bg-[#F8FAFC] dark:hover:bg-[#334155]"
+            className="p-2 border-2 border-black dark:border-white text-black dark:text-white hover:bg-[#0052CC] hover:text-white hover:border-[#0052CC] dark:hover:border-[#0052CC] transition-all flex items-center justify-center bg-white dark:bg-black"
             title="Toggle Theme"
           >
             {theme === 'dark' ? (
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
             ) : (
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
               </svg>
             )}
           </button>
 
           {hasSession ? (
-            <a href="/dashboard" className="flex items-center gap-3 px-4 py-2 bg-white dark:bg-[#1E293B] border border-[#E2E8F0] dark:border-[#334155] rounded-lg shadow-sm hover:border-[#0052CC] dark:hover:border-white transition-all">
+            <a href="/dashboard" className="btn-secondary flex items-center gap-3">
               {user?.avatar_url ? (
-                <img src={user.avatar_url} alt="Avatar" className="w-6 h-6 object-cover rounded-full" />
+                <img src={user.avatar_url} alt="Avatar" className="w-6 h-6 object-cover" />
               ) : (
-                <div className="w-6 h-6 bg-[#0052CC] text-white rounded-full flex items-center justify-center font-bold text-xs">
+                <div className="w-6 h-6 bg-black dark:bg-white text-white dark:text-black flex items-center justify-center font-black text-xs">
                   {user?.full_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
                 </div>
               )}
-              <span className="text-sm font-bold text-[#0F172A] dark:text-white">Dashboard</span>
+              <span>DASHBOARD</span>
             </a>
           ) : (
-            <a href="/auth" className="px-5 py-2 bg-[#0052CC] text-white text-sm font-semibold rounded-md hover:bg-[#0747A6] shadow-sm transition-colors">Login</a>
+            <a href="/auth" className="btn-primary">LOGIN</a>
           )}
         </nav>
 
@@ -160,25 +153,25 @@ export default function Home() {
 
       {/* Mobile Menu Overlay */}
       {isMenuOpen && (
-        <div className="fixed inset-0 z-[55] bg-white dark:bg-[#0B1120] flex flex-col items-center justify-center p-6 transition-colors duration-300">
+        <div className="fixed inset-0 z-[55] bg-white dark:bg-black flex flex-col items-center justify-center p-6 transition-colors duration-300">
           <nav className="flex flex-col gap-8 items-center w-full">
-            <a href="#about" onClick={() => setIsMenuOpen(false)} className="text-2xl font-bold text-[#0F172A] dark:text-white hover:text-[#0052CC] dark:hover:text-[#0052CC]">About</a>
-            <a href="#features" onClick={() => setIsMenuOpen(false)} className="text-2xl font-bold text-[#0F172A] dark:text-white hover:text-[#0052CC] dark:hover:text-[#0052CC]">Features</a>
+            <a href="#about" onClick={() => setIsMenuOpen(false)} className="text-2xl font-black uppercase tracking-widest text-black dark:text-white hover:text-[#0052CC] dark:hover:text-[#0052CC]">About</a>
+            <a href="#features" onClick={() => setIsMenuOpen(false)} className="text-2xl font-black uppercase tracking-widest text-black dark:text-white hover:text-[#0052CC] dark:hover:text-[#0052CC]">Features</a>
             
             {/* Theme Toggler in Mobile Menu */}
             <button
               onClick={toggleTheme}
-              className="mt-4 p-4 border border-[#E2E8F0] dark:border-[#334155] hover:border-[#0052CC] dark:hover:border-white rounded-xl w-full flex items-center justify-center gap-4 text-lg font-bold text-[#0F172A] dark:text-white transition-colors"
+              className="mt-4 p-4 border-2 border-black dark:border-white hover:bg-[#0052CC] hover:text-white hover:border-[#0052CC] w-full flex items-center justify-center gap-4 text-lg font-black uppercase tracking-widest text-black dark:text-white transition-all bg-white dark:bg-black"
             >
               {theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             </button>
 
             {hasSession ? (
-              <a href="/dashboard" onClick={() => setIsMenuOpen(false)} className="mt-8 flex items-center justify-center gap-4 px-8 py-3 bg-white dark:bg-[#1E293B] border border-[#E2E8F0] dark:border-[#334155] rounded-xl w-full text-center hover:border-[#0052CC] dark:hover:border-white shadow-sm transition-all">
-                <span className="text-lg font-bold text-[#0F172A] dark:text-white">Go to Dashboard</span>
+              <a href="/dashboard" onClick={() => setIsMenuOpen(false)} className="btn-secondary w-full text-center mt-8 text-lg py-4">
+                DASHBOARD
               </a>
             ) : (
-              <a href="/auth" onClick={() => setIsMenuOpen(false)} className="mt-8 px-8 py-3 bg-[#0052CC] text-white text-lg font-bold rounded-lg w-full text-center shadow-md">Login</a>
+              <a href="/auth" onClick={() => setIsMenuOpen(false)} className="btn-primary w-full text-center mt-8 text-lg py-4">LOGIN</a>
             )}
           </nav>
         </div>
@@ -187,36 +180,82 @@ export default function Home() {
       {/* Landing Wrapper to Frame Marquee */}
       <div className="flex flex-col min-h-screen pt-[72px] md:pt-[80px]">
         {/* Hero Section */}
-        <section id="home" className="relative z-10 flex-grow flex flex-col items-center justify-center px-6 text-center pb-8 md:pb-0">
-        <div className="relative z-20 max-w-4xl mx-auto flex flex-col items-center">
+        <section id="home" className="relative z-10 flex-grow flex flex-col justify-center px-4 md:px-8 py-8 w-full max-w-[1600px] mx-auto">
+        
+        <div className="relative z-20 w-full grid grid-cols-1 lg:grid-cols-12 gap-6 h-full mt-8">
           
-          <div className="inline-flex items-center gap-2 bg-[#E6F0FF] dark:bg-[#0052CC]/20 text-[#0052CC] dark:text-[#E6F0FF] px-4 py-1.5 rounded-full mb-8 text-sm font-semibold border border-[#0052CC]/20 dark:border-[#0052CC]/50">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" /></svg>
-            Official Civic Tech Platform
+          {/* Main Hero Panel - Spans 8 cols */}
+          <div className="lg:col-span-8 flex flex-col justify-between border-4 border-black dark:border-white bg-white/90 dark:bg-black/90 backdrop-blur-sm p-8 md:p-12 shadow-[12px_12px_0_#000] dark:shadow-[12px_12px_0_#0052CC]">
+            <div>
+              <div className="mb-10 font-mono text-sm font-bold uppercase tracking-[0.2em] px-4 py-1.5 bg-[#0052CC] text-white border-2 border-[#0052CC] inline-block shadow-[4px_4px_0_#000] dark:shadow-[4px_4px_0_#FFFFFF]">
+                SYS.01 // CIVIC TECH PLATFORM
+              </div>
+
+              <h1 className="text-5xl md:text-7xl lg:text-[90px] font-black uppercase tracking-tighter mb-10 text-black dark:text-white leading-[0.9] drop-shadow-none">
+                Clean<br/>the Streets.<br />
+                <span className="inline-block bg-[#0052CC] text-white px-4 mt-4 border-4 border-black dark:border-white transform -rotate-1 shadow-[8px_8px_0_#000] dark:shadow-[8px_8px_0_#FFFFFF]">RECLAIM<br/>THE CITY.</span>
+              </h1>
+            </div>
+
+            <div className="mt-8 flex flex-col xl:flex-row items-start xl:items-end justify-between gap-10 border-t-4 border-black dark:border-white pt-8">
+              <p className="text-lg md:text-xl font-bold max-w-lg text-black dark:text-white border-l-4 border-[#0052CC] pl-6 text-left">
+                A crowdsourced geospatial platform for transparent environmental reporting and rapid institutional detection.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-4 shrink-0 w-full xl:w-auto">
+                <a href="#download" className="btn-primary w-full sm:w-auto text-center">
+                  APP
+                </a>
+                <a href="/map" className="btn-secondary w-full sm:w-auto text-center">
+                  MAP
+                </a>
+              </div>
+            </div>
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-8 text-[#0F172A] dark:text-white leading-tight drop-shadow-sm">
-            Clean the Streets, <br />
-            Reclaim the <span className="text-[#0052CC] dark:text-[#3B82F6]">City.</span>
-          </h1>
+          {/* Right Side Bento Grid - Spans 4 cols */}
+          <div className="lg:col-span-4 flex flex-col gap-6">
+            
+            {/* Top Widget: Radar/Map */}
+            <div className="flex-1 border-4 border-black dark:border-white bg-[#0052CC]/10 backdrop-blur-md p-6 shadow-[8px_8px_0_#000] dark:shadow-[8px_8px_0_#FFFFFF] relative overflow-hidden group flex flex-col justify-between min-h-[300px]">
+              <div className="absolute inset-0 bg-grid-pattern opacity-30 pointer-events-none"></div>
+              
+              <div className="relative z-10 flex justify-between items-start">
+                <div className="font-mono font-bold text-black dark:text-white text-sm uppercase tracking-widest bg-white dark:bg-black px-2 py-1 border-2 border-black dark:border-white">
+                  Live Feed
+                </div>
+                <div className="w-3 h-3 bg-red-500 rounded-full animate-ping"></div>
+              </div>
 
-          <p className="text-lg md:text-xl font-medium max-w-3xl mx-auto mb-12 text-[#475569] dark:text-[#94A3B8] leading-relaxed">
-            A crowdsourced geospatial platform for transparent environmental reporting and rapid institutional detection for the Pasig City Solid Waste Management Office.
-          </p>
+              {/* Decorative Crosshair */}
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 border-2 border-[#0052CC] rounded-full group-hover:scale-110 transition-transform duration-700 pointer-events-none">
+                <div className="absolute top-1/2 left-0 w-full h-[1px] bg-[#0052CC]"></div>
+                <div className="absolute left-1/2 top-0 h-full w-[1px] bg-[#0052CC]"></div>
+                <div className="absolute inset-0 rounded-full border border-[#0052CC] scale-75 animate-[ping_3s_linear_infinite] opacity-20"></div>
+              </div>
+              
+              <div className="relative z-10 mt-auto">
+                <h3 className="text-3xl font-black text-black dark:text-white uppercase">Monitoring</h3>
+                <p className="font-mono text-sm font-bold text-[#0052CC] mt-2">SYS_ACTIVE // 204 REPORTS</p>
+              </div>
+            </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full max-w-lg">
-            <a href="#download" className="w-full sm:w-auto px-8 py-3.5 bg-[#0052CC] dark:bg-[#3B82F6] text-white font-semibold rounded-lg hover:bg-[#0747A6] dark:hover:bg-[#2563EB] shadow-md transition-all text-lg">
-              Download App
-            </a>
-            <a href="/map" className="w-full sm:w-auto px-8 py-3.5 bg-white dark:bg-[#1E293B] text-[#0052CC] dark:text-white border border-[#0052CC] dark:border-[#334155] font-semibold rounded-lg hover:bg-[#E6F0FF] dark:hover:bg-[#334155] shadow-sm transition-all text-lg">
-              Live Reports
-            </a>
+            {/* Bottom Widget: Stats or Callout */}
+            <div className="h-48 border-4 border-black dark:border-white bg-[#0052CC] p-6 shadow-[8px_8px_0_#000] dark:shadow-[8px_8px_0_#FFFFFF] flex flex-col justify-end relative overflow-hidden group hover:bg-black transition-colors duration-300">
+              <h3 className="text-white text-2xl font-black uppercase tracking-widest relative z-10">AI Validation</h3>
+              <p className="text-white font-mono font-bold text-sm mt-2 relative z-10">Automated triage protocols.</p>
+              
+              <svg className="absolute top-4 right-4 w-12 h-12 text-white opacity-50 group-hover:opacity-100 group-hover:rotate-90 transition-all duration-300 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="square" strokeLinejoin="miter" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+
           </div>
         </div>
       </section>
 
           {/* Marquee Divider */}
-          <div className="w-full bg-[#0052CC] dark:bg-[#0747A6] text-white font-semibold text-lg py-3 overflow-hidden shadow-inner relative z-20 shrink-0 mt-auto flex">
+          <div className="w-full bg-[#0052CC] text-white border-y-4 border-black dark:border-white font-black text-2xl py-4 overflow-hidden shadow-none relative z-20 shrink-0 mt-auto flex uppercase tracking-widest">
             <div className="flex animate-marquee whitespace-nowrap shrink-0">
               <span className="pr-2">REPORT IT. TRACK IT. WATCH IT DISAPPEAR. •</span>
               <span className="pr-2">REPORT IT. TRACK IT. WATCH IT DISAPPEAR. •</span>
