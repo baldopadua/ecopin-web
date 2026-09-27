@@ -99,8 +99,9 @@ export default function Sidebar() {
             {/* Logo */}
             <div className={`p-6 border-b-2 border-[#1a1a1a] dark:border-[#333333] flex items-center h-[77px] ${isCollapsed ? 'justify-center px-2' : 'justify-between'}`}>
                 {!isCollapsed && (
-                    <Link href="/" className="text-2xl font-black tracking-tighter text-black dark:text-white hover:opacity-80 transition-opacity">
-                        ECOPIN<span className="text-[#3300FF]">.AI</span>
+                    <Link href="/" className="cursor-pointer hover:opacity-80 transition-opacity">
+                        <img src="/Full Logo Light.png" alt="EcoPin" className="h-8 md:h-10 w-auto dark:hidden" />
+                        <img src="/Full Logo Dark.png" alt="EcoPin" className="h-8 md:h-10 w-auto hidden dark:block" />
                     </Link>
                 )}
                 <button

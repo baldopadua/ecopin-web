@@ -224,8 +224,9 @@ export default function Home() {
 
       {/* Header */}
       <header className="relative z-50 flex items-center justify-between p-6 md:px-12 border-b-2 border-[#1a1a1a] dark:border-[#333333] bg-white dark:bg-black transition-colors duration-300">
-        <a href="#home" className="text-3xl font-black tracking-tighter cursor-pointer text-black dark:text-white">
-          ECOPIN<span className="text-[#3300FF]">.AI</span>
+        <a href="#home" className="cursor-pointer">
+          <img src="/Full Logo Light.png" alt="EcoPin" className="h-10 md:h-14 w-auto dark:hidden" />
+          <img src="/Full Logo Dark.png" alt="EcoPin" className="h-10 md:h-14 w-auto hidden dark:block" />
         </a>
         <nav className="hidden md:flex gap-8 items-center">
           <a href="#about" className="text-sm font-bold uppercase tracking-widest hover:text-[#ccff00] hover:bg-black dark:hover:bg-white dark:hover:text-black px-2 py-1 transition-all">About</a>
@@ -530,7 +531,9 @@ export default function Home() {
       <footer className="py-12 px-6 bg-black border-t-8 border-[#ccff00] text-white">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div>
-            <div className="text-[#ccff00] font-black text-3xl mb-1">ECOPIN<span className="text-white">.AI</span></div>
+            <div className="mb-4">
+              <img src="/Full Logo Dark.png" alt="EcoPin" className="h-10 md:h-14 w-auto" />
+            </div>
             <p className="font-mono text-gray-400 text-sm">Solid Waste Management Office - Pasig City</p>
           </div>
           <div className="text-gray-500 font-mono text-xs uppercase tracking-widest text-center md:text-right">

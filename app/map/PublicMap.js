@@ -241,7 +241,12 @@ export default function PublicMap({ isDark }) {
     return { parsedReports, coordsMap }
   }, [filteredReports])
 
-  if (!mounted) return <div className="h-full w-full bg-black flex items-center justify-center text-[#ccff00] font-black text-4xl uppercase glitch-text" data-text="LOADING MAP...">LOADING MAP...</div>
+  if (!mounted) return (
+    <div className="h-full w-full flex items-center justify-center bg-white dark:bg-black transition-colors duration-300">
+      <img src="/Solo Logo Light.png" alt="Loading..." className="h-24 w-auto object-contain animate-pulse dark:hidden" />
+      <img src="/Solo Logo Dark.png" alt="Loading..." className="h-24 w-auto object-contain animate-pulse hidden dark:block" />
+    </div>
+  );
 
   const apiKey = process.env.NEXT_PUBLIC_CARTO_API_KEY ? `?key=${process.env.NEXT_PUBLIC_CARTO_API_KEY}` : '';
   const mapUrl = isDark

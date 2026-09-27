@@ -4,7 +4,12 @@ import dynamic from 'next/dynamic'
 
 const PublicMap = dynamic(() => import('./PublicMap'), {
   ssr: false,
-  loading: () => <div className="h-full w-full bg-black flex items-center justify-center text-[#ccff00] font-black text-4xl uppercase glitch-text" data-text="LOADING MAP...">LOADING MAP...</div>
+  loading: () => (
+    <div className="h-full w-full bg-white dark:bg-black flex items-center justify-center transition-colors duration-300">
+      <img src="/Solo Logo Light.png" alt="Loading..." className="h-24 w-auto object-contain animate-pulse dark:hidden" />
+      <img src="/Solo Logo Dark.png" alt="Loading..." className="h-24 w-auto object-contain animate-pulse hidden dark:block" />
+    </div>
+  )
 })
 
 export default function PublicMapPage() {
@@ -52,8 +57,9 @@ export default function PublicMapPage() {
     >
       {/* Header */}
       <header className="relative z-[1100] flex flex-shrink-0 items-center justify-between p-4 md:px-8 border-b-8 border-[#1a1a1a] dark:border-[#333333] bg-white dark:bg-black transition-colors duration-300 shadow-[0px_8px_0px_0px_#1a1a1a] dark:shadow-[0px_8px_0px_0px_rgba(204,255,0,0.2)]">
-        <a href="/" className="text-2xl md:text-3xl font-black tracking-tighter cursor-pointer text-black dark:text-white hover:underline">
-          ECOPIN<span className="text-[#3300FF]">.AI</span>
+        <a href="/" className="cursor-pointer">
+          <img src="/Full Logo Light.png" alt="EcoPin" className="h-10 md:h-14 w-auto dark:hidden" />
+          <img src="/Full Logo Dark.png" alt="EcoPin" className="h-10 md:h-14 w-auto hidden dark:block" />
         </a>
         <nav className="hidden md:flex gap-6 items-center">
           <a href="/#about" className="text-sm font-bold uppercase tracking-widest hover:text-[#ccff00] hover:bg-black dark:hover:bg-white dark:hover:text-black px-2 py-1 transition-all">About</a>

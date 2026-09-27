@@ -475,7 +475,12 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
     router.push(`/dashboard/raw-data/${reportId}`)
   }, [onReportClick, router])
 
-  if (!mounted) return <p>Loading map...</p>
+  if (!mounted) return (
+    <div className="h-full w-full flex items-center justify-center bg-white dark:bg-[#000000] transition-colors duration-300">
+      <img src="/Solo Logo Light.png" alt="Loading..." className="h-24 w-auto object-contain animate-pulse dark:hidden" />
+      <img src="/Solo Logo Dark.png" alt="Loading..." className="h-24 w-auto object-contain animate-pulse hidden dark:block" />
+    </div>
+  );
 
   return (
     <>

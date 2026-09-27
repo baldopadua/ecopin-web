@@ -92,7 +92,8 @@ export default function AuthPage() {
   if (isChecking) {
     return (
       <main className="min-h-screen bg-white dark:bg-black text-black dark:text-white relative flex flex-col items-center justify-center selection:bg-[#ccff00] selection:text-black transition-colors duration-300">
-        <div className="text-4xl font-black uppercase tracking-tighter animate-pulse text-[#ccff00]">LOADING...</div>
+        <img src="/Solo Logo Light.png" alt="Loading..." className="h-24 w-auto object-contain animate-pulse dark:hidden" />
+        <img src="/Solo Logo Dark.png" alt="Loading..." className="h-24 w-auto object-contain animate-pulse hidden dark:block" />
       </main>
     )
   }
@@ -129,9 +130,9 @@ export default function AuthPage() {
 
         {/* Left Panel - Branding */}
         <div className="flex flex-col justify-between p-6 md:p-12 bg-[#ccff00] text-black border-r-0 md:border-r-8 border-b-2 md:border-b-0 border-[#1a1a1a] dark:border-[#333333] relative overflow-hidden group">
-          <div className="relative z-10 hidden md:block">
-            <a href="/" className="text-3xl md:text-4xl font-black tracking-tighter hover:underline">
-              ECOPIN<span className="text-[#3300FF]">.AI</span>
+          <div className="relative z-10 hidden md:block -mt-6 -mx-6 md:-mt-12 md:-mx-12 mb-6 md:mb-12 border-b-4 md:border-b-8 border-[#1a1a1a] bg-white">
+            <a href="/" className="cursor-pointer flex items-center px-6 py-2 md:px-12 md:py-3 hover:bg-gray-50 transition-colors">
+              <img src="/Full Logo Light.png" alt="EcoPin" className="h-10 md:h-16 w-auto" />
             </a>
           </div>
 

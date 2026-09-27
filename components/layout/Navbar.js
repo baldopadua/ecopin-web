@@ -7,8 +7,9 @@ export default function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 flex items-center px-10 sm:px-16 py-6">
-      <a href={isHome ? '#home' : '/'} className="text-text-primary font-bold text-xl tracking-tight">
-        EcoPin<span className="text-accent-green">.AI</span>
+      <a href={isHome ? '#home' : '/'} className="cursor-pointer">
+        <img src="/Full Logo Light.png" alt="EcoPin" className="h-8 md:h-12 w-auto dark:hidden" />
+        <img src="/Full Logo Dark.png" alt="EcoPin" className="h-8 md:h-12 w-auto hidden dark:block" />
       </a>
       <div className="hidden sm:flex items-center gap-8 ml-auto">
         <a
