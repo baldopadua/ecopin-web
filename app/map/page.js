@@ -12,9 +12,10 @@ const PublicMap = dynamic(() => import('./PublicMap'), {
   )
 })
 
+import Navbar from '../../components/layout/Navbar';
+
 export default function PublicMapPage() {
   const [theme, setTheme] = useState('dark')
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [user, setUser] = useState(null)
   const [hasSession, setHasSession] = useState(false)
 
@@ -52,104 +53,23 @@ export default function PublicMapPage() {
 
   return (
     <main
-      className="h-screen w-full flex flex-col bg-white text-black dark:bg-black dark:text-white relative overflow-hidden selection:bg-[#ccff00] selection:text-black transition-colors duration-300"
-      style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}
+      className="h-screen w-full flex flex-col bg-[#F4F0EA] dark:bg-[#121212] text-black dark:text-white p-4 md:p-6 gap-4 md:gap-6 relative overflow-hidden transition-colors duration-300"
     >
-      {/* Header */}
-      <header className="relative z-[1100] flex flex-shrink-0 items-center justify-between p-4 md:px-8 border-b-8 border-[#1a1a1a] dark:border-[#333333] bg-white dark:bg-black transition-colors duration-300 shadow-[0px_8px_0px_0px_#1a1a1a] dark:shadow-[0px_8px_0px_0px_rgba(204,255,0,0.2)]">
-        <a href="/" className="cursor-pointer">
-          <img src="/Full Logo Light.png" alt="EcoPin" className="h-10 md:h-14 w-auto dark:hidden" />
-          <img src="/Full Logo Dark.png" alt="EcoPin" className="h-10 md:h-14 w-auto hidden dark:block" />
-        </a>
-        <nav className="hidden md:flex gap-6 items-center">
-          <a href="/#about" className="text-sm font-bold uppercase tracking-widest hover:text-[#ccff00] hover:bg-black dark:hover:bg-white dark:hover:text-black px-2 py-1 transition-all">About</a>
-          <a href="/#features" className="text-sm font-bold uppercase tracking-widest hover:text-[#ccff00] hover:bg-black dark:hover:bg-white dark:hover:text-black px-2 py-1 transition-all">Features</a>
+      {/* Background Pattern */}
+      <div className="absolute inset-0 z-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 2px, transparent 2px)', backgroundSize: '30px 30px' }}></div>
 
-          {/* Theme Toggler */}
-          <button
-            onClick={toggleTheme}
-            className="p-2 border-2 border-[#1a1a1a] dark:border-[#333333] hover:bg-black hover:text-[#ccff00] dark:hover:bg-[#ccff00] dark:hover:text-black transition-colors flex items-center justify-center"
-            title="Toggle Theme"
-          >
-            {theme === 'dark' ? (
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
-            ) : (
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-              </svg>
-            )}
-          </button>
-
-          {hasSession ? (
-            <a href="/dashboard" className="flex items-center gap-3 px-4 py-1.5 bg-[#ccff00] border-2 border-[#1a1a1a] dark:border-[#333333] hover:bg-black hover:text-[#ccff00] dark:hover:bg-white dark:hover:text-black transition-colors">
-              {user?.avatar_url ? (
-                <img src={user.avatar_url} alt="Avatar" className="w-6 h-6 object-cover border border-[#1a1a1a] dark:border-white" />
-              ) : (
-                <div className="w-6 h-6 bg-[#1a1a1a] dark:bg-white text-white dark:text-black flex items-center justify-center font-bold text-xs border border-[#1a1a1a] dark:border-white">
-                  {user?.full_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
-                </div>
-              )}
-              <span className="text-sm font-black uppercase tracking-widest text-black inherit-text">Dashboard</span>
-            </a>
-          ) : (
-            <a href="/auth" className="px-6 py-2 bg-[#ccff00] text-black text-sm font-black uppercase tracking-widest border-2 border-[#1a1a1a] dark:border-[#333333] hover:bg-black hover:text-[#ccff00] dark:hover:bg-white dark:hover:text-black transition-colors shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-none">Login</a>
-          )}
-        </nav>
-
-        {/* Mobile Menu Button */}
-        <button
-          className="md:hidden p-2 border-2 border-[#1a1a1a] dark:border-[#333333] text-black dark:text-[#ccff00] hover:bg-black hover:text-[#ccff00] dark:hover:bg-[#ccff00] dark:hover:text-black transition-colors"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          title="Toggle Menu"
-        >
-          {isMenuOpen ? (
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          ) : (
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          )}
-        </button>
-      </header>
-
-      {/* Mobile Menu Overlay */}
-      {isMenuOpen && (
-        <div className="fixed inset-0 z-[1200] bg-white dark:bg-black flex flex-col items-center justify-center p-6 transition-colors duration-300">
-          <nav className="flex flex-col gap-8 items-center w-full">
-            <a href="/#about" onClick={() => setIsMenuOpen(false)} className="text-3xl font-black uppercase tracking-widest hover:text-[#ccff00] transition-colors">About</a>
-            <a href="/#features" onClick={() => setIsMenuOpen(false)} className="text-3xl font-black uppercase tracking-widest hover:text-[#ccff00] transition-colors">Features</a>
-            
-            <button
-              onClick={toggleTheme}
-              className="mt-4 p-4 border-8 border-[#1a1a1a] dark:border-[#333333] hover:bg-black hover:text-[#ccff00] dark:hover:bg-[#ccff00] dark:hover:text-black transition-colors flex items-center justify-center gap-4 text-xl font-black uppercase"
-            >
-              {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-            </button>
-
-            {hasSession ? (
-              <a href="/dashboard" onClick={() => setIsMenuOpen(false)} className="mt-8 flex items-center justify-center gap-4 px-12 py-4 bg-[#ccff00] text-black text-2xl font-black uppercase tracking-widest border-8 border-[#1a1a1a] dark:border-[#333333] w-full text-center hover:bg-black hover:text-[#ccff00] transition-colors">
-                {user?.avatar_url ? (
-                  <img src={user.avatar_url} alt="Avatar" className="w-8 h-8 object-cover border-2 border-[#1a1a1a]" />
-                ) : (
-                  <div className="w-8 h-8 bg-[#1a1a1a] text-white flex items-center justify-center font-bold text-sm border-2 border-[#1a1a1a]">
-                    {user?.full_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
-                  </div>
-                )}
-                Dashboard
-              </a>
-            ) : (
-              <a href="/auth" onClick={() => setIsMenuOpen(false)} className="mt-8 px-12 py-4 bg-[#ccff00] text-black text-2xl font-black uppercase tracking-widest border-8 border-[#1a1a1a] dark:border-[#333333] w-full text-center hover:bg-black hover:text-[#ccff00] transition-colors">Login</a>
-            )}
-          </nav>
-        </div>
-      )}
+      {/* Shared Navbar Component */}
+      <Navbar 
+        theme={theme}
+        toggleTheme={toggleTheme}
+        hasSession={hasSession}
+        user={user}
+        isFloating={false}
+        className="drop-shadow-[6px_6px_0_black]"
+      />
 
       {/* Map Container */}
-      <div className="flex-1 relative z-[1]">
+      <div className="flex-1 relative z-[1] w-full rounded-[32px] md:rounded-[40px] border-4 border-black dark:border-[#333] overflow-hidden drop-shadow-[6px_6px_0_black] md:drop-shadow-[12px_12px_0_black]">
         <PublicMap isDark={isDark} />
       </div>
       
