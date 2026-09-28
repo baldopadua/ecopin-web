@@ -140,11 +140,8 @@ export default function Home() {
             {/* Main Hero Panel */}
             <div className="lg:col-span-8 bg-white dark:bg-[#1C1C1C] border-4 border-black dark:border-[#444] shadow-[8px_8px_0_#000] dark:shadow-[8px_8px_0_#0052CC] p-6 md:p-12 relative overflow-hidden group">
               <div className="absolute -top-10 -right-10 text-[250px] opacity-20 transform rotate-12 pointer-events-none text-[#0052CC]">✦</div>
-              
-              <div className="mb-2 md:mb-4 font-mono text-xs md:text-base font-black uppercase tracking-[0.2em] px-3 md:px-4 py-1 md:py-2 bg-[#0052CC] text-white border-4 border-black dark:border-[#333] inline-flex items-center gap-2 md:gap-3 shadow-[4px_4px_0_#000] dark:shadow-[4px_4px_0_#333]">
-                <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse border-2 border-white"></div>
-                SYS.01 // CIVIC TECH
-              </div>
+              <div className="absolute top-1/3 -left-10 text-[120px] opacity-20 transform -rotate-12 pointer-events-none text-[#0052CC]">✦</div>
+              <div className="absolute -bottom-10 right-1/4 text-[150px] opacity-20 transform rotate-45 pointer-events-none text-[#0052CC]">✦</div>
 
               <h1 className="text-[14vw] sm:text-[5.5rem] md:text-[6.5rem] lg:text-[7.5rem] font-black uppercase tracking-tighter leading-[0.85] text-black dark:text-white mb-3 md:mb-6 relative z-10">
                 Clean<br/>the <span className="text-[#0052CC]">Streets</span>.
@@ -279,15 +276,15 @@ export default function Home() {
 
         {/* Download / Footer */}
         <section id="download" className="relative z-10 w-full max-w-[1800px] mx-auto px-4 md:px-8 pb-12 scroll-mt-32">
-          <div className="bg-[#0052CC] dark:bg-[#1C1C1C] border-4 border-black dark:border-[#444] shadow-[12px_12px_0_#000] dark:shadow-[12px_12px_0_#0052CC] p-12 md:p-24 text-center relative overflow-hidden">
-            <div className="absolute top-10 left-10 text-[100px] opacity-30">✦</div>
-            <div className="absolute bottom-10 right-10 text-[100px] opacity-30">✹</div>
+          <div className="bg-[#0052CC] dark:bg-[#1C1C1C] border-4 border-black dark:border-[#444] shadow-[8px_8px_0_#000] md:shadow-[12px_12px_0_#000] dark:shadow-[8px_8px_0_#0052CC] md:dark:shadow-[12px_12px_0_#0052CC] p-8 sm:p-12 md:p-24 text-center relative overflow-hidden">
+            <div className="hidden md:block absolute top-10 left-10 text-[100px] opacity-30">✦</div>
+            <div className="hidden md:block absolute bottom-10 right-10 text-[100px] opacity-30">✹</div>
             
-            <h2 className="text-6xl md:text-9xl font-black uppercase tracking-tighter text-white mb-10 relative z-10 mix-blend-overlay dark:mix-blend-normal">
-              GET THE APP
+            <h2 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black uppercase tracking-tighter text-white mb-6 md:mb-10 relative z-10 mix-blend-overlay dark:mix-blend-normal">
+              HELP MAKE PASIG GREEN AGAIN
             </h2>
             
-            <a href="/ecopin-app-release.apk" download className="inline-block px-12 py-6 bg-white dark:bg-[#0052CC] text-[#0052CC] dark:text-white border-4 border-black dark:border-[#444] font-black text-3xl md:text-5xl uppercase tracking-widest shadow-[8px_8px_0_#000] hover:translate-y-2 hover:shadow-none transition-all relative z-10">
+            <a href="/ecopin-app-release.apk" download className="inline-block px-6 py-4 sm:px-8 sm:py-5 md:px-12 md:py-6 bg-white dark:bg-[#0052CC] text-[#0052CC] dark:text-white border-4 border-black dark:border-[#444] font-black text-2xl sm:text-3xl md:text-4xl lg:text-5xl uppercase tracking-widest shadow-[6px_6px_0_#000] md:shadow-[8px_8px_0_#000] hover:translate-y-2 hover:shadow-none transition-all relative z-10 break-words max-w-full">
               DOWNLOAD .APK
             </a>
           </div>
