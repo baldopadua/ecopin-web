@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Lenis from 'lenis';
 
 export default function Home() {
@@ -7,6 +7,28 @@ export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [hasSession, setHasSession] = useState(false);
+  
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const containerRef = useRef(null);
+
+  const handleMouseMove = (e) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    
+    const rotateX = ((y - centerY) / centerY) * -15; // Max 15 deg
+    const rotateY = ((x - centerX) / centerX) * 15;
+    
+    setTilt({ x: rotateX, y: rotateY });
+  };
+
+  const handleMouseLeave = () => {
+    setTilt({ x: 0, y: 0 });
+  };
 
   useEffect(() => {
     const lenis = new Lenis({
@@ -52,7 +74,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-[#F4F0EA] dark:bg-[#121212] text-black dark:text-white relative overflow-x-hidden selection:bg-[#0052CC] selection:text-white transition-colors duration-300">
+    <main className="min-h-screen bg-[#F4F0EA] dark:bg-[#121212] text-black dark:text-white relative overflow-x-hidden selection:bg-black selection:text-white transition-colors duration-300">
       
       {/* Background System */}
       <div className="fixed inset-0 pointer-events-none z-0 flex justify-center opacity-30 dark:opacity-20">
@@ -61,240 +83,377 @@ export default function Home() {
       </div>
 
       {/* Header */}
-      <header className="fixed w-full top-0 left-0 z-50 bg-[#F4F0EA] dark:bg-[#121212] border-b-4 border-black dark:border-[#333] transition-colors duration-300">
-        <div className="w-full max-w-[1800px] mx-auto flex items-center justify-between px-4 md:px-8 py-4">
-        <a href="#home" className="cursor-pointer transition-all">
-          <img src="/Full Logo Light.png" alt="EcoPin" className="h-10 md:h-12 w-auto dark:hidden" />
-          <img src="/Full Logo Dark.png" alt="EcoPin" className="h-10 md:h-12 w-auto hidden dark:block" />
-        </a>
-        <nav className="hidden md:flex gap-4 items-center">
-          <a href="#about" className="text-sm font-black uppercase tracking-widest text-black dark:text-white px-4 py-2 hover:text-[#0052CC] transition-all">About</a>
-          <a href="#features" className="text-sm font-black uppercase tracking-widest text-black dark:text-white px-4 py-2 hover:text-[#0052CC] transition-all">Features</a>
+      <header className="fixed w-full top-0 left-0 z-50 p-4 md:p-6 transition-colors duration-300 pointer-events-none">
+        <div className="w-full max-w-[1600px] mx-auto bg-white dark:bg-[#1C1C1C] border-4 border-black dark:border-[#333] rounded-full flex items-center justify-between px-6 py-3 pointer-events-auto shadow-sm">
+          <a href="#home" className="cursor-pointer transition-all">
+            <img src="/Full Logo Light.png" alt="EcoPin" className="h-8 md:h-10 w-auto dark:hidden" />
+            <img src="/Full Logo Dark.png" alt="EcoPin" className="h-8 md:h-10 w-auto hidden dark:block" />
+          </a>
+          <nav className="hidden md:flex gap-6 items-center">
+            <a href="#about" className="text-sm font-black uppercase tracking-widest text-black dark:text-white hover:opacity-70 transition-all">About</a>
+            <a href="#features" className="text-sm font-black uppercase tracking-widest text-black dark:text-white hover:opacity-70 transition-all">Features</a>
 
-          {/* Theme Toggler */}
-          <button
-            onClick={toggleTheme}
-            className="p-2 text-black dark:text-white hover:text-[#0052CC] transition-all flex items-center justify-center"
-            title="Toggle Theme"
-          >
-            {theme === 'dark' ? (
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+            {/* Theme Toggler */}
+            <button
+              onClick={toggleTheme}
+              className="text-black dark:text-white hover:opacity-70 transition-all flex items-center justify-center"
+              title="Toggle Theme"
+            >
+              {theme === 'dark' ? (
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+              )}
+            </button>
+
+            {hasSession ? (
+              <a href="/dashboard" className="w-9 h-9 rounded-full border-2 border-black overflow-hidden hover:opacity-80 transition-opacity flex-shrink-0 bg-black" title="Dashboard">
+                <img src={user?.avatar_url || `https://ui-avatars.com/api/?name=${user?.full_name || 'User'}&background=random&color=fff`} alt="Profile" className="w-full h-full object-cover" />
+              </a>
             ) : (
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+              <a href="/auth" className="text-xs font-black uppercase tracking-widest text-black dark:text-white hover:text-white hover:bg-black dark:hover:bg-white dark:hover:text-black rounded-full px-6 py-2 border-2 border-black dark:border-white transition-all">LOGIN</a>
+            )}
+          </nav>
+
+          {/* Mobile Menu Button */}
+          <button
+            className="md:hidden p-2 text-black dark:text-white hover:opacity-70 transition-all z-[60]"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+          >
+            {isMenuOpen ? (
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            ) : (
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
             )}
           </button>
-
-          {hasSession ? (
-            <a href="/dashboard" className="text-sm font-black uppercase tracking-widest text-black bg-[#FFA6C9] px-6 py-2 transition-all">
-              DASHBOARD
-            </a>
-          ) : (
-            <a href="/auth" className="text-sm font-black uppercase tracking-widest text-white bg-[#0052CC] px-6 py-2 transition-all">LOGIN</a>
-          )}
-        </nav>
-
-        {/* Mobile Menu Button */}
-        <button
-          className="md:hidden p-2 text-black dark:text-white hover:text-[#0052CC] transition-all z-[60]"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-        >
-          {isMenuOpen ? (
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-          ) : (
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
-          )}
-        </button>
         </div>
       </header>
 
       {/* Mobile Menu Overlay */}
       {isMenuOpen && (
-        <div className="fixed inset-0 z-[55] bg-[#F4F0EA] dark:bg-[#121212] flex flex-col items-center justify-center p-6 border-b-4 border-black dark:border-[#333]">
+        <div className="fixed inset-0 z-[55] bg-white dark:bg-[#121212] flex flex-col items-center justify-center p-6 border-b-4 border-black dark:border-[#333]">
           <nav className="flex flex-col gap-6 items-center w-full max-w-sm">
-            <a href="#about" onClick={() => setIsMenuOpen(false)} className="w-full text-center text-2xl font-black uppercase tracking-widest text-black dark:text-white py-2 hover:text-[#0052CC]">About</a>
-            <a href="#features" onClick={() => setIsMenuOpen(false)} className="w-full text-center text-2xl font-black uppercase tracking-widest text-black dark:text-white py-2 hover:text-[#0052CC]">Features</a>
+            <a href="#about" onClick={() => setIsMenuOpen(false)} className="w-full text-center text-2xl font-black uppercase tracking-widest text-black dark:text-white py-2 hover:opacity-70">About</a>
+            <a href="#features" onClick={() => setIsMenuOpen(false)} className="w-full text-center text-2xl font-black uppercase tracking-widest text-black dark:text-white py-2 hover:opacity-70">Features</a>
             
             <button
               onClick={toggleTheme}
-              className="w-full text-center mt-4 p-2 text-xl font-black uppercase tracking-widest text-black dark:text-white hover:text-[#0052CC]"
+              className="w-full text-center mt-4 p-2 text-xl font-black uppercase tracking-widest text-black dark:text-white hover:opacity-70"
             >
               {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
             </button>
 
             {hasSession ? (
-              <a href="/dashboard" onClick={() => setIsMenuOpen(false)} className="w-full text-center mt-4 p-4 text-xl font-black uppercase tracking-widest bg-[#FFA6C9] text-black">
-                DASHBOARD
+              <a href="/dashboard" onClick={() => setIsMenuOpen(false)} className="w-16 h-16 rounded-full border-4 border-black overflow-hidden hover:opacity-80 transition-opacity mt-4 mx-auto bg-black" title="Dashboard">
+                <img src={user?.avatar_url || `https://ui-avatars.com/api/?name=${user?.full_name || 'User'}&background=random&color=fff`} alt="Profile" className="w-full h-full object-cover" />
               </a>
             ) : (
-              <a href="/auth" onClick={() => setIsMenuOpen(false)} className="w-full text-center mt-4 p-4 text-xl font-black uppercase tracking-widest bg-[#0052CC] text-white">LOGIN</a>
+              <a href="/auth" onClick={() => setIsMenuOpen(false)} className="w-full text-center mt-4 p-4 text-xl font-black uppercase tracking-widest bg-black text-white rounded-full border-4 border-black">LOGIN</a>
             )}
           </nav>
         </div>
       )}
 
-      <div className="flex flex-col pt-[80px] md:pt-[100px] min-h-screen">
-        {/* Hero Section */}
-        <section id="home" className="relative z-10 w-full max-w-[1800px] mx-auto px-4 md:px-8 pb-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
-            
-            {/* Main Hero Panel */}
-            <div className="lg:col-span-8 bg-white dark:bg-[#1C1C1C] border-4 border-black dark:border-[#444] shadow-[8px_8px_0_#000] dark:shadow-[8px_8px_0_#0052CC] p-6 md:p-12 relative overflow-hidden group">
-              <div className="absolute -top-10 -right-10 text-[250px] opacity-20 transform rotate-12 pointer-events-none text-[#0052CC]">✦</div>
-              <div className="absolute top-1/3 -left-10 text-[120px] opacity-20 transform -rotate-12 pointer-events-none text-[#0052CC]">✦</div>
-              <div className="absolute -bottom-10 right-1/4 text-[150px] opacity-20 transform rotate-45 pointer-events-none text-[#0052CC]">✦</div>
+      {/* 100VH Wrapper */}
+      <div className="w-full min-h-[100svh] flex flex-col">
+        {/* FULL WIDTH HERO BACKGROUND */}
+        <div className="w-full bg-[#0052CC] pt-[120px] md:pt-[160px] pb-8 md:pb-12 relative z-0 overflow-hidden flex-1 flex flex-col justify-center">
+          <div className="absolute top-20 right-10 md:right-20 text-[150px] opacity-20 text-white pointer-events-none -rotate-12">✦</div>
+          <div className="absolute bottom-20 left-10 md:left-20 text-[100px] opacity-20 text-white pointer-events-none rotate-45">✦</div>
 
-              <h1 className="text-[14vw] sm:text-[5.5rem] md:text-[6.5rem] lg:text-[7.5rem] font-black uppercase tracking-tighter leading-[0.85] text-black dark:text-white mb-3 md:mb-6 relative z-10">
-                Clean<br/>the <span className="text-[#0052CC]">Streets</span>.
-              </h1>
-              
-              <div className="inline-block bg-[#0052CC] text-white px-4 md:px-6 py-1 md:py-2 border-4 border-black dark:border-[#444] transform -rotate-2 shadow-[6px_6px_0_#000] dark:shadow-[6px_6px_0_#0052CC] mb-4 md:mb-8 relative z-10">
-                <span className="text-xl md:text-5xl font-black uppercase tracking-tight">RECLAIM THE CITY.</span>
-              </div>
-
-              <div className="flex flex-col md:flex-row gap-4 md:gap-6 border-t-4 border-black dark:border-[#333] pt-4 md:pt-6 relative z-10">
-                <p className="text-sm md:text-2xl font-bold max-w-xl text-black dark:text-white">
+          <section id="home" className="relative z-10 w-full max-w-[1800px] mx-auto px-4 md:px-8 flex flex-col gap-16">
+            <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+              <div className="flex flex-col gap-6 items-start text-white">
+                <h1 className="text-[14vw] sm:text-7xl lg:text-[8rem] xl:text-[10rem] font-black uppercase tracking-tighter leading-[0.85] text-white">
+                  Clean the <br className="hidden md:block" /> Streets.
+                </h1>
+                
+                <p className="text-lg md:text-2xl font-bold max-w-xl leading-snug text-white/90">
                   A crowdsourced geospatial platform for transparent environmental reporting.
                 </p>
+                
+                <div className="mt-20 sm:mt-6 flex flex-col sm:flex-row flex-wrap gap-4 w-full">
+                  <a href="/map" className="w-full sm:w-auto text-center inline-block bg-transparent text-white px-8 py-4 rounded-full font-black text-xl border-4 border-white hover:bg-white hover:text-black transition-all">
+                    LIVE MAP
+                  </a>
+                  <a href="#download" className="w-full sm:w-auto text-center inline-block bg-white text-black px-8 py-4 rounded-full font-black text-xl border-4 border-black hover:bg-[#F4F0EA] transition-all drop-shadow-[4px_4px_0_rgba(0,0,0,1)] animate-btn-pulse">
+                    GET THE APP
+                  </a>
+                </div>
+
+                <div className="mt-8 pt-6 border-t-2 border-white/20 flex flex-col gap-3">
+                   <div className="text-sm font-black uppercase tracking-widest text-white">
+                     TAKE ACTION NOW
+                   </div>
+                   <div className="text-base md:text-lg font-bold leading-snug text-white/90 max-w-md">
+                     Every pin you drop helps the Solid Waste Management Office keep Pasig City clean. Start making an impact today.
+                   </div>
+                </div>
+              </div>
+              
+              <div 
+                 ref={containerRef}
+                 onMouseMove={handleMouseMove}
+                 onMouseLeave={handleMouseLeave}
+                 className="flex justify-center items-center w-full relative perspective-container"
+              >
+                 <div 
+                    className="relative w-full max-w-[600px] aspect-square flex items-center justify-center transform-style-3d"
+                    style={{
+                       transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
+                       transition: tilt.x === 0 && tilt.y === 0 ? 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)' : 'transform 0.1s linear'
+                    }}
+                 >
+                   
+                   {/* 3D Shadow underneath the phone */}
+                   <div className="absolute inset-0 bg-black/20 blur-3xl rounded-[40px] z-0" style={{ transform: 'translateZ(-50px) scale(0.8)' }}></div>
+
+                   {/* The Phone Mockup */}
+                   <div 
+                      className="relative w-[220px] sm:w-[280px] md:w-[320px] lg:w-[360px] aspect-[9/19] bg-white rounded-[32px] sm:rounded-[40px] border-[10px] sm:border-[12px] border-black overflow-hidden shadow-2xl group cursor-pointer flex flex-col z-20 mx-auto"
+                      style={{ transform: 'translateZ(30px)' }}
+                   >
+                      
+                      {/* Dynamic Island */}
+                      <div className="absolute top-2 left-1/2 -translate-x-1/2 w-[100px] h-[28px] bg-black rounded-full z-[60] flex items-center justify-between px-3 shadow-inner">
+                          <div className="w-3 h-3 rounded-full bg-white/10"></div>
+                          <div className="w-1.5 h-1.5 rounded-full bg-[#00D084]/90 shadow-[0_0_5px_#00D084]"></div>
+                      </div>
+
+                      {/* App Bar */}
+                      <div className="pt-10 pb-3 bg-white border-b-4 border-black z-40 flex items-center px-4 justify-between shrink-0">
+                         <img src="/Solo Logo Light.png" alt="EcoPin" className="h-6 w-6 object-contain" />
+                         <div className="font-black uppercase tracking-widest text-sm text-black">Report Issue</div>
+                         <div className="w-6 h-6"></div>
+                      </div>
+
+                      {/* Map Content Container */}
+                      <div className="flex-1 bg-[#F4F0EA] relative overflow-hidden flex items-center justify-center">
+                          <img 
+                             src="/pasig.svg" 
+                             alt="Map" 
+                             className="w-[150%] max-w-none opacity-10 relative top-10" 
+                          />
+                       
+                          {/* Hover Overlay: Connecting Pins */}
+                          <div className="absolute inset-0 z-20 pointer-events-none">
+                      
+                          {/* Connections */}
+                          <svg className="absolute inset-0 w-full h-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-0 group-hover:delay-[500ms]">
+                            {/* Cluster 1: Top Right */}
+                            <line x1="60%" y1="25%" x2="65%" y2="35%" stroke="black" strokeWidth="4" strokeDasharray="8" className="animate-[dash_1s_linear_infinite]" />
+                            <line x1="65%" y1="35%" x2="63%" y2="45%" stroke="black" strokeWidth="4" strokeDasharray="8" className="animate-[dash_1s_linear_infinite]" />
+                            <line x1="63%" y1="45%" x2="72%" y2="38%" stroke="black" strokeWidth="4" strokeDasharray="8" className="animate-[dash_1s_linear_infinite]" />
+                            
+                            {/* Cluster 2: Bottom Left */}
+                            <line x1="30%" y1="65%" x2="42%" y2="65%" stroke="black" strokeWidth="4" strokeDasharray="8" className="animate-[dash_1s_linear_infinite]" />
+                            <line x1="42%" y1="65%" x2="48%" y2="72%" stroke="black" strokeWidth="4" strokeDasharray="8" className="animate-[dash_1s_linear_infinite]" />
+                            <line x1="48%" y1="72%" x2="35%" y2="78%" stroke="black" strokeWidth="4" strokeDasharray="8" className="animate-[dash_1s_linear_infinite]" />
+                            
+                            {/* Cluster 3: Bottom Right */}
+                            <line x1="75%" y1="62%" x2="80%" y2="70%" stroke="black" strokeWidth="4" strokeDasharray="8" className="animate-[dash_1s_linear_infinite]" />
+                            <line x1="80%" y1="70%" x2="62%" y2="68%" stroke="black" strokeWidth="4" strokeDasharray="8" className="animate-[dash_1s_linear_infinite]" />
+                            <line x1="62%" y1="68%" x2="65%" y2="88%" stroke="black" strokeWidth="4" strokeDasharray="8" className="animate-[dash_1s_linear_infinite]" />
+                            <line x1="62%" y1="68%" x2="55%" y2="82%" stroke="black" strokeWidth="4" strokeDasharray="8" className="animate-[dash_1s_linear_infinite]" />
+                        </svg>
+
+                        {/* Staggered Circles */}
+                        {[
+                          // Cluster 1
+                          { top: '25%', left: '60%', color: 'bg-red-500', delay: 'group-hover:delay-[100ms]' },
+                          { top: '35%', left: '65%', color: 'bg-orange-500', delay: 'group-hover:delay-[200ms]' },
+                          { top: '45%', left: '63%', color: 'bg-yellow-400', delay: 'group-hover:delay-[300ms]' },
+                          { top: '38%', left: '72%', color: 'bg-orange-500', delay: 'group-hover:delay-[450ms]' },
+                          
+                          // Cluster 2
+                          { top: '65%', left: '30%', color: 'bg-orange-500', delay: 'group-hover:delay-[500ms]' },
+                          { top: '65%', left: '42%', color: 'bg-yellow-400', delay: 'group-hover:delay-[400ms]' },
+                          { top: '72%', left: '48%', color: 'bg-red-500', delay: 'group-hover:delay-[600ms]' },
+                          { top: '78%', left: '35%', color: 'bg-yellow-400', delay: 'group-hover:delay-[550ms]' },
+                          
+                          // Cluster 3
+                          { top: '70%', left: '80%', color: 'bg-red-500', delay: 'group-hover:delay-[700ms]' },
+                          { top: '68%', left: '62%', color: 'bg-yellow-400', delay: 'group-hover:delay-[350ms]' },
+                          { top: '62%', left: '75%', color: 'bg-red-500', delay: 'group-hover:delay-[250ms]' },
+                          { top: '88%', left: '65%', color: 'bg-orange-500', delay: 'group-hover:delay-[800ms]' },
+                          { top: '82%', left: '55%', color: 'bg-yellow-400', delay: 'group-hover:delay-[550ms]' },
+                        ].map((pin, i) => (
+                          <div 
+                            key={i}
+                            className={`absolute -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-[3px] border-black ${pin.color} opacity-0 group-hover:opacity-100 transition-all duration-300 scale-50 group-hover:scale-100 delay-0 ${pin.delay} drop-shadow-[2px_2px_0_black] origin-center`}
+                            style={{ top: pin.top, left: pin.left }}
+                          />
+                        ))}
+                          </div>
+
+                          {/* Central Pin */}
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 flex flex-col items-center">
+                             <div className="bg-black text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-1 shadow-md whitespace-nowrap">Move to adjust</div>
+                             <svg viewBox="0 0 24 24" className="w-10 h-10 animate-bounce text-[#00D084]" fill="currentColor" stroke="black" strokeWidth="1.5">
+                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                             </svg>
+                          </div>
+                      </div>
+
+                      {/* Bottom Sheet */}
+                      <div className="h-[140px] bg-white border-t-4 border-black z-40 rounded-t-3xl flex flex-col p-4 shadow-[0_-10px_20px_rgba(0,0,0,0.1)] shrink-0 relative -mt-4">
+                         <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-3"></div>
+                         <div className="font-black text-[10px] mb-1 text-gray-500 uppercase tracking-widest">Location</div>
+                         <div className="font-black text-lg leading-tight mb-auto text-black">Pasig City, Metro Manila</div>
+                         <div className="w-full bg-[#0052CC] border-2 border-black text-white rounded-full py-2.5 text-center font-black uppercase tracking-widest mt-2 hover:bg-[#00D084] hover:text-black transition-colors cursor-pointer text-sm">
+                            Confirm Pin
+                         </div>
+                      </div>
+
+                   </div>
+
+                   {/* Floating UI Badges */}
+                   <div 
+                      className="absolute top-[5%] sm:top-[15%] right-0 sm:-right-[0%] lg:-right-[5%] bg-white text-black border-4 border-black px-3 py-2 sm:px-5 sm:py-4 rounded-2xl drop-shadow-[4px_4px_0_black] sm:drop-shadow-[6px_6px_0_black] z-30 hover:-translate-y-2 transition-all scale-75 sm:scale-100 origin-top-right sm:origin-center"
+                      style={{ transform: 'translateZ(60px) rotate(3deg)' }}
+                   >
+                      <div className="text-[10px] sm:text-xs font-black uppercase text-gray-500 mb-1 flex items-center gap-2">
+                        <div className="w-2 h-2 bg-[#0052CC] rounded-full"></div>
+                        AI System
+                      </div>
+                      <div className="text-lg sm:text-xl md:text-2xl font-black">100% VERIFIED</div>
+                   </div>
+
+                   <div 
+                      className="absolute bottom-[5%] sm:bottom-[15%] left-0 sm:-left-[0%] lg:-left-[5%] bg-[#FFA6C9] text-black border-4 border-black px-3 py-2 sm:px-5 sm:py-4 rounded-2xl drop-shadow-[4px_4px_0_black] sm:drop-shadow-[6px_6px_0_black] z-30 hover:-translate-y-2 transition-all scale-75 sm:scale-100 origin-bottom-left sm:origin-center"
+                      style={{ transform: 'translateZ(80px) rotate(-3deg)' }}
+                   >
+                      <div className="text-[10px] sm:text-xs font-black uppercase text-black mb-1 flex items-center gap-2">
+                        <div className="w-2 h-2 bg-[#00D084] rounded-full animate-pulse"></div>
+                        Live Status
+                      </div>
+                      <div className="text-lg sm:text-xl md:text-2xl font-black">24 NEW REPORTS</div>
+                   </div>
+
+                 </div>
               </div>
             </div>
 
-            {/* Right Side Bento Grid */}
-            <div className="lg:col-span-4 flex flex-col gap-4 md:gap-8">
-              
-              {/* Live Map CTA */}
-              <a href="/map" className="border-4 border-black dark:border-[#444] bg-[#0052CC] dark:bg-[#1C1C1C] p-4 md:p-6 shadow-[8px_8px_0_#000] dark:shadow-[8px_8px_0_#0052CC] hover:translate-y-1 hover:shadow-none transition-all flex flex-col justify-between group flex-grow min-h-[180px] md:min-h-[220px]">
-                <div className="flex justify-between items-start mb-2 md:mb-4">
-                  <div className="font-black text-black dark:text-white text-[10px] md:text-lg uppercase tracking-widest bg-white dark:bg-[#222] px-2 md:px-3 py-1 border-4 border-black dark:border-[#444]">
-                    PASIG
-                  </div>
-                  <div className="font-mono text-[8px] md:text-xs font-bold text-white bg-red-600 dark:bg-red-700 border-2 md:border-4 border-black dark:border-[#444] px-1 md:px-2 py-0.5 md:py-1 shadow-[2px_2px_0_#000] dark:shadow-[2px_2px_0_#111] flex items-center gap-1 md:gap-2">
-                    <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                    LIVE
-                  </div>
-                </div>
-
-                <div className="relative w-full aspect-video md:aspect-[4/3] flex items-center justify-center overflow-hidden border-2 md:border-4 border-black dark:border-[#444] bg-[#F4F0EA] dark:bg-[#1C1C1C] mb-2 md:mb-4 p-2 md:p-4">
-                  <img src="/pasig.svg" alt="Map" className="w-full h-full object-contain opacity-90 drop-shadow-[4px_4px_0_rgba(0,82,204,0.3)] lg:drop-shadow-[6px_6px_0_rgba(0,82,204,0.3)] group-hover:drop-shadow-[10px_10px_0_rgba(0,82,204,0.8)] group-hover:scale-105 transition-all duration-500" />
-                </div>
-                
-                <h3 className="text-xl md:text-4xl font-black text-white uppercase">Live Feed</h3>
-              </a>
-
-              {/* Download CTA */}
-              <a href="#download" className="border-4 border-black dark:border-[#444] bg-white dark:bg-[#1C1C1C] p-4 md:p-6 shadow-[8px_8px_0_#000] dark:shadow-[8px_8px_0_#0052CC] hover:translate-y-1 hover:shadow-none transition-all flex flex-col justify-end group shrink-0 relative overflow-hidden">
-                <div className="flex justify-between items-center mb-2 md:mb-4">
-                  <h3 className="text-3xl md:text-5xl font-black text-[#0052CC] uppercase leading-none">APP</h3>
-                  <div className="bg-[#0052CC] border-2 md:border-4 border-black dark:border-[#333] rounded-full p-2 md:p-3 group-hover:rotate-45 transition-transform shadow-[4px_4px_0_#000]">
-                    <svg className="w-4 h-4 md:w-8 md:h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-black dark:text-white font-black uppercase text-sm md:text-lg border-t-2 md:border-t-4 border-black dark:border-[#333] pt-2">ANDROID ONLY</p>
-                </div>
-              </a>
-
-            </div>
-          </div>
-        </section>
-
-        {/* Marquee */}
-        <div className="w-full bg-[#0052CC] text-white border-y-4 border-black dark:border-[#333] font-black text-4xl md:text-5xl py-4 overflow-hidden flex uppercase tracking-tighter whitespace-nowrap mt-auto mb-6">
-          <div className="flex animate-marquee shrink-0">
-            <span className="px-4">SNAP ✦</span>
-            <span className="px-4">PIN ✦</span>
-            <span className="px-4">VERIFY ✦</span>
-            <span className="px-4">DISPATCH ✦</span>
-            <span className="px-4">SNAP ✦</span>
-            <span className="px-4">PIN ✦</span>
-            <span className="px-4">VERIFY ✦</span>
-            <span className="px-4">DISPATCH ✦</span>
-          </div>
-          <div className="flex animate-marquee shrink-0" aria-hidden="true">
-            <span className="px-4">SNAP ✦</span>
-            <span className="px-4">PIN ✦</span>
-            <span className="px-4">VERIFY ✦</span>
-            <span className="px-4">DISPATCH ✦</span>
-            <span className="px-4">SNAP ✦</span>
-            <span className="px-4">PIN ✦</span>
-            <span className="px-4">VERIFY ✦</span>
-            <span className="px-4">DISPATCH ✦</span>
-          </div>
+          </section>
         </div>
 
-        {/* How it Works Section */}
-        <section id="about" className="relative z-10 w-full max-w-[1800px] mx-auto px-4 md:px-8 mt-24 md:mt-32 mb-48 md:mb-64 scroll-mt-32">
-          <div className="flex items-center gap-6 mb-12">
-            <h2 className="text-6xl md:text-8xl font-black uppercase tracking-tighter text-white bg-[#0052CC] inline-block px-6 py-2 border-4 border-black dark:border-[#333] shadow-[8px_8px_0_#000] dark:shadow-[8px_8px_0_#333] -rotate-2">
-              HOW IT WORKS
-            </h2>
-            <div className="hidden md:block flex-grow border-t-8 border-black dark:border-[#333] border-dashed mt-4"></div>
+        {/* Full-Width Marquee */}
+        <div className="w-full bg-black text-white border-y-4 border-black dark:border-[#333] font-black text-3xl md:text-5xl py-6 overflow-hidden flex uppercase tracking-tighter whitespace-nowrap relative z-10 shrink-0">
+          <div className="flex animate-marquee shrink-0 items-center">
+            <span className="px-6">SNAP ✦</span>
+            <span className="px-6">PIN ✦</span>
+            <span className="px-6">VERIFY ✦</span>
+            <span className="px-6">DISPATCH ✦</span>
+            <span className="px-6">SNAP ✦</span>
+            <span className="px-6">PIN ✦</span>
+            <span className="px-6">VERIFY ✦</span>
+            <span className="px-6">DISPATCH ✦</span>
           </div>
+          <div className="flex animate-marquee shrink-0 items-center" aria-hidden="true">
+            <span className="px-6">SNAP ✦</span>
+            <span className="px-6">PIN ✦</span>
+            <span className="px-6">VERIFY ✦</span>
+            <span className="px-6">DISPATCH ✦</span>
+            <span className="px-6">SNAP ✦</span>
+            <span className="px-6">PIN ✦</span>
+            <span className="px-6">VERIFY ✦</span>
+            <span className="px-6">DISPATCH ✦</span>
+          </div>
+        </div>
+      </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              { step: '01', title: 'SNAP', desc: 'Take a photo of the environmental issue.', color: 'bg-white text-black' },
-              { step: '02', title: 'PIN', desc: 'Geolocate the exact coordinates on the map.', color: 'bg-[#0052CC] text-white' },
-              { step: '03', title: 'AI VERIFY', desc: 'System automatically validates the report.', color: 'bg-white text-black' },
-              { step: '04', title: 'DISPATCH', desc: 'SWMO deploys a team to resolve the issue.', color: 'bg-[#0052CC] text-white' }
-            ].map((item, idx) => (
-              <div key={idx} className={`${item.color} dark:bg-[#1C1C1C] dark:text-white border-4 border-black dark:border-[#444] shadow-[8px_8px_0_#000] dark:shadow-[8px_8px_0_#0052CC] p-8 flex flex-col hover:-translate-y-2 hover:shadow-[12px_12px_0_#000] transition-all`}>
-                <div className={`text-6xl font-black mb-6 border-b-4 border-black dark:border-[#444] pb-4 ${item.color.includes('bg-white') ? 'text-[#0052CC] dark:text-[#6699FF]' : 'text-white'}`}>{item.step}</div>
-                <h3 className="text-3xl font-black uppercase mb-4">{item.title}</h3>
-                <p className="text-lg font-bold leading-tight">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </section>
+      <div className="flex flex-col px-4 md:px-8 pb-12 gap-12 max-w-[1800px] mx-auto w-full mt-12 relative z-10">
 
         {/* Features Section */}
-        <section id="features" className="relative z-10 w-full max-w-[1800px] mx-auto px-4 md:px-8 mb-48 md:mb-64 scroll-mt-32">
-          <div className="bg-white dark:bg-[#1C1C1C] border-4 border-black dark:border-[#444] shadow-[12px_12px_0_#000] dark:shadow-[12px_12px_0_#0052CC] p-8 md:p-16">
+        <section id="features" className="relative z-10 w-full scroll-mt-32">
+          <div className="bg-[#121212] dark:bg-white text-white dark:text-black border-4 border-black dark:border-[#333] rounded-[32px] md:rounded-[40px] p-6 sm:p-8 md:p-16 lg:p-20">
+            <div className="flex flex-col md:flex-row gap-6 md:gap-12 lg:gap-20 items-start md:items-end mb-12">
+               <h2 className="text-[11vw] sm:text-5xl md:text-7xl lg:text-[6rem] font-black uppercase tracking-tighter leading-[0.9] flex-1 break-words">
+                 BUILT FOR <br/> TRANSPARENCY
+               </h2>
+               <p className="text-lg md:text-2xl font-bold max-w-sm text-gray-300 dark:text-gray-700">
+                 Everything you need to report, track, and resolve environmental issues in one place.
+               </p>
+            </div>
             
-            <div className="text-center mb-16">
-              <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-black dark:text-white">
-                SYSTEM FEATURES
-              </h2>
+            <div className="grid md:grid-cols-3 gap-6">
+               <div className="bg-white dark:bg-[#1C1C1C] text-black dark:text-white rounded-[32px] border-4 border-black dark:border-[#333] p-8 flex flex-col justify-center min-h-[200px]">
+                 <h3 className="text-3xl lg:text-4xl font-black uppercase mb-3">LIVE MAP</h3>
+                 <p className="font-bold text-lg leading-snug">See the city's status in real-time on the grid.</p>
+               </div>
+               <div className="bg-[#FFA6C9] text-black rounded-[32px] border-4 border-black p-8 flex flex-col justify-center min-h-[200px]">
+                 <h3 className="text-3xl lg:text-4xl font-black uppercase mb-3">AI VERIFIED</h3>
+                 <p className="font-bold text-lg leading-snug">No fake reports. ML filters out the noise automatically.</p>
+               </div>
+               <div className="bg-[#00D084] text-black rounded-[32px] border-4 border-black p-8 flex flex-col justify-center min-h-[200px]">
+                 <h3 className="text-3xl lg:text-4xl font-black uppercase mb-3">SMART CLUSTERS</h3>
+                 <p className="font-bold text-lg leading-snug">Heatmaps group identical issues automatically.</p>
+               </div>
             </div>
-
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 w-full">
-              {[
-                { title: 'AI VALIDATION', desc: 'No fake reports. ML filters out the noise.', bg: 'bg-white', darkBg: 'dark:bg-black' },
-                { title: 'REAL-TIME MAP', desc: 'See the city\'s status live on the grid.', bg: 'bg-white', darkBg: 'dark:bg-black' },
-                { title: 'SMART CLUSTERS', desc: 'Heatmaps automatically group identical issues.', bg: 'bg-[#0052CC]', darkBg: 'dark:bg-[#0052CC]' },
-                { title: 'ROLE ACCESS', desc: 'Admin, Field Worker, and Citizen views.', bg: 'bg-white', darkBg: 'dark:bg-black' }
-              ].map((feature, i) => (
-                <div key={i} className={`border-4 border-black dark:border-[#444] ${feature.bg} ${feature.darkBg.replace('dark:bg-black', 'dark:bg-[#121212]')} p-6 relative overflow-hidden group shadow-[4px_4px_0_#000] dark:shadow-[4px_4px_0_#0052CC] flex flex-col min-h-[200px]`}>
-                  <div className="absolute top-0 right-0 w-16 h-16 bg-white dark:bg-[#121212] border-l-4 border-b-4 border-black dark:border-[#333] -mr-8 -mt-8 rotate-45 group-hover:scale-150 transition-transform"></div>
-                  <h3 className={`text-2xl font-black mb-4 ${feature.bg.includes('0052CC') ? 'text-white dark:text-white' : 'text-[#0052CC] dark:text-[#6699FF]'} uppercase mt-auto`}>{feature.title}</h3>
-                  <p className={`font-bold ${feature.bg.includes('0052CC') ? 'text-white dark:text-white' : 'text-black dark:text-white'} text-lg`}>{feature.desc}</p>
-                </div>
-              ))}
-            </div>
-
           </div>
         </section>
 
-        {/* Download / Footer */}
-        <section id="download" className="relative z-10 w-full max-w-[1800px] mx-auto px-4 md:px-8 pb-12 scroll-mt-32">
-          <div className="bg-[#0052CC] dark:bg-[#1C1C1C] border-4 border-black dark:border-[#444] shadow-[8px_8px_0_#000] md:shadow-[12px_12px_0_#000] dark:shadow-[8px_8px_0_#0052CC] md:dark:shadow-[12px_12px_0_#0052CC] p-8 sm:p-12 md:p-24 text-center relative overflow-hidden">
-            <div className="hidden md:block absolute top-10 left-10 text-[100px] opacity-30">✦</div>
-            <div className="hidden md:block absolute bottom-10 right-10 text-[100px] opacity-30">✹</div>
+        {/* How it Works Section */}
+        <section id="about" className="relative z-10 w-full scroll-mt-32">
+          <div className="bg-white dark:bg-[#1C1C1C] border-4 border-black dark:border-[#333] rounded-[32px] md:rounded-[40px] p-6 sm:p-8 md:p-16 lg:p-20">
+            <div className="grid lg:grid-cols-2 gap-12 lg:gap-20">
+              
+              <div className="flex flex-col gap-6 justify-center">
+                <h2 className="text-[11vw] sm:text-5xl md:text-7xl lg:text-[6rem] font-black uppercase tracking-tighter text-black dark:text-white leading-[0.9] break-words">
+                  HOW IT WORKS IN <br/> FOUR EASY STEPS
+                </h2>
+                <p className="text-lg md:text-2xl font-bold max-w-lg mt-4 dark:text-gray-300">
+                  Follow these steps and start making a visible impact in minutes.
+                </p>
+                <div className="mt-8">
+                  <a href="#download" className="inline-block bg-black dark:bg-white text-white dark:text-black px-8 py-4 rounded-full font-black text-xl border-4 border-black dark:border-white hover:scale-105 transition-transform">
+                    Get Started ↗
+                  </a>
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-6">
+                {[
+                  { step: 'STEP 01', title: 'SNAP A PHOTO', desc: 'Capture the environmental issue clearly.', color: 'bg-[#00D084]' },
+                  { step: 'STEP 02', title: 'PIN LOCATION', desc: 'Geolocate the exact coordinates on the map.', color: 'bg-[#FFA6C9]' },
+                  { step: 'STEP 03', title: 'AI VERIFY', desc: 'System automatically validates the report.', color: 'bg-[#0052CC]', text: 'text-white' },
+                  { step: 'STEP 04', title: 'DISPATCH', desc: 'SWMO deploys a team to resolve the issue.', color: 'bg-black', text: 'text-white' }
+                ].map((item, idx) => (
+                  <div key={idx} className={`bg-white dark:bg-[#121212] border-4 border-black dark:border-[#444] rounded-[32px] p-8 flex flex-col min-h-[240px]`}>
+                    <div className={`text-sm font-black uppercase tracking-widest mb-6 inline-flex w-max px-3 py-1 rounded-md ${item.color} ${item.text || 'text-black'}`}>
+                      {item.step}
+                    </div>
+                    <h3 className="text-2xl md:text-3xl font-black uppercase mb-3 text-black dark:text-white">{item.title}</h3>
+                    <p className="text-base md:text-lg font-bold text-gray-700 dark:text-gray-300 leading-snug">{item.desc}</p>
+                  </div>
+                ))}
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+        {/* Download Section */}
+        <section id="download" className="relative z-10 w-full scroll-mt-32">
+          <div className="bg-[#0052CC] border-4 border-black dark:border-[#333] rounded-[32px] md:rounded-[40px] p-8 sm:p-12 md:p-24 text-center relative overflow-hidden flex flex-col items-center justify-center min-h-[40vh] md:min-h-[50vh]">
+            <div className="hidden md:block absolute top-10 left-10 text-[150px] opacity-20 text-white -rotate-12 pointer-events-none">✦</div>
+            <div className="hidden md:block absolute bottom-10 right-10 text-[150px] opacity-20 text-white rotate-45 pointer-events-none">✦</div>
             
-            <h2 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black uppercase tracking-tighter text-white mb-6 md:mb-10 relative z-10 mix-blend-overlay dark:mix-blend-normal">
-              HELP MAKE PASIG GREEN AGAIN
+            <h2 className="text-[11vw] sm:text-5xl md:text-7xl lg:text-8xl font-black uppercase tracking-tighter text-white mb-8 relative z-10 leading-[0.9] break-words">
+              HELP MAKE PASIG <br className="hidden md:block" /> GREEN AGAIN
             </h2>
             
-            <a href="/ecopin-app-release.apk" download className="inline-block px-6 py-4 sm:px-8 sm:py-5 md:px-12 md:py-6 bg-white dark:bg-[#0052CC] text-[#0052CC] dark:text-white border-4 border-black dark:border-[#444] font-black text-2xl sm:text-3xl md:text-4xl lg:text-5xl uppercase tracking-widest shadow-[6px_6px_0_#000] md:shadow-[8px_8px_0_#000] hover:translate-y-2 hover:shadow-none transition-all relative z-10 break-words max-w-full">
+            <a href="/ecopin-app-release.apk" download className="inline-block px-8 py-5 md:px-12 md:py-6 bg-white text-black rounded-full font-black text-2xl sm:text-3xl md:text-4xl uppercase tracking-widest border-4 border-black hover:scale-105 transition-transform relative z-10 break-words max-w-full">
               DOWNLOAD .APK
             </a>
           </div>
         </section>
 
-        <footer className="w-full border-t-4 border-black dark:border-[#444] bg-[#F4F0EA] dark:bg-[#121212] py-8 px-8 flex flex-col md:flex-row justify-between items-center gap-6 z-10 relative">
-          <div className="font-black text-3xl uppercase tracking-tighter text-black dark:text-white">
+        <footer className="w-full bg-white dark:bg-[#1C1C1C] border-4 border-black dark:border-[#333] rounded-[32px] md:rounded-full py-6 px-6 md:px-8 flex flex-col md:flex-row justify-between items-center gap-6 z-10 relative text-center md:text-left">
+          <div className="font-black text-2xl uppercase tracking-tighter text-black dark:text-white">
             ECOPIN © 2026
           </div>
-          <div className="font-bold text-black dark:text-white text-lg border-2 border-black dark:border-[#444] px-4 py-2 bg-white dark:bg-[#1C1C1C] shadow-[4px_4px_0_#000] dark:shadow-[4px_4px_0_#0052CC]">
+          <div className="font-bold text-black dark:text-white text-base bg-[#F4F0EA] dark:bg-[#121212] border-2 border-black dark:border-[#444] rounded-full px-6 py-2">
             SOLID WASTE MANAGEMENT OFFICE
           </div>
         </footer>
@@ -305,6 +464,23 @@ export default function Home() {
         @keyframes marquee {
           0% { transform: translateX(0); }
           100% { transform: translateX(-50%); }
+        }
+        @keyframes dash {
+          to { stroke-dashoffset: -12; }
+        }
+        @keyframes btn-pulse {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+          100% { transform: scale(1); }
+        }
+        .animate-btn-pulse {
+          animation: btn-pulse 2s infinite ease-in-out;
+        }
+        .perspective-container {
+          perspective: 1200px;
+        }
+        .transform-style-3d {
+          transform-style: preserve-3d;
         }
       `}} />
     </main>
