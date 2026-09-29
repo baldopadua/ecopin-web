@@ -58,9 +58,9 @@ export default function DashboardLayout({ children }) {
   }, [pathname])
 
   if (!user) return (
-    <div className="flex h-screen bg-white dark:bg-[#000000] relative">
+    <div className="flex h-screen bg-background relative">
       <div className="absolute inset-0 bg-grid-pattern opacity-40 pointer-events-none z-0"></div>
-      <aside className="w-64 bg-white dark:bg-[#141414] border-r-2 border-[#1a1a1a] dark:border-[#333333] h-screen flex flex-col animate-pulse z-10 relative">
+      <aside className="w-64 bg-surface-elevated border-r-2 border-border h-screen flex flex-col animate-pulse z-10 relative">
         <div className="p-6 border-b border-border">
           <div className="h-6 w-24 rounded bg-border/50" />
         </div>
@@ -108,7 +108,7 @@ export default function DashboardLayout({ children }) {
     <SessionProvider>
       <UserProvider user={user}>
         <TaskProvider>
-          <div className="flex h-screen bg-white dark:bg-[#000000] relative">
+          <div className="flex h-screen bg-background relative">
             <div className="absolute inset-0 bg-grid-pattern opacity-40 pointer-events-none z-0"></div>
             <Sidebar />
             <main className="flex-1 overflow-auto bg-transparent z-10 relative">

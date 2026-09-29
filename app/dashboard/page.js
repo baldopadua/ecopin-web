@@ -35,7 +35,7 @@ ChartJS.register(
   Legend
 )
 
-const COLORS = ['#457113', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6', '#EC4899']
+const COLORS = ['#0052CC', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6', '#EC4899']
 const SATISFACTION_COLORS = ['#EF4444', '#F59E0B', '#EAB308', '#84CC16', '#22C55E']
 const SATISFACTION_LABELS = ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied']
 
@@ -339,7 +339,7 @@ export default function DashboardPage() {
       {
         label: 'Reports',
         data: chartData.map(d => d.count),
-        backgroundColor: 'rgba(69, 113, 19, 0.8)',
+        backgroundColor: 'rgba(0, 82, 204, 0.8)',
         borderRadius: 4,
       }
     ]

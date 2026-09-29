@@ -19,7 +19,7 @@ export default function ClustersPage() {
   const [severityFilter, setSeverityFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 10
+  const itemsPerPage = 6
   
   const router = useRouter()
 
@@ -139,16 +139,14 @@ export default function ClustersPage() {
   return (
     <OfficerGuard>
       <div className="p-8 h-[calc(100vh-64px)] flex flex-col">
-        <div className="flex justify-between items-end mb-6">
-          <PageHeader
-            title="Hotzone Intel"
-            subtitle="Spatial intelligence and cluster mapping"
-            breadcrumbs={[
-              { label: 'Dashboard', href: '/dashboard/officer' },
-              { label: 'Hotzone Intel' }
-            ]}
-          />
-        </div>
+        <PageHeader
+          title="Hotzone Intel"
+          subtitle="Spatial intelligence and cluster mapping"
+          breadcrumbs={[
+            { label: 'Dashboard', href: '/dashboard/officer' },
+            { label: 'Hotzone Intel' }
+          ]}
+        />
 
         <div className="flex-1 flex flex-col pb-8">
             <FilterBar

@@ -134,14 +134,9 @@ export default function ClusterDetailPage() {
 
   return (
     <OfficerGuard>
-      <div className="p-8 max-w-7xl mx-auto">
+      <div className="p-8">
         
-        <button 
-           onClick={() => router.push('/dashboard/officer/hotzone-intel')}
-           className="mb-6 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-text-secondary hover:text-primary transition-colors"
-        >
-           <ChevronLeft className="w-4 h-4" /> Back to Intel
-        </button>
+
 
         <PageHeader
           title={cluster.label || `Cluster #${cluster.id.slice(0,8)}`}
@@ -150,52 +145,59 @@ export default function ClusterDetailPage() {
             { label: 'Intel', href: '/dashboard/officer/hotzone-intel' },
             { label: `Cluster ${cluster.id.slice(0,8)}` }
           ]}
-        />
+        >
+          <button 
+             onClick={() => router.push('/dashboard/officer/hotzone-intel')}
+             className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-text-secondary hover:text-primary transition-colors mt-2"
+          >
+             <ChevronLeft className="w-4 h-4" /> Back to Intel
+          </button>
+        </PageHeader>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
            
            {/* Details Panel */}
-           <div className="card p-6 border-2 border-[#1a1a1a] dark:border-[#333333] rounded-none bg-black text-white lg:col-span-1 flex flex-col">
-              <h2 className="text-xl font-black uppercase tracking-tighter mb-6 flex items-center gap-2 border-b-2 border-white/20 pb-3">
+           <div className="card p-6 border-2 border-border rounded-none bg-surface-elevated text-text-primary lg:col-span-1 flex flex-col">
+              <h2 className="text-xl font-black uppercase tracking-tighter mb-6 flex items-center gap-2 border-b-2 border-border pb-3">
                  <Target className="w-5 h-5 text-accent-green" /> Target Profile
               </h2>
               
               <div className="space-y-6 flex-1">
                  <div>
-                    <span className="text-[10px] font-mono uppercase text-white/50 block mb-1">Severity</span>
+                    <span className="text-[10px] font-mono uppercase text-text-muted block mb-1">Severity</span>
                     <div className="text-3xl font-black text-error">{Math.round(cluster.severity_score || 0)}</div>
                  </div>
                  
                  <div>
-                    <span className="text-[10px] font-mono uppercase text-white/50 block mb-1">Composition</span>
+                    <span className="text-[10px] font-mono uppercase text-text-muted block mb-1">Composition</span>
                     <div className="flex items-center gap-4">
                        <div>
                          <span className="text-2xl font-bold block">{reports.length}</span>
-                         <span className="text-xs text-white/70">Reports</span>
+                         <span className="text-xs text-text-secondary">Reports</span>
                        </div>
-                       <div className="h-8 w-px bg-white/20"></div>
+                       <div className="h-8 w-px bg-border"></div>
                        <div>
                          <span className="text-2xl font-bold block">{Math.round(cluster.radius_meters || 50)}m</span>
-                         <span className="text-xs text-white/70">Radius</span>
+                         <span className="text-xs text-text-secondary">Radius</span>
                        </div>
                     </div>
                  </div>
                  
                  {cluster.issue_type && (
                    <div>
-                      <span className="text-[10px] font-mono uppercase text-white/50 block mb-1">Primary Signature</span>
+                      <span className="text-[10px] font-mono uppercase text-text-muted block mb-1">Primary Signature</span>
                       <div className="text-lg font-bold">{cluster.issue_type}</div>
                    </div>
                  )}
               </div>
               
-              <div className="pt-6 border-t-2 border-white/20 mt-6">
+              <div className="pt-6 border-t-2 border-border mt-6">
                  {loadingTasks ? (
                     <button disabled className="btn-primary w-full opacity-50">Loading...</button>
                  ) : (
                     <button 
                       onClick={handleDispatch}
-                      className="w-full bg-accent-green text-black font-black uppercase tracking-widest py-3 hover:bg-white transition-colors border-2 border-accent-green hover:border-white"
+                      className="w-full bg-accent-green text-white font-black uppercase tracking-widest py-3 hover:bg-surface-elevated hover:text-text-primary transition-colors border-2 border-accent-green hover:border-text-primary"
                     >
                       {existingTask ? 'View Dispatched Task' : 'Dispatch Field Crew'}
                     </button>
@@ -204,8 +206,8 @@ export default function ClusterDetailPage() {
            </div>
            
            {/* Map Panel */}
-           <div className="lg:col-span-2 border-2 border-[#1a1a1a] dark:border-[#333333] bg-surface-elevated relative min-h-[400px]">
-              <div className="absolute top-4 left-4 z-[400] bg-black text-white px-3 py-1.5 border-2 border-white/20 pointer-events-none">
+           <div className="lg:col-span-2 border-2 border-border bg-surface-elevated relative min-h-[400px]">
+              <div className="absolute top-4 left-4 z-[400] bg-surface-elevated text-text-primary px-3 py-1.5 border-2 border-border pointer-events-none">
                  <span className="font-bold uppercase tracking-widest text-xs flex items-center gap-2">
                     <MapIcon className="w-3 h-3" /> Area View
                  </span>

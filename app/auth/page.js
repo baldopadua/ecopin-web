@@ -129,7 +129,7 @@ export default function AuthPage() {
           </div>
 
           <div className="mt-12 md:mt-0 relative z-10 flex items-center gap-2 text-sm font-black uppercase tracking-widest text-white/80">
-            <div className="w-2 h-2 rounded-full bg-[#00D084] animate-pulse"></div>
+            <div className="w-2 h-2 rounded-full bg-[#0052CC] animate-pulse"></div>
             AUTHORIZED ACCESS ONLY
           </div>
 

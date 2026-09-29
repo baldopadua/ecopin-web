@@ -74,13 +74,13 @@ export default function Sidebar() {
                     key={item.name}
                     href={item.href}
                     className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors border-2 border-transparent ${isActive
-                        ? 'bg-[#ccff00] text-black border-[#1a1a1a] dark:border-[#1a1a1a] font-bold'
+                        ? 'bg-primary text-white border-[#1a1a1a] dark:border-white font-bold'
                         : 'text-text-secondary hover:bg-surface-elevated hover:text-text-primary hover:border-border'
                         } ${isCollapsed ? 'justify-center px-2' : ''}`}
                     title={isCollapsed ? item.name : undefined}
                 >
                     {Icon && item.name === 'Optimization' && isOptimizing ? (
-                        <svg className="animate-spin w-5 h-5 min-w-[20px] min-h-[20px] text-accent-green" viewBox="0 0 24 24">
+                        <svg className="animate-spin w-5 h-5 min-w-[20px] min-h-[20px] text-primary" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                         </svg>
@@ -94,10 +94,10 @@ export default function Sidebar() {
     }
 
     return (
-        <aside className={`${isCollapsed ? 'w-20' : 'w-64'} bg-white dark:bg-[#141414] border-r-2 border-[#1a1a1a] dark:border-[#333333] h-screen flex flex-col transition-all duration-300 z-50`}>
+        <aside className={`${isCollapsed ? 'w-20' : 'w-64'} bg-surface-elevated border-r-2 border-border h-screen flex flex-col transition-all duration-300 z-50`}>
 
             {/* Logo */}
-            <div className={`p-6 border-b-2 border-[#1a1a1a] dark:border-[#333333] flex items-center h-[77px] ${isCollapsed ? 'justify-center px-2' : 'justify-between'}`}>
+            <div className={`p-6 border-b-2 border-border flex items-center h-[77px] ${isCollapsed ? 'justify-center px-2' : 'justify-between'}`}>
                 {!isCollapsed && (
                     <Link href="/" className="cursor-pointer hover:opacity-80 transition-opacity">
                         <img src="/Full Logo Light.png" alt="EcoPin" className="h-8 md:h-10 w-auto dark:hidden" />
@@ -129,7 +129,7 @@ export default function Sidebar() {
             </nav>
 
             {/* User Info */}
-            <div className="p-4 border-t-2 border-[#1a1a1a] dark:border-[#333333]">
+            <div className="p-4 border-t-2 border-border">
                 <Link
                     href="/dashboard/profile"
                     className={`flex items-center mb-1 hover:bg-surface-elevated hover:text-text-primary p-2 border-2 border-transparent hover:border-border transition-colors rounded ${isCollapsed ? 'justify-center' : 'justify-between'}`}

@@ -13,20 +13,20 @@ body {
 
 :root {
   /* Light Theme */
-  --primary: #457113;
-  --secondary: #699834;
-  --accent: #85D22D;
-  --accent-green: #85D22D;
-  --accent-green-dark: #699834;
+  --primary: #0052CC;
+  --secondary: #FFA6C9;
+  --accent: #0052CC;
+  --accent-green: #0052CC;
+  --accent-green-dark: #0042A3;
 
-  --background: #FFFFFF;
-  --surface: #F8FAF6;
+  --background: #F4F0EA;
+  --surface: #FFFFFF;
   --surface-elevated: #FFFFFF;
-  --border: #E2E8DC;
+  --border: #000000;
 
-  --text-primary: #0D1207;
-  --text-secondary: #4A5240;
-  --text-muted: #8A9180;
+  --text-primary: #000000;
+  --text-secondary: #333333;
+  --text-muted: #666666;
 
   /* Status Colors */
   --status-success: #2E7D32;
@@ -147,20 +147,20 @@ body {
 }
 
 html.dark {
-  --primary: #C0EC8E;
-  --secondary: #9CCB67;
-  --accent: #85D22D;
-  --accent-green: #85D22D;
-  --accent-green-dark: #699834;
+  --primary: #0052CC;
+  --secondary: #FFA6C9;
+  --accent: #0052CC;
+  --accent-green: #0052CC;
+  --accent-green-dark: #0042A3;
 
-  --background: #000000;
-  --surface: #0A0A0A;
-  --surface-elevated: #141414;
-  --border: #1F2618;
+  --background: #121212;
+  --surface: #1C1C1C;
+  --surface-elevated: #242424;
+  --border: #333333;
 
   --text-primary: #FFFFFF;
-  --text-secondary: #B0B8A6;
-  --text-muted: #6B7560;
+  --text-secondary: #CCCCCC;
+  --text-muted: #999999;
 
   /* Status Colors - same in dark mode */
   --status-success: #2E7D32;
@@ -276,8 +276,8 @@ html.dark .btn-primary:hover {
 }
 
 html.dark .table-row-interactive:hover {
-  background-color: #ccff00 !important;
-  color: #000000 !important;
+  background-color: #0052CC !important;
+  color: #FFFFFF !important;
 }
 
 html.dark .table-row-interactive:hover * {
@@ -314,21 +314,21 @@ html.dark input[type="date"] {
 .input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(69, 113, 19, 0.15);
-  background-color: rgba(69, 113, 19, 0.05);
+  box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.15);
+  background-color: rgba(0, 82, 204, 0.05);
 }
 
 .input:not(:placeholder-shown) {
-  background-color: rgba(69, 113, 19, 0.05);
+  background-color: rgba(0, 82, 204, 0.05);
 }
 
 html.dark .input:focus {
-  background-color: rgba(192, 236, 142, 0.05);
-  box-shadow: 0 0 0 3px rgba(192, 236, 142, 0.1);
+  background-color: rgba(0, 82, 204, 0.15);
+  box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.2);
 }
 
 html.dark .input:not(:placeholder-shown) {
-  background-color: rgba(192, 236, 142, 0.05);
+  background-color: rgba(0, 82, 204, 0.15);
 }
 
 .input::placeholder {
@@ -424,7 +424,7 @@ table tbody tr {
 }
 
 table tbody tr:hover {
-  background-color: rgba(69, 113, 19, 0.08) !important;
+  background-color: rgba(0, 82, 204, 0.08) !important;
 }
 
 /* Chart card styles */
@@ -500,17 +500,17 @@ html.dark .dark-mode-tiles {
 
 /* Page gradient backgrounds */
 .page-gradient {
-  background: linear-gradient(160deg, #ffffff 0%, #ffffff 40%, #e8f5e9 70%, #c8e6c9 100%);
+  background: linear-gradient(160deg, #F4F0EA 0%, #F4F0EA 60%, #e6effa 100%);
 }
 
 html.dark .page-gradient {
-  background: linear-gradient(160deg, #0a0f08 0%, #0d1a0c 30%, #122614 55%, #1a3a1e 75%, #2d5a35 100%);
+  background: linear-gradient(160deg, #121212 0%, #121212 60%, #1a1f26 100%);
 }
 
 /* React DatePicker Highlighted Days */
 .react-datepicker__day--highlighted {
-  background-color: rgba(69, 113, 19, 0.1) !important;
-  color: #264009 !important;
+  background-color: rgba(0, 82, 204, 0.1) !important;
+  color: #0052CC !important;
   font-weight: 800 !important;
   position: relative;
   border-radius: 4px;
@@ -525,7 +525,7 @@ html.dark .page-gradient {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background-color: #264009;
+  background-color: #0052CC;
 }
 
 /* React DatePicker Dark Mode */
@@ -553,7 +553,7 @@ html.dark .react-datepicker__day--keyboard-selected {
 }
 
 html.dark .react-datepicker__day--highlighted {
-  background-color: rgba(192, 236, 142, 0.15) !important;
+  background-color: rgba(0, 82, 204, 0.15) !important;
   color: var(--accent-green) !important;
 }
 html.dark .react-datepicker__day--highlighted::after {

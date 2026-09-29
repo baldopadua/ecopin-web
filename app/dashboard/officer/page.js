@@ -246,55 +246,54 @@ export default function OfficerHomepage() {
               </div>
            </div>
 
-           {/* Right Column: Critical Hotzones Preview */}
-           <div className="space-y-8">
-              <div className="card border-2 border-[#1a1a1a] dark:border-[#333333] rounded-none p-6 bg-black dark:bg-[#111111] text-white h-full min-h-[500px]">
-                 <div className="flex justify-between items-center mb-6 border-b-2 border-white/20 pb-3">
-                    <h2 className="text-xl font-black tracking-tighter uppercase text-white flex items-center gap-2">
+            <div className="space-y-8">
+              <div className="card border-2 border-border rounded-none p-6 bg-surface-elevated text-text-primary h-full min-h-[500px]">
+                 <div className="flex justify-between items-center mb-6 border-b-2 border-border pb-3">
+                    <h2 className="text-xl font-black tracking-tighter uppercase flex items-center gap-2">
                        <Target className="w-5 h-5 text-error" /> Critical Hotzones
                     </h2>
                  </div>
                  
                  {loading ? (
                    <div className="animate-pulse space-y-4">
-                     {[1,2,3].map(i => <div key={i} className="h-32 bg-white/5 border border-white/10" />)}
+                     {[1,2,3].map(i => <div key={i} className="h-32 bg-surface border border-border" />)}
                    </div>
                  ) : criticalClusters.length === 0 ? (
-                   <div className="text-center py-12 text-white/50 border border-dashed border-white/20">
+                   <div className="text-center py-12 text-text-muted border border-dashed border-border">
                       <Map className="w-10 h-10 mx-auto mb-3 opacity-30" />
                       <p className="font-medium">No hotzones detected</p>
                    </div>
                  ) : (
                    <div className="space-y-6">
                      {criticalClusters.map((cluster, idx) => (
-                        <div key={cluster.id} className="relative group cursor-pointer" onClick={() => router.push(`/dashboard/officer/hotzone-intel/${cluster.id}`)}>
+                         <div key={cluster.id} className="relative group cursor-pointer" onClick={() => router.push(`/dashboard/officer/hotzone-intel/${cluster.id}`)}>
                            <div className="absolute inset-0 bg-error/20 translate-x-2 translate-y-2 group-hover:translate-x-1 group-hover:translate-y-1 transition-transform z-0"></div>
-                           <div className="relative z-10 bg-[#1a1a1a] border-2 border-white/30 p-4 group-hover:border-error transition-colors">
+                           <div className="relative z-10 bg-surface-elevated border-2 border-border p-4 group-hover:border-error transition-colors">
                               <div className="flex justify-between items-start mb-3">
                                  <div>
                                     <span className="text-[10px] font-mono text-error uppercase tracking-widest block mb-1">Priority {idx + 1}</span>
                                     <h3 className="font-bold text-lg leading-none truncate max-w-[180px]">{cluster.label || `Cluster ${cluster.id.slice(0,6)}`}</h3>
                                  </div>
                                  <div className="text-right">
-                                    <span className="text-3xl font-black text-white">{Math.round(cluster.severity_score || 0)}</span>
+                                    <span className="text-3xl font-black text-text-primary">{Math.round(cluster.severity_score || 0)}</span>
                                  </div>
                               </div>
-                              <div className="grid grid-cols-2 gap-2 text-sm text-white/70">
+                              <div className="grid grid-cols-2 gap-2 text-sm text-text-secondary">
                                  <div>
-                                    <span className="block text-[10px] font-mono uppercase text-white/40">Reports</span>
-                                    <span className="font-medium">{cluster.reports?.length || cluster.report_ids?.length || 0}</span>
+                                    <span className="block text-[10px] font-mono uppercase text-text-muted">Reports</span>
+                                    <span className="font-medium text-text-primary">{cluster.reports?.length || cluster.report_ids?.length || 0}</span>
                                  </div>
                                  <div>
-                                    <span className="block text-[10px] font-mono uppercase text-white/40">Radius</span>
-                                    <span className="font-medium">{Math.round(cluster.radius_meters || 50)}m</span>
+                                    <span className="block text-[10px] font-mono uppercase text-text-muted">Radius</span>
+                                    <span className="font-medium text-text-primary">{Math.round(cluster.radius_meters || 50)}m</span>
                                  </div>
                               </div>
                            </div>
                         </div>
                      ))}
                      
-                     <div className="pt-6 mt-6 border-t-2 border-white/20">
-                        <Link href="/dashboard/officer/hotzone-intel" className="btn-secondary w-full text-center flex items-center justify-center gap-2 border-white/50 hover:bg-white hover:text-black">
+                     <div className="pt-6 mt-6 border-t-2 border-border">
+                        <Link href="/dashboard/officer/hotzone-intel" className="btn-secondary w-full text-center flex items-center justify-center gap-2">
                            View All Intelligence <ChevronRight className="w-4 h-4" />
                         </Link>
                      </div>
@@ -307,36 +306,36 @@ export default function OfficerHomepage() {
         {/* AI HUD (Floating/Collapsible) */}
         <div className={`fixed bottom-6 right-6 z-50 flex flex-col items-end transition-all duration-300 ${hudExpanded ? 'translate-y-0' : 'translate-y-2'}`}>
            {hudExpanded && (
-              <div className="mb-4 w-72 bg-black border-2 border-accent-green shadow-2xl p-5 text-white origin-bottom-right animate-in fade-in slide-in-from-bottom-4 relative">
-                 <div className="absolute -z-10 inset-0 opacity-20 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-accent-green via-black to-black"></div>
+               <div className="mb-4 w-72 bg-surface-elevated border-2 border-accent-green shadow-2xl p-5 text-text-primary origin-bottom-right animate-in fade-in slide-in-from-bottom-4 relative">
+                 <div className="absolute -z-10 inset-0 opacity-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-accent-green via-transparent to-transparent"></div>
                  
-                 <div className="flex justify-between items-center mb-4 border-b border-white/20 pb-2">
+                 <div className="flex justify-between items-center mb-4 border-b border-border pb-2">
                     <h4 className="font-black tracking-widest text-sm uppercase flex items-center gap-2">
                        <Brain className="w-4 h-4 text-accent-green" /> Command Unit
                     </h4>
-                    <button onClick={() => setHudExpanded(false)} className="text-white/50 hover:text-white">✕</button>
+                    <button onClick={() => setHudExpanded(false)} className="text-text-muted hover:text-text-primary">✕</button>
                  </div>
                  
                  <div className="space-y-3 font-mono text-sm">
                     <div className="flex justify-between">
-                       <span className="text-white/60">Confidence</span>
+                       <span className="text-text-secondary">Confidence</span>
                        <span className="text-accent-green font-bold">{aiConfidence}%</span>
                     </div>
                     <div className="flex justify-between">
-                       <span className="text-white/60">Precision</span>
-                       <span className="text-white">91.4%</span>
+                       <span className="text-text-secondary">Precision</span>
+                       <span className="text-text-primary font-bold">91.4%</span>
                     </div>
                     <div className="flex justify-between">
-                       <span className="text-white/60">Recall</span>
-                       <span className="text-white">88.2%</span>
+                       <span className="text-text-secondary">Recall</span>
+                       <span className="text-text-primary font-bold">88.2%</span>
                     </div>
                     <div className="flex justify-between">
-                       <span className="text-white/60">Last Sync</span>
-                       <span className="text-white">{latestRun ? new Date(latestRun.created_at).toLocaleTimeString() : 'Just now'}</span>
+                       <span className="text-text-secondary">Last Sync</span>
+                       <span className="text-text-primary">{latestRun ? new Date(latestRun.created_at).toLocaleTimeString() : 'Just now'}</span>
                     </div>
                  </div>
                  
-                 <Link href="/dashboard/spatial-scan" className="mt-5 block text-center text-xs font-bold uppercase tracking-widest bg-white text-black py-2 hover:bg-accent-green transition-colors border-2 border-transparent">
+                 <Link href="/dashboard/spatial-scan" className="mt-5 block text-center text-xs font-bold uppercase tracking-widest bg-surface text-text-primary py-2 hover:bg-accent-green hover:text-white transition-colors border-2 border-border">
                     View Spatial Scan →
                  </Link>
               </div>
@@ -345,11 +344,11 @@ export default function OfficerHomepage() {
            {!hudExpanded && (
               <button 
                 onClick={() => setHudExpanded(true)}
-                className="group relative flex items-center justify-center w-14 h-14 bg-black border-2 border-accent-green shadow-lg hover:scale-105 transition-transform"
+                className="group relative flex items-center justify-center w-14 h-14 bg-surface-elevated border-2 border-accent-green shadow-lg hover:scale-105 transition-transform text-text-primary"
               >
                  <div className="absolute inset-0 rounded-full border-2 border-accent-green animate-ping opacity-20"></div>
-                 <Brain className="w-6 h-6 text-accent-green group-hover:text-white transition-colors" />
-                 <span className="absolute -top-2 -right-2 bg-accent-green text-black text-[10px] font-black px-1.5 py-0.5 rounded-sm">
+                 <Brain className="w-6 h-6 text-accent-green" />
+                 <span className="absolute -top-2 -right-2 bg-accent-green text-white text-[10px] font-black px-1.5 py-0.5 rounded-sm">
                     {aiConfidence}%
                  </span>
               </button>

@@ -156,7 +156,7 @@ export default function Home() {
                       {/* Dynamic Island */}
                       <div className="absolute top-2 left-1/2 -translate-x-1/2 w-[100px] h-[28px] bg-black rounded-full z-[60] flex items-center justify-between px-3 shadow-inner">
                           <div className="w-3 h-3 rounded-full bg-white/10"></div>
-                          <div className="w-1.5 h-1.5 rounded-full bg-[#00D084]/90 shadow-[0_0_5px_#00D084]"></div>
+                          <div className="w-1.5 h-1.5 rounded-full bg-[#0052CC]/90 shadow-[0_0_5px_#0052CC]"></div>
                       </div>
 
                       {/* App Bar */}
@@ -228,7 +228,7 @@ export default function Home() {
                           {/* Central Pin */}
                           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 flex flex-col items-center">
                              <div className="bg-black text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-1 shadow-md whitespace-nowrap">Move to adjust</div>
-                             <svg viewBox="0 0 24 24" className="w-10 h-10 animate-bounce text-[#00D084]" fill="currentColor" stroke="black" strokeWidth="1.5">
+                             <svg viewBox="0 0 24 24" className="w-10 h-10 animate-bounce text-[#0052CC]" fill="currentColor" stroke="black" strokeWidth="1.5">
                                 <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
                              </svg>
                           </div>
@@ -239,7 +239,7 @@ export default function Home() {
                          <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-3"></div>
                          <div className="font-black text-[10px] mb-1 text-gray-500 uppercase tracking-widest">Location</div>
                          <div className="font-black text-lg leading-tight mb-auto text-black">Pasig City, Metro Manila</div>
-                         <div className="w-full bg-[#0052CC] border-2 border-black text-white rounded-full py-2.5 text-center font-black uppercase tracking-widest mt-2 hover:bg-[#00D084] hover:text-black transition-colors cursor-pointer text-sm">
+                         <div className="w-full bg-[#0052CC] border-2 border-black text-white rounded-full py-2.5 text-center font-black uppercase tracking-widest mt-2 hover:bg-[#FFA6C9] hover:text-black transition-colors cursor-pointer text-sm">
                             Confirm Pin
                          </div>
                       </div>
@@ -263,7 +263,7 @@ export default function Home() {
                       style={{ transform: 'translateZ(80px) rotate(-3deg)' }}
                    >
                       <div className="text-[10px] sm:text-xs font-black uppercase text-black mb-1 flex items-center gap-2">
-                        <div className="w-2 h-2 bg-[#00D084] rounded-full animate-pulse"></div>
+                        <div className="w-2 h-2 bg-[#0052CC] rounded-full animate-pulse"></div>
                         Live Status
                       </div>
                       <div className="text-lg sm:text-xl md:text-2xl font-black">24 NEW REPORTS</div>
@@ -324,7 +324,7 @@ export default function Home() {
                  <h3 className="text-3xl lg:text-4xl font-black uppercase mb-3">AI VERIFIED</h3>
                  <p className="font-bold text-lg leading-snug">No fake reports. ML filters out the noise automatically.</p>
                </div>
-               <div className="bg-[#00D084] text-black rounded-[32px] border-4 border-black p-8 flex flex-col justify-center min-h-[200px]">
+               <div className="bg-[#0052CC] text-white rounded-[32px] border-4 border-black p-8 flex flex-col justify-center min-h-[200px]">
                  <h3 className="text-3xl lg:text-4xl font-black uppercase mb-3">SMART CLUSTERS</h3>
                  <p className="font-bold text-lg leading-snug">Heatmaps group identical issues automatically.</p>
                </div>
@@ -353,7 +353,7 @@ export default function Home() {
 
               <div className="grid sm:grid-cols-2 gap-6">
                 {[
-                  { step: 'STEP 01', title: 'SNAP A PHOTO', desc: 'Capture the environmental issue clearly.', color: 'bg-[#00D084]' },
+                  { step: 'STEP 01', title: 'SNAP A PHOTO', desc: 'Capture the environmental issue clearly.', color: 'bg-[#0052CC]' },
                   { step: 'STEP 02', title: 'PIN LOCATION', desc: 'Geolocate the exact coordinates on the map.', color: 'bg-[#FFA6C9]' },
                   { step: 'STEP 03', title: 'AI VERIFY', desc: 'System automatically validates the report.', color: 'bg-[#0052CC]', text: 'text-white' },
                   { step: 'STEP 04', title: 'DISPATCH', desc: 'SWMO deploys a team to resolve the issue.', color: 'bg-black', text: 'text-white' }
