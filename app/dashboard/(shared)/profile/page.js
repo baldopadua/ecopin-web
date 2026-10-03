@@ -393,7 +393,7 @@ export default function ProfilePage() {
                     setIsEditingName(false)
                   }}
                   disabled={saving}
-                  className="p-1.5 bg-accent-green text-black border-2 border-accent-green rounded-none hover:bg-transparent hover:text-accent-green transition-colors disabled:opacity-50"
+                  className="p-1.5 bg-accent-green text-white border-2 border-accent-green rounded-none hover:bg-transparent hover:text-accent-green transition-colors disabled:opacity-50"
                   title="Save"
                 >
                   <Check className="w-4 h-4" />

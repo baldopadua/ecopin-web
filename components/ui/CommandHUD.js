@@ -25,13 +25,13 @@ export default function CommandHUD({ accuracy, lastUpdated, viewMode, setViewMod
         <div className="flex gap-2">
            <button 
              onClick={() => setViewMode('clusters')}
-             className={`px-3 py-1 text-xs font-bold font-mono border ${viewMode === 'clusters' ? 'bg-accent-green text-black border-accent-green' : 'bg-transparent text-white border-white/30 hover:border-white'}`}
+             className={`px-3 py-1 text-xs font-bold font-mono border ${viewMode === 'clusters' ? 'bg-accent-green text-white border-accent-green' : 'bg-transparent text-white border-white/30 hover:border-white'}`}
            >
              POLYGONS
            </button>
            <button 
              onClick={() => setViewMode('heatmap')}
-             className={`px-3 py-1 text-xs font-bold font-mono border ${viewMode === 'heatmap' ? 'bg-accent-green text-black border-accent-green' : 'bg-transparent text-white border-white/30 hover:border-white'}`}
+             className={`px-3 py-1 text-xs font-bold font-mono border ${viewMode === 'heatmap' ? 'bg-accent-green text-white border-accent-green' : 'bg-transparent text-white border-white/30 hover:border-white'}`}
            >
              EVENTS
            </button>

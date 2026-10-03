@@ -90,7 +90,7 @@ export default function Pagination({
               onClick={() => handlePageChange(page)}
               className={`px-3 py-1 border-2 border-border transition-colors ${
                 currentPage === page
-                  ? 'bg-black text-white dark:bg-accent-green dark:text-black dark:border-accent-green'
+                  ? 'bg-black text-white dark:bg-accent-green dark:text-white dark:border-accent-green'
                   : 'hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black'
               }`}
             >

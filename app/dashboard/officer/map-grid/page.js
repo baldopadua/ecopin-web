@@ -50,7 +50,7 @@ function OfficerMapContent() {
       {!isSidebarOpen && (
         <button
           onClick={() => setIsSidebarOpen(true)}
-          className="absolute right-4 top-4 z-[1000] bg-surface-elevated border-2 border-border p-2 shadow-lg hover:bg-accent-green hover:text-black transition-colors"
+          className="absolute right-4 top-4 z-[1000] bg-surface-elevated border-2 border-border p-2 shadow-lg hover:bg-accent-green hover:text-white transition-colors"
           title="Open Map Controls"
         >
           <Map className="w-5 h-5" />

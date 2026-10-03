@@ -30,7 +30,7 @@ export const STATUS_STYLES = {
   failed: 'bg-error/20 text-error border-error/30',
 }
 
-export const CREW_COLORS = ['#0052CC', '#FFA6C9', '#EF4444', '#F9A825', '#8B5CF6']
+export const CREW_COLORS = ['#0052CC', '#60A5FA', '#EF4444', '#F9A825', '#8B5CF6']
 
 export function formatDistance(meters) {
   if (!meters) return '—'

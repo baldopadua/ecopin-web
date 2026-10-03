@@ -95,7 +95,7 @@ export default function CleanupTasksPage() {
         <OfficerGuard>
           <button
             onClick={() => router.push('/dashboard/officer/operations/create')}
-            className="bg-accent-green text-black font-mono font-bold uppercase tracking-widest border-2 border-[#1a1a1a] rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all px-6 py-3"
+            className="bg-accent-green text-white font-mono font-bold uppercase tracking-widest border-2 border-[#1a1a1a] rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all px-6 py-3"
           >
             Create Custom Task
           </button>

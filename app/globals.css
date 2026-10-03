@@ -14,7 +14,7 @@ body {
 :root {
   /* Light Theme */
   --primary: #0052CC;
-  --secondary: #FFA6C9;
+  --secondary: #60A5FA;
   --accent: #0052CC;
   --accent-green: #0052CC;
   --accent-green-dark: #0042A3;
@@ -148,7 +148,7 @@ body {
 
 html.dark {
   --primary: #0052CC;
-  --secondary: #FFA6C9;
+  --secondary: #60A5FA;
   --accent: #0052CC;
   --accent-green: #0052CC;
   --accent-green-dark: #0042A3;
@@ -281,8 +281,8 @@ html.dark .table-row-interactive:hover {
 }
 
 html.dark .table-row-interactive:hover * {
-  color: #000000 !important;
-  border-color: #000000 !important;
+  color: #FFFFFF !important;
+  border-color: #FFFFFF !important;
 }
 
 /* Modern input styles */

@@ -19,7 +19,7 @@ export default function QuickActions({
             key={index}
             onClick={action.onClick}
             className={`${action.variant === 'primary' 
-              ? 'bg-accent-green text-black border-2 border-[#1a1a1a] dark:border-[#1a1a1a] hover:bg-accent-green/80' 
+              ? 'bg-accent-green text-white border-2 border-[#1a1a1a] dark:border-[#1a1a1a] hover:bg-accent-green/80' 
               : 'bg-surface-elevated text-text-primary border-2 border-border hover:bg-surface'
             } font-mono font-bold uppercase tracking-widest transition-all px-6 py-3 rounded-none ${
               action.icon ? 'flex items-center gap-2' : ''

@@ -235,7 +235,7 @@ function TacticalScanContent() {
              setFocusedItem(null);
            }}
            className={`px-6 py-3 font-bold font-mono tracking-widest uppercase border-2 flex items-center gap-3 transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] ${
-             activeTab === 'current' ? 'bg-accent-green text-black border-accent-green' : 'bg-black/80 text-white border-white/20 hover:border-white'
+             activeTab === 'current' ? 'bg-accent-green text-white border-accent-green' : 'bg-black/80 text-white border-white/20 hover:border-white'
            }`}
          >
            <div className={`w-3 h-3 rounded-full ${activeTab === 'current' ? 'bg-black animate-pulse' : 'bg-white/50'}`}></div>

@@ -239,7 +239,7 @@ export default function Home() {
                          <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-3"></div>
                          <div className="font-black text-[10px] mb-1 text-gray-500 uppercase tracking-widest">Location</div>
                          <div className="font-black text-lg leading-tight mb-auto text-black">Pasig City, Metro Manila</div>
-                         <div className="w-full bg-[#0052CC] border-2 border-black text-white rounded-full py-2.5 text-center font-black uppercase tracking-widest mt-2 hover:bg-[#FFA6C9] hover:text-black transition-colors cursor-pointer text-sm">
+                         <div className="w-full bg-[#0052CC] border-2 border-black text-white rounded-full py-2.5 text-center font-black uppercase tracking-widest mt-2 hover:bg-[#60A5FA] hover:text-black transition-colors cursor-pointer text-sm">
                             Confirm Pin
                          </div>
                       </div>
@@ -259,7 +259,7 @@ export default function Home() {
                    </div>
 
                    <div 
-                      className="absolute bottom-[5%] sm:bottom-[15%] left-0 sm:-left-[0%] lg:-left-[5%] bg-[#FFA6C9] text-black border-4 border-black px-3 py-2 sm:px-5 sm:py-4 rounded-2xl drop-shadow-[4px_4px_0_black] sm:drop-shadow-[6px_6px_0_black] z-30 hover:-translate-y-2 transition-all scale-75 sm:scale-100 origin-bottom-left sm:origin-center"
+                      className="absolute bottom-[5%] sm:bottom-[15%] left-0 sm:-left-[0%] lg:-left-[5%] bg-[#60A5FA] text-black border-4 border-black px-3 py-2 sm:px-5 sm:py-4 rounded-2xl drop-shadow-[4px_4px_0_black] sm:drop-shadow-[6px_6px_0_black] z-30 hover:-translate-y-2 transition-all scale-75 sm:scale-100 origin-bottom-left sm:origin-center"
                       style={{ transform: 'translateZ(80px) rotate(-3deg)' }}
                    >
                       <div className="text-[10px] sm:text-xs font-black uppercase text-black mb-1 flex items-center gap-2">
@@ -320,7 +320,7 @@ export default function Home() {
                  <h3 className="text-3xl lg:text-4xl font-black uppercase mb-3">LIVE MAP</h3>
                  <p className="font-bold text-lg leading-snug">See the city's status in real-time on the grid.</p>
                </div>
-               <div className="bg-[#FFA6C9] text-black rounded-[32px] border-4 border-black p-8 flex flex-col justify-center min-h-[200px]">
+               <div className="bg-[#60A5FA] text-black rounded-[32px] border-4 border-black p-8 flex flex-col justify-center min-h-[200px]">
                  <h3 className="text-3xl lg:text-4xl font-black uppercase mb-3">AI VERIFIED</h3>
                  <p className="font-bold text-lg leading-snug">No fake reports. ML filters out the noise automatically.</p>
                </div>
@@ -354,7 +354,7 @@ export default function Home() {
               <div className="grid sm:grid-cols-2 gap-6">
                 {[
                   { step: 'STEP 01', title: 'SNAP A PHOTO', desc: 'Capture the environmental issue clearly.', color: 'bg-[#0052CC]' },
-                  { step: 'STEP 02', title: 'PIN LOCATION', desc: 'Geolocate the exact coordinates on the map.', color: 'bg-[#FFA6C9]' },
+                  { step: 'STEP 02', title: 'PIN LOCATION', desc: 'Geolocate the exact coordinates on the map.', color: 'bg-[#60A5FA]' },
                   { step: 'STEP 03', title: 'AI VERIFY', desc: 'System automatically validates the report.', color: 'bg-[#0052CC]', text: 'text-white' },
                   { step: 'STEP 04', title: 'DISPATCH', desc: 'SWMO deploys a team to resolve the issue.', color: 'bg-black', text: 'text-white' }
                 ].map((item, idx) => (

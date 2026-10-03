@@ -620,7 +620,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                             onClusterSelect(memberReports.map(r => r.id))
                           }
                         }}
-                        className="mt-2 w-full text-xs bg-accent-green text-white py-1 rounded hover:bg-accent-green-dark"
+                        className="mt-2 w-full text-xs bg-accent-green text-white py-1 rounded  hover:text-white-dark"
                       >
                         Add All Reports to Task
                       </button>
@@ -630,7 +630,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                           e.stopPropagation()
                           router.push(`/dashboard/officer/hotzone-intel/${cluster.id}`)
                         }}
-                        className="mt-2 w-full text-xs bg-accent-green text-white py-1 rounded hover:bg-accent-green-dark"
+                        className="mt-2 w-full text-xs bg-accent-green text-white py-1 rounded  hover:text-white-dark"
                       >
                         View All Reports
                       </button>
@@ -803,7 +803,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                       {!selectionMode && (
                         <button
                           onClick={(e) => { e.stopPropagation(); handlePopupRouting(report.id); }}
-                          className="mt-2 w-full text-xs bg-accent-green text-white py-1 rounded hover:bg-accent-green-dark"
+                          className="mt-2 w-full text-xs bg-accent-green text-white py-1 rounded  hover:text-white-dark"
                         >
                           View Full Details
                         </button>
