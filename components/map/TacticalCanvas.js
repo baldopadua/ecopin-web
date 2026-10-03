@@ -5,13 +5,13 @@ import HotspotForecastMap from './HotspotForecastMap'
 
 export default function TacticalCanvas({ predictions, timeHorizon, viewMode, focusedItem }) {
   return (
-    <div className="absolute inset-0 bg-[#0a0a0a] z-0 overflow-hidden" 
+    <div className="absolute inset-0 bg-surface z-0 overflow-hidden" 
          style={{ 
-            backgroundImage: `linear-gradient(rgba(204, 255, 0, 0.05) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(204, 255, 0, 0.05) 1px, transparent 1px)`,
+            backgroundImage: `linear-gradient(rgba(204, 255, 0, 0.1) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(204, 255, 0, 0.1) 1px, transparent 1px)`,
             backgroundSize: '40px 40px' 
          }}>
-      <div className="absolute inset-0 opacity-80 mix-blend-screen">
+      <div className="absolute inset-0 opacity-90">
          <HotspotForecastMap 
            predictions={predictions} 
            timeHorizon={timeHorizon} 

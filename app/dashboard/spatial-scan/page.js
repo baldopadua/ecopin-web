@@ -197,7 +197,7 @@ function TacticalScanContent() {
   }, [currentData]);
 
   return (
-    <div className="flex h-screen w-full bg-black overflow-hidden font-sans">
+    <div className="flex h-screen w-full bg-background overflow-hidden font-sans">
       
             {/* Main Map Area */}
       <div className="flex-1 relative h-full">
@@ -234,11 +234,11 @@ function TacticalScanContent() {
              setActiveTab('current');
              setFocusedItem(null);
            }}
-           className={`px-6 py-3 font-bold font-mono tracking-widest uppercase border-2 flex items-center gap-3 transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] ${
-             activeTab === 'current' ? 'bg-accent-green text-white border-accent-green' : 'bg-black/80 text-white border-white/20 hover:border-white'
+           className={`px-6 py-3 font-bold font-mono tracking-widest uppercase border-2 flex items-center gap-3 transition-colors ${
+             activeTab === 'current' ? 'bg-primary text-white border-primary' : 'bg-surface text-text-primary border-border hover:border-text-primary'
            }`}
          >
-           <div className={`w-3 h-3 rounded-full ${activeTab === 'current' ? 'bg-black animate-pulse' : 'bg-white/50'}`}></div>
+           <div className={`w-3 h-3 rounded-full ${activeTab === 'current' ? 'bg-white animate-pulse' : 'bg-text-muted'}`}></div>
            Live / Projected
          </button>
          <button 
@@ -246,17 +246,17 @@ function TacticalScanContent() {
              setActiveTab('historical');
              if (availableDates.length > 0) handleDateChange(availableDates[availableDates.length - 1]);
            }}
-           className={`px-6 py-3 font-bold font-mono tracking-widest uppercase border-2 flex items-center gap-3 transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] ${
-             activeTab === 'historical' ? 'bg-white text-black border-white' : 'bg-black/80 text-white border-white/20 hover:border-white'
+           className={`px-6 py-3 font-bold font-mono tracking-widest uppercase border-2 flex items-center gap-3 transition-colors ${
+             activeTab === 'historical' ? 'bg-text-primary text-background border-text-primary' : 'bg-surface text-text-primary border-border hover:border-text-primary'
            }`}
          >
-           <div className={`w-3 h-3 rounded-full ${activeTab === 'historical' ? 'bg-black' : 'bg-white/50'}`}></div>
+           <div className={`w-3 h-3 rounded-full ${activeTab === 'historical' ? 'bg-background' : 'bg-text-muted'}`}></div>
            Retrospective
          </button>
       </div>
       </div>
       {/* Right Side Feed Panel */}
-      <div className="w-96 h-full border-l border-white/20 bg-[#0a0a0a] relative z-[1001]">
+      <div className="w-96 h-full border-l border-border bg-surface relative z-[1001]">
         {/* Right Side Feed */}
       <DynamicFeed 
         items={feedItems}
