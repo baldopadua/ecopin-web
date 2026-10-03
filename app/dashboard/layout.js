@@ -10,6 +10,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL + '/api/auth'
 
 export default function DashboardLayout({ children }) {
   const [user, setUser] = useState(null)
+  const [isRedirecting, setIsRedirecting] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
 
@@ -40,12 +41,16 @@ export default function DashboardLayout({ children }) {
         setUser(data.user)
 
         if (userRole === 'admin' && pathname === '/dashboard') {
+          setIsRedirecting(true)
           router.push('/dashboard/admin')
         } else if (userRole === 'field_crew' && pathname === '/dashboard') {
+          setIsRedirecting(true)
           router.push('/dashboard/field-crew')
         } else if (userRole === 'officer' && pathname === '/dashboard') {
-          // console.log("Officer: ", userRole);
+          setIsRedirecting(true)
           router.push('/dashboard/officer')
+        } else {
+          setIsRedirecting(false)
         }
       } catch (error) {
         console.error('Failed to fetch user data:', error)
@@ -57,7 +62,7 @@ export default function DashboardLayout({ children }) {
     checkAuth()
   }, [pathname])
 
-  if (!user) return (
+  if (!user || isRedirecting) return (
     <div className="flex h-screen bg-background relative">
       <div className="absolute inset-0 bg-grid-pattern opacity-40 pointer-events-none z-0"></div>
       <aside className="w-64 bg-surface-elevated border-r-2 border-border h-screen flex flex-col animate-pulse z-10 relative">
