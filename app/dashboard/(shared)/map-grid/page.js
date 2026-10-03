@@ -52,7 +52,7 @@ function MapContent() {
           title="Map Grid"
           subtitle="View validated environmental reports on the map"
           breadcrumbs={[
-            { label: 'Dashboard', href: user?.role === 'field_crew' ? '/dashboard/field-crew' : '/dashboard' },
+            { label: 'Dashboard', href: user?.role === 'officer' ? '/dashboard/officer' : user?.role === 'field_crew' ? '/dashboard/field-crew' : '/dashboard' },
             { label: 'Map Grid' }
           ]}
         />

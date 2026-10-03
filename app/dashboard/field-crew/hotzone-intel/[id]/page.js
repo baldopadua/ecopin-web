@@ -62,7 +62,7 @@ export default function FieldCrewClusterDetailPage() {
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard/field-crew' },
           { label: 'Tasks', href: '/dashboard/field-crew/tasks' },
-          { label: `Cluster #${clusterId}`, href: `/dashboard/field-crew/clusters/${clusterId}` }
+          { label: `Cluster #${clusterId}` }
         ]}
         loading={loading}
       >

@@ -325,7 +325,7 @@ export default function ProfilePage() {
         title="Profile"
         subtitle="Manage your account settings"
         breadcrumbs={[
-          { label: 'Dashboard', href: userCtx?.role === 'field_crew' ? '/dashboard/field-crew' : '/dashboard' },
+          { label: 'Dashboard', href: userCtx?.role === 'officer' ? '/dashboard/officer' : userCtx?.role === 'field_crew' ? '/dashboard/field-crew' : '/dashboard' },
           { label: 'Profile' }
         ]}
       />

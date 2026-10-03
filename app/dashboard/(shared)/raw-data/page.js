@@ -7,8 +7,10 @@ import FilterBar from '@/components/ui/FilterBar'
 import DataTable from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
 import StatusBadge from '@/components/ui/StatusBadge'
+import { useUser } from '@/components/auth/UserContext'
 
 export default function ReportsPage() {
+  const user = useUser()
   const [reports, setReports] = useState([])
   const [filteredReports, setFilteredReports] = useState([])
   const [issueTypes, setIssueTypes] = useState([])
@@ -157,7 +159,12 @@ export default function ReportsPage() {
         title="Raw Data"
         subtitle="View and manage environmental reports"
         breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
+          { 
+            label: 'Dashboard', 
+            href: user?.role === 'officer' ? '/dashboard/officer' : 
+                  user?.role === 'field_crew' ? '/dashboard/field-crew' : 
+                  '/dashboard' 
+          },
           { label: 'Raw Data' }
         ]}
       />

@@ -135,7 +135,7 @@ export default function OfficerReportsPage() {
              e.stopPropagation()
              router.push(`/dashboard/officer/hotzone-intel/${value}`)
            }}
-           className="flex items-center gap-1 text-xs font-mono bg-surface-elevated px-2 py-1 border border-border hover:border-accent-green hover:text-accent-green transition-colors"
+           className="flex items-center gap-1 text-xs font-mono bg-transparent px-2 py-1 border border-border hover:border-accent-green hover:text-accent-green transition-colors"
         >
           <Target className="w-3 h-3" /> {String(value).slice(0,8)}
         </button>

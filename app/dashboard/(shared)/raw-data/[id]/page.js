@@ -432,8 +432,18 @@ export default function ReportDetailPage() {
         title="Report Details"
         subtitle="View detailed report information"
         breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Reports', href: '/dashboard/raw-data' },
+          { 
+            label: 'Dashboard', 
+            href: user?.role === 'officer' ? '/dashboard/officer' : 
+                  user?.role === 'field_crew' ? '/dashboard/field-crew' : 
+                  '/dashboard' 
+          },
+          { 
+            label: 'Reports', 
+            href: user?.role === 'officer' ? '/dashboard/officer/reports' : 
+                  user?.role === 'field_crew' ? '/dashboard/field-crew/raw-data' : 
+                  '/dashboard/raw-data' 
+          },
           { label: 'Details' }
         ]}
       >

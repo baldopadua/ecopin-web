@@ -24,7 +24,7 @@ import {
 } from 'lucide-react'
 
 const citizenNavigation = [
-    { name: 'Command Center', href: '/dashboard/citizen', icon: LayoutDashboard },
+    { name: 'Command Center', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Map Grid', href: '/dashboard/map-grid', icon: Map },
     { name: 'Raw Data', href: '/dashboard/raw-data', icon: Database },
 ]
@@ -66,7 +66,7 @@ export default function Sidebar() {
 
     const renderNavItems = (navigation) => {
         return navigation.map((item) => {
-            const isRootPath = ['/dashboard/field-crew', '/dashboard/admin', '/dashboard/officer', '/dashboard/citizen'].includes(item.href);
+            const isRootPath = ['/dashboard/field-crew', '/dashboard/admin', '/dashboard/officer', '/dashboard'].includes(item.href);
             const isActive = isRootPath ? pathname === item.href : pathname.startsWith(item.href);
             const Icon = item.icon;
             return (
