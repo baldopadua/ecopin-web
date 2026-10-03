@@ -90,9 +90,14 @@ export default function CleanupTaskDetailPage() {
   const [showAssignmentModal, setShowAssignmentModal] = useState(false)
   const [tempCrewIds, setTempCrewIds] = useState([])
   const [assigning, setAssigning] = useState(false)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const router = useRouter()
   const params = useParams()
   const taskId = params.id
+
+  useEffect(() => {
+    if (selectedReportId) setCurrentImageIndex(0)
+  }, [selectedReportId])
 
   useEffect(() => {
     const loadTask = async () => {
@@ -146,16 +151,7 @@ export default function CleanupTaskDetailPage() {
   }, [])
 
   const handleMarkComplete = async () => {
-    // Check if there are both before and after photos
-    const hasBeforePhotos = task.before_photo_url || reports.some(r => r.before_photo_url)
-    const hasAfterPhotos = task.after_photo_url || reports.some(r => r.after_photo_url)
-
-    if (!hasBeforePhotos || !hasAfterPhotos) {
-      setNotification({ message: 'Please upload both before and after photos before marking the task as complete.', type: 'warning' })
-      return
-    }
-
-    // Check if all reports in the cluster are resolved (lifecycle stage)
+    // Check if all reports in the cluster are resolved (lifecycle stage or status)
     if (reports.length > 0) {
       const unresolvedReports = reports.filter(r => r.lifecycle_stage !== 'resolved')
       if (unresolvedReports.length > 0) {
@@ -286,6 +282,14 @@ export default function CleanupTaskDetailPage() {
   }
 
   const handleValidateReport = async (reportId) => {
+    const report = reports.find(r => r.id === reportId)
+    
+    // Check if the report has both before and after photos
+    if (!report.before_photo_url || !report.after_photo_url) {
+      setNotification({ message: 'Please upload both before and after photos for this report before validating it.', type: 'warning' })
+      return
+    }
+
     setValidatingReport(reportId)
     try {
       await updateReportValidation(reportId, 'validated')
@@ -715,7 +719,7 @@ export default function CleanupTaskDetailPage() {
   });
 
   return (
-    <div className="p-8 h-[calc(100vh-64px)] flex flex-col">
+    <div className="p-8 min-h-screen flex flex-col">
       <PageHeader
         title={`Operation / ${task.id.slice(0,8)}`}
         subtitle={task.title}
@@ -726,10 +730,10 @@ export default function CleanupTaskDetailPage() {
         ]}
       />
 
-      <div className="flex-1 grid grid-cols-1 xl:grid-cols-4 gap-8 min-h-0 mt-2">
+      <div className="flex flex-col gap-8 mt-2">
          
-         <div className="xl:col-span-3 flex flex-col gap-6 h-full min-h-0">
-            <div className="h-[400px] border-2 border-[#1a1a1a] dark:border-[#333333] relative flex flex-col bg-surface-elevated shrink-0">
+         <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+            <div className="xl:col-span-3 h-[400px] border-2 border-[#1a1a1a] dark:border-[#333333] relative flex flex-col bg-surface-elevated shrink-0">
                <div className="absolute top-4 left-4 z-[400] bg-black text-white px-3 py-1.5 border-2 border-accent-green pointer-events-none">
                   <h3 className="font-bold uppercase tracking-widest text-xs">Route Map</h3>
                </div>
@@ -740,127 +744,89 @@ export default function CleanupTaskDetailPage() {
                </div>
             </div>
 
-            <div className="flex-1 card p-6 border-2 border-[#1a1a1a] dark:border-[#333333] rounded-none bg-surface-elevated overflow-y-auto">
-               <h2 className="text-xl font-black uppercase tracking-tighter mb-4 border-b-2 border-border pb-2">Target Objectives</h2>
-               
-               {viewMode === 'table' ? (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b-2 border-[#1a1a1a] dark:border-[#333333]">
-                          <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-widest text-text-muted">Target</th>
-                          <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-widest text-text-muted">Type</th>
-                          <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-widest text-text-muted">Status</th>
-                          <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-widest text-text-muted">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {reports.map((report) => (
-                          <tr key={report.id} className="border-b border-border hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                            <td className="py-4 px-4 font-bold">{report.title}</td>
-                            <td className="py-4 px-4 text-sm font-mono text-text-secondary">{report.issue_type}</td>
-                            <td className="py-4 px-4"><StatusBadge status={report.status} type="report" /></td>
-                            <td className="py-4 px-4">
-                              <button
-                                onClick={() => handleViewReportDetail(report.id)}
-                                className="text-xs font-bold uppercase tracking-widest border-2 border-[#1a1a1a] dark:border-[#333333] px-3 py-1 hover:border-accent-green hover:text-accent-green transition-colors"
-                              >
-                                View Data
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-               ) : (
-                  <div>
-                    <button onClick={handleBackToTable} className="text-xs font-bold uppercase tracking-widest text-text-muted hover:text-primary mb-4 flex items-center gap-2">
-                       ← Back to Targets
-                    </button>
-                    {reports.find(r => r.id === selectedReportId) && (
-                       <div className="p-4 border-2 border-border">
-                          <h3 className="font-bold text-lg mb-2">{reports.find(r => r.id === selectedReportId).title}</h3>
-                          <p className="text-sm text-text-secondary mb-4">{reports.find(r => r.id === selectedReportId).description}</p>
-                          <div className="flex gap-4">
-                            <button onClick={() => handleValidateReport(selectedReportId)} className="btn-secondary text-xs">Validate</button>
-                            <button onClick={() => handleMarkReportComplete(selectedReportId)} className="btn-secondary text-xs">Mark Complete</button>
+            <div className="xl:col-span-1 h-[400px]">
+               <div className="h-full card p-6 border-2 border-[#1a1a1a] dark:border-[#333333] rounded-none bg-surface-elevated text-text-primary flex flex-col">
+                  <h2 className="text-lg font-black uppercase tracking-tighter mb-4 border-b-2 border-border pb-2 text-accent-green shrink-0">Mission Status</h2>
+                  
+                  <div className="space-y-4 mb-6 overflow-y-auto flex-1 pr-2">
+                    <div>
+                       <span className="block text-[10px] font-mono uppercase text-text-muted mb-1">Current Status</span>
+                       <StatusBadge status={task.status} type="task" />
+                    </div>
+                    
+                    <div>
+                       <span className="block text-[10px] font-mono uppercase text-text-muted mb-1">Assigned Units</span>
+                       {task.assigned_crew_ids && task.assigned_crew_ids.length > 0 ? (
+                          <div className="flex flex-col gap-2">
+                             {task.assigned_crew_ids.map(id => {
+                                const crew = availableCrew.find(c => c.id === id)
+                                return (
+                                  <div key={id} className="flex items-center gap-3 bg-background p-2 border border-border">
+                                    <div className="w-8 h-8 bg-surface-elevated rounded-full flex items-center justify-center font-bold text-xs border border-border">
+                                      {crew ? crew.full_name[0] : 'U'}
+                                    </div>
+                                    <span className="font-mono text-sm">{crew ? crew.full_name : `Unit ${id.slice(0,4)}`}</span>
+                                  </div>
+                                )
+                             })}
                           </div>
-                       </div>
-                    )}
+                       ) : (
+                          <div className="text-sm font-mono text-error border border-error/30 p-2 bg-error/10">UNASSIGNED</div>
+                       )}
+                    </div>
                   </div>
-               )}
+
+                  <div className="mt-auto space-y-3 pt-4 border-t-2 border-border shrink-0">
+                     <button 
+                        onClick={() => {
+                          setTempCrewIds(task.assigned_crew_ids || [])
+                          setShowAssignmentModal(true)
+                        }}
+                        className="w-full border-2 border-border py-3 text-xs font-bold uppercase tracking-widest text-text-primary hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
+                     >
+                        {task.assigned_crew_ids?.length > 0 ? 'Update Roster' : 'Assign Units'}
+                     </button>
+                     <button 
+                        onClick={handleMarkComplete}
+                        disabled={markingComplete || task.status === 'completed'}
+                        className={`w-full py-3 text-xs font-bold uppercase tracking-widest border-2 ${task.status === 'completed' ? 'bg-success/20 text-success border-success/50' : 'bg-accent-green text-white border-accent-green hover:bg-white hover:text-black hover:border-black transition-colors'}`}
+                     >
+                        {markingComplete ? 'Processing...' : task.status === 'completed' ? 'Mission Accomplished' : 'Mark Complete'}
+                     </button>
+                  </div>
+               </div>
             </div>
          </div>
 
-         <div className="xl:col-span-1 flex flex-col gap-6 h-full overflow-y-auto pr-2">
-            
-            <div className="card p-6 border-2 border-[#1a1a1a] dark:border-[#333333] rounded-none bg-black text-white">
-               <h2 className="text-lg font-black uppercase tracking-tighter mb-4 border-b-2 border-white/20 pb-2 text-accent-green">Mission Status</h2>
-               
-               <div className="space-y-4 mb-6">
-                 <div>
-                    <span className="block text-[10px] font-mono uppercase text-white/50 mb-1">Current Status</span>
-                    <StatusBadge status={task.status} type="task" />
-                 </div>
-                 
-                 <div>
-                    <span className="block text-[10px] font-mono uppercase text-white/50 mb-1">Assigned Units</span>
-                    {task.assigned_crew_ids && task.assigned_crew_ids.length > 0 ? (
-                       <div className="flex flex-col gap-2">
-                          {task.assigned_crew_ids.map(id => {
-                             const crew = availableCrew.find(c => c.id === id)
-                             return (
-                               <div key={id} className="flex items-center gap-3 bg-[#1a1a1a] p-2 border border-white/10">
-                                 <div className="w-8 h-8 bg-[#333] rounded-full flex items-center justify-center font-bold text-xs border border-white/30">
-                                   {crew ? crew.full_name[0] : 'U'}
-                                 </div>
-                                 <span className="font-mono text-sm">{crew ? crew.full_name : `Unit ${id.slice(0,4)}`}</span>
-                               </div>
-                             )
-                          })}
-                       </div>
-                    ) : (
-                       <div className="text-sm font-mono text-error border border-error/30 p-2 bg-error/10">UNASSIGNED</div>
-                    )}
-                 </div>
-               </div>
-
-               <div className="space-y-3 pt-4 border-t-2 border-white/20">
-                  <button 
-                     onClick={() => {
-                       setTempCrewIds(task.assigned_crew_ids || [])
-                       setShowAssignmentModal(true)
-                     }}
-                     className="w-full border-2 border-white/30 py-3 text-xs font-bold uppercase tracking-widest hover:border-white transition-colors"
-                  >
-                     {task.assigned_crew_ids?.length > 0 ? 'Update Roster' : 'Assign Units'}
-                  </button>
-                  <button 
-                     onClick={handleMarkComplete}
-                     disabled={markingComplete || task.status === 'completed'}
-                     className={`w-full py-3 text-xs font-bold uppercase tracking-widest border-2 ${task.status === 'completed' ? 'bg-success/20 text-success border-success/50' : 'bg-accent-green text-black border-accent-green hover:bg-white hover:border-white transition-colors'}`}
-                  >
-                     {markingComplete ? 'Processing...' : task.status === 'completed' ? 'Mission Accomplished' : 'Mark Complete'}
-                  </button>
-               </div>
-            </div>
-
-            <div className="card p-6 border-2 border-[#1a1a1a] dark:border-[#333333] rounded-none bg-surface-elevated">
-               <h2 className="text-lg font-black uppercase tracking-tighter mb-4 border-b-2 border-border pb-2">Audit Trail</h2>
-               
-               <div className="space-y-4 max-h-[300px] overflow-y-auto">
-                 {agencyResponses.length > 0 ? (
-                   agencyResponses.map((res, i) => (
-                     <div key={i} className="border-l-2 border-accent-green pl-3">
-                        <span className="text-[10px] font-mono text-text-muted">{new Date(res.created_at).toLocaleString()}</span>
-                        <p className="text-sm mt-1">{res.action_details}</p>
-                     </div>
-                   ))
-                 ) : (
-                   <p className="text-sm font-mono text-text-muted">No audit logs available.</p>
-                 )}
-               </div>
+         <div className="card p-6 border-2 border-[#1a1a1a] dark:border-[#333333] rounded-none bg-surface-elevated">
+            <div className="overflow-x-auto mt-4">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b-2 border-[#1a1a1a] dark:border-[#333333]">
+                    <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-widest text-text-muted">Target</th>
+                    <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-widest text-text-muted">Type</th>
+                    <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-widest text-text-muted">Status</th>
+                    <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-widest text-text-muted">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reports.map((report) => (
+                    <tr key={report.id} className="border-b border-border hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                      <td className="py-4 px-4 font-bold">{report.title}</td>
+                      <td className="py-4 px-4 text-sm font-mono text-text-secondary">{report.issue_type}</td>
+                      <td className="py-4 px-4"><StatusBadge status={report.status} type="report" /></td>
+                      <td className="py-4 px-4">
+                        <button
+                          onClick={() => handleViewReportDetail(report.id)}
+                          className="text-xs font-bold uppercase tracking-widest border-2 border-[#1a1a1a] dark:border-[#333333] px-3 py-1 hover:border-accent-green hover:text-accent-green transition-colors"
+                        >
+                          View Data
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
          </div>
       </div>
@@ -894,6 +860,125 @@ export default function CleanupTaskDetailPage() {
                 {assigning ? 'DEPLOYING...' : 'CONFIRM DEPLOYMENT'}
               </button>
               <button onClick={() => setShowAssignmentModal(false)} className="btn-secondary flex-1 py-3 text-xs">CANCEL</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedReportId && (
+        <div className="fixed inset-0 bg-black/80 z-[900] p-4 md:p-8 overflow-y-auto flex cursor-pointer" onClick={() => setSelectedReportId(null)}>
+          <div className="m-auto bg-surface-elevated flex flex-col md:flex-row w-full max-w-5xl h-[600px] max-h-[90vh] shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-none overflow-hidden relative border-2 border-[#1a1a1a] dark:border-[#333333] cursor-auto" onClick={(e) => e.stopPropagation()}>
+            {/* Close Button Mobile (absolute) */}
+            <button onClick={() => setSelectedReportId(null)} className="md:hidden absolute top-4 right-4 z-50 bg-black/50 text-white rounded-full p-2 hover:bg-black/70">
+               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+
+            {/* Left Side: Images */}
+            <div className="w-full md:w-[60%] bg-black flex-shrink-0 relative overflow-hidden flex items-center justify-center border-b-2 md:border-b-0 md:border-r-2 border-[#1a1a1a] dark:border-[#333333]">
+              {(() => {
+                 const r = reports.find(rep => rep.id === selectedReportId);
+                 const evs = reportsEvidence[selectedReportId] || [];
+                 const images = [];
+                 if (r.image_url) images.push({ url: r.image_url, label: 'Reported' });
+                 if (r.before_photo_url) images.push({ url: r.before_photo_url, label: 'Before' });
+                 if (r.after_photo_url) images.push({ url: r.after_photo_url, label: 'After' });
+                 evs.forEach(img => images.push({ url: img.file_url || img.url, label: 'Evidence' }));
+
+                 if (images.length === 0) {
+                    return <div className="text-white/50 font-mono text-sm uppercase tracking-widest">No Visual Evidence</div>;
+                 }
+
+                 return (
+                    <div className="w-full h-full relative flex items-center justify-center group">
+                       <img src={images[currentImageIndex].url} alt={images[currentImageIndex].label} className="max-w-full max-h-full object-contain" />
+                       <div className="absolute top-4 left-4 bg-black/60 text-white px-2 py-1 text-[10px] font-bold uppercase tracking-widest rounded">{images[currentImageIndex].label}</div>
+                       {images.length > 1 && (
+                          <div className="absolute top-4 right-4 bg-black/60 text-white px-2 py-1 text-[10px] font-bold tracking-widest rounded">{currentImageIndex + 1} / {images.length}</div>
+                       )}
+
+                       {images.length > 1 && (
+                          <>
+                            <button onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(prev => prev > 0 ? prev - 1 : images.length - 1); }} className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80">
+                               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(prev => prev < images.length - 1 ? prev + 1 : 0); }} className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80">
+                               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
+                            </button>
+                          </>
+                       )}
+                    </div>
+                 );
+              })()}
+            </div>
+
+            {/* Right Side: Details & Audit */}
+            <div className="w-full md:w-[40%] flex flex-col h-full bg-surface-elevated">
+               {/* Header */}
+               <div className="flex justify-between items-center p-4 border-b-2 border-[#1a1a1a] dark:border-[#333333] shrink-0 bg-background/50">
+                  <div className="flex items-center gap-3">
+                     <div>
+                        <h2 className="text-lg font-black uppercase tracking-tight leading-tight">{reports.find(r => r.id === selectedReportId)?.title}</h2>
+                        <span className="text-[10px] text-text-muted font-mono uppercase tracking-widest">{reports.find(r => r.id === selectedReportId)?.issue_type}</span>
+                     </div>
+                  </div>
+                  <button onClick={() => setSelectedReportId(null)} className="hidden md:block text-text-muted hover:text-text-primary transition-colors">
+                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                  </button>
+               </div>
+
+               {/* Scrollable Content (Comments) */}
+               <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                  {/* Caption / Description */}
+                  <div>
+                     <span className="font-bold text-sm mr-2">{reports.find(r => r.id === selectedReportId)?.title}</span>
+                     <span className="text-sm text-text-primary whitespace-pre-line">{reports.find(r => r.id === selectedReportId)?.description}</span>
+                  </div>
+
+                  <hr className="border-border border-dashed" />
+
+                  {/* Actions */}
+                  <div className="flex gap-2">
+                     {(() => {
+                        const r = reports.find(rep => rep.id === selectedReportId);
+                        const isValidated = r?.validation_status === 'validated';
+                        const isCompleted = r?.status === 'resolved' || r?.status === 'completed';
+
+                        return (
+                          <>
+                            <button 
+                              onClick={() => !isValidated && handleValidateReport(selectedReportId)} 
+                              disabled={isValidated || validatingReport === selectedReportId}
+                              className={`btn-secondary text-xs flex-1 py-2 ${isValidated ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                              {validatingReport === selectedReportId ? 'VALIDATING...' : (isValidated ? 'VALIDATED' : 'VALIDATE')}
+                            </button>
+                            <button 
+                              onClick={() => !isCompleted && handleMarkReportComplete(selectedReportId)} 
+                              disabled={isCompleted || completingReportId === selectedReportId}
+                              className={`btn-primary text-xs flex-1 py-2 ${isCompleted ? 'opacity-50 cursor-not-allowed bg-accent-green border-accent-green' : ''}`}>
+                              {completingReportId === selectedReportId ? 'UPDATING...' : (isCompleted ? 'COMPLETED' : 'MARK COMPLETE')}
+                            </button>
+                          </>
+                        );
+                     })()}
+                  </div>
+
+                  <hr className="border-border border-dashed" />
+
+                  {/* Audit Trail */}
+                  <div className="space-y-4">
+                     <h3 className="text-[10px] font-black text-text-muted uppercase tracking-widest">Audit Log</h3>
+                     {agencyResponses.length > 0 ? (
+                        agencyResponses.map((res, i) => (
+                          <div key={i} className="mb-2 border-l-2 border-accent-green pl-3">
+                             <div className="text-[10px] font-mono text-text-muted">{new Date(res.created_at).toLocaleString()}</div>
+                             <div className="text-sm text-text-primary mt-1">{res.action_details}</div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-xs text-text-muted italic">No activity recorded yet.</p>
+                      )}
+                  </div>
+               </div>
             </div>
           </div>
         </div>

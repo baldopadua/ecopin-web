@@ -486,7 +486,7 @@ export default function ReportDetailPage() {
                 </div>
                 <div className="flex items-center justify-center gap-0 px-4 relative">
                   {/* Continuous background line */}
-                  <div className="absolute top-3 left-3 right-3 h-1 bg-border -z-10" />
+                  <div className="absolute top-3 left-3 right-3 h-1 bg-gray-300 dark:bg-gray-700 -z-10" />
                   {/* Colored progress line */}
                   {(() => {
                     const stages = ['submitted', 'verified', 'assigned', 'in_progress', 'resolved', 'closed']
@@ -502,7 +502,7 @@ export default function ReportDetailPage() {
 
                     return (
                       <div
-                        className="absolute top-3 left-3 h-1 bg-[var(--accent-green)] -z-10 transition-all"
+                        className="absolute top-3 left-3 h-1 bg-[var(--primary)] -z-10 transition-all"
                         style={{ width: lineWidthCalc }}
                       />
                     )
@@ -514,8 +514,8 @@ export default function ReportDetailPage() {
                     const isCurrent = report.lifecycle_stage === stage
                     return (
                       <div key={stage} className="flex-1 flex flex-col items-center z-10">
-                        <div className={`w-6 h-6 rounded-full ${isCurrent ? 'bg-[var(--success)] ring-4 ring-[var(--success)]/20' : isCompleted ? 'bg-[var(--accent-green)]' : 'bg-border'} transition-all relative`} />
-                        <span className={`text-xs mt-2 font-medium ${isCurrent ? 'text-[var(--success)]' : isCompleted ? 'text-[var(--accent-green)]' : 'text-text-muted'}`}>
+                        <div className={`w-6 h-6 rounded-full ${isCurrent ? 'bg-[var(--primary)] ring-4 ring-[var(--primary)]/20' : isCompleted ? 'bg-[var(--primary)]' : 'bg-gray-300 dark:bg-gray-700'} transition-all relative`} />
+                        <span className={`text-xs mt-2 font-medium ${isCurrent ? 'text-[var(--primary)]' : isCompleted ? 'text-[var(--primary)]' : 'text-text-muted'}`}>
                           {stage.replace(/_/g, ' ').toUpperCase()}
                         </span>
                       </div>
