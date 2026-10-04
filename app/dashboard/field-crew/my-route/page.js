@@ -136,7 +136,7 @@ export default function MyRoutePage() {
               </div>
             ) : (
               <>
-                <div className="card bg-surface border-2 border-[#1A1A1A] p-4 sticky top-0 z-10 shadow-sm" style={{ boxShadow: '2px 2px 0px 0px #1A1A1A' }}>
+                <div className="card bg-surface border-2 border-[#1A1A1A] p-4 sticky top-0 z-50 shadow-sm" style={{ boxShadow: '2px 2px 0px 0px #1A1A1A' }}>
                   <h3 className="font-bold text-lg text-text-primary mb-1">Route Summary</h3>
                   <div className="flex justify-between text-sm font-mono tracking-widest uppercase text-text-secondary">
                     <span>STOPS: {taskWaypoints.length}</span>

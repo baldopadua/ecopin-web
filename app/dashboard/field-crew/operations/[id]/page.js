@@ -1,6 +1,6 @@
 'use client'
 import React, { useEffect, useState, useRef } from 'react'
-import { ArrowLeft, Eye, Camera, Upload, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Eye, Camera, Upload, ChevronRight, CheckCircle } from 'lucide-react'
 import { useRouter, useParams } from 'next/navigation'
 import { fetchCleanupTaskById, uploadCleanupPhoto, markCleanupTaskComplete, fetchReportsByClusterId, batchCompleteReportsByCluster, updateReportStatus, fetchReportsByIds, updateReportValidation, fetchReportEvidence, updateLifecycleStage, logAgencyResponse, fetchAgencyResponses, fetchAvailableCrew, updateReportDetails } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
@@ -711,6 +711,8 @@ export default function FieldCrewCleanupTaskDetailPage() {
   const mapCenterLat = firstReport ? parseLocation(firstReport.location, firstReport.latitude, firstReport.longitude).latitude : 14.5995
   const mapCenterLng = firstReport ? parseLocation(firstReport.location, firstReport.latitude, firstReport.longitude).longitude : 120.9842
 
+  const isTaskFinished = task.status === 'completed' || task.status === 'resolved' || task.status === 'closed'
+
   return (
     <FieldCrewGuard>
       <div className="p-8">
@@ -724,6 +726,19 @@ export default function FieldCrewCleanupTaskDetailPage() {
             { label: `Task #${task.id}` }
           ]}
         />
+
+        {isTaskFinished && (
+          <div className="bg-[#ccff00] text-black border-2 border-[#1A1A1A] p-4 font-bold flex items-center justify-between shadow-[4px_4px_0px_0px_#1a1a1a] mb-6">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-6 h-6 flex-shrink-0" />
+              <span>Task Finished! All reports in this task have been addressed. You can move on to your next assignment.</span>
+            </div>
+            <button onClick={() => router.push(`/dashboard/field-crew/my-route`)} className="px-4 py-2 bg-[#1A1A1A] text-[#ccff00] font-mono text-sm uppercase tracking-widest hover:bg-black transition-colors whitespace-nowrap hidden sm:block">
+               Back to Route
+            </button>
+          </div>
+        )}
+
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Main Content */}
             <div className="lg:col-span-3">

@@ -4,6 +4,8 @@ import { MapContainer, TileLayer } from 'react-leaflet'
 import CrewTaskLayer from './CrewTaskLayer'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
+import wkx from 'wkx'
+import { Buffer } from 'buffer'
 
 // PASIG BOUNDS
 const PASIG_BOUNDS = [
@@ -12,8 +14,52 @@ const PASIG_BOUNDS = [
 ]
 const PLP_CENTER = [14.561433, 121.075636]
 
+const parseGeometry = (geometry) => {
+  if (!geometry) return null
+  try {
+    if (typeof geometry === 'string' && geometry.startsWith('{')) {
+       const parsed = JSON.parse(geometry)
+       if (parsed.type === 'Point') return [parsed.coordinates[1], parsed.coordinates[0]]
+    } else if (typeof geometry === 'string') {
+      const buffer = Buffer.from(geometry, 'hex')
+      const parsed = wkx.Geometry.parse(buffer)
+      if (parsed && parsed.x && parsed.y) {
+        return [parsed.y, parsed.x] 
+      }
+    } else if (typeof geometry === 'object' && geometry.type === 'Point') {
+      const [lng, lat] = geometry.coordinates
+      return [lat, lng]
+    }
+  } catch (error) {
+    console.error('Error parsing geometry:', error)
+  }
+  return null
+}
+
 export default function OperationsMap({ tasks }) {
   const [mounted, setMounted] = useState(false)
+
+  // Find exact center from tasks
+  let mapCenter = PLP_CENTER;
+  let hasExactPin = false;
+  if (tasks && tasks.length > 0) {
+    const firstTask = tasks[0];
+    if (firstTask.reports && firstTask.reports.length > 0) {
+      const firstReport = firstTask.reports.find(r => r.location || (r.latitude && r.longitude));
+      if (firstReport) {
+         if (firstReport.latitude && firstReport.longitude) {
+            mapCenter = [firstReport.latitude, firstReport.longitude];
+            hasExactPin = true;
+         } else if (firstReport.location) {
+            const coords = parseGeometry(firstReport.location);
+            if (coords) {
+                mapCenter = coords;
+                hasExactPin = true;
+            }
+         }
+      }
+    }
+  }
 
   useEffect(() => {
     setMounted(true)
@@ -31,12 +77,15 @@ export default function OperationsMap({ tasks }) {
 
   return (
     <MapContainer
-      bounds={PASIG_BOUNDS}
-      center={PLP_CENTER}
-      zoom={14}
+      center={mapCenter}
+      zoom={hasExactPin ? 17 : 14}
       style={{ height: '100%', width: '100%', zIndex: 0 }}
       zoomControl={false}
-      scrollWheelZoom={true}
+      scrollWheelZoom={false}
+      dragging={false}
+      doubleClickZoom={false}
+      touchZoom={false}
+      keyboard={false}
     >
       <TileLayer
         url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"

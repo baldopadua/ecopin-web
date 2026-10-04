@@ -6,7 +6,35 @@ import { useUser } from '@/components/auth/UserContext'
 import { FieldCrewGuard } from '@/components/auth/RequireRole'
 import { MapPin, AlertCircle, CheckCircle, Navigation } from 'lucide-react'
 import StatusBadge from '@/components/ui/StatusBadge'
+import { Buffer } from 'buffer'
+import wkx from 'wkx'
 
+// Polyfill Buffer for browser environment
+if (typeof window !== 'undefined' && !window.Buffer) {
+  window.Buffer = Buffer
+}
+
+const parseGeometry = (geometry) => {
+  if (!geometry) return null
+  try {
+    if (typeof geometry === 'string' && geometry.startsWith('{')) {
+       const parsed = JSON.parse(geometry)
+       if (parsed.type === 'Point') return [parsed.coordinates[1], parsed.coordinates[0]]
+    } else if (typeof geometry === 'string') {
+      const buffer = Buffer.from(geometry, 'hex')
+      const parsed = wkx.Geometry.parse(buffer)
+      if (parsed && parsed.x && parsed.y) {
+        return [parsed.y, parsed.x] 
+      }
+    } else if (typeof geometry === 'object' && geometry.type === 'Point') {
+      const [lng, lat] = geometry.coordinates
+      return [lat, lng]
+    }
+  } catch (error) {
+    console.error('Error parsing geometry:', error)
+  }
+  return null
+}
 export default function FieldCrewCommandCenter() {
   const router = useRouter()
   const user = useUser()
@@ -135,12 +163,27 @@ export default function FieldCrewCommandCenter() {
                          {currentObjective.status === 'in_progress' ? 'Continue Task' : 'Start Task'}
                        </button>
                        <button 
-                         onClick={() => router.push(`/dashboard/map-grid`)}
+                         onClick={() => {
+                           let lat = null, lng = null;
+                           if (currentObjective.reports && currentObjective.reports.length > 0) {
+                             const coords = parseGeometry(currentObjective.reports[0].location);
+                             if (coords) {
+                               lat = coords[0];
+                               lng = coords[1];
+                             }
+                           }
+                           
+                           if (lat && lng) {
+                             router.push(`/dashboard/map-grid?lat=${lat}&lng=${lng}`);
+                           } else {
+                             router.push(`/dashboard/map-grid`);
+                           }
+                         }}
                          className="flex-1 bg-background border-2 border-[#1A1A1A] text-text-primary font-bold text-lg py-4 px-6 rounded-sm transition-transform hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none flex justify-center items-center gap-2"
                          style={{ boxShadow: '2px 2px 0px 0px #1A1A1A' }}
                        >
                          <Navigation className="w-6 h-6 text-primary" />
-                         View on Map
+                         View Live on Map
                        </button>
                     </div>
                  </div>

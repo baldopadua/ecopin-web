@@ -1,7 +1,7 @@
 'use client'
 import React, { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { fetchCleanupTaskById, uploadCleanupPhoto, markCleanupTaskComplete, fetchReportsByClusterId, batchCompleteReportsByCluster, updateReportStatus, fetchReportsByIds, updateReportValidation, fetchReportEvidence, updateLifecycleStage, logAgencyResponse, fetchAgencyResponses, fetchAvailableCrew, assignCleanupTask, updateCleanupTaskTitle } from '@/lib/api'
+import { fetchCleanupTaskById, uploadCleanupPhoto, fetchReportsByClusterId, fetchReportsByIds, fetchReportEvidence, updateLifecycleStage, logAgencyResponse, fetchAgencyResponses, fetchAvailableCrew, assignCleanupTask, updateCleanupTaskTitle } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
@@ -68,7 +68,7 @@ export default function CleanupTaskDetailPage() {
   const [reports, setReports] = useState([])
   const [reportsEvidence, setReportsEvidence] = useState({})
   const [loading, setLoading] = useState(true)
-  const [markingComplete, setMarkingComplete] = useState(false)
+  const [markingComplete, setMarkingComplete] = useState(false) // kept for in-flight guard only
   const [completingReportId, setCompletingReportId] = useState(null)
   const [notification, setNotification] = useState(null)
   const [expandedReports, setExpandedReports] = useState({})
@@ -153,30 +153,9 @@ export default function CleanupTaskDetailPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const handleMarkComplete = async () => {
-    // Check if all reports in the cluster are resolved (lifecycle stage or status)
-    if (reports.length > 0) {
-      const unresolvedReports = reports.filter(r => r.lifecycle_stage !== 'resolved')
-      if (unresolvedReports.length > 0) {
-        setNotification({ message: 'Task can only be complete when all reports are resolved', type: 'error' })
-        return
-      }
-    }
-
-    setMarkingComplete(true)
-    try {
-      await markCleanupTaskComplete(taskId)
-      const updatedTask = await fetchCleanupTaskById(taskId)
-      setTask(updatedTask)
-
-      setNotification({ message: 'Cleanup task marked as complete successfully!', type: 'success' })
-    } catch (error) {
-      console.error('Failed to mark task complete:', error)
-      setNotification({ message: 'Failed to mark task complete. Please try again.', type: 'error' })
-    } finally {
-      setMarkingComplete(false)
-    }
-  }
+  // Task completion is handled automatically server-side when the field crew app
+  // uploads the final after photo for the last unresolved report. No manual
+  // officer action is required or exposed here.
 
   const handleAssignTask = async (selectedCrewIds) => {
     setAssigning(true)
@@ -849,13 +828,13 @@ export default function CleanupTaskDetailPage() {
                      >
                         {task.assigned_crew_ids?.length > 0 ? 'Update Roster' : 'Assign Units'}
                      </button>
-                     <button 
-                        onClick={handleMarkComplete}
-                        disabled={markingComplete || task.status === 'completed'}
-                        className={`w-full py-3 text-xs font-bold uppercase tracking-widest border-2 ${task.status === 'completed' ? 'bg-success/20 text-success border-success/50' : 'bg-accent-green text-white border-accent-green hover:bg-white hover:text-black hover:border-black transition-colors'}`}
-                     >
-                        {markingComplete ? 'Processing...' : task.status === 'completed' ? 'Mission Accomplished' : 'Mark Complete'}
-                     </button>
+                     {/* Completion is triggered automatically by the field crew app
+                         uploading the after photo. This panel reflects the live status. */}
+                     {task.status === 'completed' && (
+                        <div className="w-full py-3 text-xs font-bold uppercase tracking-widest border-2 bg-success/20 text-success border-success/50 text-center">
+                           Mission Accomplished
+                        </div>
+                     )}
                   </div>
                </div>
             </div>
@@ -1001,30 +980,17 @@ export default function CleanupTaskDetailPage() {
                   <hr className="border-border border-dashed" />
 
                   {/* Actions */}
-                  <div className="flex gap-2">
-                     {(() => {
-                        const r = reports.find(rep => rep.id === selectedReportId);
-                        const isValidated = r?.validation_status === 'validated';
-                        const isCompleted = r?.status === 'resolved' || r?.status === 'completed';
-
-                        return (
-                          <>
-                            <button 
-                              onClick={() => !isValidated && handleValidateReport(selectedReportId)} 
-                              disabled={isValidated || validatingReport === selectedReportId}
-                              className={`btn-secondary text-xs flex-1 py-2 ${isValidated ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                              {validatingReport === selectedReportId ? 'VALIDATING...' : (isValidated ? 'VALIDATED' : 'VALIDATE')}
-                            </button>
-                            <button 
-                              onClick={() => !isCompleted && handleMarkReportComplete(selectedReportId)} 
-                              disabled={isCompleted || completingReportId === selectedReportId}
-                              className={`btn-primary text-xs flex-1 py-2 ${isCompleted ? 'opacity-50 cursor-not-allowed bg-accent-green border-accent-green' : ''}`}>
-                              {completingReportId === selectedReportId ? 'UPDATING...' : (isCompleted ? 'COMPLETED' : 'MARK COMPLETE')}
-                            </button>
-                          </>
-                        );
-                     })()}
-                  </div>
+                  {/* Read-only status — field crew app drives completion via after photo upload */}
+                  {(() => {
+                     const r = reports.find(rep => rep.id === selectedReportId);
+                     const isCompleted = r?.status === 'resolved' || r?.status === 'completed';
+                     return isCompleted ? (
+                        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-success border border-success/30 bg-success/10 px-3 py-2">
+                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M20 6L9 17l-5-5"/></svg>
+                           Resolved
+                        </div>
+                     ) : null;
+                  })()}
 
                   <hr className="border-border border-dashed" />
 
