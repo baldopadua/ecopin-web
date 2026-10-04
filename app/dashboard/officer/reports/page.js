@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { fetchFilteredReports, fetchIssueTypes } from '@/lib/api'
+import { fetchPublicReports, fetchIssueTypes } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import FilterBar from '@/components/ui/FilterBar'
 import DataTable from '@/components/ui/DataTable'
@@ -17,10 +17,10 @@ export default function OfficerReportsPage() {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
-  // Filter states - default to unresolved
+  // Filter states
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
-  const [statusFilter, setStatusFilter] = useState('unresolved')
+  const [statusFilter, setStatusFilter] = useState('all')
   const [validationFilter, setValidationFilter] = useState('all')
 
   // Pagination states
@@ -29,7 +29,7 @@ export default function OfficerReportsPage() {
 
   useEffect(() => {
     Promise.all([
-      fetchFilteredReports(),
+      fetchPublicReports(),
       fetchIssueTypes()
     ]).then(([reportsData, typesData]) => {
       setReports(reportsData)
@@ -91,7 +91,7 @@ export default function OfficerReportsPage() {
   const handleResetFilters = () => {
     setSearchQuery('')
     setTypeFilter('all')
-    setStatusFilter('unresolved') // Reset defaults back to unresolved
+    setStatusFilter('all')
     setValidationFilter('all')
   }
 

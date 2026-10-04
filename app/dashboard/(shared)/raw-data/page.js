@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { fetchFilteredReports, fetchIssueTypes } from '@/lib/api'
+import { fetchPublicReports, fetchIssueTypes } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import FilterBar from '@/components/ui/FilterBar'
 import DataTable from '@/components/ui/DataTable'
@@ -29,7 +29,7 @@ export default function ReportsPage() {
 
   useEffect(() => {
     Promise.all([
-      fetchFilteredReports(),
+      fetchPublicReports(),
       fetchIssueTypes()
     ]).then(([reportsData, typesData]) => {
       setReports(reportsData)

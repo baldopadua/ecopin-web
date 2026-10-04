@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { fetchFilteredReports, fetchIssueTypes, fetchCleanupTasks } from '@/lib/api'
+import { fetchPublicReports, fetchIssueTypes, fetchCleanupTasks } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import FilterBar from '@/components/ui/FilterBar'
 import DataTable from '@/components/ui/DataTable'
@@ -29,7 +29,7 @@ export default function FieldCrewReportsPage() {
 
   useEffect(() => {
     Promise.all([
-      fetchFilteredReports(),
+      fetchPublicReports(),
       fetchCleanupTasks(true), // Only fetch assigned tasks
       fetchIssueTypes()
     ]).then(([allReports, tasksData, typesData]) => {
