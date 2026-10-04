@@ -1,5 +1,6 @@
 'use client'
 import React, { useState } from 'react';
+import Link from 'next/link';
 
 export default function Navbar({ 
   theme, 
@@ -43,7 +44,7 @@ export default function Navbar({
               <img src={user?.avatar_url || `https://ui-avatars.com/api/?name=${user?.full_name || 'User'}&background=random&color=fff`} alt="Profile" className="w-full h-full object-cover" />
             </a>
           ) : (
-            <a href="/auth" className="text-xs font-black uppercase tracking-widest text-black dark:text-white hover:text-white hover:bg-black dark:hover:bg-white dark:hover:text-black rounded-full px-6 py-2 border-2 border-black dark:border-white transition-all">LOGIN</a>
+            <Link href="/auth" className="text-xs font-black uppercase tracking-widest text-black dark:text-white hover:text-white hover:bg-black dark:hover:bg-white dark:hover:text-black rounded-full px-6 py-2 border-2 border-black dark:border-white transition-all">LOGIN</Link>
           )}
         </div>
 
@@ -79,7 +80,7 @@ export default function Navbar({
             <img src={user?.avatar_url || `https://ui-avatars.com/api/?name=${user?.full_name || 'User'}&background=random&color=fff`} alt="Profile" className="w-full h-full object-cover" />
           </a>
         ) : (
-          <a href="/auth" onClick={() => setIsMenuOpen(false)} className="w-full text-center mt-4 p-4 text-xl font-black uppercase tracking-widest bg-black text-white rounded-full border-4 border-black">LOGIN</a>
+          <Link href="/auth" onClick={() => setIsMenuOpen(false)} className="w-full text-center mt-4 p-4 text-xl font-black uppercase tracking-widest bg-black text-white rounded-full border-4 border-black">LOGIN</Link>
         )}
       </nav>
     </div>
