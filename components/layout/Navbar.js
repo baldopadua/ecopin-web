@@ -62,6 +62,7 @@ export default function Navbar({
         <nav className="hidden md:flex gap-6 items-center">
           <a href="/#about" className="text-sm font-black uppercase tracking-widest text-black dark:text-white hover:text-[#0052CC] transition-colors">About</a>
           <a href="/#features" className="text-sm font-black uppercase tracking-widest text-black dark:text-white hover:text-[#0052CC] transition-colors">Features</a>
+          <Link href="/map" className="text-sm font-black uppercase tracking-widest text-black dark:text-white hover:text-[#0052CC] transition-colors">Live Map</Link>
         </nav>
 
         <div className="hidden md:flex items-center gap-4">
@@ -105,6 +106,7 @@ export default function Navbar({
       <nav className="flex flex-col gap-6 items-center w-full max-w-sm">
         <a href="/#about" onClick={() => setIsMenuOpen(false)} className="w-full text-center text-2xl font-black uppercase tracking-widest text-black dark:text-white py-2 hover:opacity-70">About</a>
         <a href="/#features" onClick={() => setIsMenuOpen(false)} className="w-full text-center text-2xl font-black uppercase tracking-widest text-black dark:text-white py-2 hover:opacity-70">Features</a>
+        <Link href="/map" onClick={() => setIsMenuOpen(false)} className="w-full text-center text-2xl font-black uppercase tracking-widest text-black dark:text-white py-2 hover:opacity-70">Live Map</Link>
         
         <button
           onClick={toggleTheme}
