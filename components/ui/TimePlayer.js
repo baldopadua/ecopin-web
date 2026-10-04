@@ -6,6 +6,13 @@ export default function TimePlayer({ dates, currentDate, onDateChange, isProject
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
 
+  // Stop playing if switched to projective mode
+  useEffect(() => {
+    if (isProjective) {
+      setIsPlaying(false);
+    }
+  }, [isProjective]);
+
   useEffect(() => {
     let interval;
     if (isPlaying && dates.length > 0) {
@@ -30,7 +37,11 @@ export default function TimePlayer({ dates, currentDate, onDateChange, isProject
         </div>
         
         <div className="flex items-center gap-4">
-           <button onClick={() => setIsPlaying(!isPlaying)} className="w-12 h-12 bg-primary text-white flex items-center justify-center hover:bg-text-primary hover:text-background transition-colors">
+           <button 
+             onClick={() => setIsPlaying(!isPlaying)} 
+             disabled={isProjective}
+             className={`w-12 h-12 flex items-center justify-center transition-colors ${isProjective ? 'bg-surface text-text-muted cursor-not-allowed border-2 border-border' : 'bg-primary text-white hover:bg-text-primary hover:text-background'}`}
+           >
              {isPlaying ? (
                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
                   <path fillRule="evenodd" d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z" clipRule="evenodd" />
@@ -52,9 +63,10 @@ export default function TimePlayer({ dates, currentDate, onDateChange, isProject
                  setIsPlaying(false);
                  onDateChange(dates[e.target.value]);
                }}
-               className="w-full h-2 appearance-none cursor-pointer outline-none timeline-slider"
+               disabled={isProjective}
+               className={`w-full h-2 appearance-none outline-none timeline-slider ${isProjective ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                style={{
-                 background: `linear-gradient(to right, var(--primary) ${(dates.indexOf(currentDate) / Math.max(1, dates.length - 1)) * 100}%, var(--border) 0)`
+                 background: isProjective ? 'var(--border)' : `linear-gradient(to right, var(--primary) ${(dates.indexOf(currentDate) / Math.max(1, dates.length - 1)) * 100}%, var(--border) 0)`
                }}
              />
              <style>{`

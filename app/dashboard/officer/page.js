@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { fetchCleanupTasks, fetchFilteredReports, fetchClusters, fetchWorkQueue, getOptimizationRuns } from '@/lib/api'
+import { fetchCleanupTasks, fetchPublicReports, fetchClusters, fetchWorkQueue, getOptimizationRuns } from '@/lib/api'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import StatsCard from '@/components/ui/StatsCard'
 import StatusBadge from '@/components/ui/StatusBadge'
@@ -35,14 +35,15 @@ export default function OfficerHomepage() {
           runsData
         ] = await Promise.all([
           fetchCleanupTasks().catch(() => []),
-          fetchFilteredReports({ status: 'unresolved' }).catch(() => ({ reports: [] })),
+          fetchPublicReports().catch(() => []),
           fetchClusters().catch(() => []),
           fetchWorkQueue().catch(() => []),
           getOptimizationRuns().catch(() => [])
         ])
 
         setTasks(tasksData || [])
-        setReports(reportsData?.reports || [])
+        const activeReports = (Array.isArray(reportsData) ? reportsData : []).filter(r => r.status !== 'resolved' && r.status !== 'closed')
+        setReports(activeReports)
         setClusters(clustersData || [])
         setWorkQueue(queueData || [])
         

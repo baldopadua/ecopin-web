@@ -61,12 +61,12 @@ export default function AnalyticsPage() {
         setSatisfactionData(satisfactionDataResult)
 
         const total = reportsData.length
-        const unresolved = reportsData.filter(r => r.status === 'unresolved').length
+        const unresolved = reportsData.filter(r => r.status !== 'resolved' && r.status !== 'closed').length
         const inProgress = reportsData.filter(r => r.status === 'in_progress').length
         const resolved = reportsData.filter(r => r.status === 'resolved').length
         const closed = reportsData.filter(r => r.status === 'closed').length
         const waitingForFeedback = reportsData.filter(r => r.status === 'waiting_for_feedback').length
-        const overdue = reportsData.filter(r => r.is_overdue).length
+        const overdue = reportsData.filter(r => r.is_overdue && r.status !== 'resolved' && r.status !== 'closed').length
 
         const today = new Date()
         today.setHours(0, 0, 0, 0)
@@ -75,8 +75,9 @@ export default function AnalyticsPage() {
 
         const resolvedToday = reportsData.filter(r => {
           if (r.status !== 'resolved' && r.status !== 'closed') return false
-          if (r.updated_at) {
-            const updatedDate = new Date(r.updated_at)
+          const resolvedDateString = r.lgu_resolved_at || r.citizen_closed_at || r.updated_at
+          if (resolvedDateString) {
+            const updatedDate = new Date(resolvedDateString)
             return updatedDate >= today && updatedDate < tomorrow
           }
           return false
@@ -87,7 +88,7 @@ export default function AnalyticsPage() {
         if (resolvedReports.length > 0) {
           const totalHours = resolvedReports.reduce((sum, r) => {
             const created = new Date(r.created_at)
-            const updated = new Date(r.updated_at)
+            const updated = new Date(r.lgu_resolved_at || r.citizen_closed_at || r.updated_at)
             const hours = (updated - created) / (1000 * 60 * 60)
             return sum + hours
           }, 0)
@@ -149,8 +150,11 @@ export default function AnalyticsPage() {
     })
 
     return Object.entries(weekMap)
-      .map(([week, count]) => ({ week: `Week ${week.split('-W')[1]}`, count }))
-      .sort((a, b) => a.week.localeCompare(b.week))
+      .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
+      .map(([key, count]) => {
+        const [year, week] = key.split('-W')
+        return { week: `W${week} '${year.slice(2)}`, count }
+      })
       .slice(-12) // Last 12 weeks
   }
 
@@ -192,11 +196,14 @@ export default function AnalyticsPage() {
     })
 
     return Object.entries(weekMap)
-      .map(([week, data]) => ({
-        week: `Week ${week.split('-W')[1]}`,
-        rate: data.total > 0 ? Math.round((data.resolved / data.total) * 100) : 0
-      }))
-      .sort((a, b) => a.week.localeCompare(b.week))
+      .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
+      .map(([key, data]) => {
+        const [year, week] = key.split('-W')
+        return {
+          week: `W${week} '${year.slice(2)}`,
+          rate: data.total > 0 ? Math.round((data.resolved / data.total) * 100) : 0
+        }
+      })
       .slice(-12) // Last 12 weeks
   }
 

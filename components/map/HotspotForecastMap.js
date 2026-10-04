@@ -188,8 +188,6 @@ export default function HotspotForecastMap({ predictions, timeHorizon, viewModeO
     if (predictions.heatmap_geojson) {
       setHeatmapData(predictions.heatmap_geojson);
     }
-    // Force re-mount map when data changes to avoid stale layers
-    setMapKey(k => k + 1);
   }, [predictions]);
 
   // ── Style for cluster polygons ──────────────────────────────────────────────
