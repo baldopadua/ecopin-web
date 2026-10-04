@@ -4,6 +4,12 @@ import { useRouter } from 'next/navigation'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL + '/api/auth';
 
+const SolidLeaf = ({ className }) => (
+  <svg viewBox="200 1400 1400 1400" className={className} fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+    <path d="M 10212.1,6632.9 C 10020.1,5259.3 9193.56,3987.5 8016.09,3254.4 6838.63,2521.3 5332.59,2340.7 4015.19,2774.6 4583.93,4666.2 5714.06,6385.1 7225.35,7657.1 6151.28,7115.4 5305.09,6195.2 4668.79,5174.3 4032.49,4153.4 3588.08,3027 3147.23,1907.9 c -418.54,65.3 -615.3,338.8 -615.3,338.8 19.38,173.4 347.11,861.8 679.39,1513.5 -730.82,1034.7 -212.9,2598.1 730.44,3460.5 727.11,664.8 1953.15,1033.1 2856.17,1427.1 903.03,393.9 1822.34,938.6 2228.22,1836.3 C 9957.66,9456.3 10404,8006.6 10212.1,6632.9" transform="matrix(0.13333333,0,0,-0.13333333,0,2933.3333)" />
+  </svg>
+);
+
 export default function AuthPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -149,7 +155,7 @@ export default function AuthPage() {
 
   return (
     <main
-      className="min-h-screen bg-[#F4F0EA] dark:bg-[#121212] text-black dark:text-white relative flex flex-col items-center justify-center p-4 md:p-6 transition-colors duration-300 overflow-hidden"
+      className="min-h-screen bg-[#F4F0EA] dark:bg-[#121212] text-black dark:text-white relative flex flex-col items-center justify-center p-0 md:p-6 transition-colors duration-300 overflow-hidden"
     >
       {isExiting && (
         <div 
@@ -181,34 +187,29 @@ export default function AuthPage() {
       </button>
 
       {/* Auth Container */}
-      <div className="w-full max-w-5xl mx-auto flex flex-col md:flex-row border-4 border-black dark:border-[#333] bg-white dark:bg-[#1C1C1C] rounded-[32px] md:rounded-[40px] drop-shadow-[8px_8px_0_black] relative z-10 overflow-hidden mt-8 md:mt-0">
+      <div className="w-full min-h-screen md:min-h-0 max-w-5xl mx-auto flex flex-col md:flex-row border-0 md:border-4 border-black dark:border-[#333] bg-white dark:bg-[#1C1C1C] rounded-none md:rounded-[40px] drop-shadow-none md:drop-shadow-[8px_8px_0_black] relative z-10 overflow-hidden mt-0">
         
         {/* Left Panel - Branding */}
-        <div className="flex flex-col justify-between p-8 md:p-12 bg-[#0052CC] text-white border-b-4 md:border-b-0 md:border-r-4 border-black dark:border-[#333] relative w-full md:w-5/12 overflow-hidden">
+        <div className="flex flex-col justify-between p-8 md:p-12 bg-[#0052CC] text-white border-b-0 md:border-r-4 border-black dark:border-[#333] relative w-full md:w-5/12 overflow-hidden">
           
-          <div className="flex flex-col items-start gap-4 z-10 relative">
-            <button onClick={handleBack} className="inline-block bg-white border-4 border-black rounded-full px-6 py-2 drop-shadow-[4px_4px_0_black] hover:translate-y-1 hover:drop-shadow-[0px_0px_0_black] transition-all mb-4">
-               <img src="/Full Logo Light.png" alt="EcoPin" className="h-6 md:h-8 w-auto" />
-            </button><h2 className="text-4xl sm:text-5xl md:text-6xl font-black uppercase tracking-tighter leading-[0.9]">
-              PASIG SWMO <br /> PORTAL
-            </h2>
-            <p className="text-lg font-bold text-white/90 leading-snug">
-              Monitor, manage, and resolve environmental concerns across the city.
-            </p>
-          </div>
+          <div className="flex flex-col items-center justify-center flex-1 z-10 relative py-12 md:py-0">
+              <button onClick={handleBack} className="inline-block hover:scale-105 transition-transform hover:opacity-80">
+                 <img src="/Auth Logo.png" alt="EcoPin" className="h-24 md:h-32 w-auto object-contain" />
+              </button>
+            </div>
 
           <div className="mt-12 md:mt-0 relative z-10 flex items-center gap-2 text-sm font-black uppercase tracking-widest text-white/80">
             <div className="w-2 h-2 rounded-full bg-[#0052CC] animate-pulse"></div>
             AUTHORIZED ACCESS ONLY
           </div>
 
-          {/* Decorative Stars */}
-          <div className="absolute top-10 right-10 text-[100px] opacity-20 text-white -rotate-12 pointer-events-none">✦</div>
-          <div className="absolute bottom-10 -left-10 text-[120px] opacity-20 text-white rotate-45 pointer-events-none">✦</div>
+          {/* Decorative Leaves */}
+          <SolidLeaf className="absolute -top-4 -right-4 w-[120px] h-[120px] opacity-10 text-white -rotate-12 pointer-events-none" />
+          <SolidLeaf className="absolute -bottom-4 -left-4 w-[160px] h-[160px] opacity-10 text-white rotate-45 pointer-events-none" />
         </div>
 
         {/* Right Panel - Form */}
-        <div className="p-8 md:p-12 flex flex-col justify-center bg-white dark:bg-[#1C1C1C] w-full md:w-7/12">
+        <div className="flex-1 md:flex-none p-8 md:p-12 flex flex-col justify-center bg-white dark:bg-[#1C1C1C] w-full md:w-7/12">
           
           <div className="flex items-center justify-between mb-8">
             <h1 className="text-4xl md:text-5xl font-black text-black dark:text-white uppercase tracking-tighter">
@@ -300,4 +301,12 @@ export default function AuthPage() {
     </main>
   )
 }
+
+
+
+
+
+
+
+
 
