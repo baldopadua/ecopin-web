@@ -110,20 +110,20 @@ export default function CrewTaskLayer({ tasks = [] }) {
                 position={coords}
                 icon={createTaskReportIcon(label, color, isCompleted)}
               >
-                <Popup className="cyber-popup">
-                  <div className="p-3 bg-surface border-2 border-[#1A1A1A] rounded-none" style={{ boxShadow: '4px 4px 0px 0px #1A1A1A' }}>
-                    <div className="text-xs font-mono font-bold tracking-widest text-text-muted mb-1">TASK #{task.id}</div>
-                    <strong className="block text-sm uppercase font-mono mb-2 text-text-primary border-b-2 border-border pb-1">
+                <Popup>
+                  <div className="p-1 min-w-[200px]">
+                    <div className="text-xs font-semibold text-blue-600 mb-1 tracking-wider uppercase">TASK #{task.id}</div>
+                    <strong className="block text-sm text-gray-800 mb-2 truncate">
                       {report.issue_type?.replace(/_/g, ' ')}
                     </strong>
-                    <div className="text-xs space-y-1 font-mono">
-                      <div><span className="text-text-muted">TASK STATUS:</span> <span className="font-bold">{task.status.toUpperCase()}</span></div>
-                      <div><span className="text-text-muted">REPORT ID:</span> <span className="font-bold">#{report.id}</span></div>
+                    <div className="text-sm space-y-1 text-gray-600">
+                      <div><span className="text-gray-500">Task Status:</span> <span className="font-medium text-gray-800">{task.status.toUpperCase()}</span></div>
+                      <div><span className="text-gray-500">Report ID:</span> <span className="font-medium text-gray-800">#{report.id}</span></div>
                     </div>
-                    <div className="mt-3">
+                    <div className="mt-4">
                       <a 
                         href={`/dashboard/field-crew/operations/${task.id}`}
-                        className="block text-center w-full bg-[#1A1A1A] text-[#ccff00] font-bold text-xs py-2 uppercase hover:bg-[#333] transition-colors"
+                        className="block text-center w-full bg-blue-600 text-white font-medium text-sm py-2 rounded shadow-sm hover:bg-blue-700 transition-colors"
                       >
                         View Operation
                       </a>

@@ -598,49 +598,49 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                 }}
               >
                 <Popup>
-                  <div className="p-2">
-                    <strong className="block text-sm">Cluster #{cluster.id}</strong>
-                    <p className="text-xs text-text-muted mt-1">
-                      {cluster.report_count} reports
-                    </p>
-                    <p className="text-xs text-text-muted">
-                      Severity: <span className={`font-semibold ${cluster.severity === 'high' ? 'text-error' :
-                        cluster.severity === 'medium' ? 'text-warning' :
-                          'text-info'
-                        }`}>{cluster.severity}</span>
-                    </p>
-                    <p className="text-xs text-text-muted">
-                      Type: {cluster.issue_type}
-                    </p>
+                  <div className="p-1 min-w-[200px]">
+                    <div className="text-xs font-semibold text-blue-600 mb-1 tracking-wider uppercase">CLUSTER #{cluster.id}</div>
+                    <strong className="block text-sm text-gray-800 mb-2">
+                      {cluster.issue_type}
+                    </strong>
+                    <div className="text-sm space-y-1 text-gray-600">
+                      <div><span className="text-gray-500">Reports:</span> <span className="font-medium text-gray-800">{cluster.report_count}</span></div>
+                      <div>
+                        <span className="text-gray-500">Severity:</span>{' '}
+                        <span className={`font-medium ${cluster.severity === 'high' ? 'text-red-600' : cluster.severity === 'medium' ? 'text-orange-500' : 'text-blue-500'}`}>{cluster.severity?.toUpperCase()}</span>
+                      </div>
+                    </div>
                     {center && (
-                      <p className="text-xs text-text-muted">
-                        Location: {center[0].toFixed(4)}, {center[1].toFixed(4)}
-                      </p>
+                      <div className="text-xs text-gray-400 mt-2 truncate">
+                        Loc: {center[0].toFixed(4)}, {center[1].toFixed(4)}
+                      </div>
                     )}
-                    {selectionMode && onClusterSelect ? (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          const memberReports = filteredClusterReports[cluster.id]
-                          if (memberReports && memberReports.length > 0) {
-                            onClusterSelect(memberReports.map(r => r.id))
-                          }
-                        }}
-                        className="mt-2 w-full text-xs bg-accent-green text-white py-1 rounded  hover:text-white-dark"
-                      >
-                        Add All Reports to Task
-                      </button>
-                    ) : (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          router.push(`/dashboard/officer/hotzone-intel/${cluster.id}`)
-                        }}
-                        className="mt-2 w-full text-xs bg-accent-green text-white py-1 rounded  hover:text-white-dark"
-                      >
-                        View All Reports
-                      </button>
-                    )}
+                    <div className="mt-3">
+                      {selectionMode && onClusterSelect ? (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            const memberReports = filteredClusterReports[cluster.id]
+                            if (memberReports && memberReports.length > 0) {
+                              onClusterSelect(memberReports.map(r => r.id))
+                            }
+                          }}
+                          className="w-full bg-blue-600 text-white font-medium text-sm py-2 rounded shadow-sm hover:bg-blue-700 transition-colors"
+                        >
+                          Add All Reports
+                        </button>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            router.push(`/dashboard/officer/hotzone-intel/${cluster.id}`)
+                          }}
+                          className="w-full bg-blue-600 text-white font-medium text-sm py-2 rounded shadow-sm hover:bg-blue-700 transition-colors"
+                        >
+                          View All Reports
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </Popup>
               </Marker>
@@ -777,42 +777,48 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                   }}
                 >
                   <Popup>
-                    <div className="p-2">
-                      <strong className="block text-sm">{report.title}</strong>
-                      <p className="text-xs text-text-muted mt-1">{report.description?.substring(0, 100)}...</p>
-                      <div className="mt-2 flex gap-2 flex-wrap">
-                        <span className={`text-xs px-2 py-1 rounded font-semibold border ${
-                          report.status === 'resolved' ? 'bg-success/20 text-success border-success/30' :
-                          report.status === 'in_progress' ? 'bg-warning/20 text-warning border-warning/30' :
-                          report.status === 'waiting_for_feedback' ? 'bg-purple/20 text-purple border-purple/30' :
-                          report.status === 'closed' ? 'bg-text-muted/20 text-text-muted border-text-muted/30' :
-                          report.status === 'pending_owner_consent' ? 'bg-info/20 text-info border-info/30' :
-                            'bg-error/20 text-error border-error/30'
+                    <div className="p-1 min-w-[220px]">
+                      <div className="text-xs font-semibold text-blue-600 mb-1 tracking-wider uppercase">REPORT #{report.id?.substring(0, 8)}</div>
+                      <strong className="block text-sm text-gray-800 mb-2 truncate">
+                        {report.title}
+                      </strong>
+                      <p className="text-sm text-gray-600 mt-1">{report.description?.substring(0, 80)}...</p>
+                      
+                      <div className="mt-3 flex gap-2 flex-wrap">
+                        <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${
+                          report.status === 'resolved' ? 'bg-green-100 text-green-700' :
+                          report.status === 'in_progress' ? 'bg-orange-100 text-orange-700' :
+                          report.status === 'waiting_for_feedback' ? 'bg-purple-100 text-purple-700' :
+                          report.status === 'closed' ? 'bg-gray-100 text-gray-700' :
+                          report.status === 'pending_owner_consent' ? 'bg-blue-100 text-blue-700' :
+                            'bg-red-100 text-red-700'
                           }`}>
                           {report.status?.replace(/_/g, ' ').toUpperCase()}
                         </span>
-                        <span className={`text-xs px-2 py-1 rounded font-semibold border ${
+                        <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${
                           report.validation_status === 'approved'
-                            ? 'bg-success/20 text-success border-success/30'
+                            ? 'bg-green-100 text-green-700'
                             : report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review'
-                            ? 'bg-purple/20 text-purple border-purple/30'
+                            ? 'bg-purple-100 text-purple-700'
                             : report.validation_status === 'rejected'
-                            ? 'bg-error/20 text-error border-error/30'
-                            : 'bg-warning/20 text-warning border-warning/30'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-yellow-100 text-yellow-700'
                           }`}>
                           {report.validation_status?.replace(/_/g, ' ').toUpperCase()}
                         </span>
-                        <span className="text-xs px-2 py-1 rounded font-semibold border bg-info/20 text-info border-info/30">
+                        <span className="text-[10px] px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-700">
                           {report.issue_type?.replace(/_/g, ' ').toUpperCase()}
                         </span>
                       </div>
                       {!selectionMode && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handlePopupRouting(report.id); }}
-                          className="mt-2 w-full text-xs bg-accent-green text-white py-1 rounded  hover:text-white-dark"
-                        >
-                          View Full Details
-                        </button>
+                        <div className="mt-4">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handlePopupRouting(report.id); }}
+                            className="w-full bg-blue-600 text-white font-medium text-sm py-2 rounded shadow-sm hover:bg-blue-700 transition-colors"
+                          >
+                            View Full Details
+                          </button>
+                        </div>
                       )}
                     </div>
                   </Popup>

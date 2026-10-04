@@ -110,18 +110,15 @@ export default function MicroRouteLayer({ tasks = [], routeWaypoints = [] }) {
               icon={createSubWaypointIcon(label, report.validation_status)}
             >
               <Popup>
-                <div className="p-2">
-                  <strong className="block text-sm">{label} - {report.issue_type?.replace(/_/g, ' ').toUpperCase()}</strong>
-                  <p className="text-xs text-text-muted mt-1">{report.description?.substring(0, 100)}...</p>
-                  <div className="mt-2 flex gap-2">
-                    <span className="text-[10px] font-bold font-mono tracking-wider px-2 py-1 border bg-surface-elevated uppercase">
-                      Status: {report.status}
-                    </span>
-                    <span className={`text-[10px] font-bold font-mono tracking-wider px-2 py-1 border uppercase ${
-                      report.validation_status === 'pending' ? 'bg-info/10 text-info border-info/30' : 'bg-success/10 text-success border-success/30'
-                    }`}>
-                      {report.validation_status === 'pending' ? 'Needs Validation' : 'Validated'}
-                    </span>
+                <div className="p-1 min-w-[200px]">
+                  <div className="text-xs font-semibold text-blue-600 mb-1 tracking-wider uppercase">SUB-PIN {label}</div>
+                  <strong className="block text-sm text-gray-800 mb-2 truncate">
+                    {report.issue_type?.replace(/_/g, ' ')}
+                  </strong>
+                  <p className="text-sm text-gray-600 mt-1 mb-3">{report.description?.substring(0, 80)}...</p>
+                  <div className="text-sm space-y-1 text-gray-600">
+                    <div><span className="text-gray-500">Status:</span> <span className="font-medium text-gray-800">{report.status?.replace(/_/g, ' ').toUpperCase()}</span></div>
+                    <div><span className="text-gray-500">Validation:</span> <span className="font-medium text-gray-800">{report.validation_status === 'pending' ? 'Needs Validation' : 'Validated'}</span></div>
                   </div>
                 </div>
               </Popup>

@@ -118,14 +118,15 @@ export default function RouteLayer({ routes = [] }) {
                 icon={createDepotIcon()}
               >
                 <Popup>
-                  <div className="p-2">
-                    <strong className="block text-sm">🏢 SWMO Depot</strong>
-                    <p className="text-xs text-gray-500 mt-1">
+                  <div className="p-1 min-w-[180px]">
+                    <div className="text-xs font-semibold text-blue-600 mb-1 tracking-wider uppercase">SWMO DEPOT</div>
+                    <strong className="block text-sm text-gray-800 mb-2">
                       {wp.waypoint_type === 'depot_start' ? 'Route Start' : 'Route End'}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-1 font-mono">
-                      {parseFloat(wp.latitude).toFixed(6)}, {parseFloat(wp.longitude).toFixed(6)}
-                    </p>
+                    </strong>
+                    <div className="text-sm space-y-1 text-gray-600">
+                      <div><span className="text-gray-500">Lat:</span> <span className="font-medium text-gray-800">{parseFloat(wp.latitude).toFixed(6)}</span></div>
+                      <div><span className="text-gray-500">Lng:</span> <span className="font-medium text-gray-800">{parseFloat(wp.longitude).toFixed(6)}</span></div>
+                    </div>
                   </div>
                 </Popup>
               </Marker>
@@ -143,26 +144,25 @@ export default function RouteLayer({ routes = [] }) {
                 icon={createWaypointIcon(seq, color)}
               >
                 <Popup>
-                  <div className="p-2">
-                    <strong className="block text-sm" style={{ color }}>
-                      {route.crewName || `Crew ${routeIdx + 1}`} — Stop #{seq}
+                  <div className="p-1 min-w-[200px]">
+                    <div className="text-xs font-semibold text-blue-600 mb-1 tracking-wider uppercase">STOP #{seq}</div>
+                    <strong className="block text-sm text-gray-800 mb-2">
+                      {route.crewName || `Crew ${routeIdx + 1}`}
                     </strong>
                     {wp.cleanup_task_id && (
-                      <p className="text-xs text-gray-500 mt-1 font-mono">
-                        Task: {wp.cleanup_task_id.slice(0, 8)}...
-                      </p>
+                      <div className="text-sm mb-2 text-gray-600">
+                        <span className="text-gray-500">Task ID:</span> <span className="font-medium text-gray-800">#{wp.cleanup_task_id.slice(0, 8)}</span>
+                      </div>
                     )}
-                    <div className="text-xs text-gray-400 mt-1 space-y-0.5">
+                    <div className="text-sm space-y-1 text-gray-600">
                       {wp.distance_from_previous_meters && (
-                        <p>📏 {formatDistance(wp.distance_from_previous_meters)} from previous</p>
+                        <div><span className="text-gray-500">Dist:</span> <span className="font-medium text-gray-800">{formatDistance(wp.distance_from_previous_meters)}</span></div>
                       )}
                       {wp.estimated_time_from_previous_min && (
-                        <p>⏱️ ~{formatDuration(wp.estimated_time_from_previous_min)} travel</p>
+                        <div><span className="text-gray-500">Time:</span> <span className="font-medium text-gray-800">~{formatDuration(wp.estimated_time_from_previous_min)}</span></div>
                       )}
+                      <div><span className="text-gray-500">Loc:</span> <span className="font-medium text-gray-800">{parseFloat(wp.latitude).toFixed(6)}, {parseFloat(wp.longitude).toFixed(6)}</span></div>
                     </div>
-                    <p className="text-xs text-gray-400 mt-1 font-mono">
-                      {parseFloat(wp.latitude).toFixed(6)}, {parseFloat(wp.longitude).toFixed(6)}
-                    </p>
                   </div>
                 </Popup>
               </Marker>
@@ -177,13 +177,16 @@ export default function RouteLayer({ routes = [] }) {
               pathOptions={{ opacity: 0 }}
             >
               <Popup>
-                <div className="p-2">
-                  <strong className="block text-sm" style={{ color }}>
+                <div className="p-1 min-w-[200px]">
+                  <div className="text-xs font-semibold text-blue-600 mb-1 tracking-wider uppercase">ROUTE SUMMARY</div>
+                  <strong className="block text-sm text-gray-800 mb-2">
                     {route.crewName || `Crew ${routeIdx + 1}`}
                   </strong>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {taskWaypoints.length} tasks | {formatDistance(route.totalDistance || route.total_distance_meters)} | {formatDuration(route.totalDuration || route.total_duration_min)}
-                  </p>
+                  <div className="text-sm space-y-1 text-gray-600">
+                    <div><span className="text-gray-500">Tasks:</span> <span className="font-medium text-gray-800">{taskWaypoints.length}</span></div>
+                    <div><span className="text-gray-500">Distance:</span> <span className="font-medium text-gray-800">{formatDistance(route.totalDistance || route.total_distance_meters)}</span></div>
+                    <div><span className="text-gray-500">Duration:</span> <span className="font-medium text-gray-800">{formatDuration(route.totalDuration || route.total_duration_min)}</span></div>
+                  </div>
                 </div>
               </Popup>
             </CircleMarker>
