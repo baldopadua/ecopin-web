@@ -674,17 +674,17 @@ export default function CleanupTaskDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-3">
             <div className="space-y-0">
-              <div className="overflow-x-auto">
-                <table className="w-full">
+              <div className="ecopin-table-container">
+                <table className="ecopin-table">
                   <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Title</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Issue Type</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Description</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Status</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Lifecycle</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Validation</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Actions</th>
+                    <tr>
+                      <th>Title</th>
+                      <th>Issue Type</th>
+                      <th>Description</th>
+                      <th>Status</th>
+                      <th>Lifecycle</th>
+                      <th>Validation</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -798,27 +798,28 @@ export default function CleanupTaskDetailPage() {
             </div>
          </div>
 
-         <div className="card p-6 border-2 border-[#1a1a1a] dark:border-[#333333] rounded-none bg-surface-elevated">
-            <div className="overflow-x-auto mt-4">
-              <table className="w-full">
+         <div className="flex flex-col gap-4">
+            <h2 className="text-xl font-bold text-text-primary uppercase tracking-tighter">Mission Targets</h2>
+            <div className="ecopin-table-container">
+              <table className="ecopin-table">
                 <thead>
-                  <tr className="border-b-2 border-[#1a1a1a] dark:border-[#333333]">
-                    <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-widest text-text-muted">Target</th>
-                    <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-widest text-text-muted">Type</th>
-                    <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-widest text-text-muted">Status</th>
-                    <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-widest text-text-muted">Action</th>
+                  <tr>
+                    <th>Target</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {reports.map((report) => (
-                    <tr key={report.id} className="border-b border-border hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                      <td className="py-4 px-4 font-bold">{report.title}</td>
-                      <td className="py-4 px-4 text-sm font-mono text-text-secondary">{report.issue_type}</td>
-                      <td className="py-4 px-4"><StatusBadge status={report.status} type="report" /></td>
-                      <td className="py-4 px-4">
+                    <tr key={report.id}>
+                      <td className="font-bold">{report.title}</td>
+                      <td>{report.issue_type}</td>
+                      <td><StatusBadge status={report.status} type="report" /></td>
+                      <td>
                         <button
                           onClick={() => handleViewReportDetail(report.id)}
-                          className="text-xs font-bold uppercase tracking-widest border-2 border-[#1a1a1a] dark:border-[#333333] px-3 py-1 hover:border-accent-green hover:text-accent-green transition-colors"
+                          className="text-xs font-bold uppercase tracking-widest border-2 border-border px-3 py-1 hover:border-accent-green hover:text-accent-green transition-colors"
                         >
                           View Data
                         </button>

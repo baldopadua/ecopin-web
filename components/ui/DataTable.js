@@ -44,40 +44,36 @@ export default function DataTable({
 
   if (loading) {
     return (
-      <div className={`bg-surface-elevated border-2 border-border rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] ${className}`}>
-        <div className="space-y-0">
-          <div className="overflow-x-auto">
-            <table className="w-full font-mono">
-              <colgroup>
+      <div className={`ecopin-table-container ${className}`}>
+        <table className="ecopin-table">
+          <colgroup>
+            {columns.map((col, index) => (
+              <col key={index} style={{ width: col.width || 'auto' }} />
+            ))}
+          </colgroup>
+          {showHeader && (
+            <thead>
+              <tr>
                 {columns.map((col, index) => (
-                  <col key={index} style={{ width: col.width || 'auto' }} />
+                  <th key={index}>
+                    <SkeletonLine className="h-4 w-16" />
+                  </th>
                 ))}
-              </colgroup>
-              {showHeader && (
-                <thead>
-                  <tr className="border-b-2 border-border">
-                    {columns.map((col, index) => (
-                      <th key={index} className="text-left py-3 px-4 font-mono text-xs uppercase tracking-widest text-text-muted">
-                        <SkeletonLine className="h-4 w-16" />
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-              )}
-              <tbody>
-                {Array.from({ length: 5 }).map((_, rowIndex) => (
-                  <tr key={rowIndex} className="border-b-2 border-border">
-                    {columns.map((_, colIndex) => (
-                      <td key={colIndex} className="py-3 px-4">
-                        <SkeletonLine className="h-4 w-24" />
-                      </td>
-                    ))}
-                  </tr>
+              </tr>
+            </thead>
+          )}
+          <tbody>
+            {Array.from({ length: 5 }).map((_, rowIndex) => (
+              <tr key={rowIndex}>
+                {columns.map((_, colIndex) => (
+                  <td key={colIndex}>
+                    <SkeletonLine className="h-4 w-24" />
+                  </td>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     )
   }
@@ -93,53 +89,49 @@ export default function DataTable({
   }
 
   return (
-    <div className={`bg-surface-elevated border-2 border-border rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] ${className}`}>
-      <div className="overflow-x-auto">
-        <table className="w-full font-mono">
-          <colgroup>
-            {columns.map((col, index) => (
-              <col key={index} style={{ width: col.width || 'auto' }} />
-            ))}
-          </colgroup>
-          {showHeader && (
-            <thead>
-              <tr className="border-b-2 border-border">
-                {columns.map((col, index) => (
-                  <th
-                    key={index}
-                    className={`text-left py-3 px-4 text-xs font-mono uppercase tracking-widest text-text-muted ${
-                      sortable && onSort ? 'cursor-pointer hover:text-accent-green' : ''
-                    }`}
-                    onClick={() => sortable && handleSort(col.key)}
-                  >
-                    <div className="flex items-center">
-                      {col.label}
-                      {renderSortIcon(col.key)}
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-          )}
-          <tbody>
-            {data.map((row, rowIndex) => (
-              <tr
-                key={rowIndex}
-                className={`border-b-2 border-border transition-all ${
-                  onRowClick ? 'cursor-pointer table-row-interactive' : ''
-                } ${typeof rowClassName === 'function' ? rowClassName(row, rowIndex) : rowClassName}`}
-                onClick={() => onRowClick && onRowClick(row, rowIndex)}
-              >
-                {columns.map((col, colIndex) => (
-                  <td key={colIndex} className="py-3 px-4">
-                    {col.render ? col.render(row[col.key], row, rowIndex) : row[col.key]}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+    <div className={`ecopin-table-container ${className}`}>
+      <table className="ecopin-table">
+        <colgroup>
+          {columns.map((col, index) => (
+            <col key={index} style={{ width: col.width || 'auto' }} />
+          ))}
+        </colgroup>
+        {showHeader && (
+          <thead>
+            <tr>
+              {columns.map((col, index) => (
+                <th
+                  key={index}
+                  className={sortable && onSort ? 'cursor-pointer hover:text-accent-green' : ''}
+                  onClick={() => sortable && handleSort(col.key)}
+                >
+                  <div className="flex items-center">
+                    {col.label}
+                    {renderSortIcon(col.key)}
+                  </div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+        )}
+        <tbody>
+          {data.map((row, rowIndex) => (
+            <tr
+              key={rowIndex}
+              className={`${
+                onRowClick ? 'cursor-pointer table-row-interactive' : ''
+              } ${typeof rowClassName === 'function' ? rowClassName(row, rowIndex) : rowClassName}`}
+              onClick={() => onRowClick && onRowClick(row, rowIndex)}
+            >
+              {columns.map((col, colIndex) => (
+                <td key={colIndex}>
+                  {col.render ? col.render(row[col.key], row, rowIndex) : row[col.key]}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }

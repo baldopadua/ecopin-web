@@ -260,30 +260,6 @@ html.dark .btn-primary:hover {
   color: var(--primary);
 }
 
-/* Brutalist Table Row Hover */
-.table-row-interactive {
-  transition: all 0.2s ease;
-}
-
-.table-row-interactive:hover {
-  background-color: #000000 !important;
-  color: #ffffff !important;
-}
-
-.table-row-interactive:hover * {
-  color: #ffffff !important;
-  border-color: #ffffff !important;
-}
-
-html.dark .table-row-interactive:hover {
-  background-color: #0052CC !important;
-  color: #FFFFFF !important;
-}
-
-html.dark .table-row-interactive:hover * {
-  color: #FFFFFF !important;
-  border-color: #FFFFFF !important;
-}
 
 /* Modern input styles */
 .input {
@@ -413,18 +389,45 @@ html.dark .card {
 .card.no-hover:hover {
 }
 
-/* Table row hover effect */
-table {
-  table-layout: fixed;
-  width: 100%;
+/* Unified Table Styles */
+.ecopin-table-container {
+  @apply bg-surface-elevated border-2 border-[#1a1a1a] dark:border-[#333333] shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] overflow-x-auto w-full rounded-none;
 }
 
-table tbody tr {
-  transition: background-color 0.15s ease;
+.ecopin-table {
+  @apply w-full text-left font-mono;
 }
 
-table tbody tr:hover {
-  background-color: rgba(0, 82, 204, 0.08) !important;
+.ecopin-table thead tr {
+  @apply border-b-2 border-[#1a1a1a] dark:border-[#333333];
+}
+
+.ecopin-table th {
+  @apply text-left py-3 px-4 text-xs font-bold uppercase tracking-widest text-text-muted;
+}
+
+.ecopin-table td {
+  @apply py-3 px-4 text-sm text-text-primary;
+}
+
+.ecopin-table tbody tr {
+  @apply border-b border-[#1a1a1a] dark:border-[#333333] transition-colors cursor-pointer;
+}
+
+.ecopin-table tbody tr:last-child {
+  @apply border-b-0;
+}
+
+.ecopin-table tbody tr:hover {
+  @apply bg-primary;
+}
+
+.ecopin-table tbody tr:hover td,
+.ecopin-table tbody tr:hover span,
+.ecopin-table tbody tr:hover div,
+.ecopin-table tbody tr:hover p,
+.ecopin-table tbody tr:hover button {
+  @apply text-white border-white;
 }
 
 /* Chart card styles */

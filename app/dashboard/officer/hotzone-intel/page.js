@@ -190,13 +190,14 @@ export default function ClustersPage() {
               loading={loading}
             />
 
-            <div className="card p-6 border-2 border-[#1a1a1a] dark:border-[#333333] rounded-none flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col min-h-0">
               <DataTable 
                 columns={listColumns}
                 data={paginatedClusters}
                 loading={loading}
                 emptyMessage="No hotzones match your filters."
                 onRowClick={(row) => router.push(`/dashboard/officer/hotzone-intel/${row.id}`)}
+                className="flex-1 min-h-0"
               />
               
               {totalPages > 1 && (

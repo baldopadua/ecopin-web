@@ -517,54 +517,54 @@ export default function OptimizationPage() {
       )}
 
       {/* Previous Runs */}
-      <div className="card border-2 border-border">
-        <h3 className="font-bold text-text-primary text-lg mb-4">Previous Runs</h3>
+      <div className="flex flex-col gap-4">
+        <h3 className="font-bold text-text-primary text-lg uppercase tracking-tighter">Previous Runs</h3>
 
         {runsLoading ? (
           <SkeletonForm fields={3} />
         ) : previousRuns.length === 0 ? (
-          <p className="text-text-muted text-sm">No optimization runs yet. Generate your first proposal above.</p>
+          <p className="text-text-muted text-sm font-mono">No optimization runs yet. Generate your first proposal above.</p>
         ) : (
           <div className="flex flex-col gap-4">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div className="ecopin-table-container">
+            <table className="ecopin-table">
               <thead>
-                <tr className="border-b-2 border-border text-left">
-                  <th className="pb-3 font-mono text-xs uppercase tracking-wider text-text-muted">Date</th>
-                  <th className="pb-3 font-mono text-xs uppercase tracking-wider text-text-muted">Status</th>
-                  <th className="pb-3 font-mono text-xs uppercase tracking-wider text-text-muted">Tasks</th>
-                  <th className="pb-3 font-mono text-xs uppercase tracking-wider text-text-muted">Weather</th>
-                  <th className="pb-3 font-mono text-xs uppercase tracking-wider text-text-muted">Traffic</th>
-                  <th className="pb-3 font-mono text-xs uppercase tracking-wider text-text-muted">Actions</th>
+                <tr>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th>Tasks</th>
+                  <th>Weather</th>
+                  <th>Traffic</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {previousRuns.slice((currentPage - 1) * runsPerPage, currentPage * runsPerPage).map(run => (
-                  <tr key={run.id} className="border-b border-border/50 hover:bg-surface-elevated transition-colors">
-                    <td className="py-3 text-text-primary font-mono text-xs">{formatDate(run.created_at)}</td>
-                    <td className="py-3">
+                  <tr key={run.id}>
+                    <td>{formatDate(run.created_at)}</td>
+                    <td>
                       <span className={`text-xs px-2 py-1 border font-bold font-mono uppercase ${STATUS_STYLES[run.status] || ''}`}>
                         {run.status}
                       </span>
                     </td>
-                    <td className="py-3 text-text-primary">{run.num_tasks_optimized}</td>
-                    <td className="py-3 text-text-secondary">
+                    <td>{run.num_tasks_optimized}</td>
+                    <td>
                       <span className="flex items-center gap-2">
                         {WEATHER_OPTIONS.find(w => w.value === (run.weather_condition?.toLowerCase() || 'normal'))?.icon || <Sun className="w-4 h-4 text-orange-500" />} 
                         {WEATHER_OPTIONS.find(w => w.value === (run.weather_condition?.toLowerCase() || 'normal'))?.label || 'Normal'}
                       </span>
                     </td>
-                    <td className="py-3 text-text-secondary">
+                    <td>
                       <span className="flex items-center gap-2">
                         {TRAFFIC_OPTIONS.find(t => t.value === (run.traffic_condition?.toLowerCase() || 'low'))?.icon || <Circle className="w-4 h-4 text-success fill-success" />} 
                         {TRAFFIC_OPTIONS.find(t => t.value === (run.traffic_condition?.toLowerCase() || 'low'))?.label || 'Low'}
                       </span>
                     </td>
-                    <td className="py-3">
+                    <td>
 
                       <button
                         onClick={() => handleViewRun(run.id)}
-                        className="text-xs text-accent-green hover:underline font-mono uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+                        className="text-xs font-bold underline uppercase tracking-wider flex items-center gap-1 cursor-pointer"
                       >
                         VIEW
                       </button>
@@ -593,4 +593,4 @@ export default function OptimizationPage() {
     </div>
   )
 }
-
+

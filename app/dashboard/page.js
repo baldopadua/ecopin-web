@@ -642,8 +642,8 @@ export default function DashboardPage() {
       </div>
 
       {/* Reports Table */}
-      <div className="card no-hover">
-        <h2 className="text-xl font-bold text-text-primary mb-6">All Reports</h2>
+      <div className="flex flex-col gap-6">
+        <h2 className="text-xl font-bold text-text-primary uppercase tracking-tighter">All Reports</h2>
         {loading ? (
           <div className="space-y-3 py-4">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -661,43 +661,43 @@ export default function DashboardPage() {
           <div className="text-center py-8 text-text-muted">No reports available</div>
         ) : (
           <>
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <div className="ecopin-table-container">
+              <table className="ecopin-table">
                 <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Title</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Issue Type</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Status</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Validation</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Created</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Actions</th>
+                  <tr>
+                    <th>Title</th>
+                    <th>Issue Type</th>
+                    <th>Status</th>
+                    <th>Validation</th>
+                    <th>Created</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {currentReports.map((report) => (
-                    <tr key={report.id} className="border-b border-border hover:bg-surface-elevated transition-colors">
-                      <td className="py-3 px-4">
-                        <div className="font-medium text-text-primary">{report.title}</div>
-                        <div className="text-sm text-text-muted line-clamp-1">{report.description}</div>
+                    <tr key={report.id}>
+                      <td>
+                        <div className="font-bold">{report.title}</div>
+                        <div className="text-text-muted line-clamp-1">{report.description}</div>
                       </td>
-                      <td className="py-3 px-4 text-sm text-text-secondary">{report.issue_type || 'General'}</td>
-                      <td className="py-3 px-4">
+                      <td>{report.issue_type || 'General'}</td>
+                      <td>
                         <span className={`px-2 py-1 rounded text-xs font-semibold border ${getStatusColor(report.status)}`}>
                           {report.status.replace(/_/g, ' ').toUpperCase()}
                         </span>
                       </td>
-                      <td className="py-3 px-4">
+                      <td>
                         <span className={`px-2 py-1 rounded text-xs font-semibold border ${getValidationColor(report.validation_status)}`}>
                           {report.validation_status === 'validated' ? 'AI VALIDATED' : report.validation_status.replace(/_/g, ' ').toUpperCase()}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-sm text-text-muted">
+                      <td>
                         {new Date(report.created_at).toLocaleDateString()}
                       </td>
-                      <td className="py-3 px-4">
+                      <td>
                         <button
                           onClick={() => router.push(`/dashboard/raw-data/${report.id}`)}
-                          className="text-sm text-accent-green hover:text-accent-green-dark font-medium"
+                          className="font-bold underline"
                         >
                           View Details
                         </button>

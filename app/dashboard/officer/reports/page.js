@@ -227,7 +227,7 @@ export default function OfficerReportsPage() {
         />
 
         {/* Reports List */}
-        <div className="card p-6 border-2 border-[#1a1a1a] dark:border-[#333333] rounded-none">
+        <div className="flex flex-col gap-4">
            <DataTable
              columns={tableColumns}
              data={paginatedReports}

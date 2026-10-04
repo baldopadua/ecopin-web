@@ -256,8 +256,8 @@ export default function AdminHomepage() {
       </div>
 
       {/* Recent Audit Logs */}
-      <div className="card no-hover">
-        <h2 className="text-xl font-bold text-text-primary mb-4">Recent Audit Logs</h2>
+      <div className="flex flex-col gap-4 mt-8">
+        <h2 className="text-xl font-bold text-text-primary uppercase tracking-tighter">Recent Audit Logs</h2>
         <DataTable
           columns={tableColumns}
           data={recentLogs}

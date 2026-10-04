@@ -200,7 +200,7 @@ export default function CreateCustomCleanupTaskPage() {
           </div>
 
           {/* Reports List Table */}
-          <div className="card flex flex-col h-[500px]">
+          <div className="flex flex-col h-[500px]">
             <div className="flex justify-between items-center mb-4 shrink-0">
               <h2 className="text-lg font-bold text-text-primary">Reports ({selectedReports.size} selected)</h2>
               {selectedReports.size > 0 && (
@@ -229,39 +229,39 @@ export default function CreateCustomCleanupTaskPage() {
             ) : filteredReports.length === 0 ? (
               <p className="text-text-muted shrink-0">No reports found.</p>
             ) : (
-              <div className="flex-1 overflow-y-auto min-h-0 border border-border rounded-lg">
-                <table className="w-full">
-                  <thead className="sticky top-0 bg-surface z-10 shadow-sm">
-                    <tr className="border-b border-border">
-                      <th className="text-left py-3 px-4 w-12"></th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Title</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Issue Type</th>
-                      <th className="text-left py-3 px-4 text-sm font-semibold text-text-primary">Description</th>
+              <div className="flex-1 overflow-y-auto min-h-0 ecopin-table-container !rounded-lg !border">
+                <table className="ecopin-table">
+                  <thead className="sticky top-0 bg-surface z-10">
+                    <tr>
+                      <th className="w-12"></th>
+                      <th>Title</th>
+                      <th>Issue Type</th>
+                      <th>Description</th>
                     </tr>
                   </thead>
                   <tbody>
                     {paginatedReports.map(report => (
                       <tr 
                         key={report.id} 
-                        className={`border-b border-border hover:bg-surface-elevated cursor-pointer transition-colors ${selectedReports.has(report.id) ? 'bg-accent-green/5 hover:bg-accent-green/10' : ''}`}
+                        className={selectedReports.has(report.id) ? 'bg-accent-green/10 hover:bg-accent-green/20' : ''}
                         onClick={() => toggleReportSelection(report.id)}
                       >
-                        <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
+                        <td onClick={(e) => e.stopPropagation()}>
                           <Checkbox
                             id={`report-cb-${report.id}`}
                             checked={selectedReports.has(report.id)}
                             onChange={() => toggleReportSelection(report.id)}
                           />
                         </td>
-                        <td className="py-3 px-4">
-                          <span className="font-medium text-text-primary">{report.title}</span>
+                        <td>
+                          <span className="font-bold">{report.title}</span>
                           <span className="block text-xs font-mono text-text-muted">#{report.id.substring(0, 6)}</span>
                         </td>
-                        <td className="py-3 px-4">
-                          <span className="text-sm text-text-secondary capitalize">{(report.issue_type || '').replace(/_/g, ' ')}</span>
+                        <td>
+                          <span className="capitalize">{(report.issue_type || '').replace(/_/g, ' ')}</span>
                         </td>
-                        <td className="py-3 px-4">
-                          <span className="text-sm text-text-muted line-clamp-2 max-w-xs">{report.description || 'N/A'}</span>
+                        <td>
+                          <span className="line-clamp-2 max-w-xs">{report.description || 'N/A'}</span>
                         </td>
                       </tr>
                     ))}

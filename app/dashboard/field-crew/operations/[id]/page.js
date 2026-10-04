@@ -659,9 +659,9 @@ export default function FieldCrewCleanupTaskDetailPage() {
         <SkeletonLine className="h-5 w-64" />
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-3">
-            <div className="card no-hover">
-              <div className="overflow-x-auto">
-                <table className="w-full">
+            <div className="flex flex-col gap-4">
+              <div className="ecopin-table-container">
+                <table className="ecopin-table">
                   <thead>
                     <tr className="border-b border-border">
                       <th className="text-left py-3 px-4"><SkeletonLine className="h-4 w-12" /></th>
@@ -729,42 +729,42 @@ export default function FieldCrewCleanupTaskDetailPage() {
             <div className="lg:col-span-3">
               {/* Reports in Cluster - Table View */}
               {reports.length > 0 && (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
+                <div className="ecopin-table-container">
+                  <table className="ecopin-table">
                     <thead>
-                      <tr className="border-b-2 border-[#1A1A1A] dark:border-[#333]">
-                        <th className="text-left py-3 px-4 font-mono text-xs uppercase tracking-widest text-text-muted">Title</th>
-                        <th className="text-left py-3 px-4 font-mono text-xs uppercase tracking-widest text-text-muted">Issue Type</th>
-                        <th className="text-left py-3 px-4 font-mono text-xs uppercase tracking-widest text-text-muted">Description</th>
-                        <th className="text-left py-3 px-4 font-mono text-xs uppercase tracking-widest text-text-muted">Status</th>
-                        <th className="text-left py-3 px-4 font-mono text-xs uppercase tracking-widest text-text-muted">Lifecycle Stage</th>
-                        <th className="text-left py-3 px-4 font-mono text-xs uppercase tracking-widest text-text-muted">Validation Status</th>
-                        <th className="text-left py-3 px-4 font-mono text-xs uppercase tracking-widest text-text-muted">Actions</th>
+                      <tr>
+                        <th>Title</th>
+                        <th>Issue Type</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                        <th>Lifecycle Stage</th>
+                        <th>Validation Status</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {reports.map((report) => (
-                        <tr key={report.id} className={`border-b border-[#1A1A1A] dark:border-[#333] hover:bg-surface-elevated hover:border-l-4 hover:border-l-[#ccff00] transition-colors ${getReportCardColor(report.status)}`}>
-                          <td className="py-3 px-4 min-w-[150px]">
-                            <span className="font-medium text-text-primary">{report.title}</span>
+                        <tr key={report.id} className={getReportCardColor(report.status)}>
+                          <td>
+                            <span className="font-bold text-text-primary">{report.title}</span>
                           </td>
-                          <td className="py-3 px-4 min-w-[120px]">
+                          <td>
                             <span className="text-sm text-text-secondary">{report.issue_type}</span>
                           </td>
-                          <td className="py-3 px-4">
+                          <td>
                             <span className="text-sm text-text-muted line-clamp-2 max-w-xs">{report.description || 'N/A'}</span>
                           </td>
-                          <td className="py-3 px-4 min-w-[200px]">
+                          <td>
                             <StatusBadge status={report.status} type="report" />
                           </td>
-                          <td className="py-3 px-4 min-w-[150px]">
+                          <td>
                             {report.stage ? (
                               <StatusBadge status={report.stage} type="lifecycle" />
                             ) : (
                               <span className="text-xs text-text-muted">N/A</span>
                             )}
                           </td>
-                          <td className="py-3 px-4 min-w-[150px]">
+                          <td>
                             <StatusBadge status={report.validation_status} type="validation" />
                           </td>
                           <td className="py-3 px-4 min-w-[140px]">
