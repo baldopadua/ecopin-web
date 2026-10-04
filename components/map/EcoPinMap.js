@@ -16,6 +16,11 @@ if (typeof window !== 'undefined' && !window.Buffer) {
   window.Buffer = Buffer
 }
 
+const normalizeString = (str) => {
+  if (!str) return '';
+  return str.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+};
+
 const PLP_CENTER = [14.561433, 121.075636]
 const DEFAULT_ZOOM = 15
 
@@ -87,14 +92,29 @@ const parseGeometry = (geometry) => {
   return null
 }
 
-function ZoomTracker({ setZoom }) {
+function MapViewportTracker({ setZoom, setMapBounds }) {
+  const timeoutId = useRef(null)
+  
   const map = useMapEvents({
-    zoomend: () => {
-      const newZoom = map.getZoom()
-      console.log('Zoom changed to:', newZoom)
-      setZoom(newZoom)
-    },
+    'moveend zoomend': () => {
+      if (timeoutId.current) clearTimeout(timeoutId.current)
+      timeoutId.current = setTimeout(() => {
+        setZoom(map.getZoom())
+        setMapBounds(map.getBounds())
+      }, 300) // Debounce viewport updates to prevent aggressive re-renders
+    }
   })
+
+  // Initial bounds on mount
+  useEffect(() => {
+    if (map) {
+      setMapBounds(map.getBounds())
+    }
+    return () => {
+      if (timeoutId.current) clearTimeout(timeoutId.current)
+    }
+  }, [map, setMapBounds])
+
   return null
 }
 
@@ -173,6 +193,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
   const [clusters, setClusters] = useState([])
   const [clusterReports, setClusterReports] = useState({}) // Map of cluster_id -> array of reports
   const [zoom, setZoom] = useState(DEFAULT_ZOOM)
+  const [mapBounds, setMapBounds] = useState(null)
   const mapRef = useRef(null)
   const router = useRouter()
 
@@ -241,44 +262,6 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
     observer.observe(html, { attributes: true, attributeFilter: ['class'] })
     return () => observer.disconnect()
   }, [])
-
-  // Prepare heat points from filtered reports
-  const heatPoints = filteredReports.map(report => {
-    let latitude, longitude
-    if (report.latitude && report.longitude) {
-      latitude = report.latitude
-      longitude = report.longitude
-    } else if (report.location) {
-      try {
-        if (typeof report.location === 'string' && report.location.startsWith('{')) {
-          const geoJSON = JSON.parse(report.location)
-          if (geoJSON.type === 'Point' && geoJSON.coordinates) {
-            longitude = geoJSON.coordinates[0]
-            latitude = geoJSON.coordinates[1]
-          }
-        } else if (typeof report.location === 'string') {
-          const buffer = Buffer.from(report.location, 'hex')
-          const geometry = wkx.Geometry.parse(buffer)
-          if (geometry && geometry.x && geometry.y) {
-            longitude = geometry.x
-            latitude = geometry.y
-          }
-        } else if (Buffer.isBuffer(report.location)) {
-          const geometry = wkx.Geometry.parse(report.location)
-          if (geometry && geometry.x && geometry.y) {
-            longitude = geometry.x
-            latitude = geometry.y
-          }
-        }
-      } catch (error) {
-        console.error('Error parsing location for report', report.id, ':', error)
-      }
-    }
-    if (latitude && longitude && !isNaN(latitude) && !isNaN(longitude)) {
-      return [latitude, longitude, 1.0] // [lat, lng, intensity]
-    }
-    return null
-  }).filter(point => point !== null)
 
   useEffect(() => {
     import('@/lib/leaflet-fix')
@@ -473,6 +456,41 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
     return { parsedReports, coordsMap }
   }, [filteredReports])
 
+  // Prepare heat points using Spatial LOD
+  const heatPoints = useMemo(() => {
+    if (!showHeatmap) return [];
+    
+    // Spatial LOD Strategy:
+    // Zoom <= 14: Use cluster centers to drastically reduce array size while maintaining density
+    if (zoom <= 14) {
+      return filteredClusters.map(cluster => {
+        const center = parseGeometry(cluster.center);
+        if (!center) return null;
+        return [center[0], center[1], cluster.report_count]; // [lat, lng, intensity]
+      }).filter(Boolean);
+    }
+    
+    // Zoom > 14: Use individual reports but apply Spatial Hashing to aggregate nearby points
+    const hashMap = {};
+    processedReportsInfo.parsedReports.forEach(report => {
+      const lat = report.parsedLat;
+      const lng = report.parsedLng;
+      if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
+        // Spatial Hashing: round to 3 decimal places (approx 100m precision)
+        const hashLat = lat.toFixed(3);
+        const hashLng = lng.toFixed(3);
+        const key = `${hashLat},${hashLng}`;
+        
+        if (!hashMap[key]) {
+          hashMap[key] = { lat: parseFloat(hashLat), lng: parseFloat(hashLng), count: 0 };
+        }
+        hashMap[key].count += 1; // Accumulate heat intensity
+      }
+    });
+    
+    return Object.values(hashMap).map(p => [p.lat, p.lng, p.count]);
+  }, [showHeatmap, zoom, filteredClusters, processedReportsInfo]);
+
   const handlePopupRouting = useCallback((reportId) => {
     if (onReportClick) {
       onReportClick(reportId)
@@ -565,7 +583,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
           style={{ height: '100%', width: '100%' }}
           ref={mapRef}
         >
-          <ZoomTracker setZoom={setZoom} />
+          <MapViewportTracker setZoom={setZoom} setMapBounds={setMapBounds} />
           {centerLat && centerLng && <MapCenter centerLat={centerLat} centerLng={centerLng} />}
           <TileLayer
             url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
@@ -578,6 +596,9 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
           {!hideClusters && showClusters && zoom <= 15 && filteredClusters.map((cluster) => {
             const center = parseGeometry(cluster.center)
             if (!center) return null
+            
+            // Client-side DOM Culling: skip if outside viewport
+            if (mapBounds && !mapBounds.contains(center)) return null
 
             console.log('Rendering cluster marker:', cluster.id, 'zoom:', zoom)
             return (
@@ -601,7 +622,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                   <div className="p-1 min-w-[200px]">
                     <div className="text-xs font-semibold text-blue-600 mb-1 tracking-wider uppercase">CLUSTER #{cluster.id}</div>
                     <strong className="block text-sm text-gray-800 mb-2">
-                      {cluster.issue_type}
+                      {normalizeString(cluster.issue_type)}
                     </strong>
                     <div className="text-sm space-y-1 text-gray-600">
                       <div><span className="text-gray-500">Reports:</span> <span className="font-medium text-gray-800">{cluster.report_count}</span></div>
@@ -734,6 +755,9 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
             let isSpiderfied = false
 
             if (latitude && longitude && !isNaN(latitude) && !isNaN(longitude)) {
+              // Client-side DOM Culling: skip if outside viewport
+              if (mapBounds && !mapBounds.contains([latitude, longitude])) return null
+
               // Spiderfy overlapping pins
               const key = report.cluster_id ? `cluster_${report.cluster_id}` : `coord_${latitude.toFixed(4)},${longitude.toFixed(4)}`
               const overlappingIds = processedReportsInfo.coordsMap[key]

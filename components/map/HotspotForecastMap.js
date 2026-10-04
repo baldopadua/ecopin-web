@@ -310,7 +310,7 @@ export default function HotspotForecastMap({ predictions, timeHorizon, viewModeO
         <p style={{ margin: 0, fontSize: 14 }}>
           {timeHorizon === 'historical' 
             ? 'No historical data available for this range. Try selecting different dates.' 
-            : <span>No hotspot data yet. Click <strong>Generate Forecast</strong> to analyse clusters.</span>}
+            : <span>No active micro-clusters found currently. Scanning in real-time...</span>}
         </p>
       </div>
     );
@@ -333,7 +333,7 @@ export default function HotspotForecastMap({ predictions, timeHorizon, viewModeO
         </div>
         {heatmapFeatures.length === 0 && (
           <div style={{ fontSize: '10px', color: 'var(--text-muted)', textAlign: 'center', maxWidth: '200px', alignSelf: 'center' }}>
-            *Generate Forecast* for raw Heatmap
+            Awaiting real-time heatmap data...
           </div>
         )}
       </div>

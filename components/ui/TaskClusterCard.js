@@ -1,5 +1,9 @@
 'use client'
 
+const normalizeString = (str) => {
+  if (!str) return '';
+  return str.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+};
 const TaskPriority = {
   high: { label: 'High', color: 'text-error', bgColor: 'bg-error/15' },
   medium: { label: 'Medium', color: 'text-warning', bgColor: 'bg-warning/15' },
@@ -20,7 +24,7 @@ export default function TaskClusterCard({ cluster, onTap }) {
         <div className="flex justify-between items-start mb-3">
           <div>
             <h3 className="font-bold text-text-primary text-lg">Cluster #{cluster.id}</h3>
-            <p className="text-sm text-text-muted">{cluster.issue_type || 'Mixed Issues'}</p>
+            <p className="text-sm text-text-muted">{cluster.issue_type ? normalizeString(cluster.issue_type) : 'Mixed Issues'}</p>
           </div>
           <div className={`px-3 py-1 rounded-full text-xs font-bold ${priorityInfo.bgColor} ${priorityInfo.color}`}>
             {priorityInfo.label} Priority
