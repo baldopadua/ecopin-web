@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { fetchValidatedReports, fetchClusterById, createCleanupTask, fetchCleanupTasks } from '@/lib/api'
+import { fetchValidatedReports, fetchClusterById, createCleanupTask, fetchCleanupTasks, updateClusterLabel } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
 import DataTable from '@/components/ui/DataTable'
@@ -9,7 +9,7 @@ import StatusBadge from '@/components/ui/StatusBadge'
 import EvidenceGallery from '@/components/ui/EvidenceGallery'
 import ExportButton from '@/components/ui/ExportButton'
 import { OfficerGuard } from '@/components/auth/RequireRole'
-import { Map as MapIcon, ChevronLeft, Target, AlertTriangle, Layers } from 'lucide-react'
+import { Map as MapIcon, ChevronLeft, Target, AlertTriangle, Layers, Pen } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
@@ -62,6 +62,10 @@ export default function ClusterDetailPage() {
   const [loading, setLoading] = useState(true)
   const [existingTask, setExistingTask] = useState(null)
   const [loadingTasks, setLoadingTasks] = useState(true)
+  const [error, setError] = useState(null)
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [editingTitle, setEditingTitle] = useState('')
+  const [savingTitle, setSavingTitle] = useState(false)
   
   const router = useRouter()
   const params = useParams()
@@ -92,6 +96,24 @@ export default function ClusterDetailPage() {
 
   const handleRowClick = (report) => {
     router.push(`/dashboard/raw-data/${report.id}`)
+  }
+
+  const handleSaveTitle = async () => {
+    if (!editingTitle.trim() || editingTitle.trim() === cluster.label) {
+      setIsEditingTitle(false)
+      return
+    }
+    setSavingTitle(true)
+    try {
+      await updateClusterLabel(clusterId, editingTitle.trim())
+      setCluster(prev => ({ ...prev, label: editingTitle.trim() }))
+      setIsEditingTitle(false)
+    } catch (error) {
+      console.error('Failed to update label:', error)
+      setError('Failed to update title. Please try again.')
+    } finally {
+      setSavingTitle(false)
+    }
   }
   
   const handleDispatch = () => {
@@ -139,7 +161,48 @@ export default function ClusterDetailPage() {
 
 
         <PageHeader
-          title={cluster.label || `Cluster #${cluster.id.slice(0,8)}`}
+          title={
+            isEditingTitle ? (
+              <div className="flex items-center gap-2">
+                <input 
+                  type="text" 
+                  value={editingTitle} 
+                  onChange={(e) => setEditingTitle(e.target.value)} 
+                  className="px-2 py-1 text-2xl font-bold border-2 border-[#2563eb] focus:outline-none w-64 bg-surface-elevated text-text-primary"
+                  disabled={savingTitle}
+                  autoFocus
+                />
+                <button 
+                  onClick={handleSaveTitle}
+                  disabled={savingTitle}
+                  className="px-3 py-1 text-sm font-bold uppercase tracking-widest bg-accent-green text-white border-2 border-accent-green hover:bg-black hover:border-black transition-colors"
+                >
+                  {savingTitle ? 'Saving...' : 'Save'}
+                </button>
+                <button 
+                  onClick={() => setIsEditingTitle(false)}
+                  disabled={savingTitle}
+                  className="px-3 py-1 text-sm font-bold uppercase tracking-widest text-text-muted hover:text-black dark:hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <span>{cluster.label || `Cluster #${cluster.id.slice(0,8)}`}</span>
+                <button 
+                  onClick={() => {
+                    setEditingTitle(cluster.label || `Cluster #${cluster.id.slice(0,8)}`)
+                    setIsEditingTitle(true)
+                  }}
+                  className="text-text-muted hover:text-primary transition-colors p-1"
+                  title="Rename Cluster"
+                >
+                  <Pen className="w-5 h-5" />
+                </button>
+              </div>
+            )
+          }
           subtitle={`Severity Score: ${Math.round(cluster.severity_score || 0)}`}
           breadcrumbs={[
             { label: 'Intel', href: '/dashboard/officer/hotzone-intel' },

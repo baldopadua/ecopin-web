@@ -1,7 +1,7 @@
 'use client'
 import React, { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { fetchCleanupTaskById, uploadCleanupPhoto, markCleanupTaskComplete, fetchReportsByClusterId, batchCompleteReportsByCluster, updateReportStatus, fetchReportsByIds, updateReportValidation, fetchReportEvidence, updateLifecycleStage, logAgencyResponse, fetchAgencyResponses, fetchAvailableCrew, assignCleanupTask } from '@/lib/api'
+import { fetchCleanupTaskById, uploadCleanupPhoto, markCleanupTaskComplete, fetchReportsByClusterId, batchCompleteReportsByCluster, updateReportStatus, fetchReportsByIds, updateReportValidation, fetchReportEvidence, updateLifecycleStage, logAgencyResponse, fetchAgencyResponses, fetchAvailableCrew, assignCleanupTask, updateCleanupTaskTitle } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
@@ -9,6 +9,7 @@ import Notification from '@/components/ui/Notification'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
 import dynamic from 'next/dynamic'
+import { Pen } from 'lucide-react'
 
 const OperationsMap = dynamic(() => import('@/components/map/OperationsMap'), { 
   ssr: false,
@@ -90,7 +91,9 @@ export default function CleanupTaskDetailPage() {
   const [showAssignmentModal, setShowAssignmentModal] = useState(false)
   const [tempCrewIds, setTempCrewIds] = useState([])
   const [assigning, setAssigning] = useState(false)
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [editingTitle, setEditingTitle] = useState('')
+  const [savingTitle, setSavingTitle] = useState(false)
   const router = useRouter()
   const params = useParams()
   const taskId = params.id
@@ -192,6 +195,25 @@ export default function CleanupTaskDetailPage() {
   }
 
 
+
+  const handleSaveTitle = async () => {
+    if (!editingTitle.trim() || editingTitle.trim() === task.title) {
+      setIsEditingTitle(false)
+      return
+    }
+    setSavingTitle(true)
+    try {
+      await updateCleanupTaskTitle(taskId, editingTitle.trim())
+      setTask(prev => ({ ...prev, title: editingTitle.trim() }))
+      setIsEditingTitle(false)
+      setNotification({ message: 'Title updated successfully', type: 'success' })
+    } catch (error) {
+      console.error('Failed to update title:', error)
+      setNotification({ message: 'Failed to update title. Please try again.', type: 'error' })
+    } finally {
+      setSavingTitle(false)
+    }
+  }
 
   const handleLifecycleStageUpdate = async (reportId, newStage) => {
     const report = reports.find(r => r.id === reportId)
@@ -721,8 +743,49 @@ export default function CleanupTaskDetailPage() {
   return (
     <div className="p-8 min-h-screen flex flex-col">
       <PageHeader
-        title={`Operation / ${task.id.slice(0,8)}`}
-        subtitle={task.title}
+        title={
+          isEditingTitle ? (
+            <div className="flex items-center gap-2">
+              <input 
+                type="text" 
+                value={editingTitle} 
+                onChange={(e) => setEditingTitle(e.target.value)} 
+                className="px-2 py-1 text-2xl font-bold border-2 border-[#2563eb] focus:outline-none w-64 bg-surface text-text-primary"
+                disabled={savingTitle}
+                autoFocus
+              />
+              <button 
+                onClick={handleSaveTitle}
+                disabled={savingTitle}
+                className="px-3 py-1 text-sm font-bold uppercase tracking-widest bg-accent-green text-white border-2 border-accent-green hover:bg-black hover:border-black transition-colors"
+              >
+                {savingTitle ? 'Saving...' : 'Save'}
+              </button>
+              <button 
+                onClick={() => setIsEditingTitle(false)}
+                disabled={savingTitle}
+                className="px-3 py-1 text-sm font-bold uppercase tracking-widest text-text-muted hover:text-black dark:hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <span>{task.title}</span>
+              <button 
+                onClick={() => {
+                  setEditingTitle(task.title)
+                  setIsEditingTitle(true)
+                }}
+                className="text-text-muted hover:text-primary transition-colors p-1"
+                title="Rename Mission"
+              >
+                <Pen className="w-5 h-5" />
+              </button>
+            </div>
+          )
+        }
+        subtitle={`Operation / ${task.id.slice(0,8)}`}
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard/officer' },
           { label: 'Operations', href: '/dashboard/officer/operations' },
