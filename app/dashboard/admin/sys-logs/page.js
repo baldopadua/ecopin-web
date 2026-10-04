@@ -144,9 +144,9 @@ export default function SystemLogs() {
               { value: 'login', label: 'Login' },
               { value: 'logout', label: 'Logout' },
               { value: 'password_change', label: 'Password Change' },
-              { value: 'role_change', label: 'Role Change' },
+              { value: 'profile_update', label: 'Profile/Role Update' },
               { value: 'user_created', label: 'User Created' },
-              { value: 'user_deleted', label: 'User Deleted' }
+              { value: 'account_deletion', label: 'User Deleted' }
             ]
           }
         ]}

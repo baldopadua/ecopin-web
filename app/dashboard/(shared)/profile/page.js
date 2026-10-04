@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
 import { getSystemSettings } from '@/lib/api'
+import { logout } from '@/lib/api/auth'
 import { useUser } from '@/components/auth/UserContext'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL + '/api'
@@ -63,9 +64,13 @@ export default function ProfilePage() {
     }
   }
 
-  const handleLogout = () => {
-    localStorage.removeItem('authToken')
-    router.push('/auth')
+  const handleLogout = async () => {
+    try {
+      await logout()
+    } finally {
+      localStorage.removeItem('authToken')
+      router.push('/auth')
+    }
   }
 
   useEffect(() => {
