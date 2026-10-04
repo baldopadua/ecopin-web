@@ -35,6 +35,7 @@ const officerNavigation = [
     { name: 'Hotzone Intel', href: '/dashboard/officer/hotzone-intel', icon: Target },
     { name: 'Operations', href: '/dashboard/officer/operations', icon: Wrench },
     { name: 'Optimization', href: '/dashboard/officer/optimization', icon: CloudLightning },
+    { name: 'Crew Management', href: '/dashboard/officer/crew-management', icon: Users },
     { name: 'Reports', href: '/dashboard/officer/reports', icon: Database },
     { name: 'Metrics', href: '/dashboard/officer/metrics', icon: Activity },
     { name: 'Spatial Scan', href: '/dashboard/spatial-scan', icon: Scan },

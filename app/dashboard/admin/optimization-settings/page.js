@@ -9,6 +9,7 @@ import {
   updateOptimizationSettings,
   getFieldCrews,
   updateFieldCrew,
+  createFieldCrew,
 } from '@/lib/api/optimization'
 
 const LocationPickerMap = dynamic(
@@ -30,6 +31,13 @@ export default function OptimizationSettings() {
 
   // Crew settings
   const [crews, setCrews] = useState([])
+  const [showAddCrew, setShowAddCrew] = useState(false)
+  const [newCrew, setNewCrew] = useState({
+    name: '',
+    shift_start: '08:00',
+    shift_end: '17:00',
+    max_tasks_per_shift: 10,
+  })
 
   useEffect(() => {
     loadAll()
@@ -113,6 +121,38 @@ export default function OptimizationSettings() {
       setNotification({ message: `${crew.name} settings saved successfully`, type: 'success' })
     } catch (err) {
       setNotification({ message: err.message || 'Failed to save crew settings', type: 'error' })
+    } finally {
+      setSaving(null)
+    }
+  }
+
+  const handleCreateCrew = async () => {
+    if (!newCrew.name.trim()) {
+      setNotification({ message: 'Crew name is required', type: 'error' })
+      return
+    }
+    if (!newCrew.shift_start || !newCrew.shift_end) {
+      setNotification({ message: 'Shift start and end times are required', type: 'error' })
+      return
+    }
+    if (newCrew.shift_end <= newCrew.shift_start) {
+      setNotification({ message: 'Shift end must be after shift start', type: 'error' })
+      return
+    }
+    if (!newCrew.max_tasks_per_shift || newCrew.max_tasks_per_shift < 1 || newCrew.max_tasks_per_shift > 50) {
+      setNotification({ message: 'Max tasks must be between 1 and 50', type: 'error' })
+      return
+    }
+
+    try {
+      setSaving('new-crew')
+      const created = await createFieldCrew(newCrew)
+      setCrews(prev => [...prev, created])
+      setShowAddCrew(false)
+      setNewCrew({ name: '', shift_start: '08:00', shift_end: '17:00', max_tasks_per_shift: 10 })
+      setNotification({ message: 'Crew created successfully', type: 'success' })
+    } catch (err) {
+      setNotification({ message: err.message || 'Failed to create crew', type: 'error' })
     } finally {
       setSaving(null)
     }
@@ -223,13 +263,77 @@ export default function OptimizationSettings() {
 
       {/* Crew Settings */}
       <div className="card border-2 border-border">
-        <h2 className="text-xl font-bold text-text-primary mb-2">👷 Field Crew Configuration</h2>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2">
+          <h2 className="text-xl font-bold text-text-primary">👷 Field Crew Configuration</h2>
+          <button 
+            onClick={() => setShowAddCrew(!showAddCrew)}
+            className="mt-2 sm:mt-0 text-sm bg-surface-elevated text-text-primary border-2 border-border px-3 py-1 hover:border-text-primary transition-colors font-bold uppercase tracking-wider"
+          >
+            {showAddCrew ? 'Cancel' : '+ Add Crew'}
+          </button>
+        </div>
         <p className="text-sm text-text-muted mb-6">
           Configure shift schedules and task limits for each field crew. Changes apply to future optimization runs.
         </p>
 
+        {showAddCrew && (
+          <div className="mb-6 p-4 border-2 border-[#2563eb] bg-[#2563eb]/5">
+            <h3 className="font-bold text-text-primary mb-4 uppercase tracking-wider text-sm text-[#2563eb]">New Field Crew</h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="md:col-span-1">
+                <label className="block text-xs font-medium text-text-primary mb-1 uppercase">Crew Name</label>
+                <input
+                  type="text"
+                  value={newCrew.name}
+                  onChange={(e) => setNewCrew(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full p-2 border-2 border-border bg-surface-elevated text-text-primary focus:border-[#2563eb] focus:outline-none transition-colors text-sm"
+                  placeholder="e.g., Team Alpha"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-text-primary mb-1 uppercase">Shift Start</label>
+                <input
+                  type="time"
+                  value={newCrew.shift_start}
+                  onChange={(e) => setNewCrew(prev => ({ ...prev, shift_start: e.target.value }))}
+                  className="w-full p-2 border-2 border-border bg-surface-elevated text-text-primary font-mono focus:border-[#2563eb] focus:outline-none transition-colors text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-text-primary mb-1 uppercase">Shift End</label>
+                <input
+                  type="time"
+                  value={newCrew.shift_end}
+                  onChange={(e) => setNewCrew(prev => ({ ...prev, shift_end: e.target.value }))}
+                  className="w-full p-2 border-2 border-border bg-surface-elevated text-text-primary font-mono focus:border-[#2563eb] focus:outline-none transition-colors text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-text-primary mb-1 uppercase">Max Tasks</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="50"
+                  value={newCrew.max_tasks_per_shift}
+                  onChange={(e) => setNewCrew(prev => ({ ...prev, max_tasks_per_shift: parseInt(e.target.value) || 10 }))}
+                  className="w-full p-2 border-2 border-border bg-surface-elevated text-text-primary font-mono focus:border-[#2563eb] focus:outline-none transition-colors text-sm"
+                />
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={handleCreateCrew}
+                disabled={saving === 'new-crew'}
+                className="bg-[#2563eb] text-white font-bold uppercase tracking-wider text-xs px-4 py-2 border-2 border-border hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              >
+                {saving === 'new-crew' ? 'Creating...' : 'Create Crew'}
+              </button>
+            </div>
+          </div>
+        )}
+
         {crews.length === 0 ? (
-          <p className="text-text-muted text-sm">No field crews found. Run migration 008 to create crews.</p>
+          <p className="text-text-muted text-sm">No field crews found. Click "+ Add Crew" above to create one.</p>
         ) : (
           <div className="space-y-6">
             {crews.map((crew) => (
