@@ -107,11 +107,11 @@ export default function Home() {
                   Clean the <br className="hidden md:block" /> Streets.
                 </h1>
                 
-                <p className="text-lg md:text-2xl font-bold max-w-xl leading-snug text-white/90">
-                  A crowdsourced geospatial platform for transparent environmental reporting.
+                <p className="text-lg md:text-2xl font-normal max-w-2xl leading-snug text-white/90">
+                  A crowdsourced geospatial platform for transparent environmental reporting. Every pin you drop helps the Solid Waste Management Office keep Pasig City clean. Start making an impact today.
                 </p>
                 
-                <div className="mt-20 sm:mt-6 flex flex-col sm:flex-row flex-wrap gap-4 w-full">
+                <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row flex-wrap gap-4 w-full">
                   <a href="/map" className="w-full sm:w-auto text-center inline-block bg-transparent text-white px-8 py-4 rounded-full font-black text-xl border-4 border-white hover:bg-white hover:text-black transition-all">
                     LIVE MAP
                   </a>
@@ -119,22 +119,13 @@ export default function Home() {
                     GET THE APP
                   </a>
                 </div>
-
-                <div className="mt-8 pt-6 border-t-2 border-white/20 flex flex-col gap-3">
-                   <div className="text-sm font-black uppercase tracking-widest text-white">
-                     TAKE ACTION NOW
-                   </div>
-                   <div className="text-base md:text-lg font-bold leading-snug text-white/90 max-w-md">
-                     Every pin you drop helps the Solid Waste Management Office keep Pasig City clean. Start making an impact today.
-                   </div>
-                </div>
               </div>
               
               <div 
                  ref={containerRef}
                  onMouseMove={handleMouseMove}
                  onMouseLeave={handleMouseLeave}
-                 className="flex justify-center items-center w-full relative perspective-container"
+                 className="hidden lg:flex justify-center items-center w-full relative perspective-container"
               >
                  <div 
                     className="relative w-full max-w-[600px] aspect-square flex items-center justify-center transform-style-3d"
@@ -149,7 +140,7 @@ export default function Home() {
 
                    {/* The Phone Mockup */}
                    <div 
-                      className="relative w-[220px] sm:w-[280px] md:w-[320px] lg:w-[360px] aspect-[9/19] bg-white rounded-[32px] sm:rounded-[40px] border-[10px] sm:border-[12px] border-black overflow-hidden shadow-2xl group cursor-pointer flex flex-col z-20 mx-auto"
+                      className="relative w-[220px] sm:w-[260px] lg:w-[280px] xl:w-[300px] aspect-[9/19] bg-white rounded-[32px] sm:rounded-[40px] border-[10px] sm:border-[12px] border-black overflow-hidden shadow-2xl group cursor-pointer flex flex-col z-20 mx-auto"
                       style={{ transform: 'translateZ(30px)' }}
                    >
                       
