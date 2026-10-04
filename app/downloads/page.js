@@ -113,7 +113,7 @@ export default function DownloadsPage() {
             animation: 'wipeInRightClip 0.9s cubic-bezier(0.8, 0, 0.2, 1) forwards'
           }} 
         >
-          <img src="/Full Logo Dark.png" alt="EcoPin" className="h-10 sm:h-12 w-auto object-contain relative z-10" />
+          <img src="/Auth Logo.png" alt="EcoPin" className="h-16 md:h-20 w-auto object-contain relative z-10" />
           <div className="mt-6 font-black uppercase tracking-[0.3em] text-[10px] text-white/50 animate-pulse">
             Loading
           </div>
@@ -217,3 +217,4 @@ export default function DownloadsPage() {
     </main>
   )
 }
+

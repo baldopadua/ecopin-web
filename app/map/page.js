@@ -6,8 +6,8 @@ const PublicMap = dynamic(() => import('./PublicMap'), {
   ssr: false,
   loading: () => (
     <div className="h-full w-full bg-white dark:bg-black flex items-center justify-center transition-colors duration-300">
-      <img src="/Solo Logo Light.png" alt="Loading..." className="h-24 w-auto object-contain animate-pulse dark:hidden" />
-      <img src="/Solo Logo Dark.png" alt="Loading..." className="h-24 w-auto object-contain animate-pulse hidden dark:block" />
+      
+      <img src="/Auth Logo.png" alt="Loading..." className="h-20 md:h-24 w-auto object-contain animate-pulse" />
     </div>
   )
 })
@@ -18,6 +18,8 @@ export default function PublicMapPage() {
   const [theme, setTheme] = useState('dark')
   const [user, setUser] = useState(null)
   const [hasSession, setHasSession] = useState(false)
+
+
 
   useEffect(() => {
     const isDarkMode = document.documentElement.classList.contains('dark')
@@ -53,23 +55,24 @@ export default function PublicMapPage() {
 
   return (
     <main
-      className="h-screen w-full flex flex-col bg-[#F4F0EA] dark:bg-[#121212] text-black dark:text-white p-4 md:p-6 gap-4 md:gap-6 relative overflow-hidden transition-colors duration-300"
+      className="h-screen w-full flex flex-col bg-[#F4F0EA] dark:bg-[#121212] text-black dark:text-white relative overflow-hidden transition-colors duration-300"
     >
       {/* Background Pattern */}
       <div className="absolute inset-0 z-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 2px, transparent 2px)', backgroundSize: '30px 30px' }}></div>
 
       {/* Shared Navbar Component */}
-      <Navbar 
-        theme={theme}
-        toggleTheme={toggleTheme}
-        hasSession={hasSession}
-        user={user}
-        isFloating={false}
-        className="drop-shadow-[6px_6px_0_black]"
-      />
+      <div className="fixed top-0 left-0 right-0 z-50 p-4 pointer-events-none transition-all duration-300">
+        <Navbar 
+          theme={theme}
+          toggleTheme={toggleTheme}
+          hasSession={hasSession}
+          user={user}
+          isFloating={true}
+        />
+      </div>
 
       {/* Map Container */}
-      <div className="flex-1 relative z-[1] w-full rounded-[32px] md:rounded-[40px] border-4 border-black dark:border-[#333] overflow-hidden drop-shadow-[6px_6px_0_black] md:drop-shadow-[12px_12px_0_black]">
+      <div className="absolute inset-0 z-[1] w-full h-full overflow-hidden">
         <PublicMap isDark={isDark} />
       </div>
       
@@ -116,6 +119,10 @@ export default function PublicMapPage() {
           80% { clip-path: inset(10% 0 70% 0); transform: translate(2px, 2px); }
           100% { clip-path: inset(30% 0 20% 0); transform: translate(-2px, -2px); }
         }
+        @keyframes slideUp {
+          0% { transform: translateY(100%); }
+          100% { transform: translateY(0); }
+        }
         @keyframes glitch-anim-2 {
           0% { clip-path: inset(10% 0 60% 0); transform: translate(-2px, -2px); }
           20% { clip-path: inset(30% 0 20% 0); transform: translate(2px, 2px); }
@@ -128,3 +135,9 @@ export default function PublicMapPage() {
     </main>
   )
 }
+
+
+
+
+
+

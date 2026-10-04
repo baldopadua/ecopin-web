@@ -446,75 +446,93 @@ export default function PublicMap({ isDark }) {
           })}
         </MapContainer>
 
-        {/* Floating Filter Button (Mobile & Desktop) */}
+        {/* Floating Filter Button (Bottom Right) */}
         {!showFilterPanel && (
           <button
             onClick={() => setShowFilterPanel(true)}
-            className="absolute top-6 right-6 z-[1001] bg-white dark:bg-[#1C1C1C] text-black dark:text-white border-4 border-black dark:border-[#333] px-6 py-3 rounded-full font-black uppercase tracking-widest drop-shadow-[6px_6px_0_black] hover:-translate-y-1 hover:drop-shadow-[8px_8px_0_black] transition-all flex items-center gap-2"
+            className="absolute bottom-8 right-6 md:bottom-12 md:right-12 z-[1001] bg-[#0052CC] text-white p-4 rounded-full drop-shadow-[4px_4px_0_black] hover:-translate-y-1 hover:drop-shadow-[6px_6px_0_black] transition-all flex items-center justify-center"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
             </svg>
-            FILTERS
           </button>
         )}
 
-        {/* Bubble Filter Panel */}
+        {/* Bottom Sheet Filter Panel */}
         {showFilterPanel && (
-          <div className="absolute top-0 right-0 h-full w-full sm:w-96 bg-[#F4F0EA] dark:bg-[#1C1C1C] border-l-0 sm:border-l-4 border-black dark:border-[#333] z-[1002] flex flex-col transition-transform duration-300">
-            <div className="p-6 border-b-4 border-black dark:border-[#333] flex justify-between items-center bg-white dark:bg-black text-black dark:text-white">
-              <h3 className="font-black text-2xl uppercase tracking-tighter">Live Filters</h3>
-              <button
-                onClick={() => setShowFilterPanel(false)}
-                className="w-10 h-10 border-4 border-black dark:border-white rounded-full flex items-center justify-center hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-black"
-              >
-                X
-              </button>
-            </div>
+          <>
+            {/* Backdrop for mobile */}
+            <div className="absolute inset-0 bg-black/50 z-[1001] md:hidden" onClick={() => setShowFilterPanel(false)} />
             
-            <div className="p-6 flex-1 overflow-y-auto text-black dark:text-white">
-              <div className="mb-8">
-                <label className="block text-sm font-bold uppercase mb-3">Status</label>
-                <select 
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full bg-white dark:bg-black border-4 border-black dark:border-[#333] p-4 rounded-2xl font-bold text-lg uppercase cursor-pointer appearance-none focus:outline-none focus:border-[#0052CC] transition-colors drop-shadow-[4px_4px_0_black]"
-                >
-                  <option value="all">ALL STATUSES</option>
-                  <option value="unresolved">UNRESOLVED</option>
-                  <option value="in_progress">IN PROGRESS</option>
-                  <option value="resolved">RESOLVED</option>
-                </select>
+            <div className="absolute bottom-0 right-0 md:bottom-12 md:right-12 w-full md:w-[400px] bg-white dark:bg-[#1C1C1C] rounded-t-[32px] md:rounded-[32px] border-t-4 md:border-4 border-black dark:border-[#333] z-[1002] flex flex-col transition-transform duration-300 animate-[slideUp_0.3s_ease-out] md:drop-shadow-[8px_8px_0_black]">
+              {/* Handle */}
+              <div className="w-full flex justify-center pt-4 pb-2 md:hidden">
+                <div className="w-12 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full" />
               </div>
 
-              <div className="mb-8">
-                <label className="block text-sm font-bold uppercase mb-3">Issue Category</label>
-                <div className="flex flex-col gap-3">
-                  <button 
-                    onClick={() => setIssueTypeFilter('all')}
-                    className={`p-4 border-4 border-black dark:border-[#333] rounded-2xl ${issueTypeFilter === 'all' ? 'bg-[#0052CC] text-white drop-shadow-[4px_4px_0_black]' : 'bg-white dark:bg-black hover:-translate-y-1 hover:drop-shadow-[4px_4px_0_black]'} font-bold uppercase text-left transition-all`}
-                  >
-                    ALL CATEGORIES
-                  </button>
-                  {issueTypes.map(type => (
-                    <button 
-                      key={type}
-                      onClick={() => setIssueTypeFilter(type)}
-                      className={`p-4 border-4 border-black dark:border-[#333] rounded-2xl ${issueTypeFilter === type ? 'bg-[#0052CC] text-white drop-shadow-[4px_4px_0_black]' : 'bg-white dark:bg-black hover:-translate-y-1 hover:drop-shadow-[4px_4px_0_black]'} font-bold uppercase text-left transition-all`}
+              <div className="px-6 pb-2 pt-2 md:pt-6 flex justify-between items-center">
+                <h3 className="font-black text-2xl">Filters</h3>
+                <button onClick={() => setShowFilterPanel(false)} className="md:hidden text-sm font-bold uppercase text-gray-500">Close</button>
+              </div>
+              
+              <div className="px-6 py-4 flex-1 overflow-y-auto text-black dark:text-white max-h-[60vh] md:max-h-[500px]">
+                {/* Status */}
+                <div className="mb-6">
+                  <label className="block text-sm font-bold text-gray-400 mb-3">Status</label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { id: 'all', label: 'All' },
+                      { id: 'unresolved', label: 'Unresolved' },
+                      { id: 'in_progress', label: 'In Progress' },
+                      { id: 'resolved', label: 'Resolved' }
+                    ].map(status => (
+                      <button
+                        key={status.id}
+                        onClick={() => setStatusFilter(status.id)}
+                        className={`px-4 py-2 rounded-full font-bold flex items-center gap-2 transition-colors ${statusFilter === status.id ? 'bg-[#0052CC] text-white' : 'bg-gray-100 dark:bg-[#333] text-black dark:text-white'}`}
+                      >
+                        {statusFilter === status.id && <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                        {status.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Issue Type */}
+                <div className="mb-6">
+                  <label className="block text-sm font-bold text-gray-400 mb-3">Issue Type</label>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setIssueTypeFilter('all')}
+                      className={`px-4 py-2 rounded-full font-bold flex items-center gap-2 transition-colors ${issueTypeFilter === 'all' ? 'bg-[#0052CC] text-white' : 'bg-gray-100 dark:bg-[#333] text-black dark:text-white'}`}
                     >
-                      {type.replace(/_/g, ' ')}
+                      {issueTypeFilter === 'all' && <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                      All
                     </button>
-                  ))}
+                    {issueTypes.map(type => (
+                      <button
+                        key={type}
+                        onClick={() => setIssueTypeFilter(type)}
+                        className={`px-4 py-2 rounded-full font-bold flex items-center gap-2 transition-colors ${issueTypeFilter === type ? 'bg-[#0052CC] text-white' : 'bg-gray-100 dark:bg-[#333] text-black dark:text-white'}`}
+                      >
+                        {issueTypeFilter === type && <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                        {type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-            
-            <div className="p-6 border-t-4 border-black dark:border-[#333] bg-white dark:bg-black">
-              <div className="text-xs font-bold text-gray-500 uppercase text-center">
-                SHOWING {filteredReports.length} / {reports?.length || 0} REPORTS
+              
+              <div className="p-4 border-t dark:border-[#333]">
+                <button
+                  onClick={() => setShowFilterPanel(false)}
+                  className="w-full bg-[#0052CC] text-white py-4 rounded-full font-bold text-lg hover:bg-blue-700 transition-colors drop-shadow-[0_4px_14px_rgba(0,82,204,0.39)] hover:drop-shadow-[0_6px_20px_rgba(0,82,204,0.23)]"
+                >
+                  Apply Filters
+                </button>
               </div>
             </div>
-          </div>
+          </>
         )}
 
         {/* Bubble Details Panel (Left Side) */}
@@ -610,3 +628,5 @@ export default function PublicMap({ isDark }) {
     </>
   )
 }
+
+

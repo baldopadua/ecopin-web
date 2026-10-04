@@ -30,6 +30,20 @@ export default function Navbar({
     }
   };
 
+  const handleLinkClick = (e, path) => {
+    e.preventDefault();
+    if (pathname !== path) {
+      setIsExiting(true);
+      setTimeout(() => {
+        setIsMenuOpen(false);
+        router.push(path);
+        setTimeout(() => setIsExiting(false), 100);
+      }, 900);
+    } else {
+      setIsMenuOpen(false);
+    }
+  };
+
   const navContent = (
     <>
       {isExiting && (
@@ -39,7 +53,7 @@ export default function Navbar({
             animation: 'wipeInRightClip 0.9s cubic-bezier(0.8, 0, 0.2, 1) forwards'
           }} 
         >
-          <img src="/Full Logo Dark.png" alt="EcoPin" className="h-20 md:h-28 object-contain relative z-10" />
+          <img src="/Auth Logo.png" alt="EcoPin" className="h-16 md:h-20 w-auto object-contain relative z-10" />
           <div className="mt-6 font-black uppercase tracking-[0.3em] text-[10px] text-white/50 animate-pulse">
             Loading
           </div>
@@ -62,7 +76,7 @@ export default function Navbar({
         <nav className="hidden md:flex gap-6 items-center">
           <a href="/#about" className="text-sm font-black uppercase tracking-widest text-black dark:text-white hover:text-[#0052CC] transition-colors">About</a>
           <a href="/#features" className="text-sm font-black uppercase tracking-widest text-black dark:text-white hover:text-[#0052CC] transition-colors">Features</a>
-          <Link href="/map" className="text-sm font-black uppercase tracking-widest text-black dark:text-white hover:text-[#0052CC] transition-colors">Live Map</Link>
+          <a href="/map" onClick={(e) => handleLinkClick(e, '/map')} className="text-sm font-black uppercase tracking-widest text-black dark:text-white hover:text-[#0052CC] transition-colors cursor-pointer">Live Map</a>
         </nav>
 
         <div className="hidden md:flex items-center gap-4">
@@ -106,7 +120,7 @@ export default function Navbar({
       <nav className="flex flex-col gap-6 items-center w-full max-w-sm">
         <a href="/#about" onClick={() => setIsMenuOpen(false)} className="w-full text-center text-2xl font-black uppercase tracking-widest text-black dark:text-white py-2 hover:opacity-70">About</a>
         <a href="/#features" onClick={() => setIsMenuOpen(false)} className="w-full text-center text-2xl font-black uppercase tracking-widest text-black dark:text-white py-2 hover:opacity-70">Features</a>
-        <Link href="/map" onClick={() => setIsMenuOpen(false)} className="w-full text-center text-2xl font-black uppercase tracking-widest text-black dark:text-white py-2 hover:opacity-70">Live Map</Link>
+        <a href="/map" onClick={(e) => handleLinkClick(e, '/map')} className="w-full text-center text-2xl font-black uppercase tracking-widest text-black dark:text-white py-2 hover:opacity-70 cursor-pointer">Live Map</a>
         
         <button
           onClick={toggleTheme}
@@ -146,3 +160,5 @@ export default function Navbar({
     </>
   );
 }
+
+
