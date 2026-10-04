@@ -14,6 +14,10 @@ import dynamic from 'next/dynamic'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
 
+const normalizeString = (str) => {
+  if (!str) return '';
+  return str.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+};
 // Polyfill Buffer for browser environment
 if (typeof window !== 'undefined' && !window.Buffer) {
   window.Buffer = Buffer
@@ -249,7 +253,7 @@ export default function ClusterDetailPage() {
                  {cluster.issue_type && (
                    <div>
                       <span className="text-[10px] font-mono uppercase text-text-muted block mb-1">Primary Signature</span>
-                      <div className="text-lg font-bold">{cluster.issue_type}</div>
+                      <div className="text-lg font-bold">{normalizeString(cluster.issue_type)}</div>
                    </div>
                  )}
               </div>

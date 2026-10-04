@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { getCurrentPredictions, fetchPredictions, getAccuracyMetrics, getAvailablePredictionDates } from '../../../lib/api/hotspot';
+import { fetchFilteredReports } from '../../../lib/api/reports';
 import TacticalCanvas from '../../../components/map/TacticalCanvas';
 import CommandHUD from '../../../components/ui/CommandHUD';
 import DynamicFeed from '../../../components/ui/DynamicFeed';
