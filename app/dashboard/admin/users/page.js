@@ -7,17 +7,21 @@ import FilterBar from '@/components/ui/FilterBar'
 import DataTable from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
 import StatusBadge from '@/components/ui/StatusBadge'
-import { getAllUsers, updateUserRole, deleteUser, createUser } from '@/lib/api'
+import { getAllUsers, updateUserRole, deleteUser, createUser, getSystemSettings } from '@/lib/api'
 
 export default function UserManagement() {
   const router = useRouter()
-  const [users, setUsers] = useState([])
+  const [allUsers, setAllUsers] = useState([])
+  const [filteredUsers, setFilteredUsers] = useState([])
+  const [paginatedUsers, setPaginatedUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [notification, setNotification] = useState(null)
   const [filters, setFilters] = useState({ search: '', role: '' })
-  const [debouncedSearch, setDebouncedSearch] = useState('')
-  const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 })
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 5
   const [updatingRole, setUpdatingRole] = useState(null)
   const [deletingUser, setDeletingUser] = useState(null)
   const [showCreateForm, setShowCreateForm] = useState(false)
@@ -25,35 +29,44 @@ export default function UserManagement() {
   const [newUser, setNewUser] = useState({ email: '', password: '', full_name: '', role: 'citizen' })
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [userToDelete, setUserToDelete] = useState(null)
+  const [passwordSettings, setPasswordSettings] = useState({
+    password_min_length: 8,
+    password_require_uppercase: true,
+    password_require_lowercase: true,
+    password_require_numbers: true,
+    password_require_special_chars: true
+  })
 
-  // Debounce search input and reset page when filters change
+  // Load system settings
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(filters.search)
-      setPagination(prev => ({ ...prev, page: 1 }))
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [filters.search, filters.role])
+    const loadSettings = async () => {
+      try {
+        const settings = await getSystemSettings()
+        if (settings) setPasswordSettings(settings)
+      } catch (err) {
+        console.error('Failed to load system settings:', err)
+      }
+    }
+    loadSettings()
+  }, [])
 
+  // Load users ONCE
   useEffect(() => {
     loadUsers()
-  }, [debouncedSearch, filters.role, pagination.page])
+  }, [])
 
   const loadUsers = async () => {
     try {
       setLoading(true)
       const data = await getAllUsers({
-        page: pagination.page,
-        limit: 20,
-        search: debouncedSearch,
-        role: filters.role
+        page: 1,
+        limit: 1000, // Fetch up to 1000 for local filtering
+        search: '',
+        role: ''
       })
-      setUsers(data.users || [])
-      setPagination(prev => ({
-        ...prev,
-        totalPages: data.pagination?.totalPages || 1,
-        total: data.pagination?.total || 0
-      }))
+      const fetchedUsers = data.users || []
+      setAllUsers(fetchedUsers)
+      setFilteredUsers(fetchedUsers)
     } catch (err) {
       console.error('Failed to load users:', err)
       setError('Failed to load users')
@@ -61,6 +74,34 @@ export default function UserManagement() {
       setLoading(false)
     }
   }
+
+  // Apply filters locally
+  useEffect(() => {
+    let result = allUsers
+
+    if (filters.search) {
+      const q = filters.search.toLowerCase()
+      result = result.filter(u => 
+        (u.full_name && u.full_name.toLowerCase().includes(q)) ||
+        (u.email && u.email.toLowerCase().includes(q))
+      )
+    }
+
+    if (filters.role) {
+      result = result.filter(u => u.role === filters.role)
+    }
+
+    setFilteredUsers(result)
+    setCurrentPage(1)
+  }, [filters.search, filters.role, allUsers])
+
+  // Apply pagination locally
+  useEffect(() => {
+    const start = (currentPage - 1) * itemsPerPage
+    setPaginatedUsers(filteredUsers.slice(start, start + itemsPerPage))
+  }, [currentPage, filteredUsers])
+
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage)
 
   const handleRoleChange = async (userId, newRole) => {
     try {
@@ -129,31 +170,39 @@ export default function UserManagement() {
   }
 
   const validatePassword = (password) => {
-    const minLength = 8
+    const { 
+      password_min_length, 
+      password_require_uppercase, 
+      password_require_lowercase, 
+      password_require_numbers, 
+      password_require_special_chars 
+    } = passwordSettings;
+
     const hasUpperCase = /[A-Z]/.test(password)
     const hasLowerCase = /[a-z]/.test(password)
     const hasNumbers = /\d/.test(password)
     const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password)
 
     const requirements = [
-      { met: password.length >= minLength, text: `At least ${minLength} characters long` },
-      { met: hasUpperCase, text: 'At least one uppercase letter' },
-      { met: hasLowerCase, text: 'At least one lowercase letter' },
-      { met: hasNumbers, text: 'At least one number' },
-      { met: hasSpecialChar, text: 'At least one special character' }
+      { met: password.length >= password_min_length, text: `At least ${password_min_length} characters long` }
     ]
+
+    if (password_require_uppercase) requirements.push({ met: hasUpperCase, text: 'At least one uppercase letter' })
+    if (password_require_lowercase) requirements.push({ met: hasLowerCase, text: 'At least one lowercase letter' })
+    if (password_require_numbers) requirements.push({ met: hasNumbers, text: 'At least one number' })
+    if (password_require_special_chars) requirements.push({ met: hasSpecialChar, text: 'At least one special character' })
 
     const allMet = requirements.every(r => r.met)
     return { requirements, allMet }
   }
 
   const handlePageChange = (page) => {
-    setPagination(prev => ({ ...prev, page }))
+    setCurrentPage(page)
   }
 
   const handleResetFilters = () => {
     setFilters({ search: '', role: '' })
-    setPagination(prev => ({ ...prev, page: 1 }))
+    setCurrentPage(1)
   }
 
   const tableColumns = [
@@ -375,7 +424,7 @@ export default function UserManagement() {
           }
         ]}
         onReset={handleResetFilters}
-        resultsCount={pagination.total}
+        resultsCount={filteredUsers.length}
         loading={loading}
         sticky={false}
       />
@@ -383,19 +432,19 @@ export default function UserManagement() {
       {/* Users Table */}
       <DataTable
         columns={tableColumns}
-        data={users}
+        data={paginatedUsers}
         loading={loading}
         emptyMessage="No users found"
       />
 
       {/* Pagination */}
-      {pagination.totalPages > 1 && (
+      {totalPages > 1 && (
         <Pagination
-          currentPage={pagination.page}
-          totalPages={pagination.totalPages}
+          currentPage={currentPage}
+          totalPages={totalPages}
           onPageChange={handlePageChange}
-          itemsPerPage={20}
-          totalItems={pagination.total}
+          itemsPerPage={itemsPerPage}
+          totalItems={filteredUsers.length}
           className="mt-6"
         />
       )}
