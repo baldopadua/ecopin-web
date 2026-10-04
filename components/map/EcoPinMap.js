@@ -141,14 +141,20 @@ function MapCenter({ centerLat, centerLng }) {
   const hasCentered = useRef(false)
 
   useEffect(() => {
+    let timeoutId
     if (centerLat && centerLng && !hasCentered.current) {
       console.log('Centering map on:', centerLat, centerLng)
       hasCentered.current = true
-      setTimeout(() => {
-        map.flyTo([centerLat, centerLng], 17, {
-          duration: 1.5
-        })
+      timeoutId = setTimeout(() => {
+        if (map && map.getContainer && map.getContainer()) {
+          map.flyTo([centerLat, centerLng], 17, {
+            duration: 1.5
+          })
+        }
       }, 500)
+    }
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId)
     }
   }, [centerLat, centerLng, map])
 

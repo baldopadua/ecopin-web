@@ -27,7 +27,13 @@ export default function ClustersPage() {
     const loadData = async () => {
       try {
         const clustersData = await fetchClusters()
-        const sorted = (clustersData || []).sort((a, b) => (b.severity_score || 0) - (a.severity_score || 0))
+        const severityRank = { high: 3, medium: 2, low: 1 }
+        const sorted = (clustersData || []).sort((a, b) => {
+          const rankA = severityRank[a.severity] || 0
+          const rankB = severityRank[b.severity] || 0
+          if (rankA !== rankB) return rankB - rankA
+          return (b.report_count || 0) - (a.report_count || 0)
+        })
         setClusters(sorted)
         setFilteredClusters(sorted)
       } catch (error) {
@@ -55,13 +61,12 @@ export default function ClustersPage() {
     }
 
     if (severityFilter !== 'all') {
-      if (severityFilter === 'high') result = result.filter(c => c.severity_score >= 70)
-      else if (severityFilter === 'medium') result = result.filter(c => c.severity_score >= 30 && c.severity_score < 70)
-      else if (severityFilter === 'low') result = result.filter(c => c.severity_score < 30)
+      result = result.filter(c => c.severity === severityFilter)
     }
 
     if (statusFilter !== 'all') {
-      if (statusFilter === 'unknown') result = result.filter(c => !c.status)
+      // If status is null/undefined in DB, it implies unresolved
+      if (statusFilter === 'unresolved') result = result.filter(c => !c.status || c.status === 'unresolved')
       else result = result.filter(c => c.status === statusFilter)
     }
 
@@ -71,7 +76,7 @@ export default function ClustersPage() {
 
   // Top 3 Critical Hotzones (always based on unfiltered data)
   const criticalClusters = clusters
-    .filter(c => (c.severity_score || 0) > 0)
+    .filter(c => c.severity === 'high')
     .slice(0, 3)
 
   // Derived filters
@@ -103,12 +108,12 @@ export default function ClustersPage() {
     },
     { key: 'issue_type', label: 'Pollution Type', width: '20%' },
     { 
-      key: 'severity_score', 
-      label: 'Severity Score', 
+      key: 'severity', 
+      label: 'Severity', 
       width: '15%',
       render: (val) => (
-        <span className={`font-black ${val >= 70 ? 'text-error' : val >= 30 ? 'text-warning' : 'text-info'}`}>
-          {Math.round(val || 0)}
+        <span className={`font-black uppercase tracking-widest text-xs ${val === 'high' ? 'text-error' : val === 'medium' ? 'text-warning' : 'text-info'}`}>
+          {val || 'UNKNOWN'}
         </span>
       )
     },
@@ -128,11 +133,20 @@ export default function ClustersPage() {
       key: 'status',
       label: 'Status',
       width: '10%',
-      render: (val) => val ? (
-        <span className="uppercase text-xs font-bold font-mono tracking-widest text-text-secondary">{val}</span>
-      ) : (
-        <span className="text-text-muted text-xs font-mono">UNKNOWN</span>
-      )
+      render: (val) => {
+        let label = val || 'UNRESOLVED'
+        let subLabel = '(New)'
+        if (label === 'unresolved') subLabel = '(New)'
+        else if (label === 'in_progress') { label = 'IN PROGRESS'; subLabel = '(Scheduled/Prioritized)' }
+        else if (label === 'resolved') { label = 'RESOLVED'; subLabel = '(Completed)' }
+        
+        return (
+          <div className="flex flex-col">
+            <span className="uppercase text-[10px] font-bold font-mono tracking-widest text-text-secondary">{label}</span>
+            <span className="text-[9px] text-text-muted">{subLabel}</span>
+          </div>
+        )
+      }
     }
   ]
 
@@ -180,8 +194,9 @@ export default function ClustersPage() {
                   onChange: setStatusFilter,
                   options: [
                     { value: 'all', label: 'All Statuses' },
-                    { value: 'unknown', label: 'Unknown' },
-                    { value: 'resolved', label: 'Resolved' }
+                    { value: 'unresolved', label: 'Unresolved (New)' },
+                    { value: 'in_progress', label: 'In Progress (Scheduled/Prioritized)' },
+                    { value: 'resolved', label: 'Resolved (Completed)' }
                   ]
                 }
               ]}
