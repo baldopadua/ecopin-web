@@ -213,7 +213,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
     if (status === 'Manual_Review' || status === 'manual_review') {
       return 'manual_review'
     }
-    return status || 'validated'
+    return status || 'approved'
   }
   
   const [validationStatusFilter, setValidationStatusFilter] = useState(getValidationFilterValue(initialValidationStatus))
@@ -792,7 +792,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                           {report.status?.replace(/_/g, ' ').toUpperCase()}
                         </span>
                         <span className={`text-xs px-2 py-1 rounded font-semibold border ${
-                          report.validation_status === 'validated' || report.validation_status === 'automatically_valid'
+                          report.validation_status === 'approved'
                             ? 'bg-success/20 text-success border-success/30'
                             : report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review'
                             ? 'bg-purple/20 text-purple border-purple/30'
@@ -909,7 +909,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                   className="px-2 py-1 text-xs font-bold uppercase tracking-wider bg-surface-elevated border-2 border-black dark:border-white text-text-primary rounded-none cursor-pointer focus:outline-none focus:bg-[#ccff00] focus:text-black focus:border-black"
                 >
                   <option value="all">ALL</option>
-                  <option value="validated">VALIDATED</option>
+                  <option value="approved">APPROVED</option>
                   <option value="manual_review">MANUAL</option>
                 </select>
               </div>
