@@ -11,6 +11,7 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [isChecking, setIsChecking] = useState(true)
+  const [isExiting, setIsExiting] = useState(false)
   const router = useRouter()
   const [theme, setTheme] = useState('dark')
 
@@ -26,7 +27,7 @@ export default function AuthPage() {
     if (token) {
       router.replace('/dashboard')
     } else {
-      setIsChecking(false)
+      setTimeout(() => setIsChecking(false), 1000)
     }
   }, [router])
 
@@ -98,20 +99,82 @@ export default function AuthPage() {
 
   if (isChecking) {
     return (
-      <main className="min-h-screen bg-[#F4F0EA] dark:bg-[#121212] relative flex flex-col items-center justify-center transition-colors duration-300">
-        <img src="/Solo Logo Light.png" alt="Loading..." className="h-24 w-auto object-contain animate-pulse dark:hidden" />
-        <img src="/Solo Logo Dark.png" alt="Loading..." className="h-24 w-auto object-contain animate-pulse hidden dark:block" />
+      <main className="min-h-screen bg-white dark:bg-[#121212] relative flex items-center justify-center overflow-hidden transition-colors duration-300">
+        {/* Logo underneath */}
+        <div 
+          className="relative z-0 flex flex-col items-center" 
+          style={{ 
+            animation: 'revealLogo 1s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards', 
+            opacity: 0 
+          }}
+        >
+          <img src="/Full Logo Light.png" alt="EcoPin" className="h-10 sm:h-12 w-auto object-contain dark:hidden" />
+          <img src="/Full Logo Dark.png" alt="EcoPin" className="h-10 sm:h-12 w-auto object-contain hidden dark:block" />
+          <div className="mt-6 font-black uppercase tracking-[0.3em] text-[10px] text-gray-500 animate-pulse">
+            Loading
+          </div>
+        </div>
+
+        {/* Royal blue wipe overlay */}
+        <div 
+          className="absolute inset-0 bg-[#0052CC] z-10" 
+          style={{ 
+            transformOrigin: 'right',
+            animation: 'wipeRight 0.9s cubic-bezier(0.8, 0, 0.2, 1) forwards'
+          }} 
+        />
+        
+        <style dangerouslySetInnerHTML={{
+          __html: `
+          @keyframes wipeRight {
+            0% { transform: scaleX(1); }
+            100% { transform: scaleX(0); }
+          }
+          @keyframes revealLogo {
+            0% { opacity: 0; transform: scale(0.95); }
+            100% { opacity: 1; transform: scale(1); }
+          }
+          `
+        }} />
       </main>
     )
+  }
+
+  function handleBack() {
+    setIsExiting(true)
+    setTimeout(() => {
+      router.push('/')
+    }, 900)
   }
 
   return (
     <main
       className="min-h-screen bg-[#F4F0EA] dark:bg-[#121212] text-black dark:text-white relative flex flex-col items-center justify-center p-4 md:p-6 transition-colors duration-300 overflow-hidden"
     >
+      {isExiting && (
+        <div 
+          className="absolute inset-0 bg-[#0052CC] z-[9999] flex flex-col items-center justify-center" 
+          style={{ 
+            animation: 'wipeInRightClip 0.9s cubic-bezier(0.8, 0, 0.2, 1) forwards'
+          }} 
+        >
+          <img src="/Full Logo Dark.png" alt="EcoPin" className="h-10 sm:h-12 w-auto object-contain" />
+          <div className="mt-6 font-black uppercase tracking-[0.3em] text-[10px] text-white/50 animate-pulse">
+            Loading
+          </div>
+          <style dangerouslySetInnerHTML={{
+            __html: `
+            @keyframes wipeInRightClip {
+              0% { clip-path: inset(0 100% 0 0); }
+              100% { clip-path: inset(0 0 0 0); }
+            }
+            `
+          }} />
+        </div>
+      )}
       {/* Desktop Back Button */}
       <button 
-        onClick={() => router.push('/')}
+        onClick={handleBack}
         className="hidden md:flex items-center justify-center absolute top-8 left-8 z-50 font-black text-lg uppercase bg-white dark:bg-[#1C1C1C] text-black dark:text-white border-4 border-black dark:border-[#333] rounded-full px-6 py-3 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all drop-shadow-[4px_4px_0_black] hover:translate-y-1 hover:drop-shadow-[0px_0px_0_black]"
       >
         ← BACK
@@ -155,7 +218,7 @@ export default function AuthPage() {
             
             {/* Mobile Back Button */}
             <button 
-              onClick={() => router.push('/')}
+              onClick={handleBack}
               className="md:hidden font-black text-sm uppercase bg-[#F4F0EA] dark:bg-[#2A2A2A] text-black dark:text-white border-4 border-black dark:border-[#333] rounded-full px-4 py-2 hover:bg-black hover:text-white transition-all drop-shadow-[2px_2px_0_black]"
             >
               ← BACK
