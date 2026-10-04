@@ -224,7 +224,7 @@ export default function Home() {
 
                           {/* Central Pin */}
                           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 flex flex-col items-center">
-                             <div className="bg-black text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-1 shadow-md whitespace-nowrap">Move to adjust</div>
+                             <div className="bg-black text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-1 shadow-md whitespace-nowrap">Current Location</div>
                              <svg viewBox="0 0 24 24" className="w-10 h-10 animate-bounce text-[#0052CC]" fill="currentColor" stroke="black" strokeWidth="1.5">
                                 <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
                              </svg>
