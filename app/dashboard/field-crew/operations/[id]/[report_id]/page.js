@@ -1,7 +1,7 @@
 'use client'
 import React, { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Map as MapIcon, Upload, Trash2, Camera } from 'lucide-react'
+import { ArrowLeft, Map as MapIcon, Upload, Trash2, Camera, CheckCircle } from 'lucide-react'
 import { FieldCrewGuard } from '@/components/auth/RequireRole'
 import { useUser } from '@/components/auth/UserContext'
 import PageHeader from '@/components/layout/PageHeader'
@@ -232,6 +232,11 @@ export default function ReportDetailPage() {
     ...(report.after_photo_url ? [{ url: report.after_photo_url, type: 'after' }] : [])
   ]
 
+  const isScouting = report.issue_type === 'scouting' || report.issue_type === 'acknowledge_only';
+  const isFinished = report.status === 'resolved' || report.status === 'closed' || 
+                     (isScouting && report.stage === 'acknowledged') || 
+                     (!isScouting && report.stage === 'responded');
+
   return (
     <FieldCrewGuard>
       <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
@@ -251,6 +256,20 @@ export default function ReportDetailPage() {
             [ READ-ONLY METADATA — FIELD CREW VIEW ]
           </p>
         </div>
+
+        {isFinished && (
+          <div className="bg-[#ccff00] text-black border-2 border-[#1A1A1A] p-4 font-bold flex items-center justify-between shadow-[4px_4px_0px_0px_#1a1a1a]">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-6 h-6 flex-shrink-0" />
+              <span>
+                {isScouting ? 'Scouting Acknowledged!' : 'Report Finished!'} You have completed your required actions for this report. You can move on.
+              </span>
+            </div>
+            <button onClick={() => router.push(`/dashboard/field-crew/operations/${task.id}`)} className="px-4 py-2 bg-[#1A1A1A] text-[#ccff00] font-mono text-sm uppercase tracking-widest hover:bg-black transition-colors whitespace-nowrap hidden sm:block">
+               Back to Task
+            </button>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           

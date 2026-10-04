@@ -75,16 +75,6 @@ function TacticalScanContent() {
       const data = await getAvailablePredictionDates();
       
       let dates = data.data || [];
-      if (dates.length > 0) {
-        const extraDates = [];
-        const earliest = new Date(dates[0]);
-        for (let i = 12; i > 0; i--) {
-          const d = new Date(earliest);
-          d.setDate(d.getDate() - i * 7);
-          extraDates.push(d.toISOString().split('T')[0]);
-        }
-        dates = [...extraDates, ...dates];
-      }
       setAvailableDates(dates);
 
       if (dates.length > 0) {
