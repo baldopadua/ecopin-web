@@ -56,6 +56,9 @@ export default function SystemSettings() {
       
       await updateSystemSettings(settings)
       setNotification({ message: 'Settings saved successfully', type: 'success' })
+      
+      // Notify SessionProvider to re-fetch the session timeout
+      window.dispatchEvent(new CustomEvent('system-settings-updated'))
     } catch (err) {
       console.error('Failed to save settings:', err)
       setNotification({ message: 'Failed to save settings', type: 'error' })

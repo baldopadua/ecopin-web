@@ -23,6 +23,8 @@ export default function UserManagement() {
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [creatingUser, setCreatingUser] = useState(false)
   const [newUser, setNewUser] = useState({ email: '', password: '', full_name: '', role: 'citizen' })
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [userToDelete, setUserToDelete] = useState(null)
 
   // Debounce search input and reset page when filters change
   useEffect(() => {
@@ -74,21 +76,26 @@ export default function UserManagement() {
     }
   }
 
-  const handleDeleteUser = async (userId) => {
-    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-      return
-    }
+  const confirmDelete = (userId) => {
+    setUserToDelete(userId)
+    setShowDeleteModal(true)
+  }
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return
 
     try {
-      setDeletingUser(userId)
-      await deleteUser(userId)
+      setDeletingUser(userToDelete)
+      await deleteUser(userToDelete)
       setNotification({ message: 'User deleted successfully', type: 'success' })
       loadUsers()
     } catch (err) {
       console.error('Failed to delete user:', err)
-      setNotification({ message: 'Failed to delete user', type: 'error' })
+      setNotification({ message: err.message || 'Failed to delete user', type: 'error' })
     } finally {
       setDeletingUser(null)
+      setShowDeleteModal(false)
+      setUserToDelete(null)
     }
   }
 
@@ -198,7 +205,7 @@ export default function UserManagement() {
       width: '10%',
       render: (value, row) => (
         <button
-          onClick={() => handleDeleteUser(row.id)}
+          onClick={() => confirmDelete(row.id)}
           disabled={deletingUser === row.id}
           className="text-error hover:text-error/80 text-sm font-medium disabled:opacity-50"
         >
@@ -233,6 +240,37 @@ export default function UserManagement() {
           type={notification.type}
           onClose={() => setNotification(null)}
         />
+      )}
+
+      {/* Delete User Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="card max-w-md w-full">
+            <h3 className="text-xl font-bold text-text-primary mb-2">Delete User</h3>
+            <p className="text-text-secondary mb-6">
+              Are you sure you want to delete this user? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false)
+                  setUserToDelete(null)
+                }}
+                disabled={deletingUser}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteUser}
+                disabled={deletingUser}
+                className="btn-primary bg-error hover:bg-error/90 text-white border-0"
+              >
+                {deletingUser ? 'Deleting...' : 'Delete User'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Create User Form */}

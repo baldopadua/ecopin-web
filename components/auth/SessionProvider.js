@@ -17,6 +17,7 @@ export function SessionProvider({ children }) {
     if (isShowingModalRef.current) return // Prevent duplicate modals
     
     localStorage.removeItem('authToken')
+    localStorage.removeItem('refreshToken')
     localStorage.removeItem('lastActivity')
     isShowingModalRef.current = true
     setShowSessionExpiredModal(true)
@@ -32,6 +33,7 @@ export function SessionProvider({ children }) {
       const validationResult = await validateSession()
       if (!validationResult.valid) {
         localStorage.removeItem('authToken')
+        localStorage.removeItem('refreshToken')
         localStorage.removeItem('lastActivity')
         if (!isShowingModalRef.current) {
           isShowingModalRef.current = true
@@ -60,6 +62,16 @@ export function SessionProvider({ children }) {
     }
 
     fetchSessionTimeout()
+
+    const handleSettingsUpdated = () => {
+      fetchSessionTimeout()
+    }
+
+    window.addEventListener('system-settings-updated', handleSettingsUpdated)
+    
+    return () => {
+      window.removeEventListener('system-settings-updated', handleSettingsUpdated)
+    }
   }, [])
 
   useEffect(() => {
@@ -89,6 +101,7 @@ export function SessionProvider({ children }) {
 
       if (!lastActivity) {
         localStorage.removeItem('authToken')
+        localStorage.removeItem('refreshToken')
         if (!isShowingModalRef.current) {
           isShowingModalRef.current = true
           setShowSessionExpiredModal(true)
@@ -101,6 +114,7 @@ export function SessionProvider({ children }) {
       // Check if session has expired
       if (timeSinceActivity > timeoutMs) {
         localStorage.removeItem('authToken')
+        localStorage.removeItem('refreshToken')
         localStorage.removeItem('lastActivity')
         if (!isShowingModalRef.current) {
           isShowingModalRef.current = true
@@ -121,8 +135,25 @@ export function SessionProvider({ children }) {
           const payload = JSON.parse(jsonPayload)
           const jwtExpTime = payload.exp * 1000 // Convert to milliseconds
           
+          if (jwtExpTime - currentTime < 300000 && jwtExpTime >= currentTime) {
+            import('@/lib/api/auth').then(({ refreshAuthToken }) => {
+              refreshAuthToken().then((newToken) => {
+                if (!newToken && jwtExpTime < Date.now()) {
+                  localStorage.removeItem('authToken')
+                  localStorage.removeItem('refreshToken')
+                  localStorage.removeItem('lastActivity')
+                  if (!isShowingModalRef.current) {
+                    isShowingModalRef.current = true
+                    setShowSessionExpiredModal(true)
+                  }
+                }
+              })
+            }).catch(console.error)
+          }
+
           if (jwtExpTime < currentTime) {
             localStorage.removeItem('authToken')
+            localStorage.removeItem('refreshToken')
             localStorage.removeItem('lastActivity')
             if (!isShowingModalRef.current) {
               isShowingModalRef.current = true
@@ -134,6 +165,7 @@ export function SessionProvider({ children }) {
       } catch (e) {
         // If JWT parsing fails, consider session expired
         localStorage.removeItem('authToken')
+        localStorage.removeItem('refreshToken')
         localStorage.removeItem('lastActivity')
         if (!isShowingModalRef.current) {
           isShowingModalRef.current = true
@@ -189,6 +221,7 @@ export function SessionProvider({ children }) {
         validateSession().then(validationResult => {
           if (!validationResult.valid) {
             localStorage.removeItem('authToken')
+            localStorage.removeItem('refreshToken')
             localStorage.removeItem('lastActivity')
             if (!isShowingModalRef.current) {
               isShowingModalRef.current = true
@@ -223,6 +256,7 @@ export function SessionProvider({ children }) {
 
     const handleSessionExpiredEvent = () => {
       localStorage.removeItem('authToken')
+      localStorage.removeItem('refreshToken')
       localStorage.removeItem('lastActivity')
       if (!isShowingModalRef.current) {
         isShowingModalRef.current = true
