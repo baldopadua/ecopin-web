@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import dynamic from 'next/dynamic'
 import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
 import { SkeletonForm } from '@/components/ui/Skeleton'
@@ -9,6 +10,11 @@ import {
   getFieldCrews,
   updateFieldCrew,
 } from '@/lib/api/optimization'
+
+const LocationPickerMap = dynamic(
+  () => import('@/components/map/LocationPickerMap'),
+  { ssr: false }
+)
 
 export default function OptimizationSettings() {
   const [loading, setLoading] = useState(true)
@@ -183,37 +189,23 @@ export default function OptimizationSettings() {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-text-primary mb-2">
-                Latitude
-              </label>
-              <input
-                type="number"
-                step="0.000001"
-                min="-90"
-                max="90"
-                value={depot.latitude}
-                onChange={(e) => handleDepotChange('latitude', e.target.value)}
-                className="w-full p-3 border-2 border-border bg-surface-elevated text-text-primary font-mono focus:border-[#ccff00] focus:outline-none transition-colors"
-              />
-              <p className="text-xs text-text-muted mt-1">Range: -90 to 90</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-text-primary mb-2">
-                Longitude
-              </label>
-              <input
-                type="number"
-                step="0.000001"
-                min="-180"
-                max="180"
-                value={depot.longitude}
-                onChange={(e) => handleDepotChange('longitude', e.target.value)}
-                className="w-full p-3 border-2 border-border bg-surface-elevated text-text-primary font-mono focus:border-[#ccff00] focus:outline-none transition-colors"
-              />
-              <p className="text-xs text-text-muted mt-1">Range: -180 to 180</p>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-text-primary mb-2">
+              Depot Location
+            </label>
+            <LocationPickerMap
+              position={{ lat: depot.latitude, lng: depot.longitude }}
+              onChange={(latlng) => {
+                setDepot(prev => ({
+                  ...prev,
+                  latitude: latlng.lat,
+                  longitude: latlng.lng
+                }))
+              }}
+            />
+            <div className="mt-2 flex gap-4 text-xs text-text-muted font-mono">
+              <span>Lat: {depot.latitude?.toFixed(6) || 'N/A'}</span>
+              <span>Lng: {depot.longitude?.toFixed(6) || 'N/A'}</span>
             </div>
           </div>
         </div>
