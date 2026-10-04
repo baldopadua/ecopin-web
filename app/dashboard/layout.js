@@ -43,9 +43,11 @@ export default function DashboardLayout({ children }) {
         if (userRole === 'admin' && pathname === '/dashboard') {
           setIsRedirecting(true)
           router.push('/dashboard/admin')
-        } else if (userRole === 'field_crew' && pathname === '/dashboard') {
-          setIsRedirecting(true)
-          router.push('/dashboard/field-crew')
+        } else if (userRole === 'field_crew') {
+          // Immediately block field crew from any dashboard pages
+          localStorage.removeItem('authToken')
+          router.push('/auth')
+          return
         } else if (userRole === 'officer' && pathname === '/dashboard') {
           setIsRedirecting(true)
           router.push('/dashboard/officer')

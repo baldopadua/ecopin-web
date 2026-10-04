@@ -64,6 +64,13 @@ export default function AuthPage() {
         return
       }
 
+      if (userRole === 'field_crew') {
+        localStorage.removeItem('authToken')
+        setError('Field crew web access is restricted. Please use the mobile application.')
+        setLoading(false)
+        return
+      }
+
       router.push('/dashboard');
 
     } catch (err) {
