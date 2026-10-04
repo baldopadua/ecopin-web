@@ -44,10 +44,12 @@ export default function ClustersPage() {
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase()
-      result = result.filter(c => 
-        (c.label && c.label.toLowerCase().includes(q)) || 
-        c.id.toLowerCase().includes(q)
-      )
+      result = result.filter(c => {
+        const generatedLabel = `cluster ${c.id.slice(0,6)}`.toLowerCase()
+        return (c.label && c.label.toLowerCase().includes(q)) || 
+               c.id.toLowerCase().includes(q) ||
+               generatedLabel.includes(q)
+      })
     }
 
     if (typeFilter !== 'all') {
