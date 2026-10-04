@@ -18,7 +18,7 @@ export default function Loading() {
 
       {/* Royal blue wipe overlay */}
       <div 
-        className="absolute inset-0 bg-[#0052CC] z-10" 
+        className="fixed inset-0 bg-[#0052CC] z-10" 
         style={{ 
           transformOrigin: 'right',
           animation: 'wipeRight 0.9s cubic-bezier(0.8, 0, 0.2, 1) forwards'

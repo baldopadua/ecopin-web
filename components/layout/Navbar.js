@@ -1,6 +1,7 @@
 'use client'
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 
 export default function Navbar({ 
   theme, 
@@ -12,13 +13,50 @@ export default function Navbar({
   className = '' 
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogoClick = (e) => {
+    e.preventDefault();
+    if (pathname !== '/') {
+      setIsExiting(true);
+      setTimeout(() => {
+        router.push('/');
+        setTimeout(() => setIsExiting(false), 100);
+      }, 900);
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   const navContent = (
     <>
-      <a href="/#home" className="cursor-pointer transition-all">
+      {isExiting && (
+        <div 
+          className="fixed inset-0 bg-[#0052CC] z-[9999] flex flex-col items-center justify-center" 
+          style={{ 
+            animation: 'wipeInRightClip 0.9s cubic-bezier(0.8, 0, 0.2, 1) forwards'
+          }} 
+        >
+          <img src="/Full Logo Dark.png" alt="EcoPin" className="h-20 md:h-28 object-contain relative z-10" />
+          <div className="mt-6 font-black uppercase tracking-[0.3em] text-[10px] text-white/50 animate-pulse">
+            Loading
+          </div>
+          <style dangerouslySetInnerHTML={{
+            __html: `
+            @keyframes wipeInRightClip {
+              0% { clip-path: inset(0 100% 0 0); }
+              100% { clip-path: inset(0 0 0 0); }
+            }
+            `
+          }} />
+        </div>
+      )}
+      <button onClick={handleLogoClick} className="cursor-pointer transition-all bg-transparent border-none p-0 outline-none">
         <img src="/Full Logo Light.png" alt="EcoPin" className="h-8 md:h-10 w-auto dark:hidden" />
         <img src="/Full Logo Dark.png" alt="EcoPin" className="h-8 md:h-10 w-auto hidden dark:block" />
-      </a>
+      </button>
       
       <div className="flex items-center gap-6 ml-auto">
         <nav className="hidden md:flex gap-6 items-center">

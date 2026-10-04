@@ -1,5 +1,6 @@
 'use client';
 import React, { useEffect, useState, useRef } from 'react';
+import Link from 'next/link';
 import Lenis from 'lenis';
 import Navbar from '../components/layout/Navbar';
 
@@ -379,9 +380,9 @@ export default function Home() {
               HELP MAKE PASIG <br className="hidden md:block" /> GREEN AGAIN
             </h2>
             
-            <a href="/ecopin-app-release.apk" download className="inline-block px-8 py-5 md:px-12 md:py-6 bg-white text-black rounded-full font-black text-2xl sm:text-3xl md:text-4xl uppercase tracking-widest border-4 border-black hover:scale-105 transition-transform relative z-10 break-words max-w-full">
+            <Link href="/downloads" className="inline-block px-8 py-5 md:px-12 md:py-6 bg-white text-black rounded-full font-black text-2xl sm:text-3xl md:text-4xl uppercase tracking-widest border-4 border-black hover:scale-105 transition-transform relative z-10 break-words max-w-full">
               DOWNLOAD .APK
-            </a>
+            </Link>
           </div>
         </section>
 

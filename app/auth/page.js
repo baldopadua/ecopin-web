@@ -117,7 +117,7 @@ export default function AuthPage() {
 
         {/* Royal blue wipe overlay */}
         <div 
-          className="absolute inset-0 bg-[#0052CC] z-10" 
+          className="fixed inset-0 bg-[#0052CC] z-10" 
           style={{ 
             transformOrigin: 'right',
             animation: 'wipeRight 0.9s cubic-bezier(0.8, 0, 0.2, 1) forwards'
@@ -153,7 +153,7 @@ export default function AuthPage() {
     >
       {isExiting && (
         <div 
-          className="absolute inset-0 bg-[#0052CC] z-[9999] flex flex-col items-center justify-center" 
+          className="fixed inset-0 bg-[#0052CC] z-[9999] flex flex-col items-center justify-center" 
           style={{ 
             animation: 'wipeInRightClip 0.9s cubic-bezier(0.8, 0, 0.2, 1) forwards'
           }} 
@@ -187,10 +187,9 @@ export default function AuthPage() {
         <div className="flex flex-col justify-between p-8 md:p-12 bg-[#0052CC] text-white border-b-4 md:border-b-0 md:border-r-4 border-black dark:border-[#333] relative w-full md:w-5/12 overflow-hidden">
           
           <div className="flex flex-col items-start gap-4 z-10 relative">
-            <a href="/" className="inline-block bg-white border-4 border-black rounded-full px-6 py-2 drop-shadow-[4px_4px_0_black] hover:translate-y-1 hover:drop-shadow-[0px_0px_0_black] transition-all mb-4">
+            <button onClick={handleBack} className="inline-block bg-white border-4 border-black rounded-full px-6 py-2 drop-shadow-[4px_4px_0_black] hover:translate-y-1 hover:drop-shadow-[0px_0px_0_black] transition-all mb-4">
                <img src="/Full Logo Light.png" alt="EcoPin" className="h-6 md:h-8 w-auto" />
-            </a>
-            <h2 className="text-4xl sm:text-5xl md:text-6xl font-black uppercase tracking-tighter leading-[0.9]">
+            </button><h2 className="text-4xl sm:text-5xl md:text-6xl font-black uppercase tracking-tighter leading-[0.9]">
               PASIG SWMO <br /> PORTAL
             </h2>
             <p className="text-lg font-bold text-white/90 leading-snug">
@@ -301,3 +300,4 @@ export default function AuthPage() {
     </main>
   )
 }
+
