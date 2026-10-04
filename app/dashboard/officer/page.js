@@ -74,8 +74,8 @@ export default function OfficerHomepage() {
      return diffHours > 48
   })
 
-  // Critical hotzones: top 3 highest severity
-  const criticalClusters = [...clusters].sort((a, b) => b.severity_score - a.severity_score).slice(0, 3)
+  // Critical hotzones: top 3 highest severity (now using priority_score)
+  const criticalClusters = [...clusters].sort((a, b) => (b.priority_score || 0) - (a.priority_score || 0)).slice(0, 3)
   
   // Action queue: work queue items minus active tasks, up to 5
   const actionQueueItems = workQueue.slice(0, 5)
@@ -84,13 +84,23 @@ export default function OfficerHomepage() {
   const aiConfidence = latestRun?.confidence_score ? Math.round(latestRun.confidence_score * 100) : 89
   const optimizationScore = latestRun?.metrics?.efficiency_score ? Math.round(latestRun.metrics.efficiency_score * 100) : 92
 
+  // Helper for priority labels
+  const getPriorityLabel = (cluster) => {
+     if (cluster.priority) return cluster.priority;
+     const score = cluster.priority_score || 0;
+     if (score >= 80) return 'urgent';
+     if (score >= 60) return 'high';
+     if (score >= 35) return 'medium';
+     return 'low';
+  };
+
   return (
     <OfficerGuard>
       <div className="fixed inset-0 z-[-1] pointer-events-none opacity-40 mix-blend-screen grayscale">
         <TacticalCanvas 
-           predictions={{ geojson: { type: 'FeatureCollection', features: clusters.map(c => ({
+            predictions={{ geojson: { type: 'FeatureCollection', features: clusters.map(c => ({
               type: 'Feature',
-              properties: { ...c, risk_score: c.severity_score / 10 },
+              properties: { ...c, risk_score: (c.priority_score || 0) / 10 },
               geometry: null
            }))} }} 
            hideUI={true} 
@@ -186,14 +196,14 @@ export default function OfficerHomepage() {
                                 <h3 className="font-bold text-text-primary text-lg">{item.title || `Cluster ${item.id.slice(0,8)}`}</h3>
                              </div>
                              <div className="text-right">
-                                <span className="text-xs text-text-muted block">Severity</span>
-                                <span className="font-bold text-error">{(item.severity_score || 0).toFixed(1)}/10</span>
+                                <span className="text-xs text-text-muted block">Priority Score</span>
+                                <span className="font-bold text-error">{(item.priority_score || 0).toFixed(1)}/100</span>
                              </div>
                           </div>
                           <div className="flex justify-between items-end mt-4">
                              <div className="text-sm text-text-secondary flex gap-4">
-                                <span>Reports: <strong className="text-text-primary">{item.report_count || item.reports?.length || 0}</strong></span>
-                                <span>Radius: <strong className="text-text-primary">{item.radius_meters || 50}m</strong></span>
+                                <span>Reports: <strong className="text-text-primary">{item.report_count || item.report_ids?.length || 0}</strong></span>
+                                <span>Radius: <strong className="text-text-primary">{Math.round(item.radius_meters || 50)}m</strong></span>
                              </div>
                              <button 
                                onClick={() => router.push(`/dashboard/officer/operations/create?preselect=${item.id}`)}
@@ -271,17 +281,18 @@ export default function OfficerHomepage() {
                            <div className="relative z-10 bg-surface-elevated border-2 border-border p-4 group-hover:border-error transition-colors">
                               <div className="flex justify-between items-start mb-3">
                                  <div>
-                                    <span className="text-[10px] font-mono text-error uppercase tracking-widest block mb-1">Priority {idx + 1}</span>
+                                    <span className="text-[10px] font-mono text-error uppercase tracking-widest block mb-1">{getPriorityLabel(cluster)} PRIORITY (RANK {idx + 1})</span>
                                     <h3 className="font-bold text-lg leading-none truncate max-w-[180px]">{cluster.label || `Cluster ${cluster.id.slice(0,6)}`}</h3>
                                  </div>
                                  <div className="text-right">
-                                    <span className="text-3xl font-black text-text-primary">{Math.round(cluster.severity_score || 0)}</span>
+                                    <span className="block text-[10px] font-mono uppercase text-text-muted mb-1">Score</span>
+                                    <span className="text-3xl font-black text-text-primary leading-none">{Math.round(cluster.priority_score || 0)}</span>
                                  </div>
                               </div>
                               <div className="grid grid-cols-2 gap-2 text-sm text-text-secondary">
                                  <div>
                                     <span className="block text-[10px] font-mono uppercase text-text-muted">Reports</span>
-                                    <span className="font-medium text-text-primary">{cluster.reports?.length || cluster.report_ids?.length || 0}</span>
+                                    <span className="font-medium text-text-primary">{cluster.report_count || cluster.report_ids?.length || 0}</span>
                                  </div>
                                  <div>
                                     <span className="block text-[10px] font-mono uppercase text-text-muted">Radius</span>
