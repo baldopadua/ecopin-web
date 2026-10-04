@@ -3,6 +3,12 @@ import React, { useEffect, useState, useRef } from 'react';
 import Lenis from 'lenis';
 import Navbar from '../components/layout/Navbar';
 
+const SolidLeaf = ({ className }) => (
+  <svg viewBox="200 1400 1400 1400" className={className} fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+    <path d="M 10212.1,6632.9 C 10020.1,5259.3 9193.56,3987.5 8016.09,3254.4 6838.63,2521.3 5332.59,2340.7 4015.19,2774.6 4583.93,4666.2 5714.06,6385.1 7225.35,7657.1 6151.28,7115.4 5305.09,6195.2 4668.79,5174.3 4032.49,4153.4 3588.08,3027 3147.23,1907.9 c -418.54,65.3 -615.3,338.8 -615.3,338.8 19.38,173.4 347.11,861.8 679.39,1513.5 -730.82,1034.7 -212.9,2598.1 730.44,3460.5 727.11,664.8 1953.15,1033.1 2856.17,1427.1 903.03,393.9 1822.34,938.6 2228.22,1836.3 C 9957.66,9456.3 10404,8006.6 10212.1,6632.9" transform="matrix(0.13333333,0,0,-0.13333333,0,2933.3333)" />
+  </svg>
+);
+
 export default function Home() {
   const [theme, setTheme] = useState('light');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -97,8 +103,8 @@ export default function Home() {
       <div className="w-full min-h-[100svh] flex flex-col">
         {/* FULL WIDTH HERO BACKGROUND */}
         <div className="w-full bg-[#0052CC] pt-[120px] md:pt-[160px] pb-8 md:pb-12 relative z-0 overflow-hidden flex-1 flex flex-col justify-center">
-          <div className="absolute top-20 right-10 md:right-20 text-[150px] opacity-20 text-white pointer-events-none -rotate-12">✦</div>
-          <div className="absolute bottom-20 left-10 md:left-20 text-[100px] opacity-20 text-white pointer-events-none rotate-45">✦</div>
+          <SolidLeaf className="absolute top-10 right-4 md:right-20 w-[120px] md:w-[150px] opacity-20 pointer-events-none -rotate-12 select-none text-white" />
+          <SolidLeaf className="absolute bottom-10 left-4 md:left-20 w-[80px] md:w-[100px] opacity-20 pointer-events-none rotate-45 select-none text-white" />
 
           <section id="home" className="relative z-10 w-full max-w-[1800px] mx-auto px-4 md:px-8 flex flex-col gap-16">
             <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
@@ -269,25 +275,25 @@ export default function Home() {
 
         {/* Full-Width Marquee */}
         <div className="w-full bg-black text-white border-y-4 border-black dark:border-[#333] font-black text-3xl md:text-5xl py-6 overflow-hidden flex uppercase tracking-tighter whitespace-nowrap relative z-10 shrink-0">
-          <div className="flex animate-marquee shrink-0 items-center">
-            <span className="px-6">SNAP ✦</span>
-            <span className="px-6">PIN ✦</span>
-            <span className="px-6">VERIFY ✦</span>
-            <span className="px-6">DISPATCH ✦</span>
-            <span className="px-6">SNAP ✦</span>
-            <span className="px-6">PIN ✦</span>
-            <span className="px-6">VERIFY ✦</span>
-            <span className="px-6">DISPATCH ✦</span>
+          <div className="flex animate-marquee shrink-0 items-center gap-8 md:gap-12 pr-8 md:pr-12">
+            <span>SNAP</span><SolidLeaf className="w-10 h-10 md:w-12 md:h-12" />
+            <span>PIN</span><SolidLeaf className="w-10 h-10 md:w-12 md:h-12" />
+            <span>VERIFY</span><SolidLeaf className="w-10 h-10 md:w-12 md:h-12" />
+            <span>DISPATCH</span><SolidLeaf className="w-10 h-10 md:w-12 md:h-12" />
+            <span>SNAP</span><SolidLeaf className="w-10 h-10 md:w-12 md:h-12" />
+            <span>PIN</span><SolidLeaf className="w-10 h-10 md:w-12 md:h-12" />
+            <span>VERIFY</span><SolidLeaf className="w-10 h-10 md:w-12 md:h-12" />
+            <span>DISPATCH</span><SolidLeaf className="w-10 h-10 md:w-12 md:h-12" />
           </div>
-          <div className="flex animate-marquee shrink-0 items-center" aria-hidden="true">
-            <span className="px-6">SNAP ✦</span>
-            <span className="px-6">PIN ✦</span>
-            <span className="px-6">VERIFY ✦</span>
-            <span className="px-6">DISPATCH ✦</span>
-            <span className="px-6">SNAP ✦</span>
-            <span className="px-6">PIN ✦</span>
-            <span className="px-6">VERIFY ✦</span>
-            <span className="px-6">DISPATCH ✦</span>
+          <div className="flex animate-marquee shrink-0 items-center gap-8 md:gap-12 pr-8 md:pr-12" aria-hidden="true">
+            <span>SNAP</span><SolidLeaf className="w-10 h-10 md:w-12 md:h-12" />
+            <span>PIN</span><SolidLeaf className="w-10 h-10 md:w-12 md:h-12" />
+            <span>VERIFY</span><SolidLeaf className="w-10 h-10 md:w-12 md:h-12" />
+            <span>DISPATCH</span><SolidLeaf className="w-10 h-10 md:w-12 md:h-12" />
+            <span>SNAP</span><SolidLeaf className="w-10 h-10 md:w-12 md:h-12" />
+            <span>PIN</span><SolidLeaf className="w-10 h-10 md:w-12 md:h-12" />
+            <span>VERIFY</span><SolidLeaf className="w-10 h-10 md:w-12 md:h-12" />
+            <span>DISPATCH</span><SolidLeaf className="w-10 h-10 md:w-12 md:h-12" />
           </div>
         </div>
       </div>
@@ -366,8 +372,8 @@ export default function Home() {
         {/* Download Section */}
         <section id="download" className="relative z-10 w-full scroll-mt-32">
           <div className="bg-[#0052CC] border-4 border-black dark:border-[#333] rounded-[32px] md:rounded-[40px] p-8 sm:p-12 md:p-24 text-center relative overflow-hidden flex flex-col items-center justify-center min-h-[40vh] md:min-h-[50vh]">
-            <div className="hidden md:block absolute top-10 left-10 text-[150px] opacity-20 text-white -rotate-12 pointer-events-none">✦</div>
-            <div className="hidden md:block absolute bottom-10 right-10 text-[150px] opacity-20 text-white rotate-45 pointer-events-none">✦</div>
+            <SolidLeaf className="hidden md:block absolute top-10 left-10 w-[150px] opacity-20 text-white -rotate-12 pointer-events-none" />
+            <SolidLeaf className="hidden md:block absolute bottom-10 right-10 w-[150px] opacity-20 text-white rotate-45 pointer-events-none" />
             
             <h2 className="text-[11vw] sm:text-5xl md:text-7xl lg:text-8xl font-black uppercase tracking-tighter text-white mb-8 relative z-10 leading-[0.9] break-words">
               HELP MAKE PASIG <br className="hidden md:block" /> GREEN AGAIN
