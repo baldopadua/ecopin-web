@@ -12,7 +12,8 @@ export default function StatsCard({
   trend = null, // { value: number, label: string, positive: boolean }
   onClick = null,
   className = '',
-  borderLeft = true
+  borderLeft = true,
+  children
 }) {
   const colorMap = {
     accent: 'var(--accent-green)',
@@ -39,7 +40,7 @@ export default function StatsCard({
             {value}
           </p>
           {subtitle && (
-            <p className="text-sm text-text-secondary mt-2">{subtitle}</p>
+            <div className="text-sm text-text-secondary mt-2">{subtitle}</div>
           )}
           {trend && (
             <div className="flex items-center gap-2 mt-3">
@@ -51,10 +52,11 @@ export default function StatsCard({
               <span className="text-xs text-text-muted">{trend.label}</span>
             </div>
           )}
+          {children}
         </div>
         {icon && (
           <div
-            className="w-12 h-12 rounded-none border-2 flex items-center justify-center bg-black dark:bg-black"
+            className="w-12 h-12 rounded-none border-2 flex items-center justify-center bg-black dark:bg-black shrink-0 ml-4"
             style={{ borderColor: borderColor, color: borderColor }}
           >
             {icon}

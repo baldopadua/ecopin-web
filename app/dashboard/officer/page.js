@@ -67,9 +67,10 @@ export default function OfficerHomepage() {
   const activeTasks = tasks.filter(t => t.status === 'in_progress')
   const pendingTasks = tasks.filter(t => t.status === 'pending')
   
-  // Calculate SLA risk: tasks pending for more than 48 hours
+  // Calculate SLA risk: reports unresolved for more than 48 hours
   const now = new Date()
-  const slaRiskTasks = pendingTasks.filter(t => {
+  const slaRiskTasks = reports.filter(t => {
+     if (t.is_overdue) return true;
      const created = new Date(t.created_at)
      const diffHours = (now - created) / (1000 * 60 * 60)
      return diffHours > 48
@@ -103,25 +104,6 @@ export default function OfficerHomepage() {
         breadcrumbs={[{ label: 'Command Center', href: '/dashboard/officer' }]}
         loading={loading}
       >
-        {/* Overdue/SLA Warning Banner */}
-        {!loading && slaRiskTasks.length > 0 && (
-          <div className="mb-6 bg-error/10 border-2 border-error p-4 flex items-center justify-between">
-             <div className="flex items-center gap-3">
-               <AlertTriangle className="text-error w-6 h-6" />
-               <div>
-                  <h3 className="font-bold text-error uppercase tracking-wider text-sm">SLA Warning</h3>
-                  <p className="text-text-primary text-sm font-medium">{slaRiskTasks.length} pending task(s) have exceeded the 48-hour SLA threshold.</p>
-               </div>
-             </div>
-             <button 
-               onClick={() => router.push('/dashboard/officer/operations')}
-               className="px-4 py-2 bg-error text-white font-bold text-sm hover:bg-red-600 transition-colors uppercase tracking-wider"
-             >
-               View Overdue
-             </button>
-          </div>
-        )}
-
         {/* Hero KPI Strip */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
            <StatsCard 
@@ -139,9 +121,25 @@ export default function OfficerHomepage() {
            <StatsCard 
              title="SLA Risk" 
              value={slaRiskTasks.length} 
+             subtitle={!loading && slaRiskTasks.length > 0 ? `${slaRiskTasks.length} report(s) exceeded 48hr threshold.` : 'All reports within SLA limit.'}
              icon={<AlertTriangle className="w-6 h-6" />} 
              color={slaRiskTasks.length > 0 ? "error" : "success"}
-           />
+             onClick={() => router.push('/dashboard/officer/reports')}
+             className={`group transition-all hover:border-[#1a1a1a] dark:hover:border-white ${slaRiskTasks.length > 0 ? "animate-pulse border-error bg-error/5" : ""}`}
+           >
+             <div className="mt-3 pt-2.5 border-t border-border flex items-center justify-between">
+               <Link
+                 href="/dashboard/officer/reports"
+                 onClick={(e) => e.stopPropagation()}
+                 className={`text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1 group-hover:underline ${
+                   slaRiskTasks.length > 0 ? 'text-error dark:text-red-400' : 'text-text-secondary group-hover:text-text-primary'
+                 }`}
+               >
+                 {slaRiskTasks.length > 0 ? 'View Overdue Reports' : 'View Reports'}
+                 <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+               </Link>
+             </div>
+           </StatsCard>
            <StatsCard 
              title="Optimization Score" 
              value={`${optimizationScore}%`} 
@@ -154,6 +152,42 @@ export default function OfficerHomepage() {
            {/* Left Column: Action Queue & Active Targets */}
            <div className="lg:col-span-2 space-y-8">
               
+              {/* Active Targets */}
+              <div className="card border-2 border-[#1a1a1a] dark:border-[#333333] rounded-none p-6">
+                 <div className="flex justify-between items-center mb-6 border-b-2 border-border pb-3">
+                    <h2 className="text-xl font-black tracking-tighter uppercase">Active Targets</h2>
+                    <Link href="/dashboard/officer/operations" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors flex items-center">
+                       View All <ChevronRight className="w-4 h-4 ml-1" />
+                    </Link>
+                 </div>
+                 
+                 {loading ? (
+                   <div className="grid grid-cols-2 gap-4 animate-pulse">
+                     {[1,2].map(i => <div key={i} className="h-24 bg-surface-elevated border-2 border-border" />)}
+                   </div>
+                 ) : activeTasks.length === 0 ? (
+                   <div className="text-center py-8 text-text-muted bg-surface-elevated border border-dashed border-border">
+                      <p className="font-medium">No active targets</p>
+                   </div>
+                 ) : (
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     {activeTasks.slice(0, 4).map(task => (
+                        <div key={task.id} className="border-2 border-border p-4 hover:bg-surface-elevated transition-colors cursor-pointer" onClick={() => router.push(`/dashboard/officer/operations/${task.id}`)}>
+                           <div className="flex justify-between items-start mb-2">
+                              <h3 className="font-bold text-text-primary line-clamp-1 flex-1 pr-2">{task.title}</h3>
+                              <StatusBadge status={task.status} type="task" />
+                           </div>
+                           <p className="text-sm text-text-secondary line-clamp-2 mb-3 h-10">
+                              {task.description || 'No description provided.'}
+                           </p>
+                           <div className="flex justify-between items-center text-xs">
+                              <span className="text-text-muted">Assigned: {task.assigned_to ? 'Crew Dispatched' : 'Unassigned'}</span>
+                           </div>
+                        </div>
+                     ))}
+                   </div>
+                 )}
+              </div>
               {/* Action Queue */}
               <div className="card border-2 border-[#1a1a1a] dark:border-[#333333] rounded-none p-6">
                  <div className="flex justify-between items-center mb-6 border-b-2 border-border pb-3">
@@ -208,42 +242,7 @@ export default function OfficerHomepage() {
                  )}
               </div>
 
-              {/* Active Targets */}
-              <div className="card border-2 border-[#1a1a1a] dark:border-[#333333] rounded-none p-6">
-                 <div className="flex justify-between items-center mb-6 border-b-2 border-border pb-3">
-                    <h2 className="text-xl font-black tracking-tighter uppercase">Active Targets</h2>
-                    <Link href="/dashboard/officer/operations" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors flex items-center">
-                       View All <ChevronRight className="w-4 h-4 ml-1" />
-                    </Link>
-                 </div>
-                 
-                 {loading ? (
-                   <div className="grid grid-cols-2 gap-4 animate-pulse">
-                     {[1,2].map(i => <div key={i} className="h-24 bg-surface-elevated border-2 border-border" />)}
-                   </div>
-                 ) : activeTasks.length === 0 ? (
-                   <div className="text-center py-8 text-text-muted bg-surface-elevated border border-dashed border-border">
-                      <p className="font-medium">No active targets</p>
-                   </div>
-                 ) : (
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     {activeTasks.slice(0, 4).map(task => (
-                        <div key={task.id} className="border-2 border-border p-4 hover:bg-surface-elevated transition-colors cursor-pointer" onClick={() => router.push(`/dashboard/officer/operations/${task.id}`)}>
-                           <div className="flex justify-between items-start mb-2">
-                              <h3 className="font-bold text-text-primary line-clamp-1 flex-1 pr-2">{task.title}</h3>
-                              <StatusBadge status={task.status} type="task" />
-                           </div>
-                           <p className="text-sm text-text-secondary line-clamp-2 mb-3 h-10">
-                              {task.description || 'No description provided.'}
-                           </p>
-                           <div className="flex justify-between items-center text-xs">
-                              <span className="text-text-muted">Assigned: {task.assigned_to ? 'Crew Dispatched' : 'Unassigned'}</span>
-                           </div>
-                        </div>
-                     ))}
-                   </div>
-                 )}
-              </div>
+              
            </div>
 
             <div className="space-y-8">
@@ -360,3 +359,8 @@ export default function OfficerHomepage() {
     </OfficerGuard>
   )
 }
+
+
+
+
+
