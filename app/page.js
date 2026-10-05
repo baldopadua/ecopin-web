@@ -386,12 +386,17 @@ export default function Home() {
           </div>
         </section>
 
-        <footer className="w-full bg-white dark:bg-[#1C1C1C] border-4 border-black dark:border-[#333] rounded-[32px] md:rounded-full py-6 px-6 md:px-8 flex flex-col md:flex-row justify-between items-center gap-6 z-10 relative text-center md:text-left">
+        <footer className="w-full bg-white dark:bg-[#1C1C1C] border-4 border-black dark:border-[#333] rounded-[32px] md:rounded-[40px] py-6 px-6 md:px-8 flex flex-col md:flex-row justify-between items-center gap-6 z-10 relative text-center md:text-left">
           <div className="font-black text-2xl uppercase tracking-tighter text-black dark:text-white">
             ECOPIN © 2026
           </div>
-          <div className="font-bold text-black dark:text-white text-base bg-[#F4F0EA] dark:bg-[#121212] border-2 border-black dark:border-[#444] rounded-full px-6 py-2">
-            SOLID WASTE MANAGEMENT OFFICE
+          <div className="flex flex-col items-center md:items-end gap-2">
+            <div className="font-bold text-black dark:text-white text-base bg-[#F4F0EA] dark:bg-[#121212] border-2 border-black dark:border-[#444] rounded-full px-6 py-2">
+              SOLID WASTE MANAGEMENT OFFICE
+            </div>
+            <div className="text-sm font-medium text-black/80 dark:text-white/70 tracking-wide font-mono">
+              swmo@pasigcity.gov.ph &bull; 09173726888
+            </div>
           </div>
         </footer>
       </div>
