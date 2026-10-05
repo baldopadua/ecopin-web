@@ -50,7 +50,7 @@ const fieldCrewNavigation = [
 ]
 
 const adminNavigation = [
-    { name: 'Command Center', href: '/dashboard/admin', icon: LayoutDashboard },
+    { name: 'Dashboard', href: '/dashboard/admin', icon: LayoutDashboard },
     { name: 'Users', href: '/dashboard/admin/users', icon: Users },
     { name: 'System', href: '/dashboard/admin/settings', icon: Settings },
     { name: 'Optimization', href: '/dashboard/admin/optimization-settings', icon: Route },
