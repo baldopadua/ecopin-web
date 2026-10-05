@@ -19,14 +19,14 @@ body {
   --accent-green: #0052CC;
   --accent-green-dark: #0042A3;
 
-  --background: #F4F0EA;
+  --background: #FFFFFF;
   --surface: #FFFFFF;
   --surface-elevated: #FFFFFF;
-  --border: #000000;
+  --border: #D1D5DB;
 
-  --text-primary: #000000;
-  --text-secondary: #333333;
-  --text-muted: #666666;
+  --text-primary: #111827;
+  --text-secondary: #4B5563;
+  --text-muted: #9CA3AF;
 
   /* Status Colors */
   --status-success: #2E7D32;
@@ -57,8 +57,8 @@ body {
   --radius-chip: 0px;
 
   /* Shadows */
-  --shadow-card: 4px 4px 0px rgba(0, 0, 0, 1);
-  --shadow-floating: 8px 8px 0px rgba(0, 0, 0, 1);
+  --shadow-card: var(--shadow-sm);
+  --shadow-floating: var(--shadow-md);
   --shadow-dialog: 12px 12px 0px rgba(0, 0, 0, 1);
 
   /* Type Scale */
@@ -156,11 +156,11 @@ html.dark {
   --background: #121212;
   --surface: #1C1C1C;
   --surface-elevated: #242424;
-  --border: #333333;
+  --border: #2A2A2A;
 
-  --text-primary: #FFFFFF;
-  --text-secondary: #CCCCCC;
-  --text-muted: #999999;
+  --text-primary: #F3F4F6;
+  --text-secondary: #9CA3AF;
+  --text-muted: #6B7280;
 
   /* Status Colors - same in dark mode */
   --status-success: #2E7D32;
@@ -175,8 +175,8 @@ html.dark {
   --purple: #A78BFA;
 
   /* Shadows adjusted for dark mode */
-  --shadow-card: 4px 4px 0px rgba(255, 255, 255, 1);
-  --shadow-floating: 8px 8px 0px rgba(255, 255, 255, 1);
+  --shadow-card: var(--shadow-sm);
+  --shadow-floating: var(--shadow-md);
   --shadow-dialog: 12px 12px 0px rgba(255, 255, 255, 1);
 }
 
@@ -276,7 +276,7 @@ html.dark .btn-primary:hover {
 }
 
 html.dark .input {
-  border: 2px solid #333333;
+  border: 1px solid var(--border);
 }
 
 input[type="date"] {
@@ -367,14 +367,14 @@ html.dark select.input option {
 /* Modern card styles */
 .card {
   background-color: var(--surface-elevated);
-  border: 2px solid #1a1a1a;
+  border: 1px solid var(--border); box-shadow: var(--shadow-sm);
   border-radius: var(--radius-card);
   padding: var(--spacing-lg);
 }
 
 html.dark .card {
   background-color: var(--surface-elevated);
-  border: 2px solid #333333;
+  border: 1px solid var(--border);
 }
 
 .card:not(.no-hover) {
@@ -391,7 +391,7 @@ html.dark .card {
 
 /* Unified Table Styles */
 .ecopin-table-container {
-  @apply bg-surface-elevated border-2 border-[#1a1a1a] dark:border-[#333333] shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] overflow-x-auto w-full rounded-none;
+  @apply bg-surface-elevated border border-border  shadow-sm  overflow-x-auto w-full rounded-xl;
 }
 
 .ecopin-table {
@@ -399,7 +399,7 @@ html.dark .card {
 }
 
 .ecopin-table thead tr {
-  @apply border-b-2 border-[#1a1a1a] dark:border-[#333333];
+  @apply border-b border-border ;
 }
 
 .ecopin-table th {
@@ -411,7 +411,7 @@ html.dark .card {
 }
 
 .ecopin-table tbody tr {
-  @apply border-b border-[#1a1a1a] dark:border-[#333333] transition-colors cursor-pointer;
+  @apply border-b border-border  transition-colors cursor-pointer;
 }
 
 .ecopin-table tbody tr:last-child {
@@ -433,14 +433,14 @@ html.dark .card {
 /* Chart card styles */
 .chart-card {
   background-color: var(--surface-elevated);
-  border: 2px solid #1a1a1a;
+  border: 1px solid var(--border); box-shadow: var(--shadow-sm);
   border-radius: var(--radius-card);
   padding: var(--spacing-lg);
 }
 
 html.dark .chart-card {
   background-color: var(--surface-elevated);
-  border: 2px solid #333333;
+  border: 1px solid var(--border);
 }
 
 .chart-card h2 {
@@ -584,3 +584,40 @@ html.dark .bg-grid-pattern {
   background-image: radial-gradient(rgba(255,255,255,0.2) 2px, transparent 2px);
 }
 
+/* Sidebar Active Item Cutout Effect */
+.sidebar-item {
+  position: relative;
+  border-top-left-radius: 9999px;
+  border-bottom-left-radius: 9999px;
+}
+
+.sidebar-item-active {
+  background-color: var(--background);
+  color: var(--primary);
+  border-top-left-radius: 24px;
+  border-bottom-left-radius: 24px;
+}
+
+.sidebar-item-active::before {
+  content: '';
+  position: absolute;
+  top: -24px;
+  right: 0;
+  width: 24px;
+  height: 24px;
+  background: radial-gradient(circle at 0 0, transparent 23.5px, var(--background) 24px);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.sidebar-item-active::after {
+  content: '';
+  position: absolute;
+  bottom: -24px;
+  right: 0;
+  width: 24px;
+  height: 24px;
+  background: radial-gradient(circle at 0 100%, transparent 23.5px, var(--background) 24px);
+  pointer-events: none;
+  z-index: 10;
+}

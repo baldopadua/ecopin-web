@@ -74,7 +74,7 @@ export default function Pagination({
         <button
           onClick={() => handlePageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="border-2 border-border px-3 py-1 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="border border-border px-3 py-1 hover:bg-black hover:text-white dark:hover:bg-surface dark:hover:text-text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Prev
         </button>
@@ -88,10 +88,10 @@ export default function Pagination({
             <button
               key={page}
               onClick={() => handlePageChange(page)}
-              className={`px-3 py-1 border-2 border-border transition-colors ${
+              className={`px-3 py-1 border border-border transition-colors ${
                 currentPage === page
-                  ? 'bg-black text-white dark:bg-accent-green dark:text-white dark:border-accent-green'
-                  : 'hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black'
+                  ? 'bg-black text-white dark:bg-accent-green  dark:border-accent-green'
+                  : 'hover:bg-black hover:text-white dark:hover:bg-surface dark:hover:text-text-primary'
               }`}
             >
               {page}
@@ -102,7 +102,7 @@ export default function Pagination({
         <button
           onClick={() => handlePageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="border-2 border-border px-3 py-1 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="border border-border px-3 py-1 hover:bg-black hover:text-white dark:hover:bg-surface dark:hover:text-text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Next
         </button>

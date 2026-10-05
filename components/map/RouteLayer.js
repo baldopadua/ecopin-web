@@ -123,9 +123,9 @@ export default function RouteLayer({ routes = [] }) {
                     <strong className="block text-sm text-gray-800 mb-2">
                       {wp.waypoint_type === 'depot_start' ? 'Route Start' : 'Route End'}
                     </strong>
-                    <div className="text-sm space-y-1 text-gray-600">
-                      <div><span className="text-gray-500">Lat:</span> <span className="font-medium text-gray-800">{parseFloat(wp.latitude).toFixed(6)}</span></div>
-                      <div><span className="text-gray-500">Lng:</span> <span className="font-medium text-gray-800">{parseFloat(wp.longitude).toFixed(6)}</span></div>
+                    <div className="text-sm space-y-1 text-text-secondary">
+                      <div><span className="text-text-muted">Lat:</span> <span className="font-medium text-gray-800">{parseFloat(wp.latitude).toFixed(6)}</span></div>
+                      <div><span className="text-text-muted">Lng:</span> <span className="font-medium text-gray-800">{parseFloat(wp.longitude).toFixed(6)}</span></div>
                     </div>
                   </div>
                 </Popup>
@@ -150,18 +150,18 @@ export default function RouteLayer({ routes = [] }) {
                       {route.crewName || `Crew ${routeIdx + 1}`}
                     </strong>
                     {wp.cleanup_task_id && (
-                      <div className="text-sm mb-2 text-gray-600">
-                        <span className="text-gray-500">Task ID:</span> <span className="font-medium text-gray-800">#{wp.cleanup_task_id.slice(0, 8)}</span>
+                      <div className="text-sm mb-2 text-text-secondary">
+                        <span className="text-text-muted">Task ID:</span> <span className="font-medium text-gray-800">#{wp.cleanup_task_id.slice(0, 8)}</span>
                       </div>
                     )}
-                    <div className="text-sm space-y-1 text-gray-600">
+                    <div className="text-sm space-y-1 text-text-secondary">
                       {wp.distance_from_previous_meters && (
-                        <div><span className="text-gray-500">Dist:</span> <span className="font-medium text-gray-800">{formatDistance(wp.distance_from_previous_meters)}</span></div>
+                        <div><span className="text-text-muted">Dist:</span> <span className="font-medium text-gray-800">{formatDistance(wp.distance_from_previous_meters)}</span></div>
                       )}
                       {wp.estimated_time_from_previous_min && (
-                        <div><span className="text-gray-500">Time:</span> <span className="font-medium text-gray-800">~{formatDuration(wp.estimated_time_from_previous_min)}</span></div>
+                        <div><span className="text-text-muted">Time:</span> <span className="font-medium text-gray-800">~{formatDuration(wp.estimated_time_from_previous_min)}</span></div>
                       )}
-                      <div><span className="text-gray-500">Loc:</span> <span className="font-medium text-gray-800">{parseFloat(wp.latitude).toFixed(6)}, {parseFloat(wp.longitude).toFixed(6)}</span></div>
+                      <div><span className="text-text-muted">Loc:</span> <span className="font-medium text-gray-800">{parseFloat(wp.latitude).toFixed(6)}, {parseFloat(wp.longitude).toFixed(6)}</span></div>
                     </div>
                   </div>
                 </Popup>
@@ -182,10 +182,10 @@ export default function RouteLayer({ routes = [] }) {
                   <strong className="block text-sm text-gray-800 mb-2">
                     {route.crewName || `Crew ${routeIdx + 1}`}
                   </strong>
-                  <div className="text-sm space-y-1 text-gray-600">
-                    <div><span className="text-gray-500">Tasks:</span> <span className="font-medium text-gray-800">{taskWaypoints.length}</span></div>
-                    <div><span className="text-gray-500">Distance:</span> <span className="font-medium text-gray-800">{formatDistance(route.totalDistance || route.total_distance_meters)}</span></div>
-                    <div><span className="text-gray-500">Duration:</span> <span className="font-medium text-gray-800">{formatDuration(route.totalDuration || route.total_duration_min)}</span></div>
+                  <div className="text-sm space-y-1 text-text-secondary">
+                    <div><span className="text-text-muted">Tasks:</span> <span className="font-medium text-gray-800">{taskWaypoints.length}</span></div>
+                    <div><span className="text-text-muted">Distance:</span> <span className="font-medium text-gray-800">{formatDistance(route.totalDistance || route.total_distance_meters)}</span></div>
+                    <div><span className="text-text-muted">Duration:</span> <span className="font-medium text-gray-800">{formatDuration(route.totalDuration || route.total_duration_min)}</span></div>
                   </div>
                 </div>
               </Popup>

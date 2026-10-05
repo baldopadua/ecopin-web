@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic'
 const PublicMap = dynamic(() => import('./PublicMap'), {
   ssr: false,
   loading: () => (
-    <div className="h-full w-full bg-white dark:bg-black flex items-center justify-center transition-colors duration-300">
+    <div className="h-full w-full bg-surface  flex items-center justify-center transition-colors duration-300">
       
       <img src="/Auth Logo.png" alt="Loading..." className="h-20 md:h-24 w-auto object-contain animate-pulse" />
     </div>
@@ -55,7 +55,7 @@ export default function PublicMapPage() {
 
   return (
     <main
-      className="h-screen w-full flex flex-col bg-[#F4F0EA] dark:bg-[#121212] text-black dark:text-white relative overflow-hidden transition-colors duration-300"
+      className="h-screen w-full flex flex-col bg-background  text-text-primary  relative overflow-hidden transition-colors duration-300"
     >
       {/* Background Pattern */}
       <div className="absolute inset-0 z-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 2px, transparent 2px)', backgroundSize: '30px 30px' }}></div>

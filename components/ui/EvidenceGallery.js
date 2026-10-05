@@ -56,11 +56,11 @@ export default function EvidenceGallery({ reports = [] }) {
   }
 
   return (
-    <div className="card mt-6 border-2 border-border p-6 bg-surface-elevated">
-      <h2 className="text-xl font-bold text-text-primary mb-4 uppercase tracking-tighter">Evidence Photos</h2>
+    <div className="card mt-6 border border-border p-6 bg-surface-elevated">
+      <h2 className="text-xl font-bold text-text-primary mb-4 uppercase tracking-tight">Evidence Photos</h2>
       
       {loading ? (
-        <div className="flex items-center justify-center p-8 bg-surface-elevated border-2 border-dashed border-border animate-pulse">
+        <div className="flex items-center justify-center p-8 bg-surface-elevated border border-border border-dashed border-border animate-pulse">
           <p className="text-text-muted text-sm font-mono uppercase">Loading evidence...</p>
         </div>
       ) : evidence.length > 0 ? (
@@ -68,7 +68,7 @@ export default function EvidenceGallery({ reports = [] }) {
           {evidence.map((item, idx) => (
             <div 
               key={item.id || idx} 
-              className="relative cursor-pointer border-2 border-border overflow-hidden group"
+              className="relative cursor-pointer border border-border overflow-hidden group"
               onClick={() => setLightboxImage(idx)}
             >
               <img 
@@ -83,7 +83,7 @@ export default function EvidenceGallery({ reports = [] }) {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center p-8 bg-surface-elevated border-2 border-dashed border-border">
+        <div className="flex flex-col items-center justify-center p-8 bg-surface-elevated border border-border border-dashed border-border">
           <p className="text-text-muted text-sm font-mono uppercase">No evidence photos found</p>
         </div>
       )}
@@ -96,7 +96,7 @@ export default function EvidenceGallery({ reports = [] }) {
         >
           <div className="relative w-full max-w-5xl h-[90vh] p-4 flex flex-col items-center justify-center" onClick={e => e.stopPropagation()}>
             <button 
-              className="absolute top-4 right-4 text-white hover:text-accent-green z-50 p-2 transition-colors border-2 border-transparent hover:border-accent-green bg-black/50"
+              className="absolute top-4 right-4 text-white hover:text-accent-green z-50 p-2 transition-colors border border-border border-transparent hover:border-accent-green bg-black/50"
               onClick={() => setLightboxImage(null)}
             >
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -104,7 +104,7 @@ export default function EvidenceGallery({ reports = [] }) {
               </svg>
             </button>
             <button 
-              className="absolute left-4 text-white hover:text-accent-green z-50 p-3 transition-colors border-2 border-transparent hover:border-accent-green bg-black/50"
+              className="absolute left-4 text-white hover:text-accent-green z-50 p-3 transition-colors border border-border border-transparent hover:border-accent-green bg-black/50"
               onClick={handlePreviousPhoto}
             >
               <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -114,17 +114,17 @@ export default function EvidenceGallery({ reports = [] }) {
             <img 
               src={evidence[lightboxImage].photo_url || evidence[lightboxImage].url} 
               alt="Evidence Full" 
-              className="max-w-full max-h-full object-contain border-2 border-white/20"
+              className="max-w-full max-h-full object-contain border border-border border-white/20"
             />
             <button 
-              className="absolute right-4 text-white hover:text-accent-green z-50 p-3 transition-colors border-2 border-transparent hover:border-accent-green bg-black/50"
+              className="absolute right-4 text-white hover:text-accent-green z-50 p-3 transition-colors border border-border border-transparent hover:border-accent-green bg-black/50"
               onClick={handleNextPhoto}
             >
               <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </button>
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white bg-black/80 px-4 py-2 font-mono text-sm border-2 border-white/20">
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white bg-black/80 px-4 py-2 font-mono text-sm border border-border border-white/20">
               {evidence[lightboxImage].reportTitle || `Report ${evidence[lightboxImage].reportId}`} 
               <span className="opacity-50 ml-2">({lightboxImage + 1} / {evidence.length})</span>
             </div>

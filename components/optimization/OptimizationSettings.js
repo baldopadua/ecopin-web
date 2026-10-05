@@ -82,9 +82,9 @@ export default function OptimizationSettings({
   const canDelete = selectedTemplate && !selectedTemplate.is_default
 
   return (
-    <div className="border-2 border-border bg-surface-elevated mb-6">
+    <div className="border border-border bg-surface-elevated mb-6">
       {/* ── Header ───────────────────────────────────────── */}
-      <div className="px-4 pt-4 pb-3 border-b-2 border-border">
+      <div className="px-4 pt-4 pb-3 border-b border-border">
         <h3 className="font-bold text-text-primary text-sm uppercase tracking-wider flex items-center gap-2 mb-3">
           <BookTemplate className="w-4 h-4" />
           Generation Settings
@@ -98,7 +98,7 @@ export default function OptimizationSettings({
               disabled={disabled}
               value={settings._templateId || ''}
               onChange={handleTemplateSelect}
-              className="w-full appearance-none border-2 border-border bg-surface text-text-primary text-sm font-bold px-3 py-2 pr-8 focus:outline-none focus:border-[#ccff00] disabled:opacity-50 cursor-pointer"
+              className="w-full appearance-none border border-border bg-surface text-text-primary text-sm font-bold px-3 py-2 pr-8 focus:outline-none focus:border-[#ccff00] disabled:opacity-50 cursor-pointer"
             >
               <option value="">— Custom / No Template —</option>
               {templates.filter(t => t.is_default).length > 0 && (
@@ -125,7 +125,7 @@ export default function OptimizationSettings({
               type="button"
               disabled={disabled}
               onClick={() => setShowSaveInput(true)}
-              className="flex items-center gap-1.5 px-3 py-2 border-2 border-border text-xs font-bold uppercase tracking-wider text-text-primary hover:border-[#ccff00] hover:text-[#ccff00] transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-2 border border-border text-xs font-bold uppercase tracking-wider text-text-primary hover:border-[#ccff00] hover:text-[#ccff00] transition-colors disabled:opacity-50"
               title="Save current settings as a new template"
             >
               <Save className="w-3.5 h-3.5" />
@@ -140,17 +140,17 @@ export default function OptimizationSettings({
                 value={newTemplateName}
                 onChange={e => setNewTemplateName(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') setShowSaveInput(false) }}
-                className="border-2 border-[#ccff00] bg-surface text-text-primary text-sm px-2 py-1.5 focus:outline-none w-40"
+                className="border border-border border-[#ccff00] bg-surface text-text-primary text-sm px-2 py-1.5 focus:outline-none w-40"
               />
               <button
                 type="button"
                 onClick={handleSave}
                 disabled={saving || !newTemplateName.trim()}
-                className="p-2 bg-[#ccff00] text-black border-2 border-[#ccff00] hover:bg-[#bbee00] disabled:opacity-50 transition-colors"
+                className="p-2 bg-[#ccff00] text-text-primary border border-border border-[#ccff00] hover:bg-[#bbee00] disabled:opacity-50 transition-colors"
               >
                 {saving ? <span className="text-xs font-bold">…</span> : <Check className="w-3.5 h-3.5" />}
               </button>
-              <button type="button" onClick={() => setShowSaveInput(false)} className="p-2 border-2 border-border text-text-muted hover:border-error hover:text-error transition-colors">
+              <button type="button" onClick={() => setShowSaveInput(false)} className="p-2 border border-border text-text-muted hover:border-error hover:text-error transition-colors">
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -162,7 +162,7 @@ export default function OptimizationSettings({
               type="button"
               disabled={disabled}
               onClick={handleDelete}
-              className="flex items-center gap-1.5 px-3 py-2 border-2 border-error text-error text-xs font-bold uppercase tracking-wider hover:bg-error/10 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-2 border border-border border-error text-error text-xs font-bold uppercase tracking-wider hover:bg-error/10 transition-colors disabled:opacity-50"
               title="Delete this saved template"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -177,7 +177,7 @@ export default function OptimizationSettings({
       </div>
 
       {/* ── Travel Mode (always visible) ─────────────────── */}
-      <div className="px-4 py-4 border-b-2 border-border">
+      <div className="px-4 py-4 border-b border-border">
         <label className="block text-xs font-bold uppercase tracking-wider text-text-muted mb-2">
           Travel Mode
           <span className="ml-2 text-[10px] font-mono normal-case text-text-muted">(auto-adjusts travel buffer time)</span>
@@ -191,9 +191,9 @@ export default function OptimizationSettings({
                 type="button"
                 disabled={disabled}
                 onClick={() => update('travel_mode', value)}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 border-2 text-sm font-bold uppercase tracking-wide transition-all duration-150 disabled:opacity-50
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 border border-border text-sm font-bold uppercase tracking-wide transition-all duration-150 disabled:opacity-50
                   ${active
-                    ? 'bg-[#ccff00] border-[#ccff00] text-black shadow-[2px_2px_0px_0px_#1a1a1a]'
+                    ? 'bg-[#ccff00] border-[#ccff00] text-text-primary shadow-sm'
                     : 'border-border text-text-muted hover:border-[#ccff00] hover:text-text-primary'
                   }`}
               >
@@ -223,7 +223,7 @@ export default function OptimizationSettings({
         </button>
 
         {showAdvanced && (
-          <div className="px-4 pb-4 border-t-2 border-border space-y-5 pt-4">
+          <div className="px-4 pb-4 border-t border-border space-y-5 pt-4">
 
             {/* Break Management */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -235,7 +235,7 @@ export default function OptimizationSettings({
                   disabled={disabled}
                   value={settings.break_duration_min ?? 60}
                   onChange={e => update('break_duration_min', Number(e.target.value))}
-                  className="w-full border-2 border-border bg-surface text-text-primary text-sm font-bold px-3 py-2 focus:outline-none focus:border-[#ccff00] disabled:opacity-50"
+                  className="w-full border border-border bg-surface text-text-primary text-sm font-bold px-3 py-2 focus:outline-none focus:border-[#ccff00] disabled:opacity-50"
                 >
                   {BREAK_DURATIONS.map(d => (
                     <option key={d} value={d}>{d === 0 ? 'No break' : `${d} minutes`}</option>
@@ -252,7 +252,7 @@ export default function OptimizationSettings({
                     disabled={disabled || (settings.break_duration_min ?? 60) === 0}
                     value={settings.break_window_start || '12:00'}
                     onChange={e => update('break_window_start', e.target.value)}
-                    className="flex-1 border-2 border-border bg-surface text-text-primary text-sm font-bold px-3 py-2 focus:outline-none focus:border-[#ccff00] disabled:opacity-40"
+                    className="flex-1 border border-border bg-surface text-text-primary text-sm font-bold px-3 py-2 focus:outline-none focus:border-[#ccff00] disabled:opacity-40"
                   />
                   <span className="text-text-muted font-mono text-xs">to</span>
                   <input
@@ -260,7 +260,7 @@ export default function OptimizationSettings({
                     disabled={disabled || (settings.break_duration_min ?? 60) === 0}
                     value={settings.break_window_end || '13:30'}
                     onChange={e => update('break_window_end', e.target.value)}
-                    className="flex-1 border-2 border-border bg-surface text-text-primary text-sm font-bold px-3 py-2 focus:outline-none focus:border-[#ccff00] disabled:opacity-40"
+                    className="flex-1 border border-border bg-surface text-text-primary text-sm font-bold px-3 py-2 focus:outline-none focus:border-[#ccff00] disabled:opacity-40"
                   />
                 </div>
               </div>
@@ -281,9 +281,9 @@ export default function OptimizationSettings({
                       type="button"
                       disabled={disabled}
                       onClick={() => update('overtime_tolerance_min', value)}
-                      className={`px-4 py-2 border-2 text-xs font-bold uppercase tracking-wide transition-all duration-150 disabled:opacity-50
+                      className={`px-4 py-2 border border-border text-xs font-bold uppercase tracking-wide transition-all duration-150 disabled:opacity-50
                         ${active
-                          ? 'bg-[#ccff00] border-[#ccff00] text-black shadow-[2px_2px_0px_0px_#1a1a1a]'
+                          ? 'bg-[#ccff00] border-[#ccff00] text-text-primary shadow-sm'
                           : 'border-border text-text-muted hover:border-[#ccff00]'
                         }`}
                     >
@@ -334,7 +334,7 @@ export default function OptimizationSettings({
                   return (
                     <label
                       key={type}
-                      className={`flex items-center gap-2 border-2 px-3 py-2 cursor-pointer transition-colors
+                      className={`flex items-center gap-2 border border-border px-3 py-2 cursor-pointer transition-colors
                         ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-[#ccff00]'}
                         ${included ? 'border-[#ccff00] bg-[#ccff00]/10' : 'border-border'}`}
                     >
@@ -367,14 +367,14 @@ export default function OptimizationSettings({
                   type="button"
                   disabled={disabled}
                   onClick={() => update('density_focus', !settings.density_focus)}
-                  className={`w-full flex items-center justify-between px-4 py-3 border-2 font-bold text-sm uppercase tracking-wide transition-all duration-150 disabled:opacity-50
+                  className={`w-full flex items-center justify-between px-4 py-3 border border-border font-bold text-sm uppercase tracking-wide transition-all duration-150 disabled:opacity-50
                     ${settings.density_focus
-                      ? 'bg-[#ccff00] border-[#ccff00] text-black shadow-[2px_2px_0px_0px_#1a1a1a]'
+                      ? 'bg-[#ccff00] border-[#ccff00] text-text-primary shadow-sm'
                       : 'border-border text-text-muted hover:border-[#ccff00]'
                     }`}
                 >
                   <span>{settings.density_focus ? 'ON — Minimize Travel Distance' : 'OFF — Spread by Priority'}</span>
-                  <span className={`w-4 h-4 border-2 rounded-full transition-colors ${settings.density_focus ? 'bg-black border-black' : 'border-current'}`} />
+                  <span className={`w-4 h-4 border border-border rounded-full transition-colors ${settings.density_focus ? 'bg-black border-border' : 'border-current'}`} />
                 </button>
                 <p className="text-[10px] font-mono text-text-muted mt-1">
                   {settings.density_focus
@@ -395,7 +395,7 @@ export default function OptimizationSettings({
                   disabled={disabled}
                   value={settings.max_tasks_per_shift ?? 15}
                   onChange={e => update('max_tasks_per_shift', Math.max(1, Number(e.target.value) || 1))}
-                  className="w-full border-2 border-border bg-surface text-text-primary text-sm font-bold px-3 py-2 focus:outline-none focus:border-[#ccff00] disabled:opacity-50 text-center tabular-nums"
+                  className="w-full border border-border bg-surface text-text-primary text-sm font-bold px-3 py-2 focus:outline-none focus:border-[#ccff00] disabled:opacity-50 text-center tabular-nums"
                 />
                 <p className="text-[10px] font-mono text-text-muted mt-1">
                   Prevents over-scheduling even when crews have remaining time.

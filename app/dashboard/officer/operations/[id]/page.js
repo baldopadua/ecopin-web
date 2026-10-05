@@ -729,21 +729,21 @@ export default function CleanupTaskDetailPage() {
                 type="text" 
                 value={editingTitle} 
                 onChange={(e) => setEditingTitle(e.target.value)} 
-                className="px-2 py-1 text-2xl font-bold border-2 border-[#2563eb] focus:outline-none w-64 bg-surface text-text-primary"
+                className="px-2 py-1 text-2xl font-bold border border-border border-[#2563eb] focus:outline-none w-64 bg-surface text-text-primary"
                 disabled={savingTitle}
                 autoFocus
               />
               <button 
                 onClick={handleSaveTitle}
                 disabled={savingTitle}
-                className="px-3 py-1 text-sm font-bold uppercase tracking-widest bg-accent-green text-white border-2 border-accent-green hover:bg-black hover:border-black transition-colors"
+                className="px-3 py-1 text-sm font-bold uppercase tracking-widest bg-accent-green text-white border border-border border-accent-green hover:bg-black hover:border-border transition-colors"
               >
                 {savingTitle ? 'Saving...' : 'Save'}
               </button>
               <button 
                 onClick={() => setIsEditingTitle(false)}
                 disabled={savingTitle}
-                className="px-3 py-1 text-sm font-bold uppercase tracking-widest text-text-muted hover:text-black dark:hover:text-white transition-colors"
+                className="px-3 py-1 text-sm font-bold uppercase tracking-widest text-text-muted hover:text-text-primary dark:hover:text-white transition-colors"
               >
                 Cancel
               </button>
@@ -775,8 +775,8 @@ export default function CleanupTaskDetailPage() {
       <div className="flex flex-col gap-8 mt-2">
          
          <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-            <div className="xl:col-span-3 h-[400px] border-2 border-[#1a1a1a] dark:border-[#333333] relative flex flex-col bg-surface-elevated shrink-0">
-               <div className="absolute top-4 left-4 z-[400] bg-black text-white px-3 py-1.5 border-2 border-accent-green pointer-events-none">
+            <div className="xl:col-span-3 h-[400px] border border-border dark:border-[#333333] relative flex flex-col bg-surface-elevated shrink-0">
+               <div className="absolute top-4 left-4 z-[400] bg-black text-white px-3 py-1.5 border border-border border-accent-green pointer-events-none">
                   <h3 className="font-bold uppercase tracking-widest text-xs">Route Map</h3>
                </div>
                <div className="flex-1 z-0 relative">
@@ -787,8 +787,8 @@ export default function CleanupTaskDetailPage() {
             </div>
 
             <div className="xl:col-span-1 h-[400px]">
-               <div className="h-full card p-6 border-2 border-[#1a1a1a] dark:border-[#333333] rounded-none bg-surface-elevated text-text-primary flex flex-col">
-                  <h2 className="text-lg font-black uppercase tracking-tighter mb-4 border-b-2 border-border pb-2 text-accent-green shrink-0">Mission Status</h2>
+               <div className="h-full card p-6 border border-border dark:border-[#333333] rounded-xl bg-surface-elevated text-text-primary flex flex-col">
+                  <h2 className="text-lg font-bold uppercase tracking-tight mb-4 border-b border-border pb-2 text-accent-green shrink-0">Mission Status</h2>
                   
                   <div className="space-y-4 mb-6 overflow-y-auto flex-1 pr-2">
                     <div>
@@ -818,20 +818,20 @@ export default function CleanupTaskDetailPage() {
                     </div>
                   </div>
 
-                  <div className="mt-auto space-y-3 pt-4 border-t-2 border-border shrink-0">
+                  <div className="mt-auto space-y-3 pt-4 border-t border-border shrink-0">
                      <button 
                         onClick={() => {
                           setTempCrewIds(task.assigned_crew_ids || [])
                           setShowAssignmentModal(true)
                         }}
-                        className="w-full border-2 border-border py-3 text-xs font-bold uppercase tracking-widest text-text-primary hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
+                        className="w-full border border-border py-3 text-xs font-bold uppercase tracking-widest text-text-primary hover:bg-black hover:text-white dark:hover:bg-surface dark:hover:text-text-primary transition-colors"
                      >
                         {task.assigned_crew_ids?.length > 0 ? 'Update Roster' : 'Assign Units'}
                      </button>
                      {/* Completion is triggered automatically by the field crew app
                          uploading the after photo. This panel reflects the live status. */}
                      {task.status === 'completed' && (
-                        <div className="w-full py-3 text-xs font-bold uppercase tracking-widest border-2 bg-success/20 text-success border-success/50 text-center">
+                        <div className="w-full py-3 text-xs font-bold uppercase tracking-widest border border-border bg-success/20 text-success border-success/50 text-center">
                            Mission Accomplished
                         </div>
                      )}
@@ -841,7 +841,7 @@ export default function CleanupTaskDetailPage() {
          </div>
 
          <div className="flex flex-col gap-4">
-            <h2 className="text-xl font-bold text-text-primary uppercase tracking-tighter">Mission Targets</h2>
+            <h2 className="text-xl font-bold text-text-primary uppercase tracking-tight">Mission Targets</h2>
             <div className="ecopin-table-container">
               <table className="ecopin-table">
                 <thead>
@@ -861,7 +861,7 @@ export default function CleanupTaskDetailPage() {
                       <td>
                         <button
                           onClick={() => handleViewReportDetail(report.id)}
-                          className="text-xs font-bold uppercase tracking-widest border-2 border-border px-3 py-1 hover:border-accent-green hover:text-accent-green transition-colors"
+                          className="text-xs font-bold uppercase tracking-widest border border-border px-3 py-1 hover:border-accent-green hover:text-accent-green transition-colors"
                         >
                           View Data
                         </button>
@@ -880,19 +880,19 @@ export default function CleanupTaskDetailPage() {
 
       {showAssignmentModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[900]">
-          <div className="bg-surface-elevated border-2 border-[#1a1a1a] dark:border-[#333333] p-6 max-w-md w-full mx-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-            <h2 className="text-xl font-black uppercase tracking-tighter mb-4">Deploy Units</h2>
+          <div className="bg-surface-elevated border border-border dark:border-[#333333] p-6 max-w-md w-full mx-4 shadow-sm">
+            <h2 className="text-xl font-bold uppercase tracking-tight mb-4">Deploy Units</h2>
             <div className="space-y-2 max-h-60 overflow-y-auto mb-6">
               {availableCrew.length === 0 ? (
                 <p className="text-sm text-text-muted font-mono">No units available</p>
               ) : (
                 availableCrew.map(crew => (
-                  <label key={crew.id} className="flex items-center space-x-3 p-3 border-2 border-border hover:border-accent-green cursor-pointer transition-colors bg-background">
+                  <label key={crew.id} className="flex items-center space-x-3 p-3 border border-border hover:border-accent-green cursor-pointer transition-colors bg-background">
                     <input type="checkbox" checked={tempCrewIds.includes(crew.id)} onChange={(e) => {
                         let newIds = e.target.checked ? [...tempCrewIds, crew.id] : tempCrewIds.filter(id => id !== crew.id);
                         setTempCrewIds(newIds);
                       }}
-                      className="rounded-none border-2 border-[#1a1a1a] text-accent-green focus:ring-accent-green w-5 h-5 bg-transparent" />
+                      className="rounded-xl border border-border text-accent-green focus:ring-accent-green w-5 h-5 bg-transparent" />
                     <div className="flex-1 font-mono text-sm font-bold uppercase">{crew.full_name}</div>
                   </label>
                 ))
@@ -910,14 +910,14 @@ export default function CleanupTaskDetailPage() {
 
       {selectedReportId && (
         <div className="fixed inset-0 bg-black/80 z-[900] p-4 md:p-8 overflow-y-auto flex cursor-pointer" onClick={() => setSelectedReportId(null)}>
-          <div className="m-auto bg-surface-elevated flex flex-col md:flex-row w-full max-w-5xl h-[600px] max-h-[90vh] shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-none overflow-hidden relative border-2 border-[#1a1a1a] dark:border-[#333333] cursor-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="m-auto bg-surface-elevated flex flex-col md:flex-row w-full max-w-5xl h-[600px] max-h-[90vh] shadow-sm rounded-xl overflow-hidden relative border border-border dark:border-[#333333] cursor-auto" onClick={(e) => e.stopPropagation()}>
             {/* Close Button Mobile (absolute) */}
             <button onClick={() => setSelectedReportId(null)} className="md:hidden absolute top-4 right-4 z-50 bg-black/50 text-white rounded-full p-2 hover:bg-black/70">
                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
 
             {/* Left Side: Images */}
-            <div className="w-full md:w-[60%] bg-black flex-shrink-0 relative overflow-hidden flex items-center justify-center border-b-2 md:border-b-0 md:border-r-2 border-[#1a1a1a] dark:border-[#333333]">
+            <div className="w-full md:w-[60%] bg-black flex-shrink-0 relative overflow-hidden flex items-center justify-center border-b md:border-b-0 md:border-r border-border dark:border-[#333333]">
               {(() => {
                  const r = reports.find(rep => rep.id === selectedReportId);
                  const evs = reportsEvidence[selectedReportId] || [];
@@ -957,10 +957,10 @@ export default function CleanupTaskDetailPage() {
             {/* Right Side: Details & Audit */}
             <div className="w-full md:w-[40%] flex flex-col h-full bg-surface-elevated">
                {/* Header */}
-               <div className="flex justify-between items-center p-4 border-b-2 border-[#1a1a1a] dark:border-[#333333] shrink-0 bg-background/50">
+               <div className="flex justify-between items-center p-4 border-b border-border dark:border-[#333333] shrink-0 bg-background/50">
                   <div className="flex items-center gap-3">
                      <div>
-                        <h2 className="text-lg font-black uppercase tracking-tight leading-tight">{reports.find(r => r.id === selectedReportId)?.title}</h2>
+                        <h2 className="text-lg font-bold uppercase tracking-tight leading-tight">{reports.find(r => r.id === selectedReportId)?.title}</h2>
                         <span className="text-[10px] text-text-muted font-mono uppercase tracking-widest">{reports.find(r => r.id === selectedReportId)?.issue_type}</span>
                      </div>
                   </div>
@@ -996,10 +996,10 @@ export default function CleanupTaskDetailPage() {
 
                   {/* Audit Trail */}
                   <div className="space-y-4">
-                     <h3 className="text-[10px] font-black text-text-muted uppercase tracking-widest">Audit Log</h3>
+                     <h3 className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Audit Log</h3>
                      {agencyResponses.length > 0 ? (
                         agencyResponses.map((res, i) => (
-                          <div key={i} className="mb-2 border-l-2 border-accent-green pl-3">
+                          <div key={i} className="mb-2 border-l border-accent-green pl-3">
                              <div className="text-[10px] font-mono text-text-muted">{new Date(res.created_at).toLocaleString()}</div>
                              <div className="text-sm text-text-primary mt-1">{res.action_details}</div>
                           </div>

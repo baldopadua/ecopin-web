@@ -2,13 +2,13 @@
 
 export function SkeletonLine({ className = '' }) {
   return (
-    <div className={`animate-pulse rounded-none bg-border/50 ${className}`} />
+    <div className={`animate-pulse rounded-xl bg-border/50 ${className}`} />
   )
 }
 
 export function SkeletonCard({ className = '' }) {
   return (
-    <div className={`bg-surface-elevated border-2 border-border rounded-none p-6 animate-pulse ${className}`}>
+    <div className={`bg-surface-elevated border border-border rounded-xl p-6 animate-pulse ${className}`}>
       <SkeletonLine className="h-4 w-1/3 mb-3" />
       <SkeletonLine className="h-3 w-2/3 mb-2" />
       <SkeletonLine className="h-3 w-1/2" />
@@ -18,7 +18,7 @@ export function SkeletonCard({ className = '' }) {
 
 export function SkeletonStatCard({ className = '' }) {
   return (
-    <div className={`bg-surface-elevated border-2 border-border rounded-none p-6 animate-pulse ${className}`}>
+    <div className={`bg-surface-elevated border border-border rounded-xl p-6 animate-pulse ${className}`}>
       <SkeletonLine className="h-3 w-1/2 mb-3" />
       <SkeletonLine className="h-8 w-1/3 mb-2" />
       <SkeletonLine className="h-3 w-2/5" />
@@ -28,14 +28,14 @@ export function SkeletonStatCard({ className = '' }) {
 
 export function SkeletonTable({ rows = 5, cols = 5, className = '' }) {
   return (
-    <div className={`bg-surface-elevated border-2 border-border rounded-none p-6 animate-pulse ${className}`}>
+    <div className={`bg-surface-elevated border border-border rounded-xl p-6 animate-pulse ${className}`}>
       <div className="space-y-3">
         <div className="flex gap-4">
           {Array.from({ length: cols }).map((_, i) => (
             <SkeletonLine key={`h-${i}`} className="h-4 flex-1" />
           ))}
         </div>
-        <div className="border-t-2 border-border/30" />
+        <div className="border-t border-border/30" />
         {Array.from({ length: rows }).map((_, row) => (
           <div key={row} className="flex gap-4">
             {Array.from({ length: cols }).map((_, col) => (
@@ -59,25 +59,25 @@ export function SkeletonPageHeader() {
 
 export function SkeletonChartCard({ className = '' }) {
   return (
-    <div className={`bg-surface-elevated border-2 border-border rounded-none p-6 animate-pulse ${className}`}>
+    <div className={`bg-surface-elevated border border-border rounded-xl p-6 animate-pulse ${className}`}>
       <SkeletonLine className="h-4 w-1/3 mb-4" />
-      <SkeletonLine className="h-48 w-full rounded-none" />
+      <SkeletonLine className="h-48 w-full rounded-xl" />
     </div>
   )
 }
 
 export function SkeletonForm({ fields = 4, className = '' }) {
   return (
-    <div className={`bg-surface-elevated border-2 border-border rounded-none p-6 animate-pulse ${className}`}>
+    <div className={`bg-surface-elevated border border-border rounded-xl p-6 animate-pulse ${className}`}>
       <SkeletonLine className="h-6 w-1/4 mb-6" />
       <div className="space-y-4">
         {Array.from({ length: fields }).map((_, i) => (
           <div key={i}>
             <SkeletonLine className="h-3 w-1/6 mb-2" />
-            <SkeletonLine className="h-10 w-full rounded-none" />
+            <SkeletonLine className="h-10 w-full rounded-xl" />
           </div>
         ))}
-        <SkeletonLine className="h-10 w-1/4 rounded-none" />
+        <SkeletonLine className="h-10 w-1/4 rounded-xl" />
       </div>
     </div>
   )

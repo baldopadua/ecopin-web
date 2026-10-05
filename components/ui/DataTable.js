@@ -80,7 +80,7 @@ export default function DataTable({
 
   if (data.length === 0) {
     return (
-      <div className={`bg-surface-elevated border-2 border-border rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] p-8 ${className}`}>
+      <div className={`bg-surface-elevated border border-border rounded-xl shadow-sm dark:shadow-[2px_2px_0px_0px_#333333] p-8 ${className}`}>
         <div className="text-center py-10 text-text-muted font-mono uppercase tracking-widest">
           <p className="text-lg mb-1">{emptyMessage}</p>
         </div>

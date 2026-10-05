@@ -105,7 +105,7 @@ export default function AuthPage() {
 
   if (isChecking) {
     return (
-      <main className="min-h-screen bg-white dark:bg-[#121212] relative flex items-center justify-center overflow-hidden transition-colors duration-300">
+      <main className="min-h-screen bg-surface  relative flex items-center justify-center overflow-hidden transition-colors duration-300">
         {/* Logo underneath */}
         <div 
           className="relative z-0 flex flex-col items-center" 
@@ -116,14 +116,14 @@ export default function AuthPage() {
         >
           <img src="/Full Logo Light.png" alt="EcoPin" className="h-10 sm:h-12 w-auto object-contain dark:hidden" />
           <img src="/Full Logo Dark.png" alt="EcoPin" className="h-10 sm:h-12 w-auto object-contain hidden dark:block" />
-          <div className="mt-6 font-black uppercase tracking-[0.3em] text-[10px] text-gray-500 animate-pulse">
+          <div className="mt-6 font-bold uppercase tracking-[0.3em] text-[10px] text-text-muted animate-pulse">
             Loading
           </div>
         </div>
 
         {/* Royal blue wipe overlay */}
         <div 
-          className="fixed inset-0 bg-[#0052CC] z-10" 
+          className="fixed inset-0 bg-primary z-10" 
           style={{ 
             transformOrigin: 'right',
             animation: 'wipeRight 0.9s cubic-bezier(0.8, 0, 0.2, 1) forwards'
@@ -155,17 +155,17 @@ export default function AuthPage() {
 
   return (
     <main
-      className="min-h-screen bg-[#F4F0EA] dark:bg-[#121212] text-black dark:text-white relative flex flex-col items-center justify-center p-0 md:p-6 transition-colors duration-300 overflow-hidden"
+      className="min-h-screen bg-background  text-text-primary  relative flex flex-col items-center justify-center p-0 md:p-6 transition-colors duration-300 overflow-hidden"
     >
       {isExiting && (
         <div 
-          className="fixed inset-0 bg-[#0052CC] z-[9999] flex flex-col items-center justify-center" 
+          className="fixed inset-0 bg-primary z-[9999] flex flex-col items-center justify-center" 
           style={{ 
             animation: 'wipeInRightClip 0.9s cubic-bezier(0.8, 0, 0.2, 1) forwards'
           }} 
         >
           <img src="/Auth Logo.png" alt="EcoPin" className="h-16 md:h-20 w-auto object-contain" />
-          <div className="mt-6 font-black uppercase tracking-[0.3em] text-[10px] text-white/50 animate-pulse">
+          <div className="mt-6 font-bold uppercase tracking-[0.3em] text-[10px] text-white/50 animate-pulse">
             Loading
           </div>
           <style dangerouslySetInnerHTML={{
@@ -181,16 +181,16 @@ export default function AuthPage() {
       {/* Desktop Back Button */}
       <button 
         onClick={handleBack}
-        className="hidden md:flex items-center justify-center absolute top-8 left-8 z-50 font-black text-lg uppercase bg-white dark:bg-[#1C1C1C] text-black dark:text-white border-4 border-black dark:border-[#333] rounded-full px-6 py-3 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all drop-shadow-[4px_4px_0_black] hover:translate-y-1 hover:drop-shadow-[0px_0px_0_black]"
+        className="hidden md:flex items-center justify-center absolute top-8 left-8 z-50 font-bold text-lg uppercase bg-surface dark:bg-surface text-text-primary  border border-border  rounded-full px-6 py-3 hover:bg-black hover:text-white dark:hover:bg-surface dark:hover:text-text-primary transition-all drop-shadow-sm hover:translate-y-1 hover:drop-shadow-sm"
       >
         ← BACK
       </button>
 
       {/* Auth Container */}
-      <div className="w-full min-h-screen md:min-h-0 max-w-5xl mx-auto flex flex-col md:flex-row border-0 md:border-4 border-black dark:border-[#333] bg-white dark:bg-[#1C1C1C] rounded-none md:rounded-[40px] drop-shadow-none md:drop-shadow-[8px_8px_0_black] relative z-10 overflow-hidden mt-0">
+      <div className="w-full min-h-screen md:min-h-0 max-w-5xl mx-auto flex flex-col md:flex-row border-0 md:border border-border  bg-surface dark:bg-surface rounded-xl md:rounded-xl drop-shadow-none md:drop-shadow-sm relative z-10 overflow-hidden mt-0">
         
         {/* Left Panel - Branding */}
-        <div className="flex flex-col justify-between p-8 md:p-12 bg-[#0052CC] text-white border-b-0 md:border-r-4 border-black dark:border-[#333] relative w-full md:w-5/12 overflow-hidden">
+        <div className="flex flex-col justify-between p-8 md:p-12 bg-primary text-white border-b-0 md:border-r-4 border-border  relative w-full md:w-5/12 overflow-hidden">
           
           <div className="flex flex-col items-center justify-center flex-1 z-10 relative py-12 md:py-0">
               <button onClick={handleBack} className="inline-block hover:scale-105 transition-transform hover:opacity-80">
@@ -198,8 +198,8 @@ export default function AuthPage() {
               </button>
             </div>
 
-          <div className="mt-12 md:mt-0 relative z-10 flex items-center gap-2 text-sm font-black uppercase tracking-widest text-white/80">
-            <div className="w-2 h-2 rounded-full bg-[#0052CC] animate-pulse"></div>
+          <div className="mt-12 md:mt-0 relative z-10 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-white/80">
+            <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
             AUTHORIZED ACCESS ONLY
           </div>
 
@@ -209,17 +209,17 @@ export default function AuthPage() {
         </div>
 
         {/* Right Panel - Form */}
-        <div className="flex-1 md:flex-none p-8 md:p-12 flex flex-col justify-center bg-white dark:bg-[#1C1C1C] w-full md:w-7/12">
+        <div className="flex-1 md:flex-none p-8 md:p-12 flex flex-col justify-center bg-surface dark:bg-surface w-full md:w-7/12">
           
           <div className="flex items-center justify-between mb-8">
-            <h1 className="text-4xl md:text-5xl font-black text-black dark:text-white uppercase tracking-tighter">
+            <h1 className="text-4xl md:text-5xl font-bold text-text-primary  uppercase tracking-tight">
               SIGN IN
             </h1>
             
             {/* Mobile Back Button */}
             <button 
               onClick={handleBack}
-              className="md:hidden font-black text-sm uppercase bg-[#F4F0EA] dark:bg-[#2A2A2A] text-black dark:text-white border-4 border-black dark:border-[#333] rounded-full px-4 py-2 hover:bg-black hover:text-white transition-all drop-shadow-[2px_2px_0_black]"
+              className="md:hidden font-bold text-sm uppercase bg-background dark:bg-surface-elevated text-text-primary  border border-border  rounded-full px-4 py-2 hover:bg-black hover:text-white transition-all drop-shadow-sm"
             >
               ← BACK
             </button>
@@ -227,7 +227,7 @@ export default function AuthPage() {
 
           <div className="space-y-6" suppressHydrationWarning>
             <div>
-              <label className="block text-sm font-black text-black dark:text-gray-300 mb-2 uppercase tracking-widest">Email Address</label>
+              <label className="block text-sm font-bold text-text-primary dark:text-gray-300 mb-2 uppercase tracking-widest">Email Address</label>
               <input
                 suppressHydrationWarning
                 ref={emailRef}
@@ -236,11 +236,11 @@ export default function AuthPage() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 onKeyDown={handleEmailKeyDown}
-                className="w-full bg-[#F4F0EA] dark:bg-[#2A2A2A] border-4 border-black dark:border-[#333] rounded-[20px] p-4 font-bold text-black dark:text-white focus:outline-none focus:border-[#0052CC] transition-colors placeholder:text-gray-500"
+                className="w-full bg-background dark:bg-surface-elevated border border-border  rounded-lg p-4 font-bold text-text-primary  focus:outline-none focus:border-[#0052CC] transition-colors placeholder:text-text-muted"
               />
             </div>
             <div>
-              <label className="block text-sm font-black text-black dark:text-gray-300 mb-2 uppercase tracking-widest">Password</label>
+              <label className="block text-sm font-bold text-text-primary dark:text-gray-300 mb-2 uppercase tracking-widest">Password</label>
               <div className="relative">
                 <input
                   suppressHydrationWarning
@@ -250,13 +250,13 @@ export default function AuthPage() {
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   onKeyDown={handlePasswordKeyDown}
-                  className="w-full bg-[#F4F0EA] dark:bg-[#2A2A2A] border-4 border-black dark:border-[#333] rounded-[20px] p-4 font-bold text-black dark:text-white focus:outline-none focus:border-[#0052CC] transition-colors placeholder:text-gray-500 pr-12"
+                  className="w-full bg-background dark:bg-surface-elevated border border-border  rounded-lg p-4 font-bold text-text-primary  focus:outline-none focus:border-[#0052CC] transition-colors placeholder:text-text-muted pr-12"
                   autoComplete="off"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-black dark:text-white hover:text-[#0052CC] transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-text-primary  hover:text-[#0052CC] transition-colors"
                 >
                   {showPassword ? (
                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.29 3.29m0 0a9.953 9.953 0 015.71-2.29c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
@@ -268,7 +268,7 @@ export default function AuthPage() {
             </div>
 
             {error && (
-              <div className="flex items-start gap-3 p-4 border-4 border-black bg-white rounded-[20px] text-red-600 font-bold text-sm drop-shadow-[4px_4px_0_black]">
+              <div className="flex items-start gap-3 p-4 border border-border bg-surface rounded-lg text-red-600 font-bold text-sm drop-shadow-sm">
                 <svg className="w-5 h-5 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
@@ -279,7 +279,7 @@ export default function AuthPage() {
             <button
               onClick={handleSubmit}
               disabled={loading}
-              className="w-full mt-6 py-4 bg-[#0052CC] text-white font-black uppercase tracking-widest text-xl rounded-full border-4 border-black hover:bg-black hover:text-white transition-all drop-shadow-[4px_4px_0_black] animate-btn-pulse disabled:opacity-50 disabled:animate-none"
+              className="w-full mt-6 py-4 bg-primary text-white font-bold uppercase tracking-widest text-xl rounded-full border border-border hover:bg-black hover:text-white transition-all drop-shadow-sm animate-btn-pulse disabled:opacity-50 disabled:animate-none"
             >
               {loading ? 'AUTHENTICATING...' : 'SYSTEM LOGIN'}
             </button>

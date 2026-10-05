@@ -257,7 +257,7 @@ export default function AdminHomepage() {
 
       {/* Recent System Logs */}
       <div className="flex flex-col gap-4 mt-8">
-        <h2 className="text-xl font-bold text-text-primary uppercase tracking-tighter">Recent System Logs</h2>
+        <h2 className="text-xl font-bold text-text-primary uppercase tracking-tight">Recent System Logs</h2>
         <DataTable
           columns={tableColumns}
           data={recentLogs}

@@ -310,72 +310,72 @@ export default function AnalyticsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
+          <div className="bg-surface-elevated border border-border rounded-xl p-6">
             <div className="mb-2">
               <span className="text-xs font-mono tracking-widest uppercase text-text-muted">Total Reports</span>
             </div>
-            <p className="text-4xl font-black text-text-primary uppercase">{stats.total}</p>
+            <p className="text-4xl font-bold text-text-primary uppercase">{stats.total}</p>
           </div>
 
-          <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
+          <div className="bg-surface-elevated border border-border rounded-xl p-6">
             <div className="mb-2">
               <span className="text-xs font-mono tracking-widest uppercase text-text-muted">Unresolved</span>
             </div>
-            <p className="text-4xl font-black text-text-primary uppercase">{stats.unresolved}</p>
+            <p className="text-4xl font-bold text-text-primary uppercase">{stats.unresolved}</p>
           </div>
 
-          <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
+          <div className="bg-surface-elevated border border-border rounded-xl p-6">
             <div className="mb-2">
               <span className="text-xs font-mono tracking-widest uppercase text-text-muted">In Progress</span>
             </div>
-            <p className="text-4xl font-black text-text-primary uppercase">{stats.inProgress}</p>
+            <p className="text-4xl font-bold text-text-primary uppercase">{stats.inProgress}</p>
           </div>
 
-          <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
+          <div className="bg-surface-elevated border border-border rounded-xl p-6">
             <div className="mb-2">
               <span className="text-xs font-mono tracking-widest uppercase text-text-muted">Resolved Today</span>
             </div>
-            <p className="text-4xl font-black text-text-primary uppercase">{stats.resolvedToday}</p>
+            <p className="text-4xl font-bold text-text-primary uppercase">{stats.resolvedToday}</p>
           </div>
 
-          <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
+          <div className="bg-surface-elevated border border-border rounded-xl p-6">
             <div className="mb-2">
               <span className="text-xs font-mono tracking-widest uppercase text-text-muted">Avg. Resolution Time</span>
             </div>
-            <p className="text-4xl font-black text-text-primary uppercase">{stats.avgResolutionTime}</p>
+            <p className="text-4xl font-bold text-text-primary uppercase">{stats.avgResolutionTime}</p>
           </div>
 
-          <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
+          <div className="bg-surface-elevated border border-border rounded-xl p-6">
             <div className="mb-2">
               <span className="text-xs font-mono tracking-widest uppercase text-text-muted">Resolution Rate</span>
             </div>
-            <p className="text-4xl font-black text-text-primary uppercase">{`${stats.resolutionRate}%`}</p>
+            <p className="text-4xl font-bold text-text-primary uppercase">{`${stats.resolutionRate}%`}</p>
           </div>
 
-          <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
+          <div className="bg-surface-elevated border border-border rounded-xl p-6">
             <div className="mb-2">
               <span className="text-xs font-mono tracking-widest uppercase text-text-muted">Waiting for Feedback</span>
             </div>
-            <p className="text-4xl font-black text-text-primary uppercase">{stats.waitingForFeedback}</p>
+            <p className="text-4xl font-bold text-text-primary uppercase">{stats.waitingForFeedback}</p>
           </div>
 
-          <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
+          <div className="bg-surface-elevated border border-border rounded-xl p-6">
             <div className="mb-2">
               <span className="text-xs font-mono tracking-widest uppercase text-text-muted">Overdue Reports</span>
             </div>
-            <p className="text-4xl font-black text-text-primary uppercase">{stats.overdue}</p>
+            <p className="text-4xl font-bold text-text-primary uppercase">{stats.overdue}</p>
           </div>
         </div>
       )}
 
       {/* Resolution Rate Progress */}
       {!loading && (
-         <div className="mb-8 bg-surface-elevated border-2 border-border rounded-none p-6">
-            <h2 className="text-sm font-black uppercase tracking-tighter text-text-muted mb-4">Resolution Progress</h2>
+         <div className="mb-8 bg-surface-elevated border border-border rounded-xl p-6">
+            <h2 className="text-sm font-bold uppercase tracking-tight text-text-muted mb-4">Resolution Progress</h2>
             <div className="flex justify-between items-end mb-2">
-               <span className="text-2xl font-black uppercase tracking-tighter">{stats.resolutionRate}% of all reports resolved</span>
+               <span className="text-2xl font-bold uppercase tracking-tight">{stats.resolutionRate}% of all reports resolved</span>
             </div>
-            <div className="w-full bg-[#1a1a1a] h-4 relative border border-[#333333]">
+            <div className="w-full bg-surface-elevated h-4 relative border border-[#333333]">
                <div 
                  className={`h-full ${stats.resolutionRate >= 70 ? 'bg-accent-green' : stats.resolutionRate >= 40 ? 'bg-warning' : 'bg-error'} transition-all duration-1000`} 
                  style={{ width: `${stats.resolutionRate}%` }}
@@ -387,8 +387,8 @@ export default function AnalyticsPage() {
       {/* Charts Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {/* Reports per Week Bar Chart */}
-        <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
-          <h2 className="text-2xl font-black uppercase tracking-tighter text-text-primary mb-6 border-b-2 border-border pb-4">Reports per Week</h2>
+        <div className="bg-surface-elevated border border-border rounded-xl p-6">
+          <h2 className="text-2xl font-bold uppercase tracking-tight text-text-primary mb-6 border-b border-border pb-4">Reports per Week</h2>
           <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
               <div className="flex items-center justify-center py-16">
@@ -403,8 +403,8 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Resolution Rate Bar Chart */}
-        <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
-          <h2 className="text-2xl font-black uppercase tracking-tighter text-text-primary mb-6 border-b-2 border-border pb-4">Resolution Rate (%)</h2>
+        <div className="bg-surface-elevated border border-border rounded-xl p-6">
+          <h2 className="text-2xl font-bold uppercase tracking-tight text-text-primary mb-6 border-b border-border pb-4">Resolution Rate (%)</h2>
           <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
               <div className="flex items-center justify-center py-16">
@@ -419,8 +419,8 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Reports by Issue Type Pie Chart */}
-        <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
-          <h2 className="text-2xl font-black uppercase tracking-tighter text-text-primary mb-6 border-b-2 border-border pb-4">Reports by Issue Type</h2>
+        <div className="bg-surface-elevated border border-border rounded-xl p-6">
+          <h2 className="text-2xl font-bold uppercase tracking-tight text-text-primary mb-6 border-b border-border pb-4">Reports by Issue Type</h2>
           <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
               <div className="flex items-center justify-center py-16">
@@ -435,8 +435,8 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Satisfaction Distribution Pie Chart */}
-        <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
-          <h2 className="text-2xl font-black uppercase tracking-tighter text-text-primary mb-6 border-b-2 border-border pb-4">Satisfaction Distribution</h2>
+        <div className="bg-surface-elevated border border-border rounded-xl p-6">
+          <h2 className="text-2xl font-bold uppercase tracking-tight text-text-primary mb-6 border-b border-border pb-4">Satisfaction Distribution</h2>
           <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
               <div className="flex items-center justify-center py-16">
@@ -451,8 +451,8 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Reports by Status Pie Chart */}
-        <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
-          <h2 className="text-2xl font-black uppercase tracking-tighter text-text-primary mb-6 border-b-2 border-border pb-4">Reports by Status</h2>
+        <div className="bg-surface-elevated border border-border rounded-xl p-6">
+          <h2 className="text-2xl font-bold uppercase tracking-tight text-text-primary mb-6 border-b border-border pb-4">Reports by Status</h2>
           <div style={{ width: '100%', height: '320px' }}>
             {loading ? (
               <div className="flex items-center justify-center py-16">

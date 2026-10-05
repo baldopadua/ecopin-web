@@ -1,125 +1,260 @@
-# Ecopin Design System: Refined Neo-Brutalist / Cyber-Matrix 
+# Ecopin Design System: Civic, Clean & Modern
 
-This document outlines the core design language, aesthetic principles, and technical implementation details for the Ecopin neo-brutalist redesign. This system is designed to be reusable across web, mobile, and any other platforms within the Ecopin ecosystem.
+This document outlines the core design language, aesthetic principles, and technical implementation details for the Ecopin platform. This system is designed to be reusable across web, mobile, and any other platforms within the Ecopin ecosystem.
+
+---
+
+## 0. Design References
+
+The Ecopin design system draws from the following proven civic and government design systems. All design decisions should be traceable to these references:
+
+| Reference | Source | Key Influence |
+| :--- | :--- | :--- |
+| **GOV.UK Design System** | [design-system.service.gov.uk](https://design-system.service.gov.uk) | Plain-language UI, typography hierarchy, functional color tokens, minimal chrome |
+| **U.S. Web Design System (USWDS)** | [designsystem.digital.gov](https://designsystem.digital.gov) | 8px spacing grid, Public Sans-style readability, token-driven theming, accessibility-first |
+| **Singapore Govt. Design System (SGDS)** | [designsystem.gov.sg](https://designsystem.gov.sg) | Inter typeface, 8px grid, WCAG 2.2 AA compliance, mobile-first layout |
+| **LifeSG (Singapore)** | [life.gov.sg](https://life.gov.sg) | Citizen-centric "life moments" IA, transactional clarity, multi-agency UX |
+| **Colorado.gov** | [colorado.gov](https://www.colorado.gov) | Award-winning state portal, task-first homepage navigation, consistent branding at scale |
+| **California DMV** | [dmv.ca.gov](https://www.dmv.ca.gov) | Appointment/task scheduling flow, high-traffic information architecture clarity |
+| **DICT/eGovPH Standards** | [dict.gov.ph](https://dict.gov.ph) | Philippine LGU compliance: WCAG 2.0, Transparency Seal, mobile-first mandate |
+
+> **Guiding Principle (from GOV.UK):** *"The best design is invisible."* — A civic interface should never draw attention to itself. It should dissolve into the task at hand, placing all focus on citizen action and data clarity.
+
+---
 
 ## 1. Core Philosophy
-The design bridges the gap between raw civic action and cutting-edge geospatial technology. Moving away from "maximum neo-brutalism" towards a **Refined Cyber-Brutalist** / **Terminal** look. 
 
-It communicates urgency, transparency, and grassroots action while remaining highly legible and accessible. It feels like a high-tech control center combined with a sophisticated operational dashboard.
+The design prioritizes accessibility, trust, and clarity. It moves away from harsh, technical brutalist aesthetics toward a **Clean, Civic-Friendly, and Modern** interface.
+
+It communicates transparency and professional civic action while remaining highly legible. It feels like an approachable public service utility combined with a sophisticated, yet user-friendly operational dashboard.
+
+**Reference Alignment:**
+- Like **GOV.UK**, we deprioritize decorative complexity and favor clear, functional layouts.
+- Like **USWDS**, we use a strict token system so design updates propagate atomically.
+- Like **SGDS/LifeSG**, we organize information around *workflows and tasks* (citizen life moments = field crew operational moments), not internal department/data-model structure.
 
 ### Key Characteristics:
-*   **Controlled Contrast:** Dark charcoal (`#1A1A1A`) instead of pure black. Neon green used selectively for accents and active states.
-*   **Structural & Technical:** Sharp edges (`rounded-none` or `rounded-sm`), 1px or 2px borders, subtle tectonic drop shadows (e.g., 2px offset).
-*   **System/Terminal Accents:** Monospace typography strictly reserved for system readouts, metadata, and timestamps. Standard sans-serif for reading.
-*   **Clear Hierarchy:** Not everything needs a heavy border. Outline weights establish importance.
+
+*   **Soft & Welcoming:** Soft border radiuses, clean lines, and an absence of thick, harsh borders — echoing the card-based surface approach of LifeSG and the rounded form fields of Colorado.gov.
+*   **Accessible Colors:** High-contrast neutral grays and pure whites. Primary blue signals trust and action (consistent with USWDS primary action color and SGDS "blue = information/action" convention).
+*   **Subtle Elevation:** Soft, diffused drop shadows rather than solid offset borders. Depth through lightness and elevation, not heavy outlines — as prescribed in the USWDS depth guidance.
+*   **Clear Typography:** Modern, readable geometric sans-serifs. Monospace is used extremely sparingly, only for actual data or coordinates, never for general UI copy (GOV.UK principle: no decorative typeface switching).
+*   **Task-Centered Navigation:** Every screen is organized around *what the user needs to do*, not around internal data hierarchy. Top CTAs mirror the "Quick Actions" pattern from Colorado.gov and CalDMV. (See: ARCHITECTURE.md for the Workflow > Task > Cluster > Report drill-down.)
 
 ---
 
 ## 2. Color Palette
 
-The color system is highly restricted to maintain maximum impact. Avoid using gradients unless they are used to create structural noise or glowing light effects.
+The color system is designed to be clean, professional, and accessible. Token naming follows USWDS semantic convention: **primitive → semantic → component**.
 
-| Role | Hex | RGB | Usage |
+> **Reference (SGDS):** "Colours are functional, hierarchical, and accessible. The system mandates sufficient contrast ratios to meet WCAG AA standards. Blue = general information/action. Amber = attention/warning. Green = success. Red = problems/errors. Grey = neutral palette."
+
+> **Reference (USWDS):** Colors are defined as design tokens, not hard-coded hex values. Changing a primitive token propagates to all components.
+
+### Semantic Color Tokens
+
+| Token | Hex | WCAG AA on White | Usage |
 | :--- | :--- | :--- | :--- |
-| **Dark Charcoal (Base)** | `#1A1A1A` | `rgb(26,26,26)` | Primary background in dark mode, borders, text, and shadows. |
-| **Neon Lime (Accent)** | `#CCFF00` | `rgb(204,255,0)` | Active states, highlights, glowing orbs, primary buttons. Used selectively. |
-| **Pure White** | `#FFFFFF` | `rgb(255,255,255)` | Primary text (dark mode), secondary backgrounds (light mode). |
-| **Dark Grey (Surface)**| `#222222` | `rgb(34,34,34)` | Secondary backgrounds. |
-| **Status: Urgent** | `#FF0000` | `rgb(255,0,0)` | Urgent report tags, critical errors. |
+| `--color-action` | `#0052CC` | ✅ Pass (7.3:1) | Primary brand, interactive elements, primary buttons. Mirrors USWDS `primary` and SGDS blue convention. |
+| `--color-action-hover` | `#003D99` | ✅ Pass | Hover/focus states on primary interactive elements. |
+| `--color-action-light` | `#EBF2FF` | — | Tinted backgrounds on active nav items, selected states, info banners. |
+| `--color-action-secondary` | `#60A5FA` | ⚠️ Use on dark bg only | Secondary accents on dark surfaces only. |
+| `--color-success` | `#2E7D32` | ✅ Pass (5.9:1) | Completed status, verified states. (SGDS: Green = success) |
+| `--color-warning` | `#B45309` | ✅ Pass | Pending/attention states. Amber adjusted for WCAG AA text contrast. |
+| `--color-warning-bg` | `#FEF3C7` | — | Background tint for warning banners and chips. |
+| `--color-error` | `#D32F2F` | ✅ Pass (5.3:1) | Urgent/error states. (SGDS: Red = problems/errors) |
+| `--color-info` | `#0288D1` | ✅ Pass | Informational banners, non-critical alerts. |
+
+### Surface & Background Tokens
+
+| Token | Light Mode | Dark Mode | Usage |
+| :--- | :--- | :--- | :--- |
+| `--color-bg` | `#F9FAFB` | `#121212` | Page background. Light: warm off-white (GOV.UK-inspired). Dark: true neutral. |
+| `--color-surface` | `#FFFFFF` | `#1C1C1C` | Card and container backgrounds. |
+| `--color-surface-elevated` | `#F3F4F6` | `#2A2A2A` | Hover states, secondary containers, nested surfaces. |
+| `--color-border` | `#E5E7EB` | `#333333` | Subtle dividers. Never use for structural layout — use background contrast instead. |
+
+### Text Tokens
+
+| Token | Light Mode | Dark Mode | Usage |
+| :--- | :--- | :--- | :--- |
+| `--color-text-primary` | `#111827` | `#F9FAFB` | Body text, headings. WCAG AAA on surface. |
+| `--color-text-secondary` | `#6B7280` | `#9CA3AF` | Captions, metadata, helper text. WCAG AA on surface. |
+| `--color-text-disabled` | `#D1D5DB` | `#4B5563` | Disabled states only. Never for informational text. |
+| `--color-text-inverse` | `#FFFFFF` | `#111827` | Text on colored backgrounds (e.g., primary buttons). |
+
+*(Note: Neon greens like `#CCFF00` have been explicitly deprecated and must not be used anywhere in the codebase.)*
+
+*(Note: Blue-tinted grays like Tailwind `slate-*` are deprecated for dark mode. Use pure neutral grays to maintain professional contrast.)*
 
 ---
 
 ## 3. Typography
 
-The typography discards modern geometric sans-serifs (like Inter or Outfit) in favor of raw, unpolished, native fonts. 
+The typography focuses on legibility and a friendly, modern civic feel.
+
+> **Reference (SGDS):** Inter is chosen for its "excellent legibility on computer screens and its tall x-height." Hierarchy: H1 (40px/Bold) → H4 (18px/Bold) → Body (16px/Regular) → Small (14px/Regular).
+
+> **Reference (GOV.UK):** No decorative typeface switching. One typeface family for all UI. Monospace is reserved strictly for code/data.
+
+> **Reference (USWDS):** Public Sans — optimized for readability, multiple weights. Ecopin uses `Outfit` (equivalent geometric humanist sans) as its primary.
 
 ### Font Families
-1.  **Primary/Reading:** `Helvetica`, `Arial`, `sans-serif` (or modern sans like `Outfit`)
-    *   *Usage:* Headlines, task descriptions, UI text, primary buttons.
-    *   *Styling:* Avoid excessive uppercase for readability. Use `font-bold` for emphasis rather than always `font-black`.
-2.  **Secondary/System:** `monospace` (System default like `Courier New` or `SF Mono`)
-    *   *Usage:* System readouts, timestamps, metadata, specific tags.
-    *   *Styling:* Small, uppercase, widely spaced (`tracking-widest`).
 
-### Typographic Rules
-*   **Headlines:** Keep line-heights relatively tight.
-*   **Outline Text:** Use CSS text strokes (`-webkit-text-stroke: 1px #ccff00`) sparingly.
-*   **Hierarchy:** Do not make all text uppercase. Reserve uppercase for headers and small metadata.
+1.  **Primary/Reading:** `'Outfit', 'Inter', system-ui, -apple-system, sans-serif`
+    *   *Usage:* Headlines, task descriptions, UI text, primary buttons, navigation.
+    *   *Weights in use:* `400` (Regular), `500` (Medium), `600` (SemiBold). Avoid `700+` except for page-level H1 headings only.
+    *   *Avoid:* `font-black` (900), excessive uppercase strings. Use `font-medium` for emphasis, not weight extremes.
+2.  **Data/Code:** `'Roboto Mono', monospace`
+    *   *Usage:* **Only** for exact coordinates, system IDs, raw sensor data displays, or code blocks. Never for general UI copy or labels.
+
+### Type Scale (8px-grid aligned, per SGDS)
+
+| Role | Size | Weight | Line Height | Usage |
+| :--- | :--- | :--- | :--- | :--- |
+| **Display** | `2.5rem` (40px) | 600 | 1.2 | Page hero titles only |
+| **H1** | `2rem` (32px) | 600 | 1.25 | Dashboard section titles |
+| **H2** | `1.5rem` (24px) | 600 | 1.3 | Card headers, modal titles |
+| **H3** | `1.25rem` (20px) | 500 | 1.4 | Sub-section labels |
+| **H4** | `1.125rem` (18px) | 500 | 1.4 | Field labels, sidebar headings |
+| **Body** | `1rem` (16px) | 400 | 1.6 | Primary reading text, descriptions |
+| **Small** | `0.875rem` (14px) | 400 | 1.5 | Captions, metadata, timestamps |
+| **XSmall** | `0.75rem` (12px) | 400 | 1.4 | Badge labels, status chips only |
 
 ---
 
-## 4. UI Elements & Motifs
+## 4. Spacing System
+
+> **Reference (SGDS & USWDS):** Both systems use a strict **8px base grid**. All spacing values are multiples of 8px: `8, 16, 24, 32, 40, 48, 64, 80, 96`.
+
+All padding, margin, gap, and layout spacing must use values from this scale:
+
+| Token | Value | Use Case |
+| :--- | :--- | :--- |
+| `--space-1` | `4px` | Half-unit. Micro-gaps only (icon-to-text). |
+| `--space-2` | `8px` | Base unit. Tightest intentional spacing. |
+| `--space-3` | `12px` | Compact padding (chips, small badges). |
+| `--space-4` | `16px` | Default inner padding (cards, inputs). |
+| `--space-5` | `24px` | Between related elements. |
+| `--space-6` | `32px` | Between distinct components/sections. |
+| `--space-8` | `48px` | Major section breaks. |
+| `--space-10` | `64px` | Page-level vertical rhythm. |
+| `--space-12` | `80px` | Hero/banner vertical padding. |
+
+---
+
+## 5. UI Elements & Motifs
 
 ### A. Borders & Shapes
-*   **Thickness:** Establish hierarchy. Standard containers use `border-border` (1px). Primary interactive containers use `border-2` (charcoal).
-*   **Corners:** Sharp (`rounded-none`) or slightly refined (`rounded-sm`). Avoid large border radiuses.
 
-### B. Interactions & Hover States (Refined Shadows)
-Avoid soft, blurry drop shadows for standard UI elements. Use **solid, subtle offset shadows**.
-*   **Resting State:** Button has a solid shadow, e.g., `box-shadow: 2px 2px 0px 0px #1A1A1A;`
-*   **Hover State:** Button translates to "press down" into the shadow, e.g., `transform: translate(2px, 2px); box-shadow: 0px 0px 0px 0px #1A1A1A;`
+> **Reference (GOV.UK):** "Borders should be used purposefully. Avoid borders for layout decoration — use background contrast instead."
 
-### C. Mix-Blend Modes
-Use CSS `mix-blend-difference` and `mix-blend-exclusion` for overlapping text and shapes. This ensures text remains readable even when intersecting with solid neon blocks, while adding a glitchy, technical feel.
+*   **Thickness:** Borders should be avoided where possible, relying instead on background contrast and shadows. When necessary, use `1px` with `--color-border`. Never use `2px+` for structural layout chrome.
+*   **Corners:** (Reference: LifeSG card system, Colorado.gov task cards)
+    *   Inputs / small elements: `8px`
+    *   Cards / containers: `16px` (`rounded-2xl`)
+    *   Modals / large panels: `24px` (`rounded-3xl`)
+    *   Pills / badges / avatar chips: `9999px` (`rounded-full`)
+    *   Large structural containers / hero sections: `32px`
 
-### D. System Overlays & Grids
-The "Matrix" look is achieved through CSS background patterns.
-*   **Map Grids:** Linear gradients creating technical intersection points and crosshairs, mimicking satellite maps or targeting systems.
-*   *Implementation (CSS):*
-    ```css
-    background-image: linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px);
-    background-size: 100px 100px;
-    ```
+### B. Elevation & Shadows
 
-### E. Interactive Backgrounds & 3D Objects
-*   Instead of static background blobs, utilize **Interactive Particle Systems** that respond to the user's cursor.
-*   Particles should mimic "specks navigating through a map", pulling gently towards the cursor when hovered and leaving motion-blurred trails behind them to emphasize the real-time tracking aspect of the platform.
-*   **3D Elements:** Key presentation items (like phone mockups) should utilize CSS 3D transforms (`rotateX`, `rotateY` with `perspective`) to tilt responsively based on cursor movement.
+> **Reference (USWDS):** "Depth is established through lightness and soft diffusion, not hard offsets or colored borders."
 
-### F. Glitch Triggers
-*   Glitch text effects (like sliced typography) should **strictly be triggered on `:hover`**.
-*   Do not leave heavy CSS animations looping infinitely, as this causes cognitive overload. The glitch is a reward/feedback for user interaction.
+```
+--shadow-sm:  0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+--shadow-md:  0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+--shadow-lg:  0 8px 24px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.06);
+--shadow-xl:  0 16px 40px rgba(0,0,0,0.12), 0 8px 16px rgba(0,0,0,0.06);
+```
 
-### G. Floating "UI Chips"
-Scatter small, tilted UI cards across the layout to represent the "live" nature of the platform (e.g., `[ ✅ RESOLVED ]`, `[ 🔴 URGENT ]`). Rotate them slightly (`rotate-[-12deg]`) and give them thick borders.
+- `--shadow-sm` → Default card rest state
+- `--shadow-md` → Hovered card, dropdown panels
+- `--shadow-lg` → Modals, sidesheets, floating FABs
+- `--shadow-xl` → Splash overlays, onboarding modals
 
----
+### C. Interactions & Hover States
 
-## 5. Light Mode Implementation
-The refined brutalist aesthetic relies on charcoal-on-white. When implementing **Light Mode**, follow these inversion rules:
-*   **Backgrounds:** Pure white (`#ffffff`) or light surface (`#F8FAF6`).
-*   **Text & Borders:** Charcoal (`#1A1A1A`).
-*   **Accents:** Keep Neon Green (`#ccff00`) as the primary punch color for highlights.
-*   **Shadows:** In light mode, subtle charcoal drop shadows (`shadow-[2px_2px_0px_0px_#1A1A1A]`) provide brutalist contrast against white containers.
+> **Reference (GOV.UK & SGDS):** "Micro-interactions provide immediate feedback without distraction."
+
+*   **Focus Rings:** `box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.4)` — 3px for WCAG 2.4.11 compliance. No background color shifts.
+*   **Hover:** Cards lift gently (`transform: translateY(-2px)`) with shadow upgrade (`--shadow-sm` → `--shadow-md`). Background-only hover states shift to `--color-surface-elevated`.
+*   **Active/Press:** Slight compress (`transform: translateY(0) scale(0.99)`), instant response.
+*   **Transitions:** `transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1)` — Material/SGDS standard easing. Never use `linear` for UI transitions.
+
+### D. Map & Visual Design
+
+*   **Map Markers:** Clean, rounded UI elements with `--shadow-md` elevation. Active states scale up (`scale(1.15)`) with a 3px blue focus ring.
+*   **Status Indication:** Colored indicator dots (8px circle) or left-border accents (3px colored bar on card edge). Never rely on color alone — always pair with a text label (GOV.UK: no color-only status communication).
+
+### E. Dark Mode Implementation
+
+*   Dark mode uses a pure neutral grayscale: `#121212` → `#1C1C1C` → `#2A2A2A` → `#333333`.
+*   Actively avoids blue-tinted grays (Tailwind `slate-*`). Pure neutral is warmer and more readable for extended dashboard use.
+*   `--color-action` (`#0052CC`) remains consistent in both modes — sufficient contrast on dark surfaces.
+*   Drop shadows in dark mode use reduced opacity: `rgba(0,0,0,0.3)`.
 
 ---
 
 ## 6. Layout Structure (Web Specifics)
 
-1.  **Header/Nav:** Thick bottom border. Navigation links should be uppercase, monospace, or heavy sans-serif. Hover states should invert colors (black text on neon green background).
-2.  **Hero Section:** 
-    *   Large, bold typography with hard line breaks.
-    *   Text strokes (`-webkit-text-stroke`) used for hollow "ghost" text effects.
-    *   Subtle map/coordinate overlays behind elements.
-3.  **Data Displays (How it Works/Features):** Monospace fonts with high-contrast text. Use borders and neon highlights to direct attention.
-4.  **3D Containers:**
-    *   When embedding 3D interactive objects (like phone mockups), allow the object to intentionally break out of the container bounds using negative margins or oversized dimensions.
-    *   Ensure floating UI chips maintain a high `z-index` (e.g., `z-30`) so they never clip behind the 3D transforms.
-5.  **Footer:** 
-    *   Must be heavily structured, utilizing multiple columns with a clear separation of Brand, Navigation, and Legal information.
-    *   Use monospace font (`font-mono`) and muted colors (`text-gray-400`) for secondary information like copyright and status indicators (e.g., `SYSTEM: ONLINE`).
-6.  **Section Dividers:** 
-    *   Use infinite CSS marquees with thick top and bottom borders.
-    *   Text should be repeating calls to action: `REPORT IT. TRACK IT. WATCH IT DISAPPEAR. //`
-7.  **Content Sections:** Use asymmetrical grid layouts. Wrap text in heavily bordered containers.
+> **Reference (USWDS & Colorado.gov):** "Task-first homepage navigation — prominent Quick Action patterns for top-tier tasks."
+> **Reference (DICT/WCAG):** Mobile-first is mandatory. Minimum touch target: `44px × 44px`.
+
+1.  **Header/Nav:**
+    *   Sticky, compact. Clean `--color-surface` background with `--shadow-sm` on scroll.
+    *   Logo + wordmark on left. Primary nav links center/right. Role indicator far right.
+    *   Full-width sticky bar (not pill nav — pill nav suits marketing pages, not dense operational dashboards).
+
+2.  **Sidebar (Dashboard):**
+    *   Fixed-width `240px` for operational views. Icon + label navigation (LifeSG-style clear icon+text pairing).
+    *   Active state: `--color-action-light` background with `--color-action` left border accent (3px).
+    *   Collapses to icon-only on `< 1024px`.
+
+3.  **Hero Section (Landing/Public):**
+    *   `Display` size headline. Min `--space-12` vertical padding, strong contrast CTA button.
+    *   Background: solid `--color-bg` or subtle geometric/topographic SVG in `--color-action-light`. Never photography that reduces text legibility.
+
+4.  **Data Displays (Tables & Dashboards):**
+    *   Borderless row layout. Alternating `--color-surface` / `--color-surface-elevated` or hover-only row highlight.
+    *   Cards: `--shadow-sm` rest, `--shadow-md` hover, no visible borders.
+    *   Status chips: `XSmall` text, `rounded-full`, always paired color+label (never color-only).
+
+5.  **Quick Actions Bar:**
+    *   Prominent, at top of dashboard home. Mirrors Colorado.gov/CalDMV task-first pattern.
+    *   Top 4–6 frequent actions as icon+label cards. Reorganizable by role (SWMO Officer vs. Field Crew vs. Admin).
+
+6.  **Footer:**
+    *   SWMO contact information: `swmo@pasigcity.gov.ph` / `09173726888`.
+    *   Navigation links grouped by functional area (not by department).
+    *   Transparency Seal link (DICT/Philippines compliance mandate).
+    *   Copyright + accessibility statement.
 
 ---
 
-## 6. Implementation Checklist for Other Platforms (Mobile/App)
+## 7. Accessibility Standards
+
+> **Reference (WCAG 2.2 AA — DICT Mandatory, SGDS Standard):**
+
+*   **Color Contrast:** All text must meet WCAG AA (4.5:1 body, 3:1 large text/UI components). All primary tokens verified above.
+*   **Focus Management:** All interactive elements must have a visible 3px focus ring. Focus order must match visual reading order.
+*   **Touch Targets:** Minimum `44px × 44px` for all interactive elements (WCAG 2.5.5). Icon-only buttons must have `aria-label`.
+*   **No Color-Only Communication:** Every status must pair color with a text label or icon. (GOV.UK: color blindness affects ~8% of males.)
+*   **Plain Language:** All user-facing copy must be direct and jargon-free — even in internal operational tools.
+*   **Keyboard Navigation:** All flows must be fully operable via keyboard. Tab order must be logical.
+
+---
+
+## 8. Implementation Checklist for Other Platforms (Mobile/App)
 
 If adapting this design to the Flutter/React Native mobile app:
-- [ ] Override default navigation bars with absolute black backgrounds and neon green bottom borders.
-- [ ] Replace soft shadows with solid, non-blurred offset shadows.
-- [ ] Use system Sans-Serif (iOS: San Francisco bold/black, Android: Roboto Black) and System Monospace.
-- [ ] Map pins should not be standard teardrops; they should be glowing orbs or sharp, technical squares.
-- [ ] Use dark mode as the *only* mode. There is no light mode in this design system.
+- [ ] Remove all brutalist `border-4` or hard offset shadows. Replace with `--shadow-sm` equivalent (`elevation: 2`).
+- [ ] Apply the 8px spacing grid for all padding and margin values.
+- [ ] Use `Outfit` or `Inter` as the primary typeface with the defined type scale.
+- [ ] Ensure all containers and buttons use the defined border radiuses (`8px` inputs, `16px` cards).
+- [ ] Strictly implement `--color-action` (`#0052CC`) for all primary actions.
+- [ ] Support both Light and Dark mode using the unified neutral palette.
+- [ ] Eliminate monospace for all general UI text.
+- [ ] All status indicators must include a text label — never rely on color alone.
+- [ ] Minimum touch target: `44 × 44 dp`.
+- [ ] Verify WCAG AA contrast for all text/background combinations before shipping.

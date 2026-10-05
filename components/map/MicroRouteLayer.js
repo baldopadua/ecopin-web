@@ -115,10 +115,10 @@ export default function MicroRouteLayer({ tasks = [], routeWaypoints = [] }) {
                   <strong className="block text-sm text-gray-800 mb-2 truncate">
                     {report.issue_type?.replace(/_/g, ' ')}
                   </strong>
-                  <p className="text-sm text-gray-600 mt-1 mb-3">{report.description?.substring(0, 80)}...</p>
-                  <div className="text-sm space-y-1 text-gray-600">
-                    <div><span className="text-gray-500">Status:</span> <span className="font-medium text-gray-800">{report.status?.replace(/_/g, ' ').toUpperCase()}</span></div>
-                    <div><span className="text-gray-500">Validation:</span> <span className="font-medium text-gray-800">{report.validation_status === 'pending' ? 'Needs Validation' : 'Validated'}</span></div>
+                  <p className="text-sm text-text-secondary mt-1 mb-3">{report.description?.substring(0, 80)}...</p>
+                  <div className="text-sm space-y-1 text-text-secondary">
+                    <div><span className="text-text-muted">Status:</span> <span className="font-medium text-gray-800">{report.status?.replace(/_/g, ' ').toUpperCase()}</span></div>
+                    <div><span className="text-text-muted">Validation:</span> <span className="font-medium text-gray-800">{report.validation_status === 'pending' ? 'Needs Validation' : 'Validated'}</span></div>
                   </div>
                 </div>
               </Popup>

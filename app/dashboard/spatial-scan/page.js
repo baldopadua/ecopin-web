@@ -225,11 +225,11 @@ function TacticalScanContent() {
              setActiveTab('current');
              setFocusedItem(null);
            }}
-           className={`px-6 py-3 font-bold font-mono tracking-widest uppercase border-2 flex items-center gap-3 transition-colors ${
+           className={`px-6 py-3 font-bold font-mono tracking-widest uppercase border border-border flex items-center gap-3 transition-colors ${
              activeTab === 'current' ? 'bg-primary text-white border-primary' : 'bg-surface text-text-primary border-border hover:border-text-primary'
            }`}
          >
-           <div className={`w-3 h-3 rounded-full ${activeTab === 'current' ? 'bg-white animate-pulse' : 'bg-text-muted'}`}></div>
+           <div className={`w-3 h-3 rounded-full ${activeTab === 'current' ? 'bg-surface animate-pulse' : 'bg-text-muted'}`}></div>
            Live / Projected
          </button>
          <button 
@@ -237,7 +237,7 @@ function TacticalScanContent() {
              setActiveTab('historical');
              if (availableDates.length > 0) handleDateChange(availableDates[availableDates.length - 1]);
            }}
-           className={`px-6 py-3 font-bold font-mono tracking-widest uppercase border-2 flex items-center gap-3 transition-colors ${
+           className={`px-6 py-3 font-bold font-mono tracking-widest uppercase border border-border flex items-center gap-3 transition-colors ${
              activeTab === 'historical' ? 'bg-text-primary text-background border-text-primary' : 'bg-surface text-text-primary border-border hover:border-text-primary'
            }`}
          >

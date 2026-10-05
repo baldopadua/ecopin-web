@@ -50,7 +50,7 @@ function OfficerMapContent() {
       {!isSidebarOpen && (
         <button
           onClick={() => setIsSidebarOpen(true)}
-          className="absolute right-4 top-4 z-[1000] bg-surface-elevated border-2 border-border p-2 shadow-lg hover:bg-accent-green hover:text-white transition-colors"
+          className="absolute right-4 top-4 z-[1000] bg-surface-elevated border border-border p-2 shadow-lg hover:bg-accent-green hover:text-white transition-colors"
           title="Open Map Controls"
         >
           <Map className="w-5 h-5" />
@@ -78,7 +78,7 @@ function OfficerMapContent() {
 
       {/* Side Panel */}
       {isSidebarOpen && (
-        <div className="w-full md:w-[350px] border-t-2 md:border-t-0 md:border-l-2 border-[#1a1a1a] dark:border-[#333333] bg-surface flex flex-col h-[50vh] md:h-full z-10 overflow-y-auto custom-scrollbar">
+        <div className="w-full md:w-[350px] border-t md:border-t-0 md:border-l border-border dark:border-[#333333] bg-surface flex flex-col h-[50vh] md:h-full z-10 overflow-y-auto custom-scrollbar">
           <div className="p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="font-mono text-sm font-bold tracking-widest uppercase text-text-secondary flex items-center gap-2">
@@ -87,7 +87,7 @@ function OfficerMapContent() {
               </h2>
               <button 
                 onClick={() => setIsSidebarOpen(false)}
-                className="text-text-muted hover:text-error transition-colors font-black text-sm"
+                className="text-text-muted hover:text-error transition-colors font-bold text-sm"
                 title="Hide Controls"
               >
                 [ X ]
@@ -97,7 +97,7 @@ function OfficerMapContent() {
             <div className="space-y-6">
             {/* Map Layers */}
             <div>
-              <h3 className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-3">Map Layers</h3>
+              <h3 className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-3">Map Layers</h3>
               <div className="space-y-3">
                 {[
                   { label: 'Report Pins', state: showPins, set: setShowPins },
@@ -107,7 +107,7 @@ function OfficerMapContent() {
                 ].map(layer => (
                   <label key={layer.label} className="flex items-center gap-3 cursor-pointer group">
                     <input type="checkbox" checked={layer.state} onChange={(e) => layer.set(e.target.checked)} className="sr-only" />
-                    <div className={`w-5 h-5 border-2 flex items-center justify-center transition-colors ${layer.state ? 'bg-accent-green border-accent-green' : 'border-border bg-surface-elevated hover:border-accent-green/50'}`}>
+                    <div className={`w-5 h-5 border border-border flex items-center justify-center transition-colors ${layer.state ? 'bg-accent-green border-accent-green' : 'border-border bg-surface-elevated hover:border-accent-green/50'}`}>
                       {layer.state && (
                         <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -124,14 +124,14 @@ function OfficerMapContent() {
 
             {/* Data Filters */}
             <div>
-              <h3 className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-3">Data Filters</h3>
+              <h3 className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-3">Data Filters</h3>
               <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-mono text-text-muted mb-1">STATUS</label>
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="w-full bg-surface-elevated border-2 border-border text-sm font-bold uppercase tracking-wider p-2 outline-none focus:border-accent-green"
+                    className="w-full bg-surface-elevated border border-border text-sm font-bold uppercase tracking-wider p-2 outline-none focus:border-accent-green"
                   >
                     <option value="all">ALL</option>
                     <option value="unresolved">UNRESOLVED</option>
@@ -144,7 +144,7 @@ function OfficerMapContent() {
                   <select
                     value={typeFilter}
                     onChange={(e) => setTypeFilter(e.target.value)}
-                    className="w-full bg-surface-elevated border-2 border-border text-sm font-bold uppercase tracking-wider p-2 outline-none focus:border-accent-green"
+                    className="w-full bg-surface-elevated border border-border text-sm font-bold uppercase tracking-wider p-2 outline-none focus:border-accent-green"
                   >
                     <option value="all">ALL</option>
                     {issueTypes.map(type => (

@@ -81,7 +81,7 @@ function TestSessionContent() {
           {validationResult && (
             <div className="mt-2">
               <p><strong>Result:</strong> {validationResult ? 'Valid' : 'Invalid'}</p>
-              <p className="text-sm text-gray-600">{JSON.stringify(validationResult)}</p>
+              <p className="text-sm text-text-secondary">{JSON.stringify(validationResult)}</p>
             </div>
           )}
         </div>

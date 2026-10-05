@@ -48,13 +48,13 @@ export default function Navbar({
     <>
       {isExiting && (
         <div 
-          className="fixed inset-0 bg-[#0052CC] z-[9999] flex flex-col items-center justify-center" 
+          className="fixed inset-0 bg-primary z-[9999] flex flex-col items-center justify-center" 
           style={{ 
             animation: 'wipeInRightClip 0.9s cubic-bezier(0.8, 0, 0.2, 1) forwards'
           }} 
         >
           <img src="/Auth Logo.png" alt="EcoPin" className="h-16 md:h-20 w-auto object-contain relative z-10" />
-          <div className="mt-6 font-black uppercase tracking-[0.3em] text-[10px] text-white/50 animate-pulse">
+          <div className="mt-6 font-bold uppercase tracking-[0.3em] text-[10px] text-white/50 animate-pulse">
             Loading
           </div>
           <style dangerouslySetInnerHTML={{
@@ -74,15 +74,15 @@ export default function Navbar({
       
       <div className="flex items-center gap-6 ml-auto">
         <nav className="hidden md:flex gap-6 items-center">
-          <a href="/#about" className="text-sm font-black uppercase tracking-widest text-black dark:text-white hover:text-[#0052CC] transition-colors">About</a>
-          <a href="/#features" className="text-sm font-black uppercase tracking-widest text-black dark:text-white hover:text-[#0052CC] transition-colors">Features</a>
-          <a href="/map" onClick={(e) => handleLinkClick(e, '/map')} className="text-sm font-black uppercase tracking-widest text-black dark:text-white hover:text-[#0052CC] transition-colors cursor-pointer">Live Map</a>
+          <a href="/#about" className="text-sm font-bold uppercase tracking-widest text-text-primary  hover:text-[#0052CC] transition-colors">About</a>
+          <a href="/#features" className="text-sm font-bold uppercase tracking-widest text-text-primary  hover:text-[#0052CC] transition-colors">Features</a>
+          <a href="/map" onClick={(e) => handleLinkClick(e, '/map')} className="text-sm font-bold uppercase tracking-widest text-text-primary  hover:text-[#0052CC] transition-colors cursor-pointer">Live Map</a>
         </nav>
 
         <div className="hidden md:flex items-center gap-4">
           <button
             onClick={toggleTheme}
-            className="text-black dark:text-white hover:opacity-70 transition-all flex items-center justify-center"
+            className="text-text-primary  hover:opacity-70 transition-all flex items-center justify-center"
             title="Toggle Theme"
           >
             {theme === 'dark' ? (
@@ -93,16 +93,16 @@ export default function Navbar({
           </button>
 
           {hasSession ? (
-            <a href="/dashboard" className="w-9 h-9 rounded-full border-2 border-black overflow-hidden hover:opacity-80 transition-opacity flex-shrink-0 bg-black" title="Dashboard">
+            <a href="/dashboard" className="w-9 h-9 rounded-full border border-border overflow-hidden hover:opacity-80 transition-opacity flex-shrink-0 bg-black" title="Dashboard">
               <img src={user?.avatar_url || `https://ui-avatars.com/api/?name=${user?.full_name || 'User'}&background=random&color=fff`} alt="Profile" className="w-full h-full object-cover" />
             </a>
           ) : (
-            <Link href="/auth" className="text-xs font-black uppercase tracking-widest text-black dark:text-white hover:text-white hover:bg-black dark:hover:bg-white dark:hover:text-black rounded-full px-6 py-2 border-2 border-black dark:border-white transition-all">LOGIN</Link>
+            <Link href="/auth" className="text-xs font-bold uppercase tracking-widest text-text-primary  hover:text-white hover:bg-black dark:hover:bg-surface dark:hover:text-text-primary rounded-full px-6 py-2 border border-border  transition-all">LOGIN</Link>
           )}
         </div>
 
         <button
-          className="md:hidden p-2 text-black dark:text-white hover:opacity-70 transition-all z-[60]"
+          className="md:hidden p-2 text-text-primary  hover:opacity-70 transition-all z-[60]"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
         >
           {isMenuOpen ? (
@@ -116,25 +116,25 @@ export default function Navbar({
   );
 
   const mobileMenu = isMenuOpen && (
-    <div className="fixed inset-0 z-[1200] bg-[#F4F0EA] dark:bg-[#121212] flex flex-col items-center justify-center p-6 border-b-4 border-black dark:border-[#333] pointer-events-auto">
+    <div className="fixed inset-0 z-[1200] bg-background  flex flex-col items-center justify-center p-6 border-b-4 border-border  pointer-events-auto">
       <nav className="flex flex-col gap-6 items-center w-full max-w-sm">
-        <a href="/#about" onClick={() => setIsMenuOpen(false)} className="w-full text-center text-2xl font-black uppercase tracking-widest text-black dark:text-white py-2 hover:opacity-70">About</a>
-        <a href="/#features" onClick={() => setIsMenuOpen(false)} className="w-full text-center text-2xl font-black uppercase tracking-widest text-black dark:text-white py-2 hover:opacity-70">Features</a>
-        <a href="/map" onClick={(e) => handleLinkClick(e, '/map')} className="w-full text-center text-2xl font-black uppercase tracking-widest text-black dark:text-white py-2 hover:opacity-70 cursor-pointer">Live Map</a>
+        <a href="/#about" onClick={() => setIsMenuOpen(false)} className="w-full text-center text-2xl font-bold uppercase tracking-widest text-text-primary  py-2 hover:opacity-70">About</a>
+        <a href="/#features" onClick={() => setIsMenuOpen(false)} className="w-full text-center text-2xl font-bold uppercase tracking-widest text-text-primary  py-2 hover:opacity-70">Features</a>
+        <a href="/map" onClick={(e) => handleLinkClick(e, '/map')} className="w-full text-center text-2xl font-bold uppercase tracking-widest text-text-primary  py-2 hover:opacity-70 cursor-pointer">Live Map</a>
         
         <button
           onClick={toggleTheme}
-          className="w-full text-center mt-4 p-2 text-xl font-black uppercase tracking-widest text-black dark:text-white hover:opacity-70"
+          className="w-full text-center mt-4 p-2 text-xl font-bold uppercase tracking-widest text-text-primary  hover:opacity-70"
         >
           {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
         </button>
 
         {hasSession ? (
-          <a href="/dashboard" onClick={() => setIsMenuOpen(false)} className="w-16 h-16 rounded-full border-4 border-black overflow-hidden hover:opacity-80 transition-opacity mt-4 mx-auto bg-black" title="Dashboard">
+          <a href="/dashboard" onClick={() => setIsMenuOpen(false)} className="w-16 h-16 rounded-full border border-border overflow-hidden hover:opacity-80 transition-opacity mt-4 mx-auto bg-black" title="Dashboard">
             <img src={user?.avatar_url || `https://ui-avatars.com/api/?name=${user?.full_name || 'User'}&background=random&color=fff`} alt="Profile" className="w-full h-full object-cover" />
           </a>
         ) : (
-          <Link href="/auth" onClick={() => setIsMenuOpen(false)} className="w-full text-center mt-4 p-4 text-xl font-black uppercase tracking-widest bg-black text-white rounded-full border-4 border-black">LOGIN</Link>
+          <Link href="/auth" onClick={() => setIsMenuOpen(false)} className="w-full text-center mt-4 p-4 text-xl font-bold uppercase tracking-widest bg-black text-white rounded-full border border-border">LOGIN</Link>
         )}
       </nav>
     </div>
@@ -143,7 +143,7 @@ export default function Navbar({
   if (isFloating) {
     return (
       <header className={`fixed w-full top-0 left-0 z-50 p-4 md:p-6 transition-colors duration-300 pointer-events-none ${wrapperClassName}`}>
-        <div className={`w-full max-w-[1600px] mx-auto bg-white dark:bg-[#1C1C1C] border-4 border-black dark:border-[#333] rounded-full flex items-center justify-between px-6 py-3 pointer-events-auto ${className}`}>
+        <div className={`w-full max-w-[1600px] mx-auto bg-surface dark:bg-surface border border-border  rounded-full flex items-center justify-between px-6 py-3 pointer-events-auto ${className}`}>
           {navContent}
         </div>
         {mobileMenu}
@@ -153,7 +153,7 @@ export default function Navbar({
 
   return (
     <>
-      <header className={`relative z-[1100] flex flex-shrink-0 items-center justify-between px-6 py-3 border-4 border-black dark:border-[#333] bg-white dark:bg-[#1C1C1C] rounded-[32px] md:rounded-full ${className}`}>
+      <header className={`relative z-[1100] flex flex-shrink-0 items-center justify-between px-6 py-3 border border-border  bg-surface dark:bg-surface rounded-[32px] md:rounded-full ${className}`}>
         {navContent}
       </header>
       {mobileMenu}

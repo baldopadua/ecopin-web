@@ -520,7 +520,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
   }, [onReportClick, router])
 
   if (!mounted) return (
-    <div className="h-full w-full flex items-center justify-center bg-white dark:bg-[#000000] transition-colors duration-300">
+    <div className="h-full w-full flex items-center justify-center bg-surface dark:bg-[#000000] transition-colors duration-300">
       <img src="/Solo Logo Light.png" alt="Loading..." className="h-24 w-auto object-contain animate-pulse dark:hidden" />
       <img src="/Solo Logo Dark.png" alt="Loading..." className="h-24 w-auto object-contain animate-pulse hidden dark:block" />
     </div>
@@ -646,10 +646,10 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                     <strong className="block text-sm text-gray-800 mb-2">
                       {normalizeString(cluster.issue_type)}
                     </strong>
-                    <div className="text-sm space-y-1 text-gray-600">
-                      <div><span className="text-gray-500">Reports:</span> <span className="font-medium text-gray-800">{cluster.report_count}</span></div>
+                    <div className="text-sm space-y-1 text-text-secondary">
+                      <div><span className="text-text-muted">Reports:</span> <span className="font-medium text-gray-800">{cluster.report_count}</span></div>
                       <div>
-                        <span className="text-gray-500">Severity:</span>{' '}
+                        <span className="text-text-muted">Severity:</span>{' '}
                         <span className={`font-medium ${cluster.severity === 'high' ? 'text-red-600' : cluster.severity === 'medium' ? 'text-orange-500' : 'text-blue-500'}`}>{cluster.severity?.toUpperCase()}</span>
                       </div>
                     </div>
@@ -829,7 +829,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                         <strong className="block text-sm text-gray-800 mb-2 truncate">
                           {report.title}
                         </strong>
-                        <p className="text-sm text-gray-600 mt-1">{report.description?.substring(0, 80)}...</p>
+                        <p className="text-sm text-text-secondary mt-1">{report.description?.substring(0, 80)}...</p>
 
                         <div className="mt-3 flex gap-2 flex-wrap">
                           <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${report.status === 'resolved' ? 'bg-green-100 text-green-700' :
@@ -896,18 +896,18 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
         )}
         {/* Filter Panel */}
         {!hideFilterPanel && showFilterPanel && (
-          <div className="absolute bottom-6 left-6 right-6 bg-surface-elevated border-4 border-black dark:border-white z-[1000] p-3 flex flex-col gap-3">
+          <div className="absolute bottom-6 left-6 right-6 bg-surface-elevated border border-border  z-[1000] p-3 flex flex-col gap-3">
 
-            <div className="flex justify-between items-center border-b-2 border-border pb-2">
+            <div className="flex justify-between items-center border-b border-border pb-2">
               <div className="flex gap-4 items-center">
-                <h3 className="font-black text-text-primary uppercase tracking-widest text-sm">Map Filters</h3>
-                <span className="text-xs font-bold font-mono bg-[#ccff00] text-black px-2 py-0.5 border-2 border-black">
+                <h3 className="font-bold text-text-primary uppercase tracking-widest text-sm">Map Filters</h3>
+                <span className="text-xs font-bold font-mono bg-[#ccff00] text-text-primary px-2 py-0.5 border border-border">
                   {loading ? 'LOADING...' : `${filteredReports.length} REPORTS / ${clusters.length} CLUSTERS`}
                 </span>
               </div>
               <button
                 onClick={() => setShowFilterPanel(false)}
-                className="font-black hover:text-error transition-colors text-sm"
+                className="font-bold hover:text-error transition-colors text-sm"
               >
                 [ X ]
               </button>
@@ -916,7 +916,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
             <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
 
               {/* Map Layers */}
-              <div className="flex items-center gap-3 border-r-2 border-border pr-6">
+              <div className="flex items-center gap-3 border-r border-border pr-6">
                 {[
                   { label: 'Pins', state: showPins, set: setShowPins },
                   { label: 'Clusters', state: showClusters, set: setShowClusters },
@@ -924,7 +924,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                 ].map(layer => (
                   <label key={layer.label} className="flex items-center gap-1.5 cursor-pointer group">
                     <input type="checkbox" checked={layer.state} onChange={(e) => layer.set(e.target.checked)} className="sr-only" />
-                    <div className={`w-4 h-4 border-2 flex items-center justify-center transition-colors ${layer.state ? 'bg-primary border-primary' : 'border-border bg-surface-elevated'}`}>
+                    <div className={`w-4 h-4 border border-border flex items-center justify-center transition-colors ${layer.state ? 'bg-primary border-primary' : 'border-border bg-surface-elevated'}`}>
                       {layer.state && (
                         <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -938,11 +938,11 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
 
               {/* Status */}
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Status:</span>
+                <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Status:</span>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-2 py-1 text-xs font-bold uppercase tracking-wider bg-surface-elevated border-2 border-black dark:border-white text-text-primary rounded-none cursor-pointer focus:outline-none focus:bg-[#ccff00] focus:text-black focus:border-black"
+                  className="px-2 py-1 text-xs font-bold uppercase tracking-wider bg-surface-elevated border border-border  text-text-primary rounded-xl cursor-pointer focus:outline-none focus:bg-[#ccff00] focus:text-text-primary focus:border-border"
                 >
                   <option value="all">ALL</option>
                   <option value="unresolved">UNRESOLVED</option>
@@ -953,11 +953,11 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
 
               {/* Validation */}
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Validation:</span>
+                <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Validation:</span>
                 <select
                   value={validationStatusFilter}
                   onChange={(e) => setValidationStatusFilter(e.target.value)}
-                  className="px-2 py-1 text-xs font-bold uppercase tracking-wider bg-surface-elevated border-2 border-black dark:border-white text-text-primary rounded-none cursor-pointer focus:outline-none focus:bg-[#ccff00] focus:text-black focus:border-black"
+                  className="px-2 py-1 text-xs font-bold uppercase tracking-wider bg-surface-elevated border border-border  text-text-primary rounded-xl cursor-pointer focus:outline-none focus:bg-[#ccff00] focus:text-text-primary focus:border-border"
                 >
                   <option value="all">ALL</option>
                   <option value="approved">APPROVED</option>
@@ -967,11 +967,11 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
 
               {/* Issue Type */}
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Type:</span>
+                <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Type:</span>
                 <select
                   value={issueTypeFilter}
                   onChange={(e) => setIssueTypeFilter(e.target.value)}
-                  className="max-w-[150px] px-2 py-1 text-xs font-bold uppercase tracking-wider bg-surface-elevated border-2 border-black dark:border-white text-text-primary rounded-none cursor-pointer focus:outline-none focus:bg-[#ccff00] focus:text-black focus:border-black"
+                  className="max-w-[150px] px-2 py-1 text-xs font-bold uppercase tracking-wider bg-surface-elevated border border-border  text-text-primary rounded-xl cursor-pointer focus:outline-none focus:bg-[#ccff00] focus:text-text-primary focus:border-border"
                 >
                   <option value="all">ALL</option>
                   {issueTypes.map(type => (
@@ -982,19 +982,19 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
 
               {/* Date Range */}
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">From:</span>
+                <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">From:</span>
                 <input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-28 px-2 py-1 text-xs font-bold uppercase bg-surface-elevated border-2 border-black dark:border-white text-text-primary rounded-none focus:outline-none focus:bg-[#ccff00] focus:text-black focus:border-black"
+                  className="w-28 px-2 py-1 text-xs font-bold uppercase bg-surface-elevated border border-border  text-text-primary rounded-xl focus:outline-none focus:bg-[#ccff00] focus:text-text-primary focus:border-border"
                 />
-                <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">To:</span>
+                <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">To:</span>
                 <input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="w-28 px-2 py-1 text-xs font-bold uppercase bg-surface-elevated border-2 border-black dark:border-white text-text-primary rounded-none focus:outline-none focus:bg-[#ccff00] focus:text-black focus:border-black"
+                  className="w-28 px-2 py-1 text-xs font-bold uppercase bg-surface-elevated border border-border  text-text-primary rounded-xl focus:outline-none focus:bg-[#ccff00] focus:text-text-primary focus:border-border"
                 />
               </div>
 
@@ -1008,7 +1008,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                     setStartDate('')
                     setEndDate('')
                   }}
-                  className="ml-auto px-3 py-1.5 text-xs font-black bg-error text-white uppercase tracking-widest border-2 border-black dark:border-white hover:bg-error/80 transition-all"
+                  className="ml-auto px-3 py-1.5 text-xs font-bold bg-error text-white uppercase tracking-widest border border-border  hover:bg-error/80 transition-all"
                 >
                   Reset
                 </button>

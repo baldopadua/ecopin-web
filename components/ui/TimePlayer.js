@@ -30,7 +30,7 @@ export default function TimePlayer({ dates, currentDate, onDateChange, isProject
 
   return (
     <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-[1000] w-full max-w-3xl pointer-events-auto">
-      <div className="bg-surface/90 backdrop-blur border-2 border-border p-4 flex flex-col gap-4 shadow-lg">
+      <div className="bg-surface/90 backdrop-blur border border-border p-4 flex flex-col gap-4 shadow-lg">
         <div className="flex justify-between items-center px-2">
            <span className="text-xs font-mono text-primary uppercase tracking-widest">{isProjective ? 'Projective Timeline (Future)' : 'Retrospective Timeline (Past)'}</span>
            <span className="text-text-primary font-bold font-mono">{currentDate ? new Date(currentDate).toLocaleDateString() : 'LIVE'}</span>
@@ -40,7 +40,7 @@ export default function TimePlayer({ dates, currentDate, onDateChange, isProject
            <button 
              onClick={() => setIsPlaying(!isPlaying)} 
              disabled={isProjective}
-             className={`w-12 h-12 flex items-center justify-center transition-colors ${isProjective ? 'bg-surface text-text-muted cursor-not-allowed border-2 border-border' : 'bg-primary text-white hover:bg-text-primary hover:text-background'}`}
+             className={`w-12 h-12 flex items-center justify-center transition-colors ${isProjective ? 'bg-surface text-text-muted cursor-not-allowed border border-border' : 'bg-primary text-white hover:bg-text-primary hover:text-background'}`}
            >
              {isPlaying ? (
                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">

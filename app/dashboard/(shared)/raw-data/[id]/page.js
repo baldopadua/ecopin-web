@@ -463,7 +463,7 @@ export default function ReportDetailPage() {
             {/* Main Content */}
             <div className="lg:col-span-3 space-y-6">
               {/* Lifecycle Timeline - Read-only display */}
-              <div className="card border-2 border-[var(--accent-green)]">
+              <div className="card border border-border border-[var(--accent-green)]">
                 <div className="text-center mb-6">
                   <h2 className="text-2xl font-bold text-text-primary mb-2">Report Lifecycle</h2>
                   <div className="flex justify-center gap-3 flex-wrap">
@@ -613,7 +613,7 @@ export default function ReportDetailPage() {
                       <img src={report.before_photo_url} alt="Before" className="w-full h-48 object-cover rounded-lg" />
                     ) : (
                       <div
-                        className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${uploadingBefore ? 'border-border bg-surface' : 'border-border hover:border-accent-green hover:bg-accent-green/5'
+                        className={`border border-border border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${uploadingBefore ? 'border-border bg-surface' : 'border-border hover:border-accent-green hover:bg-accent-green/5'
                           }`}
                         onClick={() => document.getElementById('before-photo-input').click()}
                         onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-accent-green', 'bg-accent-green/10'); }}
@@ -636,7 +636,7 @@ export default function ReportDetailPage() {
                         />
                         {uploadingBefore ? (
                           <div className="flex flex-col items-center gap-2">
-                            <div className="w-8 h-8 border-2 border-accent-green border-t-transparent rounded-full animate-spin"></div>
+                            <div className="w-8 h-8 border border-border border-accent-green border-t-transparent rounded-full animate-spin"></div>
                             <p className="text-sm text-text-muted">Uploading...</p>
                           </div>
                         ) : (
@@ -669,7 +669,7 @@ export default function ReportDetailPage() {
                       <img src={report.after_photo_url} alt="After" className="w-full h-48 object-cover rounded-lg" />
                     ) : (
                       <div
-                        className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${uploadingAfter ? 'border-border bg-surface' : 'border-border hover:border-accent-green hover:bg-accent-green/5'
+                        className={`border border-border border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${uploadingAfter ? 'border-border bg-surface' : 'border-border hover:border-accent-green hover:bg-accent-green/5'
                           }`}
                         onClick={() => document.getElementById('after-photo-input').click()}
                         onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-accent-green', 'bg-accent-green/10'); }}
@@ -692,7 +692,7 @@ export default function ReportDetailPage() {
                         />
                         {uploadingAfter ? (
                           <div className="flex flex-col items-center gap-2">
-                            <div className="w-8 h-8 border-2 border-accent-green border-t-transparent rounded-full animate-spin"></div>
+                            <div className="w-8 h-8 border border-border border-accent-green border-t-transparent rounded-full animate-spin"></div>
                             <p className="text-sm text-text-muted">Uploading...</p>
                           </div>
                         ) : (

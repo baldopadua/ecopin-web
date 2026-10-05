@@ -208,7 +208,7 @@ export default function OptimizationSettings() {
       )}
 
       {/* SWMO Depot Settings */}
-      <div className="card border-2 border-border mb-6">
+      <div className="card border border-border mb-6">
         <h2 className="text-xl font-bold text-text-primary mb-2">🏢 SWMO Depot</h2>
         <p className="text-sm text-text-muted mb-6">
           The depot is the start and end point for all crew routes. Changing this affects future optimization runs.
@@ -224,7 +224,7 @@ export default function OptimizationSettings() {
               maxLength={100}
               value={depot.name}
               onChange={(e) => handleDepotChange('name', e.target.value)}
-              className="w-full p-3 border-2 border-border bg-surface-elevated text-text-primary focus:border-[#ccff00] focus:outline-none transition-colors"
+              className="w-full p-3 border border-border bg-surface-elevated text-text-primary focus:border-[#ccff00] focus:outline-none transition-colors"
               placeholder="e.g., SWMO Depot (PLP Center)"
             />
           </div>
@@ -262,12 +262,12 @@ export default function OptimizationSettings() {
       </div>
 
       {/* Crew Settings */}
-      <div className="card border-2 border-border">
+      <div className="card border border-border">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2">
           <h2 className="text-xl font-bold text-text-primary">👷 Field Crew Configuration</h2>
           <button 
             onClick={() => setShowAddCrew(!showAddCrew)}
-            className="mt-2 sm:mt-0 text-sm bg-surface-elevated text-text-primary border-2 border-border px-3 py-1 hover:border-text-primary transition-colors font-bold uppercase tracking-wider"
+            className="mt-2 sm:mt-0 text-sm bg-surface-elevated text-text-primary border border-border px-3 py-1 hover:border-text-primary transition-colors font-bold uppercase tracking-wider"
           >
             {showAddCrew ? 'Cancel' : '+ Add Crew'}
           </button>
@@ -277,7 +277,7 @@ export default function OptimizationSettings() {
         </p>
 
         {showAddCrew && (
-          <div className="mb-6 p-4 border-2 border-[#2563eb] bg-[#2563eb]/5">
+          <div className="mb-6 p-4 border border-border border-[#2563eb] bg-[#2563eb]/5">
             <h3 className="font-bold text-text-primary mb-4 uppercase tracking-wider text-sm text-[#2563eb]">New Field Crew</h3>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="md:col-span-1">
@@ -286,7 +286,7 @@ export default function OptimizationSettings() {
                   type="text"
                   value={newCrew.name}
                   onChange={(e) => setNewCrew(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full p-2 border-2 border-border bg-surface-elevated text-text-primary focus:border-[#2563eb] focus:outline-none transition-colors text-sm"
+                  className="w-full p-2 border border-border bg-surface-elevated text-text-primary focus:border-[#2563eb] focus:outline-none transition-colors text-sm"
                   placeholder="e.g., Team Alpha"
                 />
               </div>
@@ -296,7 +296,7 @@ export default function OptimizationSettings() {
                   type="time"
                   value={newCrew.shift_start}
                   onChange={(e) => setNewCrew(prev => ({ ...prev, shift_start: e.target.value }))}
-                  className="w-full p-2 border-2 border-border bg-surface-elevated text-text-primary font-mono focus:border-[#2563eb] focus:outline-none transition-colors text-sm"
+                  className="w-full p-2 border border-border bg-surface-elevated text-text-primary font-mono focus:border-[#2563eb] focus:outline-none transition-colors text-sm"
                 />
               </div>
               <div>
@@ -305,7 +305,7 @@ export default function OptimizationSettings() {
                   type="time"
                   value={newCrew.shift_end}
                   onChange={(e) => setNewCrew(prev => ({ ...prev, shift_end: e.target.value }))}
-                  className="w-full p-2 border-2 border-border bg-surface-elevated text-text-primary font-mono focus:border-[#2563eb] focus:outline-none transition-colors text-sm"
+                  className="w-full p-2 border border-border bg-surface-elevated text-text-primary font-mono focus:border-[#2563eb] focus:outline-none transition-colors text-sm"
                 />
               </div>
               <div>
@@ -316,7 +316,7 @@ export default function OptimizationSettings() {
                   max="50"
                   value={newCrew.max_tasks_per_shift}
                   onChange={(e) => setNewCrew(prev => ({ ...prev, max_tasks_per_shift: parseInt(e.target.value) || 10 }))}
-                  className="w-full p-2 border-2 border-border bg-surface-elevated text-text-primary font-mono focus:border-[#2563eb] focus:outline-none transition-colors text-sm"
+                  className="w-full p-2 border border-border bg-surface-elevated text-text-primary font-mono focus:border-[#2563eb] focus:outline-none transition-colors text-sm"
                 />
               </div>
             </div>
@@ -324,7 +324,7 @@ export default function OptimizationSettings() {
               <button
                 onClick={handleCreateCrew}
                 disabled={saving === 'new-crew'}
-                className="bg-[#2563eb] text-white font-bold uppercase tracking-wider text-xs px-4 py-2 border-2 border-border hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                className="bg-[#2563eb] text-white font-bold uppercase tracking-wider text-xs px-4 py-2 border border-border hover:bg-blue-700 disabled:opacity-50 transition-colors"
               >
                 {saving === 'new-crew' ? 'Creating...' : 'Create Crew'}
               </button>
@@ -337,7 +337,7 @@ export default function OptimizationSettings() {
         ) : (
           <div className="space-y-6">
             {crews.map((crew) => (
-              <div key={crew.id} className="border-2 border-border p-4 bg-surface-elevated">
+              <div key={crew.id} className="border border-border p-4 bg-surface-elevated">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-bold text-text-primary text-lg">{crew.name}</h3>
                   <span className={`text-xs px-2 py-1 border font-mono uppercase tracking-wider ${
@@ -360,7 +360,7 @@ export default function OptimizationSettings() {
                       type="time"
                       value={crew.shift_start || '08:00'}
                       onChange={(e) => handleCrewChange(crew.id, 'shift_start', e.target.value)}
-                      className="w-full p-3 border-2 border-border bg-surface-elevated text-text-primary font-mono focus:border-[#ccff00] focus:outline-none transition-colors"
+                      className="w-full p-3 border border-border bg-surface-elevated text-text-primary font-mono focus:border-[#ccff00] focus:outline-none transition-colors"
                     />
                   </div>
 
@@ -372,7 +372,7 @@ export default function OptimizationSettings() {
                       type="time"
                       value={crew.shift_end || '17:00'}
                       onChange={(e) => handleCrewChange(crew.id, 'shift_end', e.target.value)}
-                      className="w-full p-3 border-2 border-border bg-surface-elevated text-text-primary font-mono focus:border-[#ccff00] focus:outline-none transition-colors"
+                      className="w-full p-3 border border-border bg-surface-elevated text-text-primary font-mono focus:border-[#ccff00] focus:outline-none transition-colors"
                     />
                   </div>
 
@@ -386,7 +386,7 @@ export default function OptimizationSettings() {
                       max="50"
                       value={crew.max_tasks_per_shift || 10}
                       onChange={(e) => handleCrewChange(crew.id, 'max_tasks_per_shift', e.target.value)}
-                      className="w-full p-3 border-2 border-border bg-surface-elevated text-text-primary font-mono focus:border-[#ccff00] focus:outline-none transition-colors"
+                      className="w-full p-3 border border-border bg-surface-elevated text-text-primary font-mono focus:border-[#ccff00] focus:outline-none transition-colors"
                     />
                     <p className="text-xs text-text-muted mt-1">Range: 1–50</p>
                   </div>

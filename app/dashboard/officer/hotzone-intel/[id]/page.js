@@ -26,7 +26,7 @@ if (typeof window !== 'undefined' && !window.Buffer) {
 const EcoPinMap = dynamic(() => import('@/components/map/EcoPinMap'), { 
   ssr: false,
   loading: () => (
-    <div className="w-full h-[400px] bg-surface-elevated animate-pulse border-2 border-border flex items-center justify-center">
+    <div className="w-full h-[400px] bg-surface-elevated animate-pulse border border-border flex items-center justify-center">
       <MapIcon className="w-12 h-12 text-text-muted opacity-50" />
     </div>
   )
@@ -172,21 +172,21 @@ export default function ClusterDetailPage() {
                   type="text" 
                   value={editingTitle} 
                   onChange={(e) => setEditingTitle(e.target.value)} 
-                  className="px-2 py-1 text-2xl font-bold border-2 border-[#2563eb] focus:outline-none w-64 bg-surface-elevated text-text-primary"
+                  className="px-2 py-1 text-2xl font-bold border border-border border-[#2563eb] focus:outline-none w-64 bg-surface-elevated text-text-primary"
                   disabled={savingTitle}
                   autoFocus
                 />
                 <button 
                   onClick={handleSaveTitle}
                   disabled={savingTitle}
-                  className="px-3 py-1 text-sm font-bold uppercase tracking-widest bg-accent-green text-white border-2 border-accent-green hover:bg-black hover:border-black transition-colors"
+                  className="px-3 py-1 text-sm font-bold uppercase tracking-widest bg-accent-green text-white border border-border border-accent-green hover:bg-black hover:border-border transition-colors"
                 >
                   {savingTitle ? 'Saving...' : 'Save'}
                 </button>
                 <button 
                   onClick={() => setIsEditingTitle(false)}
                   disabled={savingTitle}
-                  className="px-3 py-1 text-sm font-bold uppercase tracking-widest text-text-muted hover:text-black dark:hover:text-white transition-colors"
+                  className="px-3 py-1 text-sm font-bold uppercase tracking-widest text-text-muted hover:text-text-primary dark:hover:text-white transition-colors"
                 >
                   Cancel
                 </button>
@@ -224,15 +224,15 @@ export default function ClusterDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
            
            {/* Details Panel */}
-           <div className="card p-6 border-2 border-border rounded-none bg-surface-elevated text-text-primary lg:col-span-1 flex flex-col">
-              <h2 className="text-xl font-black uppercase tracking-tighter mb-6 flex items-center gap-2 border-b-2 border-border pb-3">
+           <div className="card p-6 border border-border rounded-xl bg-surface-elevated text-text-primary lg:col-span-1 flex flex-col">
+              <h2 className="text-xl font-bold uppercase tracking-tight mb-6 flex items-center gap-2 border-b border-border pb-3">
                  <Target className="w-5 h-5 text-accent-green" /> Target Profile
               </h2>
               
               <div className="space-y-6 flex-1">
                  <div>
                     <span className="text-[10px] font-mono uppercase text-text-muted block mb-1">Severity</span>
-                    <div className="text-3xl font-black text-error">{Math.round(cluster.severity_score || 0)}</div>
+                    <div className="text-3xl font-bold text-error">{Math.round(cluster.severity_score || 0)}</div>
                  </div>
                  
                  <div>
@@ -258,13 +258,13 @@ export default function ClusterDetailPage() {
                  )}
               </div>
               
-              <div className="pt-6 border-t-2 border-border mt-6">
+              <div className="pt-6 border-t border-border mt-6">
                  {loadingTasks ? (
                     <button disabled className="btn-primary w-full opacity-50">Loading...</button>
                  ) : (
                     <button 
                       onClick={handleDispatch}
-                      className="w-full bg-accent-green text-white font-black uppercase tracking-widest py-3 hover:bg-surface-elevated hover:text-text-primary transition-colors border-2 border-accent-green hover:border-text-primary"
+                      className="w-full bg-accent-green text-white font-bold uppercase tracking-widest py-3 hover:bg-surface-elevated hover:text-text-primary transition-colors border border-border border-accent-green hover:border-text-primary"
                     >
                       {existingTask ? 'View Dispatched Task' : 'Dispatch Field Crew'}
                     </button>
@@ -273,8 +273,8 @@ export default function ClusterDetailPage() {
            </div>
            
            {/* Map Panel */}
-           <div className="lg:col-span-2 border-2 border-border bg-surface-elevated relative min-h-[400px]">
-              <div className="absolute top-4 left-4 z-[400] bg-surface-elevated text-text-primary px-3 py-1.5 border-2 border-border pointer-events-none">
+           <div className="lg:col-span-2 border border-border bg-surface-elevated relative min-h-[400px]">
+              <div className="absolute top-4 left-4 z-[400] bg-surface-elevated text-text-primary px-3 py-1.5 border border-border pointer-events-none">
                  <span className="font-bold uppercase tracking-widest text-xs flex items-center gap-2">
                     <MapIcon className="w-3 h-3" /> Area View
                  </span>
@@ -296,9 +296,9 @@ export default function ClusterDetailPage() {
         </div>
 
         {/* Reports List */}
-        <div className="card p-6 border-2 border-border rounded-none">
-           <div className="flex justify-between items-center mb-6 border-b-2 border-border pb-3">
-              <h2 className="text-xl font-black uppercase tracking-tighter flex items-center gap-2">
+        <div className="card p-6 border border-border rounded-xl">
+           <div className="flex justify-between items-center mb-6 border-b border-border pb-3">
+              <h2 className="text-xl font-bold uppercase tracking-tight flex items-center gap-2">
                  <Layers className="w-5 h-5 text-accent-green" /> Constituent Reports
               </h2>
               <ExportButton data={reports} filename={`cluster-${cluster.id}-reports.csv`} />

@@ -337,7 +337,7 @@ export default function ProfilePage() {
 
       <div className="space-y-6 max-w-3xl mx-auto">
         {/* Profile Card - Avatar + Name + Email */}
-        <div className="bg-surface-elevated border-2 border-border rounded-none p-6 mt-8">
+        <div className="bg-surface-elevated border border-border rounded-xl p-6 mt-8">
           <div className="flex items-center gap-6 mb-6">
             <div className="relative group flex-shrink-0">
               <label htmlFor="avatar-upload" className="block relative cursor-pointer">
@@ -345,14 +345,14 @@ export default function ProfilePage() {
                   <img
                     src={formData.avatar_url}
                     alt="Avatar"
-                    className="w-20 h-20 rounded-none object-cover"
+                    className="w-20 h-20 rounded-xl object-cover"
                   />
                 ) : (
-                  <div className="w-20 h-20 rounded-none bg-[#1A1A1A] dark:bg-white flex items-center justify-center text-white dark:text-black font-bold text-2xl border-2 border-[#1A1A1A] dark:border-white">
+                  <div className="w-20 h-20 rounded-xl bg-[#1A1A1A] dark:bg-surface flex items-center justify-center text-white dark:text-text-primary font-bold text-2xl border border-border border-[#1A1A1A] ">
                     {formData.full_name?.[0]?.toUpperCase() || 'U'}
                   </div>
                 )}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-none">
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-xl">
                   <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                   </svg>
@@ -389,7 +389,7 @@ export default function ProfilePage() {
                   name="full_name"
                   value={formData.full_name}
                   onChange={handleInputChange}
-                  className="flex-1 bg-transparent border-2 border-[#1A1A1A] dark:border-[#333] rounded-none px-3 py-1.5 focus:outline-none focus:border-[#ccff00] text-text-primary transition-colors"
+                  className="flex-1 bg-transparent border border-border border-[#1A1A1A]  rounded-xl px-3 py-1.5 focus:outline-none focus:border-[#ccff00] text-text-primary transition-colors"
                   placeholder="Enter your full name"
                 />
                 <button
@@ -398,7 +398,7 @@ export default function ProfilePage() {
                     setIsEditingName(false)
                   }}
                   disabled={saving}
-                  className="p-1.5 bg-accent-green text-white border-2 border-accent-green rounded-none hover:bg-transparent hover:text-accent-green transition-colors disabled:opacity-50"
+                  className="p-1.5 bg-accent-green text-white border border-border border-accent-green rounded-xl hover:bg-transparent hover:text-accent-green transition-colors disabled:opacity-50"
                   title="Save"
                 >
                   <Check className="w-4 h-4" />
@@ -408,7 +408,7 @@ export default function ProfilePage() {
                     setFormData(prev => ({ ...prev, full_name: user?.full_name || '' }))
                     setIsEditingName(false)
                   }}
-                  className="p-1.5 bg-surface-elevated text-text-primary border-2 border-[#1A1A1A] dark:border-[#333] rounded-none hover:text-error transition-colors"
+                  className="p-1.5 bg-surface-elevated text-text-primary border border-border border-[#1A1A1A]  rounded-xl hover:text-error transition-colors"
                   title="Cancel"
                 >
                   <X className="w-4 h-4" />
@@ -418,21 +418,21 @@ export default function ProfilePage() {
           </div>
 
           {error && (
-            <div className="mt-4 p-3 bg-error/10 dark:bg-error/20 border-2 border-error/20 dark:border-error/30 rounded-none">
+            <div className="mt-4 p-3 bg-error/10 dark:bg-error/20 border border-border border-error/20 dark:border-error/30 rounded-xl">
               <p className="text-sm text-error">{error}</p>
             </div>
           )}
 
           {success && (
-            <div className="mt-4 p-3 bg-success/10 dark:bg-success/20 border-2 border-success/20 dark:border-success/30 rounded-none">
+            <div className="mt-4 p-3 bg-success/10 dark:bg-success/20 border border-border border-success/20 dark:border-success/30 rounded-xl">
               <p className="text-sm text-success">{success}</p>
             </div>
           )}
         </div>
 
         {/* Password Card */}
-        <div className="bg-surface-elevated border-2 border-border rounded-none p-6">
-          <div className="flex items-center justify-between mb-4 border-b-2 border-border pb-2">
+        <div className="bg-surface-elevated border border-border rounded-xl p-6">
+          <div className="flex items-center justify-between mb-4 border-b border-border pb-2">
             <h2 className="font-mono text-xs uppercase tracking-widest text-text-muted">Security</h2>
             <button
               onClick={() => setShowPasswordForm(!showPasswordForm)}
@@ -453,7 +453,7 @@ export default function ProfilePage() {
                   name="current_password"
                   value={passwordData.current_password}
                   onChange={handlePasswordInputChange}
-                  className="w-full bg-transparent border-2 border-[#1A1A1A] dark:border-[#333] rounded-none px-3 py-2 focus:outline-none focus:border-[#ccff00] text-text-primary transition-colors"
+                  className="w-full bg-transparent border border-border border-[#1A1A1A]  rounded-xl px-3 py-2 focus:outline-none focus:border-[#ccff00] text-text-primary transition-colors"
                   placeholder="Enter current password"
                 />
               </div>
@@ -466,7 +466,7 @@ export default function ProfilePage() {
                   name="new_password"
                   value={passwordData.new_password}
                   onChange={handlePasswordInputChange}
-                  className="w-full bg-transparent border-2 border-[#1A1A1A] dark:border-[#333] rounded-none px-3 py-2 focus:outline-none focus:border-[#ccff00] text-text-primary transition-colors"
+                  className="w-full bg-transparent border border-border border-[#1A1A1A]  rounded-xl px-3 py-2 focus:outline-none focus:border-[#ccff00] text-text-primary transition-colors"
                   placeholder="Enter new password"
                 />
                 {passwordData.new_password && (
@@ -516,7 +516,7 @@ export default function ProfilePage() {
                   name="confirm_password"
                   value={passwordData.confirm_password}
                   onChange={handlePasswordInputChange}
-                  className="w-full bg-transparent border-2 border-[#1A1A1A] dark:border-[#333] rounded-none px-3 py-2 focus:outline-none focus:border-[#ccff00] text-text-primary transition-colors"
+                  className="w-full bg-transparent border border-border border-[#1A1A1A]  rounded-xl px-3 py-2 focus:outline-none focus:border-[#ccff00] text-text-primary transition-colors"
                   placeholder="Confirm new password"
                 />
                 {passwordData.confirm_password && (
@@ -542,28 +542,28 @@ export default function ProfilePage() {
 
         {/* Appearance + Logout Row */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-surface-elevated border-2 border-border rounded-none p-4">
-            <h2 className="font-mono text-xs uppercase tracking-widest text-text-muted border-b-2 border-border pb-2 mb-4">Appearance</h2>
+          <div className="bg-surface-elevated border border-border rounded-xl p-4">
+            <h2 className="font-mono text-xs uppercase tracking-widest text-text-muted border-b border-border pb-2 mb-4">Appearance</h2>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-text-muted mt-1">Switch theme preference</p>
               </div>
-              <div className="flex border-2 border-[#1A1A1A] dark:border-[#333] rounded-none overflow-hidden">
+              <div className="flex border border-border border-[#1A1A1A]  rounded-xl overflow-hidden">
                 <button
                   onClick={() => toggleTheme('system')}
-                  className={`px-3 py-1 text-xs font-mono uppercase tracking-wider transition-colors ${theme === 'system' ? 'bg-[#1A1A1A] dark:bg-white text-white dark:text-black' : 'bg-transparent text-text-muted hover:text-text-primary'}`}
+                  className={`px-3 py-1 text-xs font-mono uppercase tracking-wider transition-colors ${theme === 'system' ? 'bg-[#1A1A1A] dark:bg-surface text-white dark:text-text-primary' : 'bg-transparent text-text-muted hover:text-text-primary'}`}
                 >
                   Sys
                 </button>
                 <button
                   onClick={() => toggleTheme('light')}
-                  className={`px-3 py-1 text-xs font-mono uppercase tracking-wider border-l-2 border-[#1A1A1A] dark:border-[#333] transition-colors ${theme === 'light' ? 'bg-[#1A1A1A] dark:bg-white text-white dark:text-black' : 'bg-transparent text-text-muted hover:text-text-primary'}`}
+                  className={`px-3 py-1 text-xs font-mono uppercase tracking-wider border-l border-[#1A1A1A]  transition-colors ${theme === 'light' ? 'bg-[#1A1A1A] dark:bg-surface text-white dark:text-text-primary' : 'bg-transparent text-text-muted hover:text-text-primary'}`}
                 >
                   Lt
                 </button>
                 <button
                   onClick={() => toggleTheme('dark')}
-                  className={`px-3 py-1 text-xs font-mono uppercase tracking-wider border-l-2 border-[#1A1A1A] dark:border-[#333] transition-colors ${theme === 'dark' ? 'bg-[#1A1A1A] dark:bg-white text-white dark:text-black' : 'bg-transparent text-text-muted hover:text-text-primary'}`}
+                  className={`px-3 py-1 text-xs font-mono uppercase tracking-wider border-l border-[#1A1A1A]  transition-colors ${theme === 'dark' ? 'bg-[#1A1A1A] dark:bg-surface text-white dark:text-text-primary' : 'bg-transparent text-text-muted hover:text-text-primary'}`}
                 >
                   Dk
                 </button>
@@ -571,15 +571,15 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="bg-surface-elevated border-2 border-border rounded-none p-4">
-            <h2 className="font-mono text-xs uppercase tracking-widest text-text-muted border-b-2 border-border pb-2 mb-4 text-error">Danger Zone</h2>
+          <div className="bg-surface-elevated border border-border rounded-xl p-4">
+            <h2 className="font-mono text-xs uppercase tracking-widest text-text-muted border-b border-border pb-2 mb-4 text-error">Danger Zone</h2>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-text-muted mt-1">End your current session securely</p>
               </div>
               <button
                 onClick={() => setShowLogoutModal(true)}
-                className="px-4 py-1.5 bg-error/10 text-error border-2 border-error/30 rounded-none hover:bg-error/20 font-medium text-sm transition-colors cursor-pointer"
+                className="px-4 py-1.5 bg-error/10 text-error border border-border border-error/30 rounded-xl hover:bg-error/20 font-medium text-sm transition-colors cursor-pointer"
               >
                 Log Out
               </button>
@@ -591,19 +591,19 @@ export default function ProfilePage() {
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-surface-elevated border-2 border-border rounded-none shadow-[8px_8px_0px_0px_#1a1a1a] dark:shadow-[8px_8px_0px_0px_#ccff00] p-6 w-full max-w-sm mx-4 transition-all transform hover:translate-x-[-2px] hover:translate-y-[-2px]">
+          <div className="bg-surface-elevated border border-border rounded-xl shadow-sm dark:shadow-[8px_8px_0px_0px_#ccff00] p-6 w-full max-w-sm mx-4 transition-all transform hover:translate-x-[-2px] hover:translate-y-[-2px]">
             <h3 className="text-lg font-bold text-text-primary mb-2">Log Out</h3>
             <p className="text-sm text-text-muted mb-6">Are you sure you want to log out of your account?</p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowLogoutModal(false)}
-                className="flex-1 px-4 py-2 border-2 border-border rounded-none text-text-primary hover:bg-surface-elevated font-medium transition-colors"
+                className="flex-1 px-4 py-2 border border-border rounded-xl text-text-primary hover:bg-surface-elevated font-medium transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleLogout}
-                className="flex-1 px-4 py-2 bg-error text-white rounded-none hover:bg-error/80 font-medium transition-colors"
+                className="flex-1 px-4 py-2 bg-error text-white rounded-xl hover:bg-error/80 font-medium transition-colors"
               >
                 Log Out
               </button>

@@ -45,7 +45,7 @@ export default function PriorityTasksCard({ priorityTasks = [], feasibleTasks = 
   }, [])
 
   return (
-    <div className="card border-l-2 border-l-[var(--error)]">
+    <div className="card border-l border-l-[var(--error)]">
       {/* Card Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">

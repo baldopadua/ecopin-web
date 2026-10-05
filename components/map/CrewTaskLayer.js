@@ -116,9 +116,9 @@ export default function CrewTaskLayer({ tasks = [] }) {
                     <strong className="block text-sm text-gray-800 mb-2 truncate">
                       {report.issue_type?.replace(/_/g, ' ')}
                     </strong>
-                    <div className="text-sm space-y-1 text-gray-600">
-                      <div><span className="text-gray-500">Task Status:</span> <span className="font-medium text-gray-800">{task.status.toUpperCase()}</span></div>
-                      <div><span className="text-gray-500">Report ID:</span> <span className="font-medium text-gray-800">#{report.id}</span></div>
+                    <div className="text-sm space-y-1 text-text-secondary">
+                      <div><span className="text-text-muted">Task Status:</span> <span className="font-medium text-gray-800">{task.status.toUpperCase()}</span></div>
+                      <div><span className="text-text-muted">Report ID:</span> <span className="font-medium text-gray-800">#{report.id}</span></div>
                     </div>
                     <div className="mt-4">
                       <a 
