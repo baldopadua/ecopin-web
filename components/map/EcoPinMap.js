@@ -10,6 +10,7 @@ import { Buffer } from 'buffer'
 import { fetchValidatedReports, fetchIssueTypes, fetchClusters } from '@/lib/api'
 import { supabase } from '@/lib/supabase'
 import Button from '@/components/ui/Button'
+import OutlierClusterLayer from './OutlierClusterLayer'
 
 // Polyfill Buffer for browser environment
 if (typeof window !== 'undefined' && !window.Buffer) {
@@ -50,23 +51,7 @@ const createIcon = (status, isRemoving = false, isSelected = false) => {
   })
 }
 
-const createClusterIcon = (cluster) => {
-  const severity = cluster.severity
-  let color = 'var(--warning)' // medium (default)
-  if (severity === 'high') color = 'var(--error)'
-  if (severity === 'low') color = '#3B82F6'
-
-  const count = cluster.report_count
-
-  return L.divIcon({
-    className: 'custom-cluster-marker',
-    html: `<div style="background-color: ${color}; width: 50px; height: 50px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 16px;">
-      ${count}
-    </div>`,
-    iconSize: [50, 50],
-    iconAnchor: [25, 25],
-  })
-}
+// Removed createClusterIcon in favor of OutlierClusterLayer
 
 const parseGeometry = (geometry) => {
   if (!geometry) return null
@@ -188,8 +173,8 @@ function MapCenter({ centerLat, centerLng }) {
   return null
 }
 
-export default function EcoPinMap({ centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode = false, selectedReports = [], onReportSelect, hideFilterPanel = false, hidePins = false, hideClusters = false, onReportClick, onClusterSelect, children, allowedClusterIds, allowedReportIds, externalStatusFilter, externalIssueTypeFilter, externalShowPins, externalShowClusters, externalShowHeatmap, externalMaxBounds, externalMinZoom }) {
-  console.log('EcoPinMap props:', { centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode, hideFilterPanel, hidePins, hideClusters, allowedClusterIds, allowedReportIds, externalMaxBounds, externalMinZoom })
+export default function EcoPinMap({ centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode = false, selectedReports = [], onReportSelect, hideFilterPanel = false, hidePins = false, hideClusters = false, onReportClick, onClusterSelect, children, allowedClusterIds, allowedReportIds, externalStatusFilter, externalIssueTypeFilter, externalShowPins, externalShowClusters, externalShowHeatmap, externalMaxBounds, externalMinZoom, selectedTemplate = 'standard' }) {
+  console.log('EcoPinMap props:', { centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode, hideFilterPanel, hidePins, hideClusters, allowedClusterIds, allowedReportIds, externalMaxBounds, externalMinZoom, selectedTemplate })
 
   const [mounted, setMounted] = useState(false)
   const [reports, setReports] = useState([])
@@ -615,80 +600,23 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
           <HeatmapLayer heatPoints={heatPoints} showHeatmap={showHeatmap} />
 
           {/* Cluster Markers (shown when zoomed out) */}
-          {!hideClusters && showClusters && zoom <= 15 && filteredClusters.map((cluster) => {
-            const center = parseGeometry(cluster.center)
-            if (!center) return null
-
-            // Client-side DOM Culling: skip if outside viewport
-            if (mapBounds && !mapBounds.contains(center)) return null
-
-            console.log('Rendering cluster marker:', cluster.id, 'zoom:', zoom)
-            return (
-              <Marker
-                key={cluster.id}
-                position={center}
-                icon={createClusterIcon(cluster)}
-                eventHandlers={{
-                  click: (e) => {
-                    if (selectionMode && onClusterSelect) {
-                      e.originalEvent.stopPropagation()
-                      const memberReports = filteredClusterReports[cluster.id]
-                      if (memberReports && memberReports.length > 0) {
-                        onClusterSelect(memberReports.map(r => r.id))
-                      }
+          {!hideClusters && showClusters && zoom <= 15 && (
+            <OutlierClusterLayer 
+              clusters={filteredClusters} 
+              selectedTemplate={selectedTemplate} 
+              selectionMode={selectionMode}
+              onClusterSelect={onClusterSelect}
+              clusterReportsMap={filteredClusterReports}
+              onClusterClick={(clusterId) => {
+                 if (selectionMode && onClusterSelect) {
+                    const memberReports = filteredClusterReports[clusterId]
+                    if (memberReports && memberReports.length > 0) {
+                      onClusterSelect(memberReports.map(r => r.id))
                     }
-                  }
-                }}
-              >
-                <Popup>
-                  <div className="p-1 min-w-[200px]">
-                    <div className="text-xs font-semibold text-blue-600 mb-1 tracking-wider uppercase">CLUSTER #{cluster.id}</div>
-                    <strong className="block text-sm text-gray-800 mb-2">
-                      {normalizeString(cluster.issue_type)}
-                    </strong>
-                    <div className="text-sm space-y-1 text-gray-600">
-                      <div><span className="text-gray-500">Reports:</span> <span className="font-medium text-gray-800">{cluster.report_count}</span></div>
-                      <div>
-                        <span className="text-gray-500">Severity:</span>{' '}
-                        <span className={`font-medium ${cluster.severity === 'high' ? 'text-red-600' : cluster.severity === 'medium' ? 'text-orange-500' : 'text-blue-500'}`}>{cluster.severity?.toUpperCase()}</span>
-                      </div>
-                    </div>
-                    {center && (
-                      <div className="text-xs text-gray-400 mt-2 truncate">
-                        Loc: {center[0].toFixed(4)}, {center[1].toFixed(4)}
-                      </div>
-                    )}
-                    <div className="mt-3">
-                      {selectionMode && onClusterSelect ? (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            const memberReports = filteredClusterReports[cluster.id]
-                            if (memberReports && memberReports.length > 0) {
-                              onClusterSelect(memberReports.map(r => r.id))
-                            }
-                          }}
-                          className="w-full bg-blue-600 text-white font-medium text-sm py-2 rounded shadow-sm hover:bg-blue-700 transition-colors"
-                        >
-                          Add All Reports
-                        </button>
-                      ) : (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            router.push(`/dashboard/officer/hotzone-intel/${cluster.id}`)
-                          }}
-                          className="w-full bg-blue-600 text-white font-medium text-sm py-2 rounded shadow-sm hover:bg-blue-700 transition-colors"
-                        >
-                          View All Reports
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </Popup>
-              </Marker>
-            )
-          })}
+                 }
+              }}
+            />
+          )}
 
           {/* Cluster Polygons (shown when zoomed in - connects actual report pins) */}
           {!hideClusters && showClusters && zoom > 15 && filteredClusters.map((cluster) => {

@@ -8,6 +8,7 @@ import { SkeletonForm } from '@/components/ui/Skeleton'
 import EvidenceGallery from '@/components/ui/EvidenceGallery'
 import Pagination from '@/components/ui/Pagination'
 import OptimizationSettings from '@/components/optimization/OptimizationSettings'
+import TemplateSelector from '@/components/ui/TemplateSelector'
 import { useTask } from '@/components/context/TaskContext'
 import { Sun, CloudRain, CloudLightning, Circle, Globe, Map, Check, CheckCircle2, XCircle, Ruler, Timer } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -62,7 +63,9 @@ export default function OptimizationPage() {
   const [runsLoading, setRunsLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(null)
   const [notification, setNotification] = useState(null)
-  const [pendingClusters, setPendingClusters] = useState(null)
+  const [standardCount, setStandardCount] = useState(0)
+  const [outlierCount, setOutlierCount] = useState(0)
+  const [selectedTemplate, setSelectedTemplate] = useState('standard')
   const [currentPage, setCurrentPage] = useState(1)
   const [showRequeueConfirm, setShowRequeueConfirm] = useState(false)
   const [settings, setSettings] = useState(DEFAULT_SETTINGS)
@@ -72,9 +75,13 @@ export default function OptimizationPage() {
 
   const loadPendingClusters = useCallback(async () => {
     try {
-      const data = await fetchWorkQueue({ limit: 100 })
-      const queue = Array.isArray(data) ? data : (data.queue || [])
-      setPendingClusters(queue.length)
+      const stdData = await fetchWorkQueue({ limit: 100, target_outliers_only: false })
+      const stdQueue = Array.isArray(stdData) ? stdData : (stdData.queue || [])
+      setStandardCount(stdQueue.length)
+
+      const swpData = await fetchWorkQueue({ limit: 100, target_outliers_only: true })
+      const swpQueue = Array.isArray(swpData) ? swpData : (swpData.queue || [])
+      setOutlierCount(swpQueue.length)
     } catch (err) {
       console.error('Failed to load pending clusters', err)
     }
@@ -138,8 +145,13 @@ export default function OptimizationPage() {
     setCurrentProposalRoutes([])
     setNotification(null)
 
+    const activeSettings = {
+      ...settings,
+      target_outliers_only: selectedTemplate === 'sweeper'
+    }
+
     await startOptimization(
-      settings,
+      activeSettings,
       (result) => {
         if (result.plan) {
           setCurrentProposal({ ...result.plan, status: 'draft_plan', selectedCount: result.selectedCount, omittedCount: result.omittedLoggedCount })
@@ -368,6 +380,16 @@ export default function OptimizationPage() {
           </div>
         </div>
 
+        {/* Template Selector */}
+        <div className="mt-6 mb-6">
+          <TemplateSelector
+            selectedTemplate={selectedTemplate}
+            onTemplateChange={setSelectedTemplate}
+            outlierCount={outlierCount}
+            standardCount={standardCount}
+          />
+        </div>
+
         {/* Settings Panel */}
         <div className="mt-6">
           <OptimizationSettings
@@ -406,10 +428,10 @@ export default function OptimizationPage() {
             )}
             </button>
             
-            {!isOptimizing && pendingClusters !== null && (
+            {!isOptimizing && (
               <div className="text-sm font-medium text-text-secondary border-2 border-border bg-surface-elevated px-4 py-2 flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-accent-green"></span>
-                <span className="font-bold text-text-primary">{pendingClusters}</span> clusters awaiting dispatch
+                <span className="font-bold text-text-primary">{selectedTemplate === 'sweeper' ? outlierCount : standardCount}</span> clusters awaiting dispatch
               </div>
             )}
           </div>

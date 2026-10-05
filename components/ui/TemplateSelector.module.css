@@ -1,0 +1,37 @@
+/* TemplateSelector.module.css */
+.templateSelector {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+.templateOption {
+  flex: 1;
+  padding: 1rem;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.templateOption.selected {
+  border-color: #007bff;
+  background: #e7f3ff;
+}
+
+.templateOption.sweeper.selected {
+  border-color: #dc3545;
+  background: #ffe6e6;
+}
+
+.clusterCount {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-top: 0.5rem;
+}
+
+.clusterCount.healthy {
+  color: #28a745;
+}

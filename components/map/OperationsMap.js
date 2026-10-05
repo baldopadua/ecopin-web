@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { MapContainer, TileLayer } from 'react-leaflet'
 import CrewTaskLayer from './CrewTaskLayer'
+import OutlierClusterLayer from './OutlierClusterLayer'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import wkx from 'wkx'
@@ -36,7 +37,7 @@ const parseGeometry = (geometry) => {
   return null
 }
 
-export default function OperationsMap({ tasks }) {
+export default function OperationsMap({ tasks, clusters = [], selectedTemplate = 'standard' }) {
   const [mounted, setMounted] = useState(false)
 
   // Find exact center from tasks
@@ -92,6 +93,7 @@ export default function OperationsMap({ tasks }) {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
       />
       <CrewTaskLayer tasks={tasks} />
+      <OutlierClusterLayer clusters={clusters} selectedTemplate={selectedTemplate} />
     </MapContainer>
   )
 }
