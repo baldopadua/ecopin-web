@@ -273,9 +273,9 @@ export default function CreateCleanupTaskPage() {
       <div className="mb-6 flex gap-4">
         <button
           onClick={() => setMode('manual')}
-          className={`flex-1 py-3 font-mono font-bold uppercase tracking-widest border-2 transition-all ${
+          className={`flex-1 py-3 font-mono font-bold uppercase tracking-widest border border-border transition-all ${
             mode === 'manual' 
-              ? 'bg-accent-green text-white border-[#1a1a1a] shadow-[2px_2px_0px_0px_#1a1a1a]' 
+              ? 'bg-accent-green text-white border-border shadow-sm' 
               : 'bg-transparent text-text-muted border-border hover:border-text-primary'
           }`}
         >
@@ -283,9 +283,9 @@ export default function CreateCleanupTaskPage() {
         </button>
         <button
           onClick={() => setMode('auto')}
-          className={`flex-1 py-3 font-mono font-bold uppercase tracking-widest border-2 transition-all ${
+          className={`flex-1 py-3 font-mono font-bold uppercase tracking-widest border border-border transition-all ${
             mode === 'auto' 
-              ? 'bg-accent-blue text-white border-[#1a1a1a] shadow-[2px_2px_0px_0px_#1a1a1a]' 
+              ? 'bg-accent-blue text-white border-border shadow-sm' 
               : 'bg-transparent text-text-muted border-border hover:border-text-primary'
           }`}
         >
@@ -448,7 +448,7 @@ export default function CreateCleanupTaskPage() {
                        <button
                          key={p}
                          onClick={() => setTaskPriority(p)}
-                         className={`flex-1 py-2 text-xs font-mono font-bold uppercase tracking-widest border-2 ${taskPriority === p ? (p==='high' ? 'bg-error text-white border-error' : p==='medium' ? 'bg-warning text-black border-warning' : 'bg-success text-white border-success') : 'bg-transparent text-text-muted border-border hover:border-white'}`}
+                         className={`flex-1 py-2 text-xs font-mono font-bold uppercase tracking-widest border border-border ${taskPriority === p ? (p==='high' ? 'bg-error text-white border-error' : p==='medium' ? 'bg-warning text-text-primary border-warning' : 'bg-success text-white border-success') : 'bg-transparent text-text-muted border-border hover:border-white'}`}
                        >
                          {p}
                        </button>
@@ -481,10 +481,10 @@ export default function CreateCleanupTaskPage() {
                               <img
                                 src={crew.avatar_url}
                                 alt={crew.full_name}
-                                className="w-10 h-10 rounded-none object-cover border border-border"
+                                className="w-10 h-10 rounded-xl object-cover border border-border"
                               />
                             ) : (
-                              <div className="w-10 h-10 rounded-none bg-accent-green flex items-center justify-center text-white font-bold text-lg">
+                              <div className="w-10 h-10 rounded-xl bg-accent-green flex items-center justify-center text-white font-bold text-lg">
                                 {crew.full_name?.[0]?.toUpperCase() || 'U'}
                               </div>
                             )}
@@ -685,7 +685,7 @@ export default function CreateCleanupTaskPage() {
                 </div>
               </div>
             ) : (
-              <div className="card h-full flex items-center justify-center border-dashed border-2 bg-transparent">
+              <div className="card h-full flex items-center justify-center border-dashed border border-border bg-transparent">
                 <div className="text-center p-8">
                   <div className="text-4xl mb-4">🗺️</div>
                   <h3 className="text-lg font-bold text-text-primary mb-2">Ready to Auto-Generate</h3>

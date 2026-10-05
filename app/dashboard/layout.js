@@ -66,7 +66,7 @@ export default function DashboardLayout({ children }) {
 
   if (!user || isRedirecting) return (
     <div className="flex h-screen bg-background relative">
-            <aside className="w-64 bg-surface-elevated border-r-2 border-border h-screen flex flex-col animate-pulse z-10 relative">
+            <aside className="w-64 bg-surface-elevated border-r border-border h-screen flex flex-col animate-pulse z-10 relative">
         <div className="p-6 border-b border-border">
           <div className="h-6 w-24 rounded bg-border/50" />
         </div>

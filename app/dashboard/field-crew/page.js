@@ -83,16 +83,16 @@ export default function FieldCrewCommandCenter() {
            <div className="flex gap-4">
              {loading ? (
                 <>
-                  <div className="bg-surface border-2 border-border px-4 py-2 w-28 h-16 animate-pulse rounded-sm" />
-                  <div className="bg-surface border-2 border-border px-4 py-2 w-28 h-16 animate-pulse rounded-sm" />
+                  <div className="bg-surface border border-border px-4 py-2 w-28 h-16 animate-pulse rounded-sm" />
+                  <div className="bg-surface border border-border px-4 py-2 w-28 h-16 animate-pulse rounded-sm" />
                 </>
              ) : (
                 <>
-                  <div className="bg-surface border-2 border-[#1A1A1A] px-4 py-2 text-center rounded-sm">
+                  <div className="bg-surface border border-border border-[#1A1A1A] px-4 py-2 text-center rounded-sm">
                      <p className="font-mono text-xs text-text-muted font-bold uppercase tracking-widest">Completed</p>
                      <p className="text-2xl font-bold text-success">{completedTasks.length}</p>
                   </div>
-                  <div className="bg-surface border-2 border-[#1A1A1A] px-4 py-2 text-center rounded-sm">
+                  <div className="bg-surface border border-border border-[#1A1A1A] px-4 py-2 text-center rounded-sm">
                      <p className="font-mono text-xs text-text-muted font-bold uppercase tracking-widest">Pending</p>
                      <p className="text-2xl font-bold text-warning">{activeTasks.length}</p>
                   </div>
@@ -108,9 +108,9 @@ export default function FieldCrewCommandCenter() {
               <span className="font-mono text-sm tracking-widest text-text-secondary uppercase">Shift Progress</span>
               <span className="font-mono text-sm font-bold">{completedTasks.length} / {tasks.length} Tasks Completed</span>
             </div>
-            <div className="h-4 bg-border w-full rounded-sm overflow-hidden border-2 border-[#1A1A1A]">
+            <div className="h-4 bg-border w-full rounded-sm overflow-hidden border border-border border-[#1A1A1A]">
               <div 
-                className="h-full bg-[#ccff00] transition-all duration-500 border-r-2 border-[#1A1A1A]"
+                className="h-full bg-[#ccff00] transition-all duration-500 border-r border-[#1A1A1A]"
                 style={{ width: `${(completedTasks.length / tasks.length) * 100}%` }}
               />
             </div>
@@ -133,7 +133,7 @@ export default function FieldCrewCommandCenter() {
                  </div>
               ) : currentObjective ? (
                  <div 
-                   className="bg-surface border-2 border-[#1A1A1A] p-6 md:p-8 flex flex-col h-full border-t-4 border-t-primary rounded-sm transition-transform hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-none"
+                   className="bg-surface border border-border border-[#1A1A1A] p-6 md:p-8 flex flex-col h-full border-t-4 border-t-primary rounded-sm transition-transform hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-none"
                    style={{ boxShadow: '4px 4px 0px 0px #1A1A1A' }}
                  >
                     <div className="flex justify-between items-start mb-4">
@@ -156,7 +156,7 @@ export default function FieldCrewCommandCenter() {
                     <div className="mt-auto pt-6 border-t border-border flex flex-col sm:flex-row gap-4">
                        <button 
                          onClick={() => router.push(`/dashboard/field-crew/operations/${currentObjective.id}`)}
-                         className="flex-1 bg-[#ccff00] text-black border-2 border-[#1A1A1A] font-bold text-lg py-4 px-6 rounded-sm transition-transform hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none flex justify-center items-center gap-2"
+                         className="flex-1 bg-[#ccff00] text-text-primary border border-border border-[#1A1A1A] font-bold text-lg py-4 px-6 rounded-sm transition-transform hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none flex justify-center items-center gap-2"
                          style={{ boxShadow: '2px 2px 0px 0px #1A1A1A' }}
                        >
                          <CheckCircle className="w-6 h-6" />
@@ -179,7 +179,7 @@ export default function FieldCrewCommandCenter() {
                              router.push(`/dashboard/map-grid`);
                            }
                          }}
-                         className="flex-1 bg-background border-2 border-[#1A1A1A] text-text-primary font-bold text-lg py-4 px-6 rounded-sm transition-transform hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none flex justify-center items-center gap-2"
+                         className="flex-1 bg-background border border-border border-[#1A1A1A] text-text-primary font-bold text-lg py-4 px-6 rounded-sm transition-transform hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none flex justify-center items-center gap-2"
                          style={{ boxShadow: '2px 2px 0px 0px #1A1A1A' }}
                        >
                          <Navigation className="w-6 h-6 text-primary" />
@@ -215,7 +215,7 @@ export default function FieldCrewCommandCenter() {
                           <div 
                              key={task.id}
                              onClick={() => router.push(`/dashboard/field-crew/operations/${task.id}`)}
-                             className="border-2 border-[#1A1A1A] p-4 hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-none shadow-[4px_4px_0px_0px_#1A1A1A] cursor-pointer transition-all bg-background rounded-sm"
+                             className="border border-border border-[#1A1A1A] p-4 hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-none shadow-[4px_4px_0px_0px_#1A1A1A] cursor-pointer transition-all bg-background rounded-sm"
                           >
                              <div className="flex justify-between items-start mb-2">
                                 <h4 className="font-bold text-text-primary line-clamp-1 pr-2">{task.title}</h4>

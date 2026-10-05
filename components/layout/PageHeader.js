@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 export default function PageHeader({ title, titleAccent, subtitle, breadcrumbs, children }) {
   return (
-    <div className="sticky top-0 z-[1001] bg-surface-elevated dark:bg-black -mx-8 -mt-8 px-8 pt-8 pb-4 border-b-2 border-border mb-8">
+    <div className="sticky top-0 z-[40] bg-surface -mx-8 -mt-8 px-8 pt-8 pb-4 mb-6">
       {breadcrumbs && breadcrumbs.length > 0 && (
         <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-text-muted mb-4">
           {breadcrumbs.map((crumb, i) => (
@@ -21,7 +21,7 @@ export default function PageHeader({ title, titleAccent, subtitle, breadcrumbs, 
       )}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-4xl font-black uppercase tracking-tighter text-text-primary mb-2">
+          <h1 className="text-4xl font-bold uppercase tracking-tight text-text-primary mb-2">
             {title}
             {titleAccent && <span className="text-accent-green ml-2">{titleAccent}</span>}
           </h1>

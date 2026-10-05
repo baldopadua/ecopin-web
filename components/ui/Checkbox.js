@@ -12,9 +12,9 @@ export default function Checkbox({ className = '', labelClassName = 'text-sm tex
           className="sr-only" 
           {...props} 
         />
-        <div className={`w-4 h-4 border-2 flex items-center justify-center transition-colors ${checked ? 'bg-primary border-primary' : 'border-border bg-surface-elevated'}`}>
+        <div className={`w-4 h-4 border border-border flex items-center justify-center transition-colors ${checked ? 'bg-primary border-primary' : 'border-border bg-surface-elevated'}`}>
           {checked && (
-            <svg className="w-3 h-3 text-white dark:text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3 text-white dark:text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
             </svg>
           )}

@@ -57,12 +57,12 @@ function MapContent() {
           ]}
         />
         {user?.role === 'field_crew' && (
-          <div className="flex gap-4 items-center bg-surface-elevated border-2 border-border p-4 mb-4 shadow-[4px_4px_0px_0px_#1a1a1a]">
+          <div className="flex gap-4 items-center bg-surface-elevated border border-border p-4 mb-4 shadow-sm">
             <span className="font-mono text-xs uppercase tracking-widest text-text-muted font-bold">Crew Task Filters:</span>
             <select
               value={taskStatusFilter}
               onChange={(e) => setTaskStatusFilter(e.target.value)}
-              className="bg-background border-2 border-border text-text-primary text-sm font-mono p-2 focus:border-[#ccff00] outline-none"
+              className="bg-background border border-border text-text-primary text-sm font-mono p-2 focus:border-[#ccff00] outline-none"
             >
               <option value="all">All Statuses</option>
               <option value="pending">Pending</option>

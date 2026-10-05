@@ -143,7 +143,7 @@ export default function OfficerReportsPage() {
              e.stopPropagation()
              router.push(`/dashboard/officer/operations/create?preselect=${row.cluster_id || row.id}`)
            }}
-           className="flex items-center gap-1 text-xs font-bold uppercase tracking-widest bg-transparent px-3 py-1.5 border-2 border-[#1a1a1a] dark:border-[#333333] hover:border-accent-green hover:text-accent-green transition-colors"
+           className="flex items-center gap-1 text-xs font-bold uppercase tracking-widest bg-transparent px-3 py-1.5 border border-border dark:border-[#333333] hover:border-accent-green hover:text-accent-green transition-colors"
         >
           <Wrench className="w-3 h-3" /> Dispatch
         </button>

@@ -18,7 +18,7 @@ import { fetchCleanupTaskById, fetchReportById, uploadCleanupPhoto, logAgencyRes
 // We need dynamic import for EcoPinMap since it uses Leaflet which requires window
 const EcoPinMap = dynamic(() => import('@/components/map/EcoPinMap'), {
   ssr: false,
-  loading: () => <div className="h-[300px] w-full bg-surface-elevated animate-pulse border-2 border-border flex items-center justify-center">Loading Map...</div>
+  loading: () => <div className="h-[300px] w-full bg-surface-elevated animate-pulse border border-border flex items-center justify-center">Loading Map...</div>
 })
 
 if (typeof window !== 'undefined' && !window.Buffer) {
@@ -251,14 +251,14 @@ export default function ReportDetailPage() {
           ]}
         />
 
-        <div className="bg-[#1A1A1A] border-2 border-[#ccff00] p-3 shadow-[4px_4px_0px_0px_#ccff00]">
+        <div className="bg-[#1A1A1A] border border-border border-[#ccff00] p-3 shadow-[4px_4px_0px_0px_#ccff00]">
           <p className="font-mono text-xs text-[#ccff00] font-bold uppercase tracking-widest text-center">
             [ READ-ONLY METADATA — FIELD CREW VIEW ]
           </p>
         </div>
 
         {isFinished && (
-          <div className="bg-[#ccff00] text-black border-2 border-[#1A1A1A] p-4 font-bold flex items-center justify-between shadow-[4px_4px_0px_0px_#1a1a1a]">
+          <div className="bg-[#ccff00] text-text-primary border border-border border-[#1A1A1A] p-4 font-bold flex items-center justify-between shadow-sm">
             <div className="flex items-center gap-3">
               <CheckCircle className="w-6 h-6 flex-shrink-0" />
               <span>
@@ -277,8 +277,8 @@ export default function ReportDetailPage() {
           <div className="lg:col-span-2 space-y-8">
             
             {/* Metadata Section */}
-            <section className="bg-surface p-6 border-2 border-[#1A1A1A] dark:border-[#333] shadow-[8px_8px_0px_0px_#1a1a1a]">
-              <div className="flex justify-between items-start mb-4 border-b-2 border-border pb-4">
+            <section className="bg-surface p-6 border border-border border-[#1A1A1A]  shadow-sm">
+              <div className="flex justify-between items-start mb-4 border-b border-border pb-4">
                 <div>
                   <h2 className="text-2xl font-bold font-mono tracking-tight text-text-primary mb-1">{report.title}</h2>
                   <p className="text-text-secondary text-sm">{report.description || 'No description provided.'}</p>
@@ -324,7 +324,7 @@ export default function ReportDetailPage() {
                 </div>
                 
                 {report.is_anonymous === false && report.reporter_name && (
-                  <div className="md:col-span-2 mt-4 pt-4 border-t-2 border-border">
+                  <div className="md:col-span-2 mt-4 pt-4 border-t border-border">
                     <dt className="font-mono text-xs uppercase tracking-widest text-[#ccff00] mb-1">Reporter Information</dt>
                     <dd className="text-text-primary font-medium">{report.reporter_name} (ID: {report.reporter_id})</dd>
                   </div>
@@ -333,8 +333,8 @@ export default function ReportDetailPage() {
             </section>
 
             {/* Photo Verification System */}
-            <section className="bg-surface p-6 border-2 border-[#1A1A1A] dark:border-[#333] shadow-[8px_8px_0px_0px_#1a1a1a]">
-              <h3 className="font-mono text-sm uppercase tracking-widest text-text-primary mb-4 border-b-2 border-border pb-2">Photo Verification System</h3>
+            <section className="bg-surface p-6 border border-border border-[#1A1A1A]  shadow-sm">
+              <h3 className="font-mono text-sm uppercase tracking-widest text-text-primary mb-4 border-b border-border pb-2">Photo Verification System</h3>
               
               <div className="space-y-6">
                 {/* Citizen Evidence */}
@@ -343,13 +343,13 @@ export default function ReportDetailPage() {
                   {evidence.length > 0 ? (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       {evidence.map((ev, i) => (
-                        <a key={i} href={ev.file_url} target="_blank" rel="noreferrer" className="block relative group border-2 border-border overflow-hidden">
+                        <a key={i} href={ev.file_url} target="_blank" rel="noreferrer" className="block relative group border border-border overflow-hidden">
                           <img src={ev.file_url} alt="Citizen Evidence" className="w-full h-32 object-cover group-hover:scale-105 transition-transform" />
                         </a>
                       ))}
                     </div>
                   ) : (
-                    <div className="bg-surface-elevated border-2 border-dashed border-border p-4 text-center">
+                    <div className="bg-surface-elevated border border-border border-dashed border-border p-4 text-center">
                       <p className="text-text-muted text-sm font-mono">NO CITIZEN PHOTOS PROVIDED</p>
                     </div>
                   )}
@@ -366,7 +366,7 @@ export default function ReportDetailPage() {
                    
                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                      {crewPhotos.map((photo, i) => (
-                        <div key={i} className="relative group border-2 border-[#1A1A1A] dark:border-[#333]">
+                        <div key={i} className="relative group border border-border border-[#1A1A1A] ">
                           <img src={photo.url} alt={`Crew ${photo.type}`} className="w-full h-32 object-cover" />
                           <div className="absolute top-0 right-0 bg-[#1A1A1A] text-white text-[10px] font-mono px-2 py-1 uppercase">{photo.type}</div>
                         </div>
@@ -378,7 +378,7 @@ export default function ReportDetailPage() {
                         <button
                           onClick={() => fileInputRef.current?.click()}
                           disabled={uploadingPhoto}
-                          className="w-full py-3 px-4 bg-transparent border-2 border-dashed border-[#1A1A1A] dark:border-[#333] hover:border-[#ccff00] hover:bg-[#ccff00]/10 text-text-primary font-mono text-sm transition-colors flex items-center justify-center gap-2 font-bold uppercase tracking-widest"
+                          className="w-full py-3 px-4 bg-transparent border border-border border-dashed border-[#1A1A1A]  hover:border-[#ccff00] hover:bg-[#ccff00]/10 text-text-primary font-mono text-sm transition-colors flex items-center justify-center gap-2 font-bold uppercase tracking-widest"
                         >
                           {uploadingPhoto ? 'UPLOADING...' : <><Camera className="w-4 h-4" /> UPLOAD {!report.before_photo_url ? 'BEFORE' : 'AFTER'} PHOTO (MAX 5MB)</>}
                         </button>
@@ -391,7 +391,7 @@ export default function ReportDetailPage() {
                         />
                      </div>
                    ) : (
-                     <div className="p-4 border-2 border-dashed border-error/50 bg-error/10 text-center text-error font-mono text-sm">
+                     <div className="p-4 border border-border border-dashed border-error/50 bg-error/10 text-center text-error font-mono text-sm">
                        {isAssigned ? '[ PHOTO LIMIT REACHED: 5/5 ]' : '[ NOT ASSIGNED TO THIS TASK ]'}
                      </div>
                    )}
@@ -400,8 +400,8 @@ export default function ReportDetailPage() {
             </section>
 
             {/* Field Crew Notes & Activity Log */}
-            <section className="bg-surface p-6 border-2 border-[#1A1A1A] dark:border-[#333] shadow-[8px_8px_0px_0px_#1a1a1a]">
-              <h3 className="font-mono text-sm uppercase tracking-widest text-text-primary mb-4 border-b-2 border-border pb-2">Activity Log & Notes</h3>
+            <section className="bg-surface p-6 border border-border border-[#1A1A1A]  shadow-sm">
+              <h3 className="font-mono text-sm uppercase tracking-widest text-text-primary mb-4 border-b border-border pb-2">Activity Log & Notes</h3>
               
               <div className="space-y-6">
                 {/* Notes Input */}
@@ -411,12 +411,12 @@ export default function ReportDetailPage() {
                     onChange={(e) => setNoteText(e.target.value)}
                     disabled={!isAssigned || submittingNote}
                     placeholder={isAssigned ? "Add operational remarks..." : "You must be assigned to add notes."}
-                    className="w-full h-24 p-3 border-2 border-[#1A1A1A] dark:border-[#333] bg-transparent text-text-primary font-mono text-sm resize-none outline-none focus:border-[#ccff00] disabled:opacity-50 disabled:cursor-not-allowed mb-3"
+                    className="w-full h-24 p-3 border border-border border-[#1A1A1A]  bg-transparent text-text-primary font-mono text-sm resize-none outline-none focus:border-[#ccff00] disabled:opacity-50 disabled:cursor-not-allowed mb-3"
                   />
                   <button
                     type="submit"
                     disabled={!isAssigned || submittingNote || !noteText.trim()}
-                    className="w-full py-3 bg-[#ccff00] text-black font-bold border-2 border-[#1A1A1A] disabled:opacity-50 disabled:cursor-not-allowed hover:translate-x-[2px] hover:translate-y-[2px] transition-transform shadow-[4px_4px_0px_0px_#1a1a1a] flex justify-center items-center gap-2"
+                    className="w-full py-3 bg-[#ccff00] text-text-primary font-bold border border-border border-[#1A1A1A] disabled:opacity-50 disabled:cursor-not-allowed hover:translate-x-[2px] hover:translate-y-[2px] transition-transform shadow-sm flex justify-center items-center gap-2"
                   >
                     {submittingNote ? 'SAVING...' : 'ADD NOTE'}
                   </button>
@@ -453,20 +453,20 @@ export default function ReportDetailPage() {
             <div className="flex flex-col gap-3">
               <button
                 onClick={() => router.push(`/dashboard/field-crew/operations/${task.id}`)}
-                className="w-full py-3 bg-transparent border-2 border-[#1A1A1A] dark:border-[#333] font-bold flex items-center justify-center gap-2 hover:bg-[#1A1A1A] hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
+                className="w-full py-3 bg-transparent border border-border border-[#1A1A1A]  font-bold flex items-center justify-center gap-2 hover:bg-[#1A1A1A] hover:text-white dark:hover:bg-surface dark:hover:text-text-primary transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" /> Back to Cluster
               </button>
               <button
                 onClick={() => router.push(`/dashboard/field-crew/my-route?lat=${loc.latitude}&lng=${loc.longitude}&id=${report.id}`)}
-                className="w-full py-3 bg-[#1A1A1A] dark:bg-white text-white dark:text-black font-bold border-2 border-[#1A1A1A] dark:border-white shadow-[4px_4px_0px_0px_#ccff00] flex items-center justify-center gap-2 hover:translate-x-[2px] hover:translate-y-[2px] transition-transform"
+                className="w-full py-3 bg-[#1A1A1A] dark:bg-surface text-white dark:text-text-primary font-bold border border-border border-[#1A1A1A]  shadow-[4px_4px_0px_0px_#ccff00] flex items-center justify-center gap-2 hover:translate-x-[2px] hover:translate-y-[2px] transition-transform"
               >
                 <MapIcon className="w-4 h-4" /> View on Map
               </button>
             </div>
 
             {/* Cleanup Task Context */}
-            <div className="bg-surface p-5 border-2 border-[#1A1A1A] dark:border-[#333] shadow-[4px_4px_0px_0px_#1a1a1a]">
+            <div className="bg-surface p-5 border border-border border-[#1A1A1A]  shadow-sm">
               <h3 className="font-mono text-xs uppercase tracking-widest text-[#ccff00] mb-3">Parent Cluster Context</h3>
               <div className="space-y-4">
                 <div>
@@ -486,7 +486,7 @@ export default function ReportDetailPage() {
 
             {/* Static Map */}
             {loc.latitude && loc.longitude && (
-              <div className="border-2 border-[#1A1A1A] dark:border-[#333] shadow-[4px_4px_0px_0px_#1a1a1a] h-[300px] overflow-hidden bg-surface-elevated relative z-0">
+              <div className="border border-border border-[#1A1A1A]  shadow-sm h-[300px] overflow-hidden bg-surface-elevated relative z-0">
                 <EcoPinMap
                   centerLat={mapCenterLat}
                   centerLng={mapCenterLng}

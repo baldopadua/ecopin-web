@@ -16,21 +16,21 @@ const createCustomIcon = () => {
   })
 }
 
-function LocationMarker({ position, onChange }) {
+function LocationMarker({ position, onChange, readOnly }) {
   const icon = createCustomIcon()
   
   useMapEvents({
     click(e) {
-      onChange(e.latlng)
+      if (!readOnly) onChange(e.latlng)
     },
   })
 
   return position === null ? null : (
     <Marker 
       position={position}
-      draggable={true}
+      draggable={!readOnly}
       icon={icon}
-      eventHandlers={{
+      eventHandlers={readOnly ? {} : {
         dragend: (e) => {
           const marker = e.target
           onChange(marker.getLatLng())
@@ -40,7 +40,7 @@ function LocationMarker({ position, onChange }) {
   )
 }
 
-export default function LocationPickerMap({ position, onChange }) {
+export default function LocationPickerMap({ position, onChange, readOnly = false }) {
   const [isMounted, setIsMounted] = useState(false)
   const [map, setMap] = useState(null)
 
@@ -50,12 +50,12 @@ export default function LocationPickerMap({ position, onChange }) {
 
 
 
-  if (!isMounted) return <div className="h-[400px] bg-surface-elevated animate-pulse border-2 border-border" />
+  if (!isMounted) return <div className="h-[400px] bg-surface-elevated animate-pulse border border-border" />
 
   const center = position?.lat && position?.lng ? [position.lat, position.lng] : [14.561433, 121.075636] // Default Pasig
 
   return (
-    <div className="h-[400px] w-full border-2 border-border relative z-0">
+    <div className="h-[400px] w-full border border-border relative z-0">
       <MapContainer 
         center={center} 
         zoom={14} 
@@ -70,11 +70,14 @@ export default function LocationPickerMap({ position, onChange }) {
         <LocationMarker 
           position={position?.lat ? position : null} 
           onChange={onChange} 
+          readOnly={readOnly}
         />
       </MapContainer>
-      <div className="absolute top-4 left-4 z-[400] bg-surface border-2 border-border p-2 shadow-sm text-sm font-medium">
-        Click anywhere or drag pin to set location
-      </div>
+      {!readOnly && (
+        <div className="absolute top-4 left-4 z-[400] bg-surface border border-border p-2 shadow-sm text-sm font-medium">
+          Click anywhere or drag pin to set location
+        </div>
+      )}
     </div>
   )
 }

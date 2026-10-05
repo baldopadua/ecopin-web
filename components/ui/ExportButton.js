@@ -45,7 +45,7 @@ export default function ExportButton({ data, filename = 'export.csv', className 
     <button
       onClick={handleExport}
       disabled={!data || data.length === 0}
-      className={`px-4 py-2 bg-transparent text-text-primary font-bold border-2 border-[#1a1a1a] dark:border-[#333333] hover:bg-surface-elevated transition-colors flex items-center gap-2 ${className} disabled:opacity-50 disabled:cursor-not-allowed`}
+      className={`px-4 py-2 bg-transparent text-text-primary font-bold border border-border dark:border-[#333333] hover:bg-surface-elevated transition-colors flex items-center gap-2 ${className} disabled:opacity-50 disabled:cursor-not-allowed`}
     >
       <Download className="w-4 h-4" /> Export CSV
     </button>

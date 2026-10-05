@@ -99,7 +99,7 @@ export function CrewRouteCard({ route, index, color }) {
   }
 
   return (
-    <div className="border-2 border-border bg-surface-elevated">
+    <div className="border border-border bg-surface-elevated">
       <div className="p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex flex-col gap-2">

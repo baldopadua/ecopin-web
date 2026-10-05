@@ -2,7 +2,7 @@
 
 export default function RouteInfoHeader({ eta, weather, traffic, isSimulated = false }) {
   return (
-    <div className="card border-l-2 border-l-[var(--primary)] mb-4">
+    <div className="card border-l border-l-[var(--primary)] mb-4">
       {isSimulated && (
         <div className="text-xs font-mono uppercase tracking-wider text-warning bg-warning/15 px-3 py-1.5 border border-warning/30 mb-3 text-center">
           ⚠️ Simulated Conditions — Not Live Data

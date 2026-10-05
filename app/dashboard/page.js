@@ -428,28 +428,28 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="card border-l-2 border-l-[var(--accent-green)] hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="card border-l border-l-[var(--accent-green)] hover:shadow-lg transition-shadow cursor-pointer">
             <div className="mb-2">
               <span className="text-sm text-text-muted">Total Reports</span>
             </div>
             <p className="text-3xl font-bold text-text-primary">{stats.total}</p>
           </div>
 
-          <div className="card border-l-2 border-l-[var(--error)] hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="card border-l border-l-[var(--error)] hover:shadow-lg transition-shadow cursor-pointer">
             <div className="mb-2">
               <span className="text-sm text-text-muted">Unresolved</span>
             </div>
             <p className="text-3xl font-bold text-text-primary">{stats.unresolved}</p>
           </div>
 
-          <div className="card border-l-2 border-l-[var(--warning)] hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="card border-l border-l-[var(--warning)] hover:shadow-lg transition-shadow cursor-pointer">
             <div className="mb-2">
               <span className="text-sm text-text-muted">In Progress</span>
             </div>
             <p className="text-3xl font-bold text-text-primary">{stats.inProgress}</p>
           </div>
 
-          <div className="card border-l-2 border-l-[var(--success)] hover:shadow-lg transition-shadow cursor-pointer">
+          <div className="card border-l border-l-[var(--success)] hover:shadow-lg transition-shadow cursor-pointer">
             <div className="mb-2">
               <span className="text-sm text-text-muted">Resolved Today</span>
             </div>
@@ -643,7 +643,7 @@ export default function DashboardPage() {
 
       {/* Reports Table */}
       <div className="flex flex-col gap-6">
-        <h2 className="text-xl font-bold text-text-primary uppercase tracking-tighter">All Reports</h2>
+        <h2 className="text-xl font-bold text-text-primary uppercase tracking-tight">All Reports</h2>
         {loading ? (
           <div className="space-y-3 py-4">
             {Array.from({ length: 5 }).map((_, i) => (

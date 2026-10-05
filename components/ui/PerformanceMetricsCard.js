@@ -37,7 +37,7 @@ export default function PerformanceMetricsCard({ completedTasks = 18, totalTasks
   const maxCount = Math.max(...dailyCounts, 1)
 
   return (
-    <div className="card border-l-2 border-l-[var(--accent-green)]">
+    <div className="card border-l border-l-[var(--accent-green)]">
       {/* Card Header */}
       <div className="flex items-center gap-2 mb-4">
         <TrendingUp className="w-5 h-5 text-primary" />

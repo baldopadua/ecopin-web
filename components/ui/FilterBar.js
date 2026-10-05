@@ -26,7 +26,7 @@ export default function FilterBar({
     (showDateRange && (dateRange.start || dateRange.end))
 
   return (
-    <div className={`bg-surface-elevated border-2 border-border rounded-none p-4 mb-6 ${sticky ? 'sticky top-[120px] z-10' : ''} ${className}`}>
+    <div className={`bg-surface-elevated border border-border rounded-xl p-4 mb-6 ${sticky ? 'sticky top-[120px] z-10' : ''} ${className}`}>
       <div className="flex flex-wrap items-center gap-4">
         {/* Search Input */}
         {onSearchChange && (

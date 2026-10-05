@@ -728,7 +728,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
         />
 
         {isTaskFinished && (
-          <div className="bg-[#ccff00] text-black border-2 border-[#1A1A1A] p-4 font-bold flex items-center justify-between shadow-[4px_4px_0px_0px_#1a1a1a] mb-6">
+          <div className="bg-[#ccff00] text-text-primary border border-border border-[#1A1A1A] p-4 font-bold flex items-center justify-between shadow-sm mb-6">
             <div className="flex items-center gap-3">
               <CheckCircle className="w-6 h-6 flex-shrink-0" />
               <span>Task Finished! All reports in this task have been addressed. You can move on to your next assignment.</span>
@@ -785,7 +785,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
                           <td className="py-3 px-4 min-w-[140px]">
                             <button
                               onClick={() => handleViewReportDetail(report.id)}
-                              className="px-4 py-2 bg-transparent border-2 border-[#1A1A1A] dark:border-[#333] text-sm rounded-none flex items-center justify-center gap-2 whitespace-nowrap hover:bg-[#1A1A1A] hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
+                              className="px-4 py-2 bg-transparent border border-border border-[#1A1A1A]  text-sm rounded-xl flex items-center justify-center gap-2 whitespace-nowrap hover:bg-[#1A1A1A] hover:text-white dark:hover:bg-surface dark:hover:text-text-primary transition-colors"
                             >
                               <Eye className="w-4 h-4" /> View Detail
                             </button>
@@ -805,7 +805,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
             <div className="lg:col-span-1 space-y-6">
               
               {/* Mini Map */}
-              <div className="card p-0 overflow-hidden border-2 border-border h-[300px] relative z-0 isolate">
+              <div className="card p-0 overflow-hidden border border-border h-[300px] relative z-0 isolate">
                 <EcoPinMap
                   centerLat={mapCenterLat}
                   centerLng={mapCenterLng}
@@ -878,9 +878,9 @@ export default function FieldCrewCleanupTaskDetailPage() {
                           }).length} / {reports.length}
                         </span>
                       </div>
-                       <div className="w-full bg-border rounded-none h-2">
+                       <div className="w-full bg-border rounded-xl h-2">
                         <div
-                          className="bg-[#ccff00] h-2 rounded-none transition-all"
+                          className="bg-[#ccff00] h-2 rounded-xl transition-all"
                           style={{ width: `${(reports.filter(r => {
                             const isScouting = r.issue_type?.toLowerCase() === 'scouting' || r.issue_type?.toLowerCase() === 'acknowledge_only'
                             if (isScouting) return r.validation_status === 'validated' || r.validation_status === 'approved' || r.status === 'resolved' || r.status === 'closed'
@@ -903,11 +903,11 @@ export default function FieldCrewCleanupTaskDetailPage() {
                   const canMarkComplete = hasBeforePhotos && hasAfterPhotos && allResolved && isAssigned
 
                   return (
-                    <div className="mt-6 pt-4 border-t-2 border-[#1A1A1A] dark:border-[#333]">
+                    <div className="mt-6 pt-4 border-t border-[#1A1A1A] ">
                       <button
                         onClick={handleMarkComplete}
                         disabled={markingComplete || !canMarkComplete}
-                        className={`w-full py-3 px-4 transition-all ${(!canMarkComplete || markingComplete) ? 'bg-border text-text-muted cursor-not-allowed border-2 border-transparent' : 'bg-[#ccff00] text-black font-bold border-2 border-[#1A1A1A] hover:translate-x-[2px] hover:translate-y-[2px] shadow-[4px_4px_0px_0px_#1a1a1a]'}`}
+                        className={`w-full py-3 px-4 transition-all ${(!canMarkComplete || markingComplete) ? 'bg-border text-text-muted cursor-not-allowed border border-border border-transparent' : 'bg-[#ccff00] text-text-primary font-bold border border-border border-[#1A1A1A] hover:translate-x-[2px] hover:translate-y-[2px] shadow-sm'}`}
                       >
                         {markingComplete ? 'Processing...' : 'Mark Task Complete'}
                       </button>
@@ -981,7 +981,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
                             return (
                               <button
                                 onClick={() => router.push(`/dashboard/field-crew/my-route?lat=${loc.latitude}&lng=${loc.longitude}&id=${report.id}`)}
-                                className="w-full bg-transparent border-2 border-[#1A1A1A] dark:border-[#333] text-text-primary px-4 py-2 rounded-none hover:bg-[#1A1A1A] hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors font-bold"
+                                className="w-full bg-transparent border border-border border-[#1A1A1A]  text-text-primary px-4 py-2 rounded-xl hover:bg-[#1A1A1A] hover:text-white dark:hover:bg-surface dark:hover:text-text-primary transition-colors font-bold"
                               >
                                 View on Map
                               </button>

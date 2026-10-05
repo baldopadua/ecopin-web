@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -125,7 +125,7 @@ export default function OfficerHomepage() {
              icon={<AlertTriangle className="w-6 h-6" />} 
              color={slaRiskTasks.length > 0 ? "error" : "success"}
              onClick={() => router.push('/dashboard/officer/reports')}
-             className={`group transition-all hover:border-[#1a1a1a] dark:hover:border-white ${slaRiskTasks.length > 0 ? "animate-pulse border-error bg-error/5" : ""}`}
+             className={`group transition-all hover:border-border dark:hover:border-white ${slaRiskTasks.length > 0 ? "animate-pulse border-error bg-error/5" : ""}`}
            >
              <div className="mt-3 pt-2.5 border-t border-border flex items-center justify-between">
                <Link
@@ -151,11 +151,47 @@ export default function OfficerHomepage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
            {/* Left Column: Action Queue & Active Targets */}
            <div className="lg:col-span-2 space-y-8">
-              
+              {/* Active Targets */}
+              <div className="card border border-border dark:border-[#333333] rounded-xl p-6">
+                 <div className="flex justify-between items-center mb-6 border-b border-border pb-3">
+                    <h2 className="text-xl font-bold tracking-tight uppercase">Active Targets</h2>
+                    <Link href="/dashboard/officer/operations" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors flex items-center">
+                       View All <ChevronRight className="w-4 h-4 ml-1" />
+                    </Link>
+                 </div>
+                 
+                 {loading ? (
+                   <div className="grid grid-cols-2 gap-4 animate-pulse">
+                     {[1,2].map(i => <div key={i} className="h-24 bg-surface-elevated border border-border" />)}
+                   </div>
+                 ) : activeTasks.length === 0 ? (
+                   <div className="text-center py-8 text-text-muted bg-surface-elevated border border-dashed border-border">
+                      <p className="font-medium">No active targets</p>
+                   </div>
+                 ) : (
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     {activeTasks.slice(0, 4).map(task => (
+                        <div key={task.id} className="border border-border p-4 hover:bg-surface-elevated transition-colors cursor-pointer" onClick={() => router.push(`/dashboard/officer/operations/${task.id}`)}>
+                           <div className="flex justify-between items-start mb-2">
+                              <h3 className="font-bold text-text-primary line-clamp-1 flex-1 pr-2">{task.title}</h3>
+                              <StatusBadge status={task.status} type="task" />
+                           </div>
+                           <p className="text-sm text-text-secondary line-clamp-2 mb-3 h-10">
+                              {task.description || 'No description provided.'}
+                           </p>
+                           <div className="flex justify-between items-center text-xs">
+                              <span className="text-text-muted">Assigned: {task.assigned_to ? 'Crew Dispatched' : 'Unassigned'}</span>
+                           </div>
+                        </div>
+                     ))}
+                   </div>
+                 )}
+              </div>
+
               {/* Action Queue */}
-              <div className="card border-2 border-[#1a1a1a] dark:border-[#333333] rounded-none p-6">
-                 <div className="flex justify-between items-center mb-6 border-b-2 border-border pb-3">
-                    <h2 className="text-xl font-black tracking-tighter uppercase">Action Queue</h2>
+              <div className="card border border-border dark:border-[#333333] rounded-xl p-6">
+                 <div className="flex justify-between items-center mb-6 border-b border-border pb-3">
+                    <h2 className="text-xl font-bold tracking-tight uppercase">Action Queue</h2>
                     <button 
                       onClick={() => router.push('/dashboard/officer/optimization')}
                       className="btn-primary text-sm px-4 py-2 flex items-center gap-2"
@@ -166,7 +202,7 @@ export default function OfficerHomepage() {
                  
                  {loading ? (
                    <div className="animate-pulse space-y-4">
-                     {[1,2,3].map(i => <div key={i} className="h-16 bg-surface-elevated border-2 border-border" />)}
+                     {[1,2,3].map(i => <div key={i} className="h-16 bg-surface-elevated border border-border" />)}
                    </div>
                  ) : actionQueueItems.length === 0 ? (
                    <div className="text-center py-8 text-text-muted">
@@ -177,10 +213,10 @@ export default function OfficerHomepage() {
                  ) : (
                    <div className="space-y-4">
                      {actionQueueItems.map(item => (
-                       <div key={item.id} className="border-2 border-border p-4 hover:border-accent-green transition-colors bg-surface-elevated">
+                       <div key={item.id} className="border border-border p-4 hover:border-accent-green transition-colors bg-surface-elevated">
                           <div className="flex justify-between items-start mb-2">
                              <div className="flex items-center gap-3">
-                                <span className="bg-warning text-black text-xs font-bold px-2 py-1 uppercase tracking-widest">Pending</span>
+                                <span className="bg-warning text-text-primary text-xs font-bold px-2 py-1 uppercase tracking-widest">Pending</span>
                                 <h3 className="font-bold text-text-primary text-lg">{item.title || `Cluster ${item.id.slice(0,8)}`}</h3>
                              </div>
                              <div className="text-right">
@@ -205,51 +241,12 @@ export default function OfficerHomepage() {
                    </div>
                  )}
               </div>
-
-              
-
-              {/* Active Targets */}
-              <div className="card border-2 border-[#1a1a1a] dark:border-[#333333] rounded-none p-6">
-                 <div className="flex justify-between items-center mb-6 border-b-2 border-border pb-3">
-                    <h2 className="text-xl font-black tracking-tighter uppercase">Active Targets</h2>
-                    <Link href="/dashboard/officer/operations" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors flex items-center">
-                       View All <ChevronRight className="w-4 h-4 ml-1" />
-                    </Link>
-                 </div>
-                 
-                 {loading ? (
-                   <div className="grid grid-cols-2 gap-4 animate-pulse">
-                     {[1,2].map(i => <div key={i} className="h-24 bg-surface-elevated border-2 border-border" />)}
-                   </div>
-                 ) : activeTasks.length === 0 ? (
-                   <div className="text-center py-8 text-text-muted bg-surface-elevated border border-dashed border-border">
-                      <p className="font-medium">No active targets</p>
-                   </div>
-                 ) : (
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     {activeTasks.slice(0, 4).map(task => (
-                        <div key={task.id} className="border-2 border-border p-4 hover:bg-surface-elevated transition-colors cursor-pointer" onClick={() => router.push(`/dashboard/officer/operations/${task.id}`)}>
-                           <div className="flex justify-between items-start mb-2">
-                              <h3 className="font-bold text-text-primary line-clamp-1 flex-1 pr-2">{task.title}</h3>
-                              <StatusBadge status={task.status} type="task" />
-                           </div>
-                           <p className="text-sm text-text-secondary line-clamp-2 mb-3 h-10">
-                              {task.description || 'No description provided.'}
-                           </p>
-                           <div className="flex justify-between items-center text-xs">
-                              <span className="text-text-muted">Assigned: {task.assigned_to ? 'Crew Dispatched' : 'Unassigned'}</span>
-                           </div>
-                        </div>
-                     ))}
-                   </div>
-                 )}
-              </div>
            </div>
 
             <div className="space-y-8">
-              <div className="card border-2 border-border rounded-none p-6 bg-surface-elevated text-text-primary h-full min-h-[500px]">
-                 <div className="flex justify-between items-center mb-6 border-b-2 border-border pb-3">
-                    <h2 className="text-xl font-black tracking-tighter uppercase flex items-center gap-2">
+              <div className="card border border-border rounded-xl p-6 bg-surface-elevated text-text-primary h-full min-h-[500px]">
+                 <div className="flex justify-between items-center mb-6 border-b border-border pb-3">
+                    <h2 className="text-xl font-bold tracking-tight uppercase flex items-center gap-2">
                        <Target className="w-5 h-5 text-error" /> Critical Hotzones
                     </h2>
                  </div>
@@ -266,9 +263,7 @@ export default function OfficerHomepage() {
                  ) : (
                    <div className="space-y-6">
                      {criticalClusters.map((cluster, idx) => (
-                         <div key={cluster.id} className="relative group cursor-pointer" onClick={() => router.push(`/dashboard/officer/hotzone-intel/${cluster.id}`)}>
-                           <div className="absolute inset-0 bg-error/20 translate-x-2 translate-y-2 group-hover:translate-x-1 group-hover:translate-y-1 transition-transform z-0"></div>
-                           <div className="relative z-10 bg-surface-elevated border-2 border-border p-4 group-hover:border-error transition-colors">
+                         <div key={cluster.id} className="bg-surface-elevated border border-border p-4 rounded-xl cursor-pointer hover:border-error transition-colors hover:shadow-sm" onClick={() => router.push(`/dashboard/officer/hotzone-intel/${cluster.id}`)}>
                               <div className="flex justify-between items-start mb-3">
                                  <div>
                                     <span className="text-[10px] font-mono text-error uppercase tracking-widest block mb-1">{getPriorityLabel(cluster)} PRIORITY (RANK {idx + 1})</span>
@@ -276,7 +271,7 @@ export default function OfficerHomepage() {
                                  </div>
                                  <div className="text-right">
                                     <span className="block text-[10px] font-mono uppercase text-text-muted mb-1">Score</span>
-                                    <span className="text-3xl font-black text-text-primary leading-none">{Math.round(cluster.priority_score || 0)}</span>
+                                    <span className="text-3xl font-bold text-text-primary leading-none">{Math.round(cluster.priority_score || 0)}</span>
                                  </div>
                               </div>
                               <div className="grid grid-cols-2 gap-2 text-sm text-text-secondary">
@@ -290,10 +285,9 @@ export default function OfficerHomepage() {
                                  </div>
                               </div>
                            </div>
-                        </div>
                      ))}
                      
-                     <div className="pt-6 mt-6 border-t-2 border-border">
+                     <div className="pt-6 mt-6 border-t border-border">
                         <Link href="/dashboard/officer/hotzone-intel" className="btn-secondary w-full text-center flex items-center justify-center gap-2">
                            View All Intelligence <ChevronRight className="w-4 h-4" />
                         </Link>
@@ -307,11 +301,11 @@ export default function OfficerHomepage() {
         {/* AI HUD (Floating/Collapsible) */}
         <div className={`fixed bottom-6 right-6 z-50 flex flex-col items-end transition-all duration-300 ${hudExpanded ? 'translate-y-0' : 'translate-y-2'}`}>
            {hudExpanded && (
-               <div className="mb-4 w-72 bg-surface-elevated border-2 border-accent-green shadow-2xl p-5 text-text-primary origin-bottom-right animate-in fade-in slide-in-from-bottom-4 relative">
+               <div className="mb-4 w-72 bg-surface-elevated border border-border border-accent-green shadow-2xl p-5 text-text-primary origin-bottom-right animate-in fade-in slide-in-from-bottom-4 relative">
                  <div className="absolute -z-10 inset-0 opacity-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-accent-green via-transparent to-transparent"></div>
                  
                  <div className="flex justify-between items-center mb-4 border-b border-border pb-2">
-                    <h4 className="font-black tracking-widest text-sm uppercase flex items-center gap-2">
+                    <h4 className="font-bold tracking-widest text-sm uppercase flex items-center gap-2">
                        <Brain className="w-4 h-4 text-accent-green" /> Command Unit
                     </h4>
                     <button onClick={() => setHudExpanded(false)} className="text-text-muted hover:text-text-primary">âœ•</button>
@@ -336,7 +330,7 @@ export default function OfficerHomepage() {
                     </div>
                  </div>
                  
-                 <Link href="/dashboard/spatial-scan" className="mt-5 block text-center text-xs font-bold uppercase tracking-widest bg-surface text-text-primary py-2 hover:bg-accent-green hover:text-white transition-colors border-2 border-border">
+                 <Link href="/dashboard/spatial-scan" className="mt-5 block text-center text-xs font-bold uppercase tracking-widest bg-surface text-text-primary py-2 hover:bg-accent-green hover:text-white transition-colors border border-border">
                     View Spatial Scan â†’
                  </Link>
               </div>
@@ -345,11 +339,11 @@ export default function OfficerHomepage() {
            {!hudExpanded && (
               <button 
                 onClick={() => setHudExpanded(true)}
-                className="group relative flex items-center justify-center w-14 h-14 bg-surface-elevated border-2 border-accent-green shadow-lg hover:scale-105 transition-transform text-text-primary"
+                className="group relative flex items-center justify-center w-14 h-14 bg-surface-elevated border border-border border-accent-green shadow-lg hover:scale-105 transition-transform text-text-primary"
               >
-                 <div className="absolute inset-0 rounded-full border-2 border-accent-green animate-ping opacity-20"></div>
+                 <div className="absolute inset-0 rounded-full border border-border border-accent-green animate-ping opacity-20"></div>
                  <Brain className="w-6 h-6 text-accent-green" />
-                 <span className="absolute -top-2 -right-2 bg-accent-green text-white text-[10px] font-black px-1.5 py-0.5 rounded-sm">
+                 <span className="absolute -top-2 -right-2 bg-accent-green text-white text-[10px] font-bold px-1.5 py-0.5 rounded-sm">
                     {aiConfidence}%
                  </span>
               </button>

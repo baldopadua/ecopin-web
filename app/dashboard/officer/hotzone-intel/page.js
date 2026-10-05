@@ -137,7 +137,7 @@ export default function ClustersPage() {
       label: 'Severity', 
       width: '15%',
       render: (val) => (
-        <span className={`font-black uppercase tracking-widest text-xs ${val === 'high' ? 'text-error' : val === 'medium' ? 'text-warning' : 'text-info'}`}>
+        <span className={`font-bold uppercase tracking-widest text-xs ${val === 'high' ? 'text-error' : val === 'medium' ? 'text-warning' : 'text-info'}`}>
           {val || 'UNKNOWN'}
         </span>
       )
@@ -189,11 +189,11 @@ export default function ClustersPage() {
           <button 
             onClick={handleGenerate}
             disabled={isGenerating}
-            className="bg-accent-green disabled:bg-gray-500 text-white font-mono font-bold uppercase tracking-widest border-2 border-[#1a1a1a] rounded-none shadow-[2px_2px_0px_0px_#1a1a1a] dark:shadow-[2px_2px_0px_0px_#333333] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all px-6 py-3 flex items-center gap-2"
+            className="bg-accent-green disabled:bg-gray-500 text-white font-mono font-bold uppercase tracking-widest border border-border rounded-xl shadow-sm dark:shadow-[2px_2px_0px_0px_#333333] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all px-6 py-3 flex items-center gap-2"
           >
             {isGenerating ? (
               <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border border-border border-white border-t-transparent rounded-full animate-spin" />
                 Generating...
               </>
             ) : (

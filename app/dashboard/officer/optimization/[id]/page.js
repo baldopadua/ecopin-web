@@ -101,7 +101,7 @@ export default function OptimizationRunPage() {
     return (
       <div className="max-w-7xl mx-auto text-center py-20">
         <h2 className="text-2xl font-bold text-text-primary mb-4">Run not found</h2>
-        <button onClick={() => router.push('/dashboard/officer/optimization')} className="px-4 py-2 bg-surface-elevated border-2 border-border">
+        <button onClick={() => router.push('/dashboard/officer/optimization')} className="px-4 py-2 bg-surface-elevated border border-border">
           Back to Optimization
         </button>
       </div>
@@ -118,17 +118,17 @@ export default function OptimizationRunPage() {
   return (
     <div className="max-w-7xl mx-auto space-y-6 px-4 md:px-8 py-6">
       <div className="flex items-center gap-4 mb-2">
-        <button onClick={() => router.push('/dashboard/officer/optimization')} className="p-2 border-2 border-border bg-surface-elevated hover:bg-surface text-text-muted hover:text-text-primary">
+        <button onClick={() => router.push('/dashboard/officer/optimization')} className="p-2 border border-border bg-surface-elevated hover:bg-surface text-text-muted hover:text-text-primary">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-3xl font-black uppercase tracking-tighter text-text-primary">Optimization Details</h1>
+          <h1 className="text-3xl font-bold uppercase tracking-tight text-text-primary">Optimization Details</h1>
           <p className="text-sm font-mono text-text-muted">Run ID: {run.id}</p>
         </div>
       </div>
 
       {notification && (
-        <div className={`p-4 border-2 font-bold font-mono text-sm ${
+        <div className={`p-4 border border-border font-bold font-mono text-sm ${
           notification.type === 'success' ? 'bg-success/20 text-success border-success' :
           notification.type === 'error' ? 'bg-error/20 text-error border-error' :
           'bg-info/20 text-info border-info'
@@ -137,7 +137,7 @@ export default function OptimizationRunPage() {
         </div>
       )}
 
-      <div className="card border-2 border-border mb-6">
+      <div className="card border border-border mb-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-bold text-text-primary text-lg">Proposal Result</h3>
           <span className={`text-xs px-3 py-1 border font-bold font-mono uppercase tracking-wider ${STATUS_STYLES[run.status] || STATUS_STYLES.draft}`}>
@@ -164,23 +164,23 @@ export default function OptimizationRunPage() {
 
         {/* Summary Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-surface-elevated border-2 border-border p-3">
+          <div className="bg-surface-elevated border border-border p-3">
             <p className="text-xs font-mono uppercase tracking-wider text-text-muted">Tasks</p>
-            <p className="text-2xl font-black text-text-primary">{run.num_tasks_optimized || 0}</p>
+            <p className="text-2xl font-bold text-text-primary">{run.num_tasks_optimized || 0}</p>
           </div>
-          <div className="bg-surface-elevated border-2 border-border p-3">
+          <div className="bg-surface-elevated border border-border p-3">
             <p className="text-xs font-mono uppercase tracking-wider text-text-muted">Crews</p>
-            <p className="text-2xl font-black text-text-primary">{run.num_crews || 0}</p>
+            <p className="text-2xl font-bold text-text-primary">{run.num_crews || 0}</p>
           </div>
-          <div className="bg-surface-elevated border-2 border-border p-3">
+          <div className="bg-surface-elevated border border-border p-3">
             <p className="text-xs font-mono uppercase tracking-wider text-text-muted">Est. Distance</p>
-            <p className="text-2xl font-black text-text-primary">
+            <p className="text-2xl font-bold text-text-primary">
               {formatDistance(routes.reduce((sum, r) => sum + (r.total_distance_meters || 0), 0))}
             </p>
           </div>
-          <div className="bg-surface-elevated border-2 border-border p-3">
+          <div className="bg-surface-elevated border border-border p-3">
             <p className="text-xs font-mono uppercase tracking-wider text-text-muted">Est. Duration (Avg/Crew)</p>
-            <p className="text-2xl font-black text-text-primary">
+            <p className="text-2xl font-bold text-text-primary">
               {formatDuration((run.total_estimated_duration_min || routes.reduce((sum, r) => sum + (r.total_duration_min || 0), 0)) / Math.max(1, routes.length || run.num_crews || 1))}
             </p>
           </div>
@@ -204,7 +204,7 @@ export default function OptimizationRunPage() {
         {routes.length > 0 && (
           <div className="mb-6">
             <h4 className="font-bold text-text-primary mb-3 font-mono uppercase text-sm">Task-Time Workload</h4>
-            <div className="flex items-end gap-2 h-40 bg-surface-elevated border-2 border-border p-4">
+            <div className="flex items-end gap-2 h-40 bg-surface-elevated border border-border p-4">
               {routes.map((r, i) => {
                 const dur = r.total_duration_min || (r.task_count * 25) || 1
                 return (
@@ -244,7 +244,7 @@ export default function OptimizationRunPage() {
               <Map className="w-5 h-5" /> Route Map
               <span className="text-xs font-mono text-text-muted">(polylines are straight-line estimates)</span>
             </h4>
-            <div className="border-2 border-border" style={{ height: '400px' }}>
+            <div className="border border-border" style={{ height: '400px' }}>
               <RouteMapView routes={routes} />
             </div>
           </div>
@@ -252,18 +252,18 @@ export default function OptimizationRunPage() {
 
         {/* Approve / Discard Buttons */}
         {run.status === 'proposed' && (
-          <div className="flex gap-4 mt-6 pt-4 border-t-2 border-border">
+          <div className="flex gap-4 mt-6 pt-4 border-t border-border">
             <button
               onClick={handleApprove}
               disabled={actionLoading}
-              className="flex-1 px-6 py-3 bg-success text-white font-bold border-2 border-success hover:bg-success/80 transition-colors disabled:opacity-50"
+              className="flex-1 px-6 py-3 bg-success text-white font-bold border border-border border-success hover:bg-success/80 transition-colors disabled:opacity-50"
             >
               {actionLoading === 'approve' ? 'Approving...' : <span className="flex items-center justify-center"><CheckCircle2 className="w-5 h-5 mr-2" /> Approve Optimization</span>}
             </button>
             <button
               onClick={handleDiscard}
               disabled={actionLoading}
-              className="flex-1 px-6 py-3 bg-transparent text-error font-bold border-2 border-error hover:bg-error/10 transition-colors disabled:opacity-50"
+              className="flex-1 px-6 py-3 bg-transparent text-error font-bold border border-border border-error hover:bg-error/10 transition-colors disabled:opacity-50"
             >
               {actionLoading === 'discard' ? 'Discarding...' : <span className="flex items-center justify-center"><XCircle className="w-5 h-5 mr-2" /> Discard</span>}
             </button>

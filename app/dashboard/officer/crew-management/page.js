@@ -18,12 +18,12 @@ function Avatar({ user, size = 'md' }) {
       <img
         src={user.avatar_url}
         alt={user.full_name}
-        className={`${sizeClass} rounded-full object-cover border-2 border-border`}
+        className={`${sizeClass} rounded-full object-cover border border-border`}
       />
     )
   }
   return (
-    <div className={`${sizeClass} rounded-full bg-[#2563eb] text-white flex items-center justify-center font-bold border-2 border-border`}>
+    <div className={`${sizeClass} rounded-full bg-[#2563eb] text-white flex items-center justify-center font-bold border border-border`}>
       {getInitials(user.full_name)}
     </div>
   )
@@ -31,7 +31,7 @@ function Avatar({ user, size = 'md' }) {
 
 function MemberChip({ user, onRemove, removing }) {
   return (
-    <div className="flex items-center gap-2 bg-surface-elevated border-2 border-border px-3 py-1.5 group">
+    <div className="flex items-center gap-2 bg-surface-elevated border border-border px-3 py-1.5 group">
       <Avatar user={user} size="sm" />
       <div className="min-w-0">
         <p className="text-sm font-semibold text-text-primary truncate">{user.full_name || 'Unnamed'}</p>
@@ -84,12 +84,12 @@ function CrewCard({ crew, onAdd, onRemove, unassigned, notification, setNotifica
   const statusColor =
     crew.availability_status === 'available' ? 'text-green-600 dark:text-green-400 border-green-600/30 bg-green-50 dark:bg-green-900/20'
     : crew.availability_status === 'on_route' ? 'text-orange-600 dark:text-orange-400 border-orange-600/30 bg-orange-50 dark:bg-orange-900/20'
-    : 'text-gray-500 border-gray-400/30 bg-gray-50 dark:bg-gray-800/20'
+    : 'text-text-muted border-gray-400/30 bg-gray-50 dark:bg-gray-800/20'
 
   return (
-    <div className="border-2 border-border bg-surface">
+    <div className="border border-border bg-surface">
       {/* Crew Header */}
-      <div className="flex items-start justify-between p-5 border-b-2 border-border">
+      <div className="flex items-start justify-between p-5 border-b border-border">
         <div>
           <h3 className="font-bold text-text-primary text-lg">{crew.name}</h3>
           <div className="flex items-center gap-3 mt-1">
@@ -104,7 +104,7 @@ function CrewCard({ crew, onAdd, onRemove, unassigned, notification, setNotifica
           <span className={`text-xs px-2 py-1 border font-mono uppercase tracking-wider ${statusColor}`}>
             {crew.availability_status?.replace('_', ' ')}
           </span>
-          <span className="flex items-center gap-1 text-xs text-text-muted border-2 border-border px-2 py-1">
+          <span className="flex items-center gap-1 text-xs text-text-muted border border-border px-2 py-1">
             <Users size={12} />
             {crew.members?.length || 0}
           </span>
@@ -132,7 +132,7 @@ function CrewCard({ crew, onAdd, onRemove, unassigned, notification, setNotifica
         <div className="mt-4">
           <button
             onClick={() => setShowAddPanel(!showAddPanel)}
-            className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#2563eb] border-2 border-[#2563eb] px-3 py-1.5 hover:bg-[#2563eb]/10 transition-colors"
+            className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#2563eb] border border-border border-[#2563eb] px-3 py-1.5 hover:bg-[#2563eb]/10 transition-colors"
           >
             <UserPlus size={12} />
             Add Member
@@ -140,7 +140,7 @@ function CrewCard({ crew, onAdd, onRemove, unassigned, notification, setNotifica
           </button>
 
           {showAddPanel && (
-            <div className="mt-3 border-2 border-[#2563eb]/40 bg-[#2563eb]/5 p-3">
+            <div className="mt-3 border border-border border-[#2563eb]/40 bg-[#2563eb]/5 p-3">
               <div className="relative mb-3">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
                 <input
@@ -148,7 +148,7 @@ function CrewCard({ crew, onAdd, onRemove, unassigned, notification, setNotifica
                   placeholder="Search by name or email..."
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  className="w-full pl-8 pr-3 py-2 bg-surface border-2 border-border text-sm text-text-primary focus:border-[#2563eb] focus:outline-none"
+                  className="w-full pl-8 pr-3 py-2 bg-surface border border-border text-sm text-text-primary focus:border-[#2563eb] focus:outline-none"
                 />
               </div>
               {filtered.length === 0 ? (
@@ -295,7 +295,7 @@ export default function CrewManagementPage() {
           {/* Crew Cards */}
           <div className="lg:col-span-2 space-y-4">
             {crews.length === 0 ? (
-              <div className="border-2 border-border p-10 text-center">
+              <div className="border border-border p-10 text-center">
                 <Users size={32} className="mx-auto text-text-muted mb-3" />
                 <p className="text-text-muted">No crews found. Create one in Optimization Settings.</p>
               </div>
@@ -316,12 +316,12 @@ export default function CrewManagementPage() {
 
           {/* Unassigned Panel */}
           <div className="lg:col-span-1">
-            <div className="border-2 border-border bg-surface sticky top-6">
-              <div className="p-4 border-b-2 border-border">
+            <div className="border border-border bg-surface sticky top-6">
+              <div className="p-4 border-b border-border">
                 <h2 className="font-bold text-text-primary flex items-center gap-2">
                   <Users size={16} />
                   Unassigned
-                  <span className="ml-auto text-xs border-2 border-border px-2 py-0.5 font-mono">
+                  <span className="ml-auto text-xs border border-border px-2 py-0.5 font-mono">
                     {unassigned.length}
                   </span>
                 </h2>
@@ -330,7 +330,7 @@ export default function CrewManagementPage() {
                 </p>
               </div>
 
-              <div className="p-3 border-b-2 border-border">
+              <div className="p-3 border-b border-border">
                 <div className="relative">
                   <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
                   <input
@@ -338,7 +338,7 @@ export default function CrewManagementPage() {
                     placeholder="Search..."
                     value={unassignedSearch}
                     onChange={e => setUnassignedSearch(e.target.value)}
-                    className="w-full pl-7 pr-3 py-1.5 bg-surface-elevated border-2 border-border text-sm text-text-primary focus:border-[#2563eb] focus:outline-none"
+                    className="w-full pl-7 pr-3 py-1.5 bg-surface-elevated border border-border text-sm text-text-primary focus:border-[#2563eb] focus:outline-none"
                   />
                 </div>
               </div>

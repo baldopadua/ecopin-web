@@ -120,8 +120,8 @@ export function TaskProvider({ children }) {
       
       {/* Global Notification Toast */}
       {globalNotification && !isOptimizing && (
-        <div className={`fixed bottom-6 right-6 z-[9999] p-4 border-2 border-black dark:border-white shadow-[4px_4px_0px_0px_#000] dark:shadow-[4px_4px_0px_0px_#fff] flex items-center gap-4 ${
-          globalNotification.type === 'success' ? 'bg-[#ccff00] text-black' : 
+        <div className={`fixed bottom-6 right-6 z-[9999] p-4 border border-border  shadow-[4px_4px_0px_0px_#000] dark:shadow-[4px_4px_0px_0px_#fff] flex items-center gap-4 ${
+          globalNotification.type === 'success' ? 'bg-[#ccff00] text-text-primary' : 
           globalNotification.type === 'error' ? 'bg-error text-white' : 'bg-surface-elevated text-text-primary'
         }`}>
           <p className="font-bold">{globalNotification.message}</p>
@@ -133,20 +133,20 @@ export function TaskProvider({ children }) {
               View Here
             </button>
           )}
-          <button onClick={() => setGlobalNotification(null)} className="ml-4 font-black hover:opacity-80">✕</button>
+          <button onClick={() => setGlobalNotification(null)} className="ml-4 font-bold hover:opacity-80">✕</button>
         </div>
       )}
 
       {/* Global Progress Toast */}
       {isOptimizing && (
-        <div className="fixed bottom-6 right-6 z-[9999] p-4 bg-surface-elevated border-2 border-border shadow-[4px_4px_0px_0px_#1a1a1a] min-w-[300px]">
+        <div className="fixed bottom-6 right-6 z-[9999] p-4 bg-surface-elevated border border-border shadow-sm min-w-[300px]">
           <div className="flex justify-between items-center mb-2">
             <span className="text-xs font-mono font-bold text-accent-green uppercase">
               {optimizationProgress.message || 'Processing...'}
             </span>
             <span className="text-xs font-mono text-text-muted">{optimizationProgress.percent}%</span>
           </div>
-          <div className="w-full h-2 bg-black/20 dark:bg-white/10 rounded-full overflow-hidden">
+          <div className="w-full h-2 bg-black/20 dark:bg-surface/10 rounded-full overflow-hidden">
             <div 
               className="h-full bg-[#ccff00] transition-all duration-500 ease-out"
               style={{ width: `${optimizationProgress.percent}%` }}

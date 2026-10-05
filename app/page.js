@@ -82,7 +82,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-[#F4F0EA] dark:bg-[#121212] text-black dark:text-white relative overflow-x-hidden selection:bg-black selection:text-white transition-colors duration-300">
+    <main className="min-h-screen bg-background  text-text-primary  relative overflow-x-hidden selection:bg-black selection:text-white transition-colors duration-300">
       
       {/* Background System */}
       <div className="fixed inset-0 pointer-events-none z-0 flex justify-center opacity-30 dark:opacity-20">
@@ -103,14 +103,14 @@ export default function Home() {
       {/* 100VH Wrapper */}
       <div className="w-full min-h-[100svh] flex flex-col">
         {/* FULL WIDTH HERO BACKGROUND */}
-        <div className="w-full bg-[#0052CC] pt-[120px] md:pt-[160px] pb-8 md:pb-12 relative z-0 overflow-hidden flex-1 flex flex-col justify-center">
+        <div className="w-full bg-primary pt-[120px] md:pt-[160px] pb-8 md:pb-12 relative z-0 overflow-hidden flex-1 flex flex-col justify-center">
           <SolidLeaf className="absolute top-10 right-4 md:right-20 w-[120px] md:w-[150px] opacity-20 pointer-events-none -rotate-12 select-none text-white" />
           <SolidLeaf className="absolute bottom-10 left-4 md:left-20 w-[80px] md:w-[100px] opacity-20 pointer-events-none rotate-45 select-none text-white" />
 
           <section id="home" className="relative z-10 w-full max-w-[1800px] mx-auto px-4 md:px-8 flex flex-col gap-16">
             <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
               <div className="flex flex-col gap-6 items-start text-white">
-                <h1 className="text-[14vw] sm:text-7xl lg:text-[8rem] xl:text-[10rem] font-black uppercase tracking-tighter leading-[0.85] text-white">
+                <h1 className="text-[12vw] sm:text-6xl lg:text-[7rem] xl:text-[8.5rem] font-bold uppercase tracking-tight leading-[0.85] text-white">
                   Clean the <br className="hidden md:block" /> Streets.
                 </h1>
                 
@@ -119,10 +119,10 @@ export default function Home() {
                 </p>
                 
                 <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row flex-wrap gap-4 w-full">
-                  <a href="/map" className="w-full sm:w-auto text-center inline-block bg-transparent text-white px-8 py-4 rounded-full font-black text-xl border-4 border-white hover:bg-white hover:text-black transition-all">
+                  <a href="/map" className="w-full sm:w-auto text-center inline-block bg-surface text-primary px-8 py-4 rounded-full font-bold text-xl border border-transparent hover:bg-surface/90 hover:scale-105 transition-all drop-shadow-sm animate-btn-pulse">
                     LIVE MAP
                   </a>
-                  <a href="#download" className="w-full sm:w-auto text-center inline-block bg-white text-black px-8 py-4 rounded-full font-black text-xl border-4 border-black hover:bg-[#F4F0EA] transition-all drop-shadow-[4px_4px_0_rgba(0,0,0,1)] animate-btn-pulse">
+                  <a href="#download" className="w-full sm:w-auto text-center inline-block bg-transparent text-white px-8 py-4 rounded-full font-bold text-xl border border-white/50 hover:border-white hover:bg-white/10 transition-all">
                     GET THE APP
                   </a>
                 </div>
@@ -143,29 +143,29 @@ export default function Home() {
                  >
                    
                    {/* 3D Shadow underneath the phone */}
-                   <div className="absolute inset-0 bg-black/20 blur-3xl rounded-[40px] z-0" style={{ transform: 'translateZ(-50px) scale(0.8)' }}></div>
+                   <div className="absolute inset-0 bg-black/20 blur-3xl rounded-xl z-0" style={{ transform: 'translateZ(-50px) scale(0.8)' }}></div>
 
                    {/* The Phone Mockup */}
                    <div 
-                      className="relative w-[220px] sm:w-[260px] lg:w-[280px] xl:w-[300px] aspect-[9/19] bg-white rounded-[32px] sm:rounded-[40px] border-[10px] sm:border-[12px] border-black overflow-hidden shadow-2xl group cursor-pointer flex flex-col z-20 mx-auto"
+                      className="relative w-[220px] sm:w-[260px] lg:w-[280px] xl:w-[300px] aspect-[9/19] bg-surface rounded-[36px] sm:rounded-[40px] border-[10px] sm:border-[12px] border-[#111827] overflow-hidden shadow-2xl group cursor-pointer flex flex-col z-20 mx-auto"
                       style={{ transform: 'translateZ(30px)' }}
                    >
                       
                       {/* Dynamic Island */}
                       <div className="absolute top-2 left-1/2 -translate-x-1/2 w-[100px] h-[28px] bg-black rounded-full z-[60] flex items-center justify-between px-3 shadow-inner">
-                          <div className="w-3 h-3 rounded-full bg-white/10"></div>
-                          <div className="w-1.5 h-1.5 rounded-full bg-[#0052CC]/90 shadow-[0_0_5px_#0052CC]"></div>
+                          <div className="w-3 h-3 rounded-full bg-surface/10"></div>
+                          <div className="w-1.5 h-1.5 rounded-full bg-primary/90 shadow-[0_0_5px_#0052CC]"></div>
                       </div>
 
                       {/* App Bar */}
-                      <div className="pt-10 pb-3 bg-white border-b-4 border-black z-40 flex items-center px-4 justify-between shrink-0">
+                      <div className="pt-10 pb-3 bg-surface border-b-4 border-border z-40 flex items-center px-4 justify-between shrink-0">
                          <img src="/Solo Logo Light.png" alt="EcoPin" className="h-6 w-6 object-contain" />
-                         <div className="font-black uppercase tracking-widest text-sm text-black">Report Issue</div>
+                         <div className="font-bold uppercase tracking-widest text-sm text-text-primary">Report Issue</div>
                          <div className="w-6 h-6"></div>
                       </div>
 
                       {/* Map Content Container */}
-                      <div className="flex-1 bg-[#F4F0EA] relative overflow-hidden flex items-center justify-center">
+                      <div className="flex-1 bg-background relative overflow-hidden flex items-center justify-center">
                           <img 
                              src="/pasig.svg" 
                              alt="Map" 
@@ -217,7 +217,7 @@ export default function Home() {
                         ].map((pin, i) => (
                           <div 
                             key={i}
-                            className={`absolute -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-[3px] border-black ${pin.color} opacity-0 group-hover:opacity-100 transition-all duration-300 scale-50 group-hover:scale-100 delay-0 ${pin.delay} drop-shadow-[2px_2px_0_black] origin-center`}
+                            className={`absolute -translate-x-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-[3px] border-border ${pin.color} opacity-0 group-hover:opacity-100 transition-all duration-300 scale-50 group-hover:scale-100 delay-0 ${pin.delay} drop-shadow-sm origin-center`}
                             style={{ top: pin.top, left: pin.left }}
                           />
                         ))}
@@ -225,7 +225,7 @@ export default function Home() {
 
                           {/* Central Pin */}
                           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 flex flex-col items-center">
-                             <div className="bg-black text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-1 shadow-md whitespace-nowrap">Current Location</div>
+                             <div className="bg-black text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest mb-1 shadow-md whitespace-nowrap">Current Location</div>
                              <svg viewBox="0 0 24 24" className="w-10 h-10 animate-bounce text-[#0052CC]" fill="currentColor" stroke="black" strokeWidth="1.5">
                                 <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
                              </svg>
@@ -233,11 +233,11 @@ export default function Home() {
                       </div>
 
                       {/* Bottom Sheet */}
-                      <div className="h-[140px] bg-white border-t-4 border-black z-40 rounded-t-3xl flex flex-col p-4 shadow-[0_-10px_20px_rgba(0,0,0,0.1)] shrink-0 relative -mt-4">
+                      <div className="h-[140px] bg-surface border-t-4 border-border z-40 rounded-t-3xl flex flex-col p-4 shadow-[0_-10px_20px_rgba(0,0,0,0.1)] shrink-0 relative -mt-4">
                          <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-3"></div>
-                         <div className="font-black text-[10px] mb-1 text-gray-500 uppercase tracking-widest">Location</div>
-                         <div className="font-black text-lg leading-tight mb-auto text-black">Pasig City, Metro Manila</div>
-                         <div className="w-full bg-[#0052CC] border-2 border-black text-white rounded-full py-2.5 text-center font-black uppercase tracking-widest mt-2 hover:bg-[#60A5FA] hover:text-black transition-colors cursor-pointer text-sm">
+                         <div className="font-bold text-[10px] mb-1 text-text-muted uppercase tracking-widest">Location</div>
+                         <div className="font-bold text-lg leading-tight mb-auto text-text-primary">Pasig City, Metro Manila</div>
+                         <div className="w-full bg-primary border border-border text-white rounded-full py-2.5 text-center font-bold uppercase tracking-widest mt-2 hover:bg-[#60A5FA] hover:text-text-primary transition-colors cursor-pointer text-sm">
                             Confirm Pin
                          </div>
                       </div>
@@ -246,25 +246,25 @@ export default function Home() {
 
                    {/* Floating UI Badges */}
                    <div 
-                      className="absolute top-[5%] sm:top-[15%] right-0 sm:-right-[0%] lg:-right-[5%] bg-white text-black border-4 border-black px-3 py-2 sm:px-5 sm:py-4 rounded-2xl drop-shadow-[4px_4px_0_black] sm:drop-shadow-[6px_6px_0_black] z-30 hover:-translate-y-2 transition-all scale-75 sm:scale-100 origin-top-right sm:origin-center"
+                      className="absolute top-[5%] sm:top-[15%] right-0 sm:-right-[0%] lg:-right-[5%] bg-surface text-text-primary border border-border px-3 py-2 sm:px-5 sm:py-4 rounded-2xl drop-shadow-sm sm:drop-shadow-sm z-30 hover:-translate-y-2 transition-all scale-75 sm:scale-100 origin-top-right sm:origin-center"
                       style={{ transform: 'translateZ(60px) rotate(3deg)' }}
                    >
-                      <div className="text-[10px] sm:text-xs font-black uppercase text-gray-500 mb-1 flex items-center gap-2">
-                        <div className="w-2 h-2 bg-[#0052CC] rounded-full"></div>
+                      <div className="text-[10px] sm:text-xs font-bold uppercase text-text-muted mb-1 flex items-center gap-2">
+                        <div className="w-2 h-2 bg-primary rounded-full"></div>
                         AI System
                       </div>
-                      <div className="text-lg sm:text-xl md:text-2xl font-black">100% VERIFIED</div>
+                      <div className="text-lg sm:text-xl md:text-2xl font-bold">100% VERIFIED</div>
                    </div>
 
                    <div 
-                      className="absolute bottom-[5%] sm:bottom-[15%] left-0 sm:-left-[0%] lg:-left-[5%] bg-[#60A5FA] text-black border-4 border-black px-3 py-2 sm:px-5 sm:py-4 rounded-2xl drop-shadow-[4px_4px_0_black] sm:drop-shadow-[6px_6px_0_black] z-30 hover:-translate-y-2 transition-all scale-75 sm:scale-100 origin-bottom-left sm:origin-center"
+                      className="absolute bottom-[5%] sm:bottom-[15%] left-0 sm:-left-[0%] lg:-left-[5%] bg-[#60A5FA] text-text-primary border border-border px-3 py-2 sm:px-5 sm:py-4 rounded-2xl drop-shadow-sm sm:drop-shadow-sm z-30 hover:-translate-y-2 transition-all scale-75 sm:scale-100 origin-bottom-left sm:origin-center"
                       style={{ transform: 'translateZ(80px) rotate(-3deg)' }}
                    >
-                      <div className="text-[10px] sm:text-xs font-black uppercase text-black mb-1 flex items-center gap-2">
-                        <div className="w-2 h-2 bg-[#0052CC] rounded-full animate-pulse"></div>
+                      <div className="text-[10px] sm:text-xs font-bold uppercase text-text-primary mb-1 flex items-center gap-2">
+                        <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
                         Live Status
                       </div>
-                      <div className="text-lg sm:text-xl md:text-2xl font-black">24 NEW REPORTS</div>
+                      <div className="text-lg sm:text-xl md:text-2xl font-bold">24 NEW REPORTS</div>
                    </div>
 
                  </div>
@@ -275,7 +275,7 @@ export default function Home() {
         </div>
 
         {/* Full-Width Marquee */}
-        <div className="w-full bg-black text-white border-y-4 border-black dark:border-[#333] font-black text-3xl md:text-5xl py-6 overflow-hidden flex uppercase tracking-tighter whitespace-nowrap relative z-10 shrink-0">
+        <div className="w-full bg-black text-white font-bold text-3xl md:text-5xl py-6 overflow-hidden flex uppercase tracking-tight whitespace-nowrap relative z-10 shrink-0">
           <div className="flex animate-marquee shrink-0 items-center gap-8 md:gap-12 pr-8 md:pr-12">
             <span>SNAP</span><SolidLeaf className="w-10 h-10 md:w-12 md:h-12" />
             <span>PIN</span><SolidLeaf className="w-10 h-10 md:w-12 md:h-12" />
@@ -303,9 +303,9 @@ export default function Home() {
 
         {/* Features Section */}
         <section id="features" className="relative z-10 w-full scroll-mt-32">
-          <div className="bg-[#121212] dark:bg-white text-white dark:text-black border-4 border-black dark:border-[#333] rounded-[32px] md:rounded-[40px] p-6 sm:p-8 md:p-16 lg:p-20">
+          <div className="bg-[#121212] dark:bg-surface text-white dark:text-text-primary border border-border  rounded-[32px] md:rounded-xl p-6 sm:p-8 md:p-16 lg:p-20">
             <div className="flex flex-col md:flex-row gap-6 md:gap-12 lg:gap-20 items-start md:items-end mb-12">
-               <h2 className="text-[11vw] sm:text-5xl md:text-7xl lg:text-[6rem] font-black uppercase tracking-tighter leading-[0.9] flex-1 break-words">
+               <h2 className="text-[11vw] sm:text-5xl md:text-7xl lg:text-[6rem] font-bold uppercase tracking-tight leading-[0.9] flex-1 break-words">
                  BUILT FOR <br/> TRANSPARENCY
                </h2>
                <p className="text-lg md:text-2xl font-bold max-w-sm text-gray-300 dark:text-gray-700">
@@ -314,16 +314,16 @@ export default function Home() {
             </div>
             
             <div className="grid md:grid-cols-3 gap-6">
-               <div className="bg-white dark:bg-[#1C1C1C] text-black dark:text-white rounded-[32px] border-4 border-black dark:border-[#333] p-8 flex flex-col justify-center min-h-[200px]">
-                 <h3 className="text-3xl lg:text-4xl font-black uppercase mb-3">LIVE MAP</h3>
+               <div className="bg-surface dark:bg-surface text-text-primary  rounded-[32px] border border-border  p-8 flex flex-col justify-center min-h-[200px]">
+                 <h3 className="text-3xl lg:text-4xl font-bold uppercase mb-3">LIVE MAP</h3>
                  <p className="font-bold text-lg leading-snug">See the city's status in real-time on the grid.</p>
                </div>
-               <div className="bg-[#60A5FA] text-black rounded-[32px] border-4 border-black p-8 flex flex-col justify-center min-h-[200px]">
-                 <h3 className="text-3xl lg:text-4xl font-black uppercase mb-3">AI VERIFIED</h3>
+               <div className="bg-[#60A5FA] text-text-primary rounded-[32px] border border-border p-8 flex flex-col justify-center min-h-[200px]">
+                 <h3 className="text-3xl lg:text-4xl font-bold uppercase mb-3">AI VERIFIED</h3>
                  <p className="font-bold text-lg leading-snug">No fake reports. ML filters out the noise automatically.</p>
                </div>
-               <div className="bg-[#0052CC] text-white rounded-[32px] border-4 border-black p-8 flex flex-col justify-center min-h-[200px]">
-                 <h3 className="text-3xl lg:text-4xl font-black uppercase mb-3">SMART CLUSTERS</h3>
+               <div className="bg-primary text-white rounded-[32px] border border-border p-8 flex flex-col justify-center min-h-[200px]">
+                 <h3 className="text-3xl lg:text-4xl font-bold uppercase mb-3">SMART CLUSTERS</h3>
                  <p className="font-bold text-lg leading-snug">Heatmaps group identical issues automatically.</p>
                </div>
             </div>
@@ -332,18 +332,18 @@ export default function Home() {
 
         {/* How it Works Section */}
         <section id="about" className="relative z-10 w-full scroll-mt-32">
-          <div className="bg-white dark:bg-[#1C1C1C] border-4 border-black dark:border-[#333] rounded-[32px] md:rounded-[40px] p-6 sm:p-8 md:p-16 lg:p-20">
+          <div className="bg-surface dark:bg-surface border border-border  rounded-[32px] md:rounded-xl p-6 sm:p-8 md:p-16 lg:p-20">
             <div className="grid lg:grid-cols-2 gap-12 lg:gap-20">
               
               <div className="flex flex-col gap-6 justify-center">
-                <h2 className="text-[11vw] sm:text-5xl md:text-7xl lg:text-[6rem] font-black uppercase tracking-tighter text-black dark:text-white leading-[0.9] break-words">
+                <h2 className="text-[11vw] sm:text-5xl md:text-7xl lg:text-[6rem] font-bold uppercase tracking-tight text-text-primary  leading-[0.9] break-words">
                   HOW IT WORKS IN <br/> FOUR EASY STEPS
                 </h2>
                 <p className="text-lg md:text-2xl font-bold max-w-lg mt-4 dark:text-gray-300">
                   Follow these steps and start making a visible impact in minutes.
                 </p>
                 <div className="mt-8">
-                  <a href="#download" className="inline-block bg-black dark:bg-white text-white dark:text-black px-8 py-4 rounded-full font-black text-xl border-4 border-black dark:border-white hover:scale-105 transition-transform">
+                  <a href="#download" className="inline-block bg-black dark:bg-surface text-white dark:text-text-primary px-8 py-4 rounded-full font-bold text-xl border border-border  hover:scale-105 transition-transform">
                     Get Started ↗
                   </a>
                 </div>
@@ -351,16 +351,16 @@ export default function Home() {
 
               <div className="grid sm:grid-cols-2 gap-6">
                 {[
-                  { step: 'STEP 01', title: 'SNAP A PHOTO', desc: 'Capture the environmental issue clearly.', color: 'bg-[#0052CC]' },
+                  { step: 'STEP 01', title: 'SNAP A PHOTO', desc: 'Capture the environmental issue clearly.', color: 'bg-primary' },
                   { step: 'STEP 02', title: 'PIN LOCATION', desc: 'Geolocate the exact coordinates on the map.', color: 'bg-[#60A5FA]' },
-                  { step: 'STEP 03', title: 'AI VERIFY', desc: 'System automatically validates the report.', color: 'bg-[#0052CC]', text: 'text-white' },
+                  { step: 'STEP 03', title: 'AI VERIFY', desc: 'System automatically validates the report.', color: 'bg-primary', text: 'text-white' },
                   { step: 'STEP 04', title: 'DISPATCH', desc: 'SWMO deploys a team to resolve the issue.', color: 'bg-black', text: 'text-white' }
                 ].map((item, idx) => (
-                  <div key={idx} className={`bg-white dark:bg-[#121212] border-4 border-black dark:border-[#444] rounded-[32px] p-8 flex flex-col min-h-[240px]`}>
-                    <div className={`text-sm font-black uppercase tracking-widest mb-6 inline-flex w-max px-3 py-1 rounded-md ${item.color} ${item.text || 'text-black'}`}>
+                  <div key={idx} className={`bg-surface  border border-border dark:border-[#444] rounded-[32px] p-8 flex flex-col min-h-[240px]`}>
+                    <div className={`text-sm font-bold uppercase tracking-widest mb-6 inline-flex w-max px-3 py-1 rounded-md ${item.color} ${item.text || 'text-text-primary'}`}>
                       {item.step}
                     </div>
-                    <h3 className="text-2xl md:text-3xl font-black uppercase mb-3 text-black dark:text-white">{item.title}</h3>
+                    <h3 className="text-2xl md:text-3xl font-bold uppercase mb-3 text-text-primary ">{item.title}</h3>
                     <p className="text-base md:text-lg font-bold text-gray-700 dark:text-gray-300 leading-snug">{item.desc}</p>
                   </div>
                 ))}
@@ -372,29 +372,29 @@ export default function Home() {
 
         {/* Download Section */}
         <section id="download" className="relative z-10 w-full scroll-mt-32">
-          <div className="bg-[#0052CC] border-4 border-black dark:border-[#333] rounded-[32px] md:rounded-[40px] p-8 sm:p-12 md:p-24 text-center relative overflow-hidden flex flex-col items-center justify-center min-h-[40vh] md:min-h-[50vh]">
+          <div className="bg-primary border border-border  rounded-[32px] md:rounded-xl p-8 sm:p-12 md:p-24 text-center relative overflow-hidden flex flex-col items-center justify-center min-h-[40vh] md:min-h-[50vh]">
             <SolidLeaf className="hidden md:block absolute top-10 left-10 w-[150px] opacity-20 text-white -rotate-12 pointer-events-none" />
             <SolidLeaf className="hidden md:block absolute bottom-10 right-10 w-[150px] opacity-20 text-white rotate-45 pointer-events-none" />
             
-            <h2 className="text-[11vw] sm:text-5xl md:text-7xl lg:text-8xl font-black uppercase tracking-tighter text-white mb-8 relative z-10 leading-[0.9] break-words">
+            <h2 className="text-[11vw] sm:text-5xl md:text-7xl lg:text-8xl font-bold uppercase tracking-tight text-white mb-8 relative z-10 leading-[0.9] break-words">
               HELP MAKE PASIG <br className="hidden md:block" /> GREEN AGAIN
             </h2>
             
-            <Link href="/downloads" className="inline-block px-8 py-5 md:px-12 md:py-6 bg-white text-black rounded-full font-black text-2xl sm:text-3xl md:text-4xl uppercase tracking-widest border-4 border-black hover:scale-105 transition-transform relative z-10 break-words max-w-full">
+            <Link href="/downloads" className="inline-block px-8 py-5 md:px-12 md:py-6 bg-surface text-text-primary rounded-full font-bold text-2xl sm:text-3xl md:text-4xl uppercase tracking-widest border border-border hover:scale-105 transition-transform relative z-10 break-words max-w-full">
               DOWNLOAD .APK
             </Link>
           </div>
         </section>
 
-        <footer className="w-full bg-white dark:bg-[#1C1C1C] border-4 border-black dark:border-[#333] rounded-[32px] md:rounded-[40px] py-6 px-6 md:px-8 flex flex-col md:flex-row justify-between items-center gap-6 z-10 relative text-center md:text-left">
-          <div className="font-black text-2xl uppercase tracking-tighter text-black dark:text-white">
+        <footer className="w-full bg-surface dark:bg-surface border border-border  rounded-[32px] md:rounded-xl py-6 px-6 md:px-8 flex flex-col md:flex-row justify-between items-center gap-6 z-10 relative text-center md:text-left">
+          <div className="font-bold text-2xl uppercase tracking-tight text-text-primary ">
             ECOPIN © 2026
           </div>
           <div className="flex flex-col items-center md:items-end gap-2">
-            <div className="font-bold text-black dark:text-white text-base bg-[#F4F0EA] dark:bg-[#121212] border-2 border-black dark:border-[#444] rounded-full px-6 py-2">
+            <div className="font-bold text-text-primary  text-base bg-background  border border-border dark:border-[#444] rounded-full px-6 py-2">
               SOLID WASTE MANAGEMENT OFFICE
             </div>
-            <div className="text-sm font-medium text-black/80 dark:text-white/70 tracking-wide font-mono">
+            <div className="text-sm font-medium text-text-primary/80 /70 tracking-wide font-mono">
               swmo@pasigcity.gov.ph &bull; 09173726888
             </div>
           </div>

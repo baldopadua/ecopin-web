@@ -15,7 +15,7 @@ const MicroRouteLayer = dynamic(() => import('@/components/map/MicroRouteLayer')
 const EcoPinMap = dynamic(() => import('@/components/map/EcoPinMap'), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full bg-surface-elevated animate-pulse flex items-center justify-center border-2 border-border">
+    <div className="w-full h-full bg-surface-elevated animate-pulse flex items-center justify-center border border-border">
       <div className="text-text-muted font-mono font-bold tracking-widest">LOADING MAP...</div>
     </div>
   )
@@ -130,13 +130,13 @@ export default function MyRoutePage() {
                 <div className="h-20 bg-border"></div>
               </div>
             ) : !myRoute ? (
-              <div className="card bg-surface-elevated flex flex-col items-center justify-center p-8 h-full border-2 border-[#1A1A1A] text-center">
+              <div className="card bg-surface-elevated flex flex-col items-center justify-center p-8 h-full border border-border border-[#1A1A1A] text-center">
                 <div className="font-mono text-text-muted tracking-widest uppercase mb-4">[ NO ACTIVE ROUTE ASSIGNED ]</div>
                 <p className="text-sm text-text-muted">You do not have an active route assigned for today, or it has not been approved yet.</p>
               </div>
             ) : (
               <>
-                <div className="card bg-surface border-2 border-[#1A1A1A] p-4 sticky top-0 z-50 shadow-sm" style={{ boxShadow: '2px 2px 0px 0px #1A1A1A' }}>
+                <div className="card bg-surface border border-border border-[#1A1A1A] p-4 sticky top-0 z-50 shadow-sm" style={{ boxShadow: '2px 2px 0px 0px #1A1A1A' }}>
                   <h3 className="font-bold text-lg text-text-primary mb-1">Route Summary</h3>
                   <div className="flex justify-between text-sm font-mono tracking-widest uppercase text-text-secondary">
                     <span>STOPS: {taskWaypoints.length}</span>
@@ -153,7 +153,7 @@ export default function MyRoutePage() {
                     if (wp.waypoint_type === 'depot_start' || wp.waypoint_type === 'depot_end') {
                       return (
                         <div key={idx} className="relative z-10 flex gap-4 opacity-70">
-                          <div className="w-12 h-12 rounded-full bg-border border-4 border-surface flex items-center justify-center text-xl shrink-0">
+                          <div className="w-12 h-12 rounded-full bg-border border border-surface flex items-center justify-center text-xl shrink-0">
                             🏢
                           </div>
                           <div className="flex-1 flex flex-col justify-center">
@@ -170,15 +170,15 @@ export default function MyRoutePage() {
 
                     return (
                       <div key={idx} className="relative z-10 flex gap-4">
-                        <div className={`w-12 h-12 rounded-full border-4 border-surface flex items-center justify-center font-bold text-lg shrink-0 transition-colors ${
+                        <div className={`w-12 h-12 rounded-full border border-surface flex items-center justify-center font-bold text-lg shrink-0 transition-colors ${
                           isCompleted ? 'bg-success text-white' : 
-                          inProgress ? 'bg-warning text-black' : 
-                          'bg-[#ccff00] text-black'
+                          inProgress ? 'bg-warning text-text-primary' : 
+                          'bg-[#ccff00] text-text-primary'
                         }`}>
                           {isCompleted ? '✓' : wp.sequence_order}
                         </div>
                         
-                        <div className={`flex-1 card p-4 border-2 ${
+                        <div className={`flex-1 card p-4 border border-border ${
                           isCompleted ? 'border-success/30 bg-success/5' : 
                           inProgress ? 'border-warning/50 bg-warning/5' : 
                           'border-border hover:border-text-muted'
@@ -199,7 +199,7 @@ export default function MyRoutePage() {
                           </div>
 
                           {taskInfo?.reports && taskInfo.reports.length > 0 && (
-                            <div className="mb-4 mt-2 border-t-2 border-border pt-3">
+                            <div className="mb-4 mt-2 border-t border-border pt-3">
                               <h5 className="text-xs font-bold font-mono tracking-widest mb-2 text-text-muted">MICRO-ROUTE SEQUENCE</h5>
                               <ul className="space-y-2">
                                 {(()=>{
@@ -246,7 +246,7 @@ export default function MyRoutePage() {
                           <button 
                             className={`w-full py-2 px-4 rounded font-bold text-sm transition-all ${
                               isCompleted 
-                                ? 'bg-surface-elevated text-text-muted border-2 border-border cursor-default'
+                                ? 'bg-surface-elevated text-text-muted border border-border cursor-default'
                                 : 'bg-[#1A1A1A] text-white hover:bg-[#333333]'
                             }`}
                             onClick={() => {
@@ -271,7 +271,7 @@ export default function MyRoutePage() {
           </div>
 
           {/* Map Panel */}
-          <div className="flex-1 card p-0 overflow-hidden border-2 border-border relative">
+          <div className="flex-1 card p-0 overflow-hidden border border-border relative">
             {/* TODO: Implement cluster visibility filter in EcoPinMap to show only task-assigned clusters. For now, hide all clusters. */}
             <EcoPinMap
               centerLat={mapCenterLat}

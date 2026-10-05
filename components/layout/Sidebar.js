@@ -56,7 +56,6 @@ const adminNavigation = [
     { name: 'Optimization', href: '/dashboard/admin/optimization-settings', icon: Route },
     { name: 'Audit Logs', href: '/dashboard/admin/audit-logs', icon: ScrollText },
     { name: 'System Logs', href: '/dashboard/admin/sys-logs', icon: Terminal },
-    { name: 'Spatial Scan', href: '/dashboard/spatial-scan', icon: Scan },
 ]
 
 export default function Sidebar() {
@@ -71,43 +70,44 @@ export default function Sidebar() {
             const isActive = isRootPath ? pathname === item.href : pathname.startsWith(item.href);
             const Icon = item.icon;
             return (
-                <Link
-                    key={item.name}
-                    href={item.href}
-                    className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors border-2 border-transparent ${isActive
-                        ? 'bg-primary text-white border-[#1a1a1a] dark:border-white font-bold'
-                        : 'text-text-secondary hover:bg-surface-elevated hover:text-text-primary hover:border-border'
-                        } ${isCollapsed ? 'justify-center px-2' : ''}`}
-                    title={isCollapsed ? item.name : undefined}
-                >
-                    {Icon && item.name === 'Optimization' && isOptimizing ? (
-                        <svg className="animate-spin w-5 h-5 min-w-[20px] min-h-[20px] text-primary" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                        </svg>
-                    ) : Icon ? (
-                        <Icon className={`w-5 h-5 min-w-[20px] min-h-[20px] ${isActive ? 'stroke-[2.5px]' : 'stroke-2'}`} />
-                    ) : null}
-                    {!isCollapsed && <span className="whitespace-nowrap">{item.name}</span>}
-                </Link>
+                <div key={item.name} className="relative w-full flex">
+                    <Link
+                        href={item.href}
+                        className={`sidebar-item flex-1 flex items-center gap-4 text-sm transition-all duration-300 w-full mb-1 ${
+                            isActive
+                                ? 'sidebar-item-active font-semibold'
+                                : 'text-white/70 hover:text-white font-medium hover:bg-surface/10'
+                        } ${isCollapsed ? 'justify-center pl-0 pr-4 py-4' : 'px-4 py-3'}`}
+                        title={isCollapsed ? item.name : undefined}
+                    >
+                        {Icon && item.name === 'Optimization' && isOptimizing ? (
+                            <svg className={`animate-spin w-5 h-5 shrink-0 ${isActive ? 'text-primary' : 'text-white/70 group-hover:text-white'}`} viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                        ) : Icon ? (
+                            <Icon className={`w-[22px] h-[22px] shrink-0 transition-transform duration-300 ${isActive ? 'stroke-[2.5px] text-primary scale-110' : 'stroke-[2px] group-hover:scale-110 text-white/70 group-hover:text-white'}`} />
+                        ) : null}
+                        {!isCollapsed && <span className="whitespace-nowrap tracking-wide">{item.name}</span>}
+                    </Link>
+                </div>
             );
         });
     }
 
     return (
-        <aside className={`${isCollapsed ? 'w-20' : 'w-64'} bg-surface-elevated border-r-2 border-border h-screen flex flex-col transition-all duration-300 z-50`}>
+        <aside className={`${isCollapsed ? 'w-24' : 'w-72'} bg-primary h-screen flex flex-col transition-all duration-300 z-50 relative`}>
 
             {/* Logo */}
-            <div className={`p-6 border-b-2 border-border flex items-center h-[77px] ${isCollapsed ? 'justify-center px-2' : 'justify-between'}`}>
+            <div className={`p-6 flex items-center h-[88px] ${isCollapsed ? 'justify-center px-2' : 'justify-between pl-8'}`}>
                 {!isCollapsed && (
                     <Link href="/" className="cursor-pointer hover:opacity-80 transition-opacity">
-                        <img src="/Full Logo Light.png" alt="EcoPin" className="h-8 md:h-10 w-auto dark:hidden" />
-                        <img src="/Full Logo Dark.png" alt="EcoPin" className="h-8 md:h-10 w-auto hidden dark:block" />
+                        <img src="/Full Logo Dark.png" alt="EcoPin" className="h-8 md:h-10 w-auto" />
                     </Link>
                 )}
                 <button
                     onClick={() => setIsCollapsed(!isCollapsed)}
-                    className="p-1.5 border-2 border-transparent hover:border-border hover:bg-surface-elevated text-text-secondary transition-colors rounded"
+                    className="p-2 text-white/70 hover:text-white transition-colors rounded-full hover:bg-surface/10"
                     title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
                 >
                     {isCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
@@ -115,7 +115,7 @@ export default function Sidebar() {
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 p-4 space-y-1 overflow-y-auto overflow-x-hidden scrollbar-hide">
+            <nav className="flex-1 py-4 space-y-2 overflow-y-auto scrollbar-hide flex flex-col relative w-full pr-0 pl-4">
                 {/* Admin Navigation */}
                 {user?.role === 'admin' && renderNavItems(adminNavigation)}
 
@@ -130,28 +130,31 @@ export default function Sidebar() {
             </nav>
 
             {/* User Info */}
-            <div className="p-4 border-t-2 border-border">
+            <div className={`mt-auto ${isCollapsed ? 'p-4' : 'p-6'}`}>
                 <Link
                     href="/dashboard/profile"
-                    className={`flex items-center mb-1 hover:bg-surface-elevated hover:text-text-primary p-2 border-2 border-transparent hover:border-border transition-colors rounded ${isCollapsed ? 'justify-center' : 'justify-between'}`}
+                    className={`flex items-center hover:bg-surface/10 transition-colors rounded-2xl border border-white/10 ${isCollapsed ? 'p-2 justify-center' : 'p-3 justify-between'}`}
                     title={isCollapsed ? (user?.full_name || user?.email || 'User') : undefined}
                 >
-                    <div className="flex items-center gap-3 w-full">
+                    <div className={`flex items-center w-full ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
                         {user?.avatar_url ? (
                             <img
                                 src={user.avatar_url}
                                 alt="Avatar"
-                                className="w-8 h-8 object-cover min-w-[32px] min-h-[32px] border-2 border-[#1a1a1a] dark:border-white"
+                                className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-full object-cover shadow-sm border border-white/20 shrink-0"
                             />
                         ) : (
-                            <div className="w-8 h-8 bg-[#1a1a1a] dark:bg-white text-white dark:text-black flex items-center justify-center font-bold text-sm min-w-[32px] min-h-[32px] border-2 border-[#1a1a1a] dark:border-white">
+                            <div className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-full bg-surface text-primary flex items-center justify-center font-bold text-sm shadow-sm border border-white/20 shrink-0">
                                 {user?.full_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
                             </div>
                         )}
                         {!isCollapsed && (
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium truncate text-text-primary">
+                                <p className="text-sm font-semibold truncate text-white">
                                     {user?.full_name || user?.email || 'User'}
+                                </p>
+                                <p className="text-xs text-white/70 capitalize">
+                                    {user?.role?.replace('_', ' ')}
                                 </p>
                             </div>
                         )}

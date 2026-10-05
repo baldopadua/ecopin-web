@@ -28,7 +28,7 @@ export default function StatsCard({
 
   return (
     <div
-      className={`bg-surface-elevated border-2 border-border rounded-none p-6 ${onClick ? 'hover:bg-surface transition-all cursor-pointer' : ''} ${className}`}
+      className={`bg-surface-elevated border border-border rounded-xl p-6 ${onClick ? 'hover:bg-surface transition-all cursor-pointer' : ''} ${className}`}
       onClick={onClick}
     >
       <div className="flex items-start justify-between">
@@ -56,8 +56,12 @@ export default function StatsCard({
         </div>
         {icon && (
           <div
-            className="w-12 h-12 rounded-none border-2 flex items-center justify-center bg-black dark:bg-black shrink-0 ml-4"
-            style={{ borderColor: borderColor, color: borderColor }}
+            className="w-12 h-12 rounded-xl border flex items-center justify-center shrink-0 ml-4"
+            style={{ 
+              borderColor: `${borderColor}40`, 
+              color: borderColor,
+              backgroundColor: `color-mix(in srgb, ${borderColor} 10%, transparent)` 
+            }}
           >
             {icon}
           </div>

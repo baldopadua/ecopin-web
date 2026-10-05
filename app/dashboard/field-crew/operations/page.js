@@ -15,7 +15,7 @@ export default function OperationsIndexPage() {
     <FieldCrewGuard>
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-pulse flex flex-col items-center">
-          <div className="w-8 h-8 border-4 border-accent-green border-t-transparent rounded-full animate-spin mb-4"></div>
+          <div className="w-8 h-8 border border-accent-green border-t-transparent rounded-full animate-spin mb-4"></div>
           <p className="text-text-muted">Redirecting to Tasks...</p>
         </div>
       </div>

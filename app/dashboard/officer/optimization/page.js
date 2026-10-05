@@ -262,7 +262,7 @@ export default function OptimizationPage() {
       />
 
       {pendingProposal && (
-        <div className="mb-6 p-4 border-2 border-warning bg-warning/10 flex items-center justify-between">
+        <div className="mb-6 p-4 border border-border border-warning bg-warning/10 flex items-center justify-between">
           <div>
             <h3 className="text-warning font-bold uppercase tracking-wider text-sm flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-warning animate-pulse"></span>
@@ -274,7 +274,7 @@ export default function OptimizationPage() {
           </div>
           <button
             onClick={() => handleViewRun(pendingProposal.id)}
-            className="px-4 py-2 bg-warning text-black font-bold uppercase text-xs hover:bg-warning/80 transition-colors"
+            className="px-4 py-2 bg-warning text-text-primary font-bold uppercase text-xs hover:bg-warning/80 transition-colors"
           >
             Review & Approve
           </button>
@@ -283,7 +283,7 @@ export default function OptimizationPage() {
 
 
       {pendingProposal && (
-        <div className="mb-6 p-4 border-2 border-warning bg-warning/10 flex items-center justify-between">
+        <div className="mb-6 p-4 border border-border border-warning bg-warning/10 flex items-center justify-between">
           <div>
             <h3 className="text-warning font-bold uppercase tracking-wider text-sm flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-warning animate-pulse"></span>
@@ -295,7 +295,7 @@ export default function OptimizationPage() {
           </div>
           <button
             onClick={() => handleViewRun(pendingProposal.id)}
-            className="px-4 py-2 bg-warning text-black font-bold uppercase text-xs hover:bg-warning/80 transition-colors"
+            className="px-4 py-2 bg-warning text-text-primary font-bold uppercase text-xs hover:bg-warning/80 transition-colors"
           >
             Review & Approve
           </button>
@@ -313,8 +313,8 @@ export default function OptimizationPage() {
       {/* Requeue Confirm Modal */}
       {showRequeueConfirm && (
         <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4">
-          <div className="bg-surface-elevated border-2 border-warning max-w-lg w-full p-6 shadow-[8px_8px_0px_0px_#F59E0B]">
-            <h3 className="text-xl font-black uppercase tracking-tighter text-warning mb-2 flex items-center gap-2">
+          <div className="bg-surface-elevated border border-border border-warning max-w-lg w-full p-6 shadow-[8px_8px_0px_0px_#F59E0B]">
+            <h3 className="text-xl font-bold uppercase tracking-tight text-warning mb-2 flex items-center gap-2">
               <XCircle className="w-6 h-6" /> Re-queuing Warning
             </h3>
             <p className="text-text-primary mb-6">
@@ -323,7 +323,7 @@ export default function OptimizationPage() {
             <div className="flex gap-4">
               <button 
                 onClick={handleGenerate}
-                className="btn-primary bg-warning text-black border-warning flex-1 py-3 font-bold uppercase tracking-widest text-xs hover:bg-white transition-colors"
+                className="btn-primary bg-warning text-text-primary border-warning flex-1 py-3 font-bold uppercase tracking-widest text-xs hover:bg-surface transition-colors"
               >
                 Confirm & Re-queue
               </button>
@@ -339,7 +339,7 @@ export default function OptimizationPage() {
       )}
 
       {/* Conditions Overview */}
-      <div className="card border-2 border-border mb-6">
+      <div className="card border border-border mb-6">
         <h3 className="font-bold text-text-primary mb-4 flex items-center gap-2">
           <Globe className="w-5 h-5" /> Real-World Conditions
           <span className="text-xs font-mono font-normal text-text-muted">(Sourced via live APIs)</span>
@@ -353,7 +353,7 @@ export default function OptimizationPage() {
               <span className="text-[10px] bg-accent-green text-white px-1.5 py-0.5 font-bold uppercase tracking-wider">Live</span>
             </label>
             <div className="flex gap-2">
-              <div className="flex-1 px-3 py-2 text-sm border-2 border-border bg-surface-elevated text-text-primary font-bold">
+              <div className="flex-1 px-3 py-2 text-sm border border-border bg-surface-elevated text-text-primary font-bold">
                 <span className="flex items-center justify-center gap-2">
                   {WEATHER_OPTIONS.find(w => w.value === liveWeather)?.icon || <Sun className="w-4 h-4 text-orange-500" />} 
                   {WEATHER_OPTIONS.find(w => w.value === liveWeather)?.label || 'Normal'}
@@ -370,7 +370,7 @@ export default function OptimizationPage() {
               <span className="text-[10px] bg-accent-green text-white px-1.5 py-0.5 font-bold uppercase tracking-wider">Live</span>
             </label>
             <div className="flex gap-2">
-              <div className="flex-1 px-3 py-2 text-sm border-2 border-border bg-surface-elevated text-text-primary font-bold">
+              <div className="flex-1 px-3 py-2 text-sm border border-border bg-surface-elevated text-text-primary font-bold">
                 <span className="flex items-center justify-center gap-2">
                   <span className="w-3 h-3 rounded-full bg-success animate-pulse" /> Routing with Live Traffic
                 </span>
@@ -429,7 +429,7 @@ export default function OptimizationPage() {
             </button>
             
             {!isOptimizing && (
-              <div className="text-sm font-medium text-text-secondary border-2 border-border bg-surface-elevated px-4 py-2 flex items-center gap-2">
+              <div className="text-sm font-medium text-text-secondary border border-border bg-surface-elevated px-4 py-2 flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-accent-green"></span>
                 <span className="font-bold text-text-primary">{selectedTemplate === 'sweeper' ? outlierCount : standardCount}</span> clusters awaiting dispatch
               </div>
@@ -442,9 +442,9 @@ export default function OptimizationPage() {
                 <span>{optimizationProgress.message || 'Processing...'}</span>
                 <span>{optimizationProgress.percent || 0}%</span>
               </div>
-              <div className="w-full bg-border h-4 border-2 border-border">
+              <div className="w-full bg-border h-4 border border-border">
                 <div 
-                  className="bg-[#ccff00] h-full transition-all duration-300 border-r-2 border-border" 
+                  className="bg-[#ccff00] h-full transition-all duration-300 border-r border-border" 
                   style={{ width: `${optimizationProgress.percent || 0}%` }}
                 ></div>
               </div>
@@ -455,7 +455,7 @@ export default function OptimizationPage() {
 
       {/* Current Proposal Result */}
       {currentProposal && currentProposal.status === 'draft_plan' && (
-        <div className="card border-2 border-border mb-6">
+        <div className="card border border-border mb-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-text-primary text-lg">Proposal Result</h3>
             <span className={`text-xs px-3 py-1 border font-bold font-mono uppercase tracking-wider ${STATUS_STYLES[currentProposal.status] || STATUS_STYLES.draft}`}>
@@ -486,23 +486,23 @@ export default function OptimizationPage() {
 
           {/* Summary Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-surface-elevated border-2 border-border p-3">
+            <div className="bg-surface-elevated border border-border p-3">
               <p className="text-xs font-mono uppercase tracking-wider text-text-muted">Tasks</p>
-              <p className="text-2xl font-black text-text-primary">{currentProposal.num_tasks_optimized || currentProposal.selectedCount || 0}</p>
+              <p className="text-2xl font-bold text-text-primary">{currentProposal.num_tasks_optimized || currentProposal.selectedCount || 0}</p>
             </div>
-            <div className="bg-surface-elevated border-2 border-border p-3">
+            <div className="bg-surface-elevated border border-border p-3">
               <p className="text-xs font-mono uppercase tracking-wider text-text-muted">Crews</p>
-              <p className="text-2xl font-black text-text-primary">{currentProposal.num_crews || currentProposal.total_crews_available || 0}</p>
+              <p className="text-2xl font-bold text-text-primary">{currentProposal.num_crews || currentProposal.total_crews_available || 0}</p>
             </div>
-            <div className="bg-surface-elevated border-2 border-border p-3">
+            <div className="bg-surface-elevated border border-border p-3">
               <p className="text-xs font-mono uppercase tracking-wider text-text-muted">Est. Distance</p>
-              <p className="text-2xl font-black text-text-primary">
+              <p className="text-2xl font-bold text-text-primary">
                 {currentProposal.status === 'draft_plan' ? 'TBD' : formatDistance(currentProposalRoutes.reduce((sum, r) => sum + (r.total_distance_meters || 0), 0))}
               </p>
             </div>
-            <div className="bg-surface-elevated border-2 border-border p-3">
+            <div className="bg-surface-elevated border border-border p-3">
               <p className="text-xs font-mono uppercase tracking-wider text-text-muted">Est. Duration (Avg/Crew)</p>
-              <p className="text-2xl font-black text-text-primary">
+              <p className="text-2xl font-bold text-text-primary">
                 {currentProposal.status === 'draft_plan' 
                   ? formatDuration((currentProposal.capacityUtilized || 0) / Math.max(1, currentProposal.total_crews_available || 1)) 
                   : formatDuration((currentProposalRoutes.reduce((sum, r) => sum + (r.total_duration_min || 0), 0)) / Math.max(1, currentProposalRoutes.length || currentProposal.num_crews || 1))
@@ -532,7 +532,7 @@ export default function OptimizationPage() {
                 <Timer className="w-5 h-5" /> Task-Time Histogram
                 <span className="text-xs font-mono text-text-muted">(Est. workload distribution)</span>
               </h4>
-              <div className="bg-surface-elevated border-2 border-border p-4 h-48 flex items-end gap-2">
+              <div className="bg-surface-elevated border border-border p-4 h-48 flex items-end gap-2">
                 {currentProposalRoutes.map((r, i) => {
                   const getDur = (route) => route.total_duration_min || (route.task_count * 25) || (route.waypoints?.length * 15) || 0;
                   const maxDur = Math.max(...currentProposalRoutes.map(route => getDur(route) || 1));
@@ -541,7 +541,7 @@ export default function OptimizationPage() {
                   const color = CREW_COLORS[i % CREW_COLORS.length];
                   return (
                     <div key={r.id} className="flex-1 flex flex-col items-center gap-2 group pt-6">
-                      <div className="w-full bg-black/10 dark:bg-white/5 relative h-full flex items-end rounded-t-sm">
+                      <div className="w-full bg-black/10 dark:bg-surface/5 relative h-full flex items-end rounded-t-sm">
                         <div 
                           className="w-full transition-all duration-500 hover:brightness-110 relative rounded-t-sm"
                           style={{ height: `${heightPct}%`, backgroundColor: color }}
@@ -567,7 +567,7 @@ export default function OptimizationPage() {
                 <Map className="w-5 h-5" /> Route Map
                 <span className="text-xs font-mono text-text-muted">(polylines are straight-line estimates)</span>
               </h4>
-              <div className="border-2 border-border" style={{ height: '400px' }}>
+              <div className="border border-border" style={{ height: '400px' }}>
                 <RouteMapView routes={currentProposalRoutes} />
               </div>
             </div>
@@ -575,7 +575,7 @@ export default function OptimizationPage() {
 
           {/* Commit Plan Button for draft plans */}
           {currentProposal.status === 'draft_plan' && (
-            <div className="mt-6 pt-4 border-t-2 border-border">
+            <div className="mt-6 pt-4 border-t border-border">
               <div className="p-4 bg-info/10 text-info border border-info mb-4">
                 <strong>Draft Plan Generated</strong>
                 <p className="text-sm">This plan selects exactly the workload your crews can handle today based on their available hours. Routes and tasks will only be generated once committed.</p>
@@ -587,7 +587,7 @@ export default function OptimizationPage() {
               <button
                 onClick={() => handleCommitPlan(currentProposal.id)}
                 disabled={actionLoading}
-                className="w-full px-6 py-3 bg-success text-white font-bold border-2 border-success hover:bg-success/80 transition-colors disabled:opacity-50"
+                className="w-full px-6 py-3 bg-success text-white font-bold border border-border border-success hover:bg-success/80 transition-colors disabled:opacity-50"
               >
                 {actionLoading === 'commit' ? 'Routing Tasks...' : <span className="flex items-center justify-center"><Check className="w-5 h-5 mr-2" /> Commit Plan & Generate Routes</span>}
               </button>
@@ -596,18 +596,18 @@ export default function OptimizationPage() {
 
           {/* Approve / Discard Buttons for generated optimization runs */}
           {currentProposal.status === 'proposed' && (
-            <div className="flex gap-4 mt-6 pt-4 border-t-2 border-border">
+            <div className="flex gap-4 mt-6 pt-4 border-t border-border">
               <button
                 onClick={() => handleApprove(currentProposal.id)}
                 disabled={actionLoading}
-                className="flex-1 px-6 py-3 bg-success text-white font-bold border-2 border-success hover:bg-success/80 transition-colors disabled:opacity-50"
+                className="flex-1 px-6 py-3 bg-success text-white font-bold border border-border border-success hover:bg-success/80 transition-colors disabled:opacity-50"
               >
                 {actionLoading === 'approve' ? 'Approving...' : <span className="flex items-center justify-center"><CheckCircle2 className="w-5 h-5 mr-2" /> Approve Optimization</span>}
               </button>
               <button
                 onClick={() => handleDiscard(currentProposal.id)}
                 disabled={actionLoading}
-                className="flex-1 px-6 py-3 bg-transparent text-error font-bold border-2 border-error hover:bg-error/10 transition-colors disabled:opacity-50"
+                className="flex-1 px-6 py-3 bg-transparent text-error font-bold border border-border border-error hover:bg-error/10 transition-colors disabled:opacity-50"
               >
                 {actionLoading === 'discard' ? 'Discarding...' : <span className="flex items-center justify-center"><XCircle className="w-5 h-5 mr-2" /> Discard</span>}
               </button>
@@ -618,7 +618,7 @@ export default function OptimizationPage() {
 
       {/* Previous Runs */}
       <div className="flex flex-col gap-4">
-        <h3 className="font-bold text-text-primary text-lg uppercase tracking-tighter">Previous Runs</h3>
+        <h3 className="font-bold text-text-primary text-lg uppercase tracking-tight">Previous Runs</h3>
 
         {runsLoading ? (
           <SkeletonForm fields={3} />
