@@ -16,7 +16,7 @@ export function TaskProvider({ children }) {
   const [globalNotification, setGlobalNotification] = useState(null)
   const [draftPlan, setDraftPlan] = useState(null)
 
-  const startOptimization = useCallback(async (onSuccess, onError) => {
+  const startOptimization = useCallback(async (settings = {}, onSuccess, onError) => {
     if (isOptimizing) return
     setIsOptimizing(true)
     setGlobalNotification(null)
@@ -38,7 +38,7 @@ export function TaskProvider({ children }) {
     }, 1500)
 
     try {
-      const result = await generatePlan()
+      const result = await generatePlan(settings)
       clearInterval(progressInterval)
 
       if (result.plan) {
@@ -73,6 +73,7 @@ export function TaskProvider({ children }) {
       setTimeout(() => setIsOptimizing(false), 2000)
     }
   }, [isOptimizing])
+
 
   const commitOptimization = useCallback(async (planId, options, onSuccess, onError) => {
     if (isOptimizing) return

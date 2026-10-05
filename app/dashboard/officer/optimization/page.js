@@ -7,6 +7,7 @@ import RouteInfoHeader from '@/components/ui/RouteInfoHeader'
 import { SkeletonForm } from '@/components/ui/Skeleton'
 import EvidenceGallery from '@/components/ui/EvidenceGallery'
 import Pagination from '@/components/ui/Pagination'
+import OptimizationSettings from '@/components/optimization/OptimizationSettings'
 import { useTask } from '@/components/context/TaskContext'
 import { Sun, CloudRain, CloudLightning, Circle, Globe, Map, Check, CheckCircle2, XCircle, Ruler, Timer } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -26,7 +27,26 @@ import {
   commitPlan,
   getOptimizationRuns,
   fetchWorkQueue,
+  getOptimizationTemplates,
+  createOptimizationTemplate,
+  deleteOptimizationTemplate,
 } from '@/lib/api/optimization'
+
+// Default settings applied when no template is selected
+const DEFAULT_SETTINGS = {
+  travel_mode: 'DRIVING',
+  break_duration_min: 60,
+  break_window_start: '12:00',
+  break_window_end: '13:30',
+  overtime_tolerance_min: 15,
+  priority_age_weight: 50,
+  included_task_types: [],
+  density_focus: false,
+  zone_ids: [],
+  max_tasks_per_shift: 15,
+  _templateId: undefined,
+}
+
 
 
 
@@ -45,7 +65,10 @@ export default function OptimizationPage() {
   const [pendingClusters, setPendingClusters] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [showRequeueConfirm, setShowRequeueConfirm] = useState(false)
+  const [settings, setSettings] = useState(DEFAULT_SETTINGS)
+  const [templates, setTemplates] = useState([])
   const runsPerPage = 10
+
 
   const loadPendingClusters = useCallback(async () => {
     try {
@@ -54,6 +77,20 @@ export default function OptimizationPage() {
       setPendingClusters(queue.length)
     } catch (err) {
       console.error('Failed to load pending clusters', err)
+    }
+  }, [])
+
+  const loadTemplates = useCallback(async () => {
+    try {
+      const data = await getOptimizationTemplates()
+      setTemplates(data || [])
+      // Auto-select the first default template on first load
+      const defaultTpl = (data || []).find(t => t.is_default)
+      if (defaultTpl) {
+        setSettings(prev => ({ ...DEFAULT_SETTINGS, ...defaultTpl.settings, _templateId: defaultTpl.id }))
+      }
+    } catch (err) {
+      console.error('Failed to load templates', err)
     }
   }, [])
 
@@ -86,7 +123,8 @@ export default function OptimizationPage() {
     loadPreviousRuns()
     loadPendingClusters()
     fetchLiveWeather()
-  }, [loadPreviousRuns, loadPendingClusters, fetchLiveWeather])
+    loadTemplates()
+  }, [loadPreviousRuns, loadPendingClusters, fetchLiveWeather, loadTemplates])
 
   useEffect(() => {
     if (draftPlan) {
@@ -101,6 +139,7 @@ export default function OptimizationPage() {
     setNotification(null)
 
     await startOptimization(
+      settings,
       (result) => {
         if (result.plan) {
           setCurrentProposal({ ...result.plan, status: 'draft_plan', selectedCount: result.selectedCount, omittedCount: result.omittedLoggedCount })
@@ -110,6 +149,33 @@ export default function OptimizationPage() {
         }
       }
     )
+  }
+
+  const handleSaveTemplate = async (name) => {
+    try {
+      const { travel_mode, break_duration_min, break_window_start, break_window_end,
+        overtime_tolerance_min, priority_age_weight, included_task_types,
+        density_focus, zone_ids, max_tasks_per_shift } = settings
+      await createOptimizationTemplate(name, '', {
+        travel_mode, break_duration_min, break_window_start, break_window_end,
+        overtime_tolerance_min, priority_age_weight, included_task_types,
+        density_focus, zone_ids, max_tasks_per_shift,
+      })
+      await loadTemplates()
+      setNotification({ message: `Template "${name}" saved!`, type: 'success' })
+    } catch (err) {
+      setNotification({ message: err.message || 'Failed to save template', type: 'error' })
+    }
+  }
+
+  const handleDeleteTemplate = async (id) => {
+    try {
+      await deleteOptimizationTemplate(id)
+      await loadTemplates()
+      setNotification({ message: 'Template deleted', type: 'info' })
+    } catch (err) {
+      setNotification({ message: err.message || 'Failed to delete template', type: 'error' })
+    }
   }
 
   const handleCommitPlan = async (planId) => {
@@ -300,6 +366,18 @@ export default function OptimizationPage() {
             </div>
             <p className="text-xs text-text-muted mt-2 font-mono">Real-time routing via TomTom API</p>
           </div>
+        </div>
+
+        {/* Settings Panel */}
+        <div className="mt-6">
+          <OptimizationSettings
+            settings={settings}
+            onChange={setSettings}
+            templates={templates}
+            onSaveTemplate={handleSaveTemplate}
+            onDeleteTemplate={handleDeleteTemplate}
+            disabled={isOptimizing}
+          />
         </div>
 
         {/* Generate Button and Progress */}

@@ -38,8 +38,8 @@ export default function OptimizationRunPage() {
         data.routes.forEach(route => {
           if (route.waypoints) {
             route.waypoints.forEach(wp => {
-              if (wp.cleanup_tasks?.report_id) {
-                relatedReportIds.add(wp.cleanup_tasks.report_id)
+              if (wp.cleanup_tasks?.report_ids && Array.isArray(wp.cleanup_tasks.report_ids)) {
+                wp.cleanup_tasks.report_ids.forEach(rId => relatedReportIds.add(rId))
               }
             })
           }
