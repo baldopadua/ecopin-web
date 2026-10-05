@@ -66,8 +66,7 @@ export default function DashboardLayout({ children }) {
 
   if (!user || isRedirecting) return (
     <div className="flex h-screen bg-background relative">
-      <div className="absolute inset-0 bg-grid-pattern opacity-40 pointer-events-none z-0"></div>
-      <aside className="w-64 bg-surface-elevated border-r-2 border-border h-screen flex flex-col animate-pulse z-10 relative">
+            <aside className="w-64 bg-surface-elevated border-r-2 border-border h-screen flex flex-col animate-pulse z-10 relative">
         <div className="p-6 border-b border-border">
           <div className="h-6 w-24 rounded bg-border/50" />
         </div>
@@ -116,8 +115,7 @@ export default function DashboardLayout({ children }) {
       <UserProvider user={user}>
         <TaskProvider>
           <div className="flex h-screen bg-background relative">
-            <div className="absolute inset-0 bg-grid-pattern opacity-40 pointer-events-none z-0"></div>
-            <Sidebar />
+                        <Sidebar />
             <main className="flex-1 overflow-auto bg-transparent z-10 relative">
               {children}
             </main>
@@ -127,5 +125,6 @@ export default function DashboardLayout({ children }) {
     </SessionProvider>
   )
 }
+
 
 

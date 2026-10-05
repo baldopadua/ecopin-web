@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -152,42 +152,6 @@ export default function OfficerHomepage() {
            {/* Left Column: Action Queue & Active Targets */}
            <div className="lg:col-span-2 space-y-8">
               
-              {/* Active Targets */}
-              <div className="card border-2 border-[#1a1a1a] dark:border-[#333333] rounded-none p-6">
-                 <div className="flex justify-between items-center mb-6 border-b-2 border-border pb-3">
-                    <h2 className="text-xl font-black tracking-tighter uppercase">Active Targets</h2>
-                    <Link href="/dashboard/officer/operations" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors flex items-center">
-                       View All <ChevronRight className="w-4 h-4 ml-1" />
-                    </Link>
-                 </div>
-                 
-                 {loading ? (
-                   <div className="grid grid-cols-2 gap-4 animate-pulse">
-                     {[1,2].map(i => <div key={i} className="h-24 bg-surface-elevated border-2 border-border" />)}
-                   </div>
-                 ) : activeTasks.length === 0 ? (
-                   <div className="text-center py-8 text-text-muted bg-surface-elevated border border-dashed border-border">
-                      <p className="font-medium">No active targets</p>
-                   </div>
-                 ) : (
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     {activeTasks.slice(0, 4).map(task => (
-                        <div key={task.id} className="border-2 border-border p-4 hover:bg-surface-elevated transition-colors cursor-pointer" onClick={() => router.push(`/dashboard/officer/operations/${task.id}`)}>
-                           <div className="flex justify-between items-start mb-2">
-                              <h3 className="font-bold text-text-primary line-clamp-1 flex-1 pr-2">{task.title}</h3>
-                              <StatusBadge status={task.status} type="task" />
-                           </div>
-                           <p className="text-sm text-text-secondary line-clamp-2 mb-3 h-10">
-                              {task.description || 'No description provided.'}
-                           </p>
-                           <div className="flex justify-between items-center text-xs">
-                              <span className="text-text-muted">Assigned: {task.assigned_to ? 'Crew Dispatched' : 'Unassigned'}</span>
-                           </div>
-                        </div>
-                     ))}
-                   </div>
-                 )}
-              </div>
               {/* Action Queue */}
               <div className="card border-2 border-[#1a1a1a] dark:border-[#333333] rounded-none p-6">
                  <div className="flex justify-between items-center mb-6 border-b-2 border-border pb-3">
@@ -243,6 +207,43 @@ export default function OfficerHomepage() {
               </div>
 
               
+
+              {/* Active Targets */}
+              <div className="card border-2 border-[#1a1a1a] dark:border-[#333333] rounded-none p-6">
+                 <div className="flex justify-between items-center mb-6 border-b-2 border-border pb-3">
+                    <h2 className="text-xl font-black tracking-tighter uppercase">Active Targets</h2>
+                    <Link href="/dashboard/officer/operations" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors flex items-center">
+                       View All <ChevronRight className="w-4 h-4 ml-1" />
+                    </Link>
+                 </div>
+                 
+                 {loading ? (
+                   <div className="grid grid-cols-2 gap-4 animate-pulse">
+                     {[1,2].map(i => <div key={i} className="h-24 bg-surface-elevated border-2 border-border" />)}
+                   </div>
+                 ) : activeTasks.length === 0 ? (
+                   <div className="text-center py-8 text-text-muted bg-surface-elevated border border-dashed border-border">
+                      <p className="font-medium">No active targets</p>
+                   </div>
+                 ) : (
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     {activeTasks.slice(0, 4).map(task => (
+                        <div key={task.id} className="border-2 border-border p-4 hover:bg-surface-elevated transition-colors cursor-pointer" onClick={() => router.push(`/dashboard/officer/operations/${task.id}`)}>
+                           <div className="flex justify-between items-start mb-2">
+                              <h3 className="font-bold text-text-primary line-clamp-1 flex-1 pr-2">{task.title}</h3>
+                              <StatusBadge status={task.status} type="task" />
+                           </div>
+                           <p className="text-sm text-text-secondary line-clamp-2 mb-3 h-10">
+                              {task.description || 'No description provided.'}
+                           </p>
+                           <div className="flex justify-between items-center text-xs">
+                              <span className="text-text-muted">Assigned: {task.assigned_to ? 'Crew Dispatched' : 'Unassigned'}</span>
+                           </div>
+                        </div>
+                     ))}
+                   </div>
+                 )}
+              </div>
            </div>
 
             <div className="space-y-8">
@@ -313,7 +314,7 @@ export default function OfficerHomepage() {
                     <h4 className="font-black tracking-widest text-sm uppercase flex items-center gap-2">
                        <Brain className="w-4 h-4 text-accent-green" /> Command Unit
                     </h4>
-                    <button onClick={() => setHudExpanded(false)} className="text-text-muted hover:text-text-primary">✕</button>
+                    <button onClick={() => setHudExpanded(false)} className="text-text-muted hover:text-text-primary">âœ•</button>
                  </div>
                  
                  <div className="space-y-3 font-mono text-sm">
@@ -336,7 +337,7 @@ export default function OfficerHomepage() {
                  </div>
                  
                  <Link href="/dashboard/spatial-scan" className="mt-5 block text-center text-xs font-bold uppercase tracking-widest bg-surface text-text-primary py-2 hover:bg-accent-green hover:text-white transition-colors border-2 border-border">
-                    View Spatial Scan →
+                    View Spatial Scan â†’
                  </Link>
               </div>
            )}
@@ -359,6 +360,8 @@ export default function OfficerHomepage() {
     </OfficerGuard>
   )
 }
+
+
 
 
 
