@@ -103,7 +103,7 @@ export default function CrewTaskLayer({ tasks = [] }) {
           
           {/* Pins for Reports */}
           {validReports.map(({ report, coords, label }) => {
-            const isCompleted = isTaskCompleted || report.status === 'resolved' || report.validation_status === 'validated'
+            const isCompleted = isTaskCompleted || report.status === 'resolved' || report.validation_status === 'approved' || report.validation_status === 'validated'
             return (
               <Marker
                 key={report.id}

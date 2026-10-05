@@ -60,15 +60,7 @@ export default function OfficerReportsPage() {
     }
 
     if (validationFilter !== 'all') {
-      if (validationFilter === 'pending') {
-        filtered = filtered.filter(r => 
-          r.validation_status === 'pending' || 
-          r.validation_status === 'manual_review' || 
-          r.validation_status === 'Manual_Review'
-        )
-      } else {
-        filtered = filtered.filter(r => r.validation_status === validationFilter)
-      }
+      filtered = filtered.filter(r => r.validation_status === validationFilter)
     }
 
     setFilteredReports(filtered)
@@ -214,9 +206,10 @@ export default function OfficerReportsPage() {
               onChange: setValidationFilter,
               options: [
                 { value: 'all', label: 'All Validation' },
-                { value: 'automatically_valid', label: 'Automatically Valid' },
+                { value: 'pending', label: 'Pending' },
+                { value: 'pending_ai_validation', label: 'Pending AI Validation' },
                 { value: 'manual_review', label: 'Manual Review' },
-                { value: 'validated', label: 'Validated' },
+                { value: 'approved', label: 'Approved' },
                 { value: 'rejected', label: 'Rejected' }
               ]
             }

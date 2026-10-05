@@ -66,6 +66,8 @@ function OfficerMapContent() {
           externalShowPins={showPins}
           externalShowClusters={showClusters}
           externalShowHeatmap={showHeatmap}
+          externalMaxBounds={[[14.50, 120.90], [14.80, 121.20]]}
+          externalMinZoom={12}
         >
           {/* Active crew tasks overlay */}
           {showTaskPins && (

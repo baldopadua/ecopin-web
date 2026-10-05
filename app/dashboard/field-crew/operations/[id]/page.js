@@ -200,7 +200,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
       const unresolvedReports = reports.filter(r => {
         const isScouting = r.issue_type?.toLowerCase() === 'scouting' || r.issue_type?.toLowerCase() === 'acknowledge_only'
         if (isScouting) {
-          return r.validation_status !== 'validated' && r.status !== 'resolved' && r.status !== 'closed'
+          return r.validation_status !== 'validated' && r.validation_status !== 'approved' && r.status !== 'resolved' && r.status !== 'closed'
         }
         return r.stage !== 'resolved' && r.status !== 'resolved' && r.status !== 'closed'
       })
@@ -873,7 +873,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
                         <span className="text-sm text-text-muted font-mono">
                           {reports.filter(r => {
                             const isScouting = r.issue_type?.toLowerCase() === 'scouting' || r.issue_type?.toLowerCase() === 'acknowledge_only'
-                            if (isScouting) return r.validation_status === 'validated' || r.status === 'resolved' || r.status === 'closed'
+                            if (isScouting) return r.validation_status === 'validated' || r.validation_status === 'approved' || r.status === 'resolved' || r.status === 'closed'
                             return r.stage === 'resolved' || r.status === 'resolved' || r.status === 'closed'
                           }).length} / {reports.length}
                         </span>
@@ -883,7 +883,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
                           className="bg-[#ccff00] h-2 rounded-none transition-all"
                           style={{ width: `${(reports.filter(r => {
                             const isScouting = r.issue_type?.toLowerCase() === 'scouting' || r.issue_type?.toLowerCase() === 'acknowledge_only'
-                            if (isScouting) return r.validation_status === 'validated' || r.status === 'resolved' || r.status === 'closed'
+                            if (isScouting) return r.validation_status === 'validated' || r.validation_status === 'approved' || r.status === 'resolved' || r.status === 'closed'
                             return r.stage === 'resolved' || r.status === 'resolved' || r.status === 'closed'
                           }).length / reports.length) * 100}%` }}
                         ></div>
@@ -897,7 +897,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
                   const hasAfterPhotos = task.after_photo_url || reports.some(r => r.after_photo_url)
                   const allResolved = reports.length === 0 || reports.every(r => {
                     const isScouting = r.issue_type?.toLowerCase() === 'scouting' || r.issue_type?.toLowerCase() === 'acknowledge_only'
-                    if (isScouting) return r.validation_status === 'validated' || r.status === 'resolved' || r.status === 'closed'
+                    if (isScouting) return r.validation_status === 'validated' || r.validation_status === 'approved' || r.status === 'resolved' || r.status === 'closed'
                     return r.stage === 'resolved' || r.status === 'resolved' || r.status === 'closed'
                   })
                   const canMarkComplete = hasBeforePhotos && hasAfterPhotos && allResolved && isAssigned

@@ -72,15 +72,22 @@ const parseGeometry = (geometry) => {
   if (!geometry) return null
 
   try {
-    // Handle PostGIS geometry (hex string)
-    if (typeof geometry === 'string') {
+    // 1. Handle Stringified GeoJSON (Add this block)
+    if (typeof geometry === 'string' && geometry.startsWith('{')) {
+      const geoJSON = JSON.parse(geometry)
+      if (geoJSON.type === 'Point' && geoJSON.coordinates) {
+        return [geoJSON.coordinates[1], geoJSON.coordinates[0]] // [lat, lng]
+      }
+    }
+    // 2. Handle PostGIS geometry (hex string)
+    else if (typeof geometry === 'string') {
       const buffer = Buffer.from(geometry, 'hex')
       const parsed = wkx.Geometry.parse(buffer)
       if (parsed && parsed.x && parsed.y) {
         return [parsed.y, parsed.x] // Leaflet uses [lat, lng]
       }
     }
-    // Handle GeoJSON format
+    // 3. Handle standard GeoJSON Object format
     else if (typeof geometry === 'object' && geometry.type === 'Point') {
       const [lng, lat] = geometry.coordinates
       return [lat, lng]
@@ -94,7 +101,7 @@ const parseGeometry = (geometry) => {
 
 function MapViewportTracker({ setZoom, setMapBounds }) {
   const timeoutId = useRef(null)
-  
+
   const map = useMapEvents({
     'moveend zoomend': () => {
       if (timeoutId.current) clearTimeout(timeoutId.current)
@@ -181,9 +188,9 @@ function MapCenter({ centerLat, centerLng }) {
   return null
 }
 
-export default function EcoPinMap({ centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode = false, selectedReports = [], onReportSelect, hideFilterPanel = false, hidePins = false, hideClusters = false, onReportClick, onClusterSelect, children, allowedClusterIds, allowedReportIds, externalStatusFilter, externalIssueTypeFilter, externalShowPins, externalShowClusters, externalShowHeatmap }) {
-  console.log('EcoPinMap props:', { centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode, hideFilterPanel, hidePins, hideClusters, allowedClusterIds, allowedReportIds })
-  
+export default function EcoPinMap({ centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode = false, selectedReports = [], onReportSelect, hideFilterPanel = false, hidePins = false, hideClusters = false, onReportClick, onClusterSelect, children, allowedClusterIds, allowedReportIds, externalStatusFilter, externalIssueTypeFilter, externalShowPins, externalShowClusters, externalShowHeatmap, externalMaxBounds, externalMinZoom }) {
+  console.log('EcoPinMap props:', { centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode, hideFilterPanel, hidePins, hideClusters, allowedClusterIds, allowedReportIds, externalMaxBounds, externalMinZoom })
+
   const [mounted, setMounted] = useState(false)
   const [reports, setReports] = useState([])
   const [filteredReports, setFilteredReports] = useState([])
@@ -211,6 +218,10 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
     })
   }, [clusters, filteredReports])
 
+  const renderedClusterIds = useMemo(() => {
+    return new Set(filteredClusters.map(c => c.id))
+  }, [filteredClusters])
+
   // Build cluster-to-reports map from filtered reports only
   const filteredClusterReports = useMemo(() => {
     const map = {}
@@ -228,7 +239,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
   const [showClusters, setShowClusters] = useState(!hideClusters)
   const [showHeatmap, setShowHeatmap] = useState(false)
   const [statusFilter, setStatusFilter] = useState(initialStatus || 'all')
-  
+
   // Map validation status to filter value - Manual_Review should be treated as manual_review
   const getValidationFilterValue = (status) => {
     if (status === 'Manual_Review' || status === 'manual_review') {
@@ -236,7 +247,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
     }
     return status || 'approved'
   }
-  
+
   const [validationStatusFilter, setValidationStatusFilter] = useState(getValidationFilterValue(initialValidationStatus))
   const [issueTypeFilter, setIssueTypeFilter] = useState('all')
   const [startDate, setStartDate] = useState('')
@@ -268,11 +279,14 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
     setMounted(true)
 
     // Fetch data when component mounts
+    console.log(`[EcoPinMap Initial Fetch] Triggering fetch with initialValidationStatusFilter: ${validationStatusFilter}`)
     Promise.all([
       fetchValidatedReports({ validationStatus: validationStatusFilter }),
       fetchIssueTypes(),
       fetchClusters()
     ]).then(([reportsData, typesData, clustersData]) => {
+      console.log(`[EcoPinMap Initial Fetch] Successfully fetched ${reportsData?.length || 0} reports`)
+      console.log('[EcoPinMap Initial Fetch] Validation statuses in fetched reports:', reportsData.map(r => ({ id: r.id, validation_status: r.validation_status })))
       console.log('Clusters fetched:', clustersData)
       console.log('Reports fetched:', reportsData)
       console.log('Reports with cluster_id:', reportsData.filter(r => r.cluster_id))
@@ -309,11 +323,14 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
         },
         (payload) => {
           console.log('Real-time update received:', payload)
+          console.log('[EcoPinMap Real-time Fetch] Triggering fetch due to real-time update. Current filter:', validationStatusFilter)
           // Refetch reports when changes occur
           Promise.all([
-            fetchValidatedReports(),
+            fetchValidatedReports({ validationStatus: validationStatusFilter }),
             fetchClusters()
           ]).then(([reportsData, clustersData]) => {
+            console.log(`[EcoPinMap Real-time Fetch] Successfully fetched ${reportsData?.length || 0} reports`)
+            console.log('[EcoPinMap Real-time Fetch] Validation statuses in fetched reports:', reportsData.map(r => ({ id: r.id, validation_status: r.validation_status })))
             setReports(reportsData)
             setClusters(clustersData)
 
@@ -391,7 +408,10 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
   // Refetch reports when validation status filter changes
   useEffect(() => {
     if (mounted) {
+      console.log(`[EcoPinMap Filter Change] validationStatusFilter changed to: ${validationStatusFilter}. Triggering fetch.`)
       fetchValidatedReports({ validationStatus: validationStatusFilter }).then(reportsData => {
+        console.log(`[EcoPinMap Filter Change] Successfully fetched ${reportsData?.length || 0} reports`)
+        console.log('[EcoPinMap Filter Change] Validation statuses in fetched reports:', reportsData.map(r => ({ id: r.id, validation_status: r.validation_status })))
         setReports(reportsData)
         setFilteredReports(reportsData)
 
@@ -459,7 +479,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
   // Prepare heat points using Spatial LOD
   const heatPoints = useMemo(() => {
     if (!showHeatmap) return [];
-    
+
     // Spatial LOD Strategy:
     // Zoom <= 14: Use cluster centers to drastically reduce array size while maintaining density
     if (zoom <= 14) {
@@ -469,7 +489,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
         return [center[0], center[1], cluster.report_count]; // [lat, lng, intensity]
       }).filter(Boolean);
     }
-    
+
     // Zoom > 14: Use individual reports but apply Spatial Hashing to aggregate nearby points
     const hashMap = {};
     processedReportsInfo.parsedReports.forEach(report => {
@@ -480,14 +500,14 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
         const hashLat = lat.toFixed(3);
         const hashLng = lng.toFixed(3);
         const key = `${hashLat},${hashLng}`;
-        
+
         if (!hashMap[key]) {
           hashMap[key] = { lat: parseFloat(hashLat), lng: parseFloat(hashLng), count: 0 };
         }
         hashMap[key].count += 1; // Accumulate heat intensity
       }
     });
-    
+
     return Object.values(hashMap).map(p => [p.lat, p.lng, p.count]);
   }, [showHeatmap, zoom, filteredClusters, processedReportsInfo]);
 
@@ -580,6 +600,8 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
           key={centerLat && centerLng ? `map-${centerLat}-${centerLng}` : 'ecopin-map'}
           center={centerLat && centerLng ? [centerLat, centerLng] : PLP_CENTER}
           zoom={centerLat && centerLng ? 17 : DEFAULT_ZOOM}
+          // maxBounds={externalMaxBounds}
+          // minZoom={externalMinZoom}
           style={{ height: '100%', width: '100%' }}
           ref={mapRef}
         >
@@ -596,7 +618,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
           {!hideClusters && showClusters && zoom <= 15 && filteredClusters.map((cluster) => {
             const center = parseGeometry(cluster.center)
             if (!center) return null
-            
+
             // Client-side DOM Culling: skip if outside viewport
             if (mapBounds && !mapBounds.contains(center)) return null
 
@@ -744,10 +766,11 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
           {showPins && processedReportsInfo.parsedReports.map((report) => {
             // Hide individual pins that belong to clusters when zoomed out AND clusters are enabled
             // Show them when zoomed in OR when clusters are disabled
-            if (report.cluster_id && showClusters && zoom <= 15) {
+            // Only hide them if the cluster marker is ACTUALLY being rendered
+            if (report.cluster_id && renderedClusterIds.has(report.cluster_id) && !hideClusters && showClusters && zoom <= 15) {
               return null
             }
-            
+
             let latitude = report.parsedLat
             let longitude = report.parsedLng
             let originalLat = latitude
@@ -756,97 +779,95 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
 
             if (latitude && longitude && !isNaN(latitude) && !isNaN(longitude)) {
               // Client-side DOM Culling: skip if outside viewport
-              if (mapBounds && !mapBounds.contains([latitude, longitude])) return null
+              // if (mapBounds && !mapBounds.contains([latitude, longitude])) return null
 
               // Spiderfy overlapping pins
               const key = report.cluster_id ? `cluster_${report.cluster_id}` : `coord_${latitude.toFixed(4)},${longitude.toFixed(4)}`
               const overlappingIds = processedReportsInfo.coordsMap[key]
-              
+
               if (overlappingIds && overlappingIds.length > 1 && (zoom > 15 || !showClusters)) {
                 const index = overlappingIds.indexOf(report.id)
                 const total = overlappingIds.length
-                
+
                 // Radius scales with zoom so the visual pixel offset remains constant
                 const radius = 0.0004 * Math.pow(2, 17 - zoom)
                 const angle = (index / total) * Math.PI * 2
-                
+
                 latitude += Math.sin(angle) * radius
                 longitude += Math.cos(angle) * radius
                 isSpiderfied = true
               }
-              
+
               const isRemoving = removingIds.has(report.id)
 
               return (
                 <React.Fragment key={report.id}>
                   {isSpiderfied && (
-                    <Polyline 
-                      positions={[[originalLat, originalLng], [latitude, longitude]]} 
-                      color="var(--text-muted, #999)" 
-                      weight={2} 
+                    <Polyline
+                      positions={[[originalLat, originalLng], [latitude, longitude]]}
+                      color="var(--text-muted, #999)"
+                      weight={2}
                       opacity={0.6}
                       dashArray="4 4"
                     />
                   )}
                   <Marker
                     position={[latitude, longitude]}
-                  icon={createIcon(report.status, isRemoving, selectedReportsSet.has(report.id))}
-                  eventHandlers={{
-                    click: (e) => {
-                      if (selectionMode && onReportSelect) {
-                        e.originalEvent.stopPropagation()
-                        onReportSelect(report.id)
+                    icon={createIcon(report.status, isRemoving, selectedReportsSet.has(report.id))}
+                    eventHandlers={{
+                      click: (e) => {
+                        if (selectionMode && onReportSelect) {
+                          e.originalEvent.stopPropagation()
+                          onReportSelect(report.id)
+                        }
                       }
-                    }
-                  }}
-                >
-                  <Popup>
-                    <div className="p-1 min-w-[220px]">
-                      <div className="text-xs font-semibold text-blue-600 mb-1 tracking-wider uppercase">REPORT #{report.id?.substring(0, 8)}</div>
-                      <strong className="block text-sm text-gray-800 mb-2 truncate">
-                        {report.title}
-                      </strong>
-                      <p className="text-sm text-gray-600 mt-1">{report.description?.substring(0, 80)}...</p>
-                      
-                      <div className="mt-3 flex gap-2 flex-wrap">
-                        <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${
-                          report.status === 'resolved' ? 'bg-green-100 text-green-700' :
-                          report.status === 'in_progress' ? 'bg-orange-100 text-orange-700' :
-                          report.status === 'waiting_for_feedback' ? 'bg-purple-100 text-purple-700' :
-                          report.status === 'closed' ? 'bg-gray-100 text-gray-700' :
-                          report.status === 'pending_owner_consent' ? 'bg-blue-100 text-blue-700' :
-                            'bg-red-100 text-red-700'
-                          }`}>
-                          {report.status?.replace(/_/g, ' ').toUpperCase()}
-                        </span>
-                        <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${
-                          report.validation_status === 'approved'
+                    }}
+                  >
+                    <Popup>
+                      <div className="p-1 min-w-[220px]">
+                        <div className="text-xs font-semibold text-blue-600 mb-1 tracking-wider uppercase">REPORT #{report.id?.substring(0, 8)}</div>
+                        <strong className="block text-sm text-gray-800 mb-2 truncate">
+                          {report.title}
+                        </strong>
+                        <p className="text-sm text-gray-600 mt-1">{report.description?.substring(0, 80)}...</p>
+
+                        <div className="mt-3 flex gap-2 flex-wrap">
+                          <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${report.status === 'resolved' ? 'bg-green-100 text-green-700' :
+                            report.status === 'in_progress' ? 'bg-orange-100 text-orange-700' :
+                              report.status === 'waiting_for_feedback' ? 'bg-purple-100 text-purple-700' :
+                                report.status === 'closed' ? 'bg-gray-100 text-gray-700' :
+                                  report.status === 'pending_owner_consent' ? 'bg-blue-100 text-blue-700' :
+                                    'bg-red-100 text-red-700'
+                            }`}>
+                            {report.status?.replace(/_/g, ' ').toUpperCase()}
+                          </span>
+                          <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${report.validation_status === 'approved' || report.validation_status === 'validated'
                             ? 'bg-green-100 text-green-700'
                             : report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review'
-                            ? 'bg-purple-100 text-purple-700'
-                            : report.validation_status === 'rejected'
-                            ? 'bg-red-100 text-red-700'
-                            : 'bg-yellow-100 text-yellow-700'
-                          }`}>
-                          {report.validation_status?.replace(/_/g, ' ').toUpperCase()}
-                        </span>
-                        <span className="text-[10px] px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-700">
-                          {report.issue_type?.replace(/_/g, ' ').toUpperCase()}
-                        </span>
-                      </div>
-                      {!selectionMode && (
-                        <div className="mt-4">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handlePopupRouting(report.id); }}
-                            className="w-full bg-blue-600 text-white font-medium text-sm py-2 rounded shadow-sm hover:bg-blue-700 transition-colors"
-                          >
-                            View Full Details
-                          </button>
+                              ? 'bg-purple-100 text-purple-700'
+                              : report.validation_status === 'rejected'
+                                ? 'bg-red-100 text-red-700'
+                                : 'bg-yellow-100 text-yellow-700'
+                            }`}>
+                            {report.validation_status?.replace(/_/g, ' ').toUpperCase()}
+                          </span>
+                          <span className="text-[10px] px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-700">
+                            {report.issue_type?.replace(/_/g, ' ').toUpperCase()}
+                          </span>
                         </div>
-                      )}
-                    </div>
-                  </Popup>
-                </Marker>
+                        {!selectionMode && (
+                          <div className="mt-4">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handlePopupRouting(report.id); }}
+                              className="w-full bg-blue-600 text-white font-medium text-sm py-2 rounded shadow-sm hover:bg-blue-700 transition-colors"
+                            >
+                              View Full Details
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </Popup>
+                  </Marker>
                 </React.Fragment>
               )
             }
@@ -876,7 +897,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
         {/* Filter Panel */}
         {!hideFilterPanel && showFilterPanel && (
           <div className="absolute bottom-6 left-6 right-6 bg-surface-elevated border-4 border-black dark:border-white z-[1000] p-3 flex flex-col gap-3">
-            
+
             <div className="flex justify-between items-center border-b-2 border-border pb-2">
               <div className="flex gap-4 items-center">
                 <h3 className="font-black text-text-primary uppercase tracking-widest text-sm">Map Filters</h3>
@@ -891,28 +912,28 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                 [ X ]
               </button>
             </div>
-            
+
             <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-              
+
               {/* Map Layers */}
               <div className="flex items-center gap-3 border-r-2 border-border pr-6">
-                  {[
-                    { label: 'Pins', state: showPins, set: setShowPins },
-                    { label: 'Clusters', state: showClusters, set: setShowClusters },
-                    { label: 'Heatmap', state: showHeatmap, set: setShowHeatmap },
-                  ].map(layer => (
-                    <label key={layer.label} className="flex items-center gap-1.5 cursor-pointer group">
-                      <input type="checkbox" checked={layer.state} onChange={(e) => layer.set(e.target.checked)} className="sr-only" />
-                      <div className={`w-4 h-4 border-2 flex items-center justify-center transition-colors ${layer.state ? 'bg-primary border-primary' : 'border-border bg-surface-elevated'}`}>
-                        {layer.state && (
-                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
-                      </div>
-                      <span className="text-xs font-bold uppercase tracking-wider">{layer.label}</span>
-                    </label>
-                  ))}
+                {[
+                  { label: 'Pins', state: showPins, set: setShowPins },
+                  { label: 'Clusters', state: showClusters, set: setShowClusters },
+                  { label: 'Heatmap', state: showHeatmap, set: setShowHeatmap },
+                ].map(layer => (
+                  <label key={layer.label} className="flex items-center gap-1.5 cursor-pointer group">
+                    <input type="checkbox" checked={layer.state} onChange={(e) => layer.set(e.target.checked)} className="sr-only" />
+                    <div className={`w-4 h-4 border-2 flex items-center justify-center transition-colors ${layer.state ? 'bg-primary border-primary' : 'border-border bg-surface-elevated'}`}>
+                      {layer.state && (
+                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                    <span className="text-xs font-bold uppercase tracking-wider">{layer.label}</span>
+                  </label>
+                ))}
               </div>
 
               {/* Status */}
@@ -976,7 +997,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                   className="w-28 px-2 py-1 text-xs font-bold uppercase bg-surface-elevated border-2 border-black dark:border-white text-text-primary rounded-none focus:outline-none focus:bg-[#ccff00] focus:text-black focus:border-black"
                 />
               </div>
-              
+
               {/* Reset Filters */}
               {(statusFilter !== 'all' || validationStatusFilter !== 'all' || issueTypeFilter !== 'all' || startDate || endDate) && (
                 <button

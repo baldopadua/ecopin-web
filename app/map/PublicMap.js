@@ -132,7 +132,7 @@ export default function PublicMap({ isDark }) {
     setMounted(true)
 
     Promise.all([
-      fetchValidatedReports({ validationStatus: 'validated' }),
+      fetchValidatedReports({ validationStatus: 'approved' }),
       fetchIssueTypes()
     ]).then(([reportsData, typesData]) => {
       setReports(reportsData || [])

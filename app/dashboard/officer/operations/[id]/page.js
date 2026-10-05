@@ -240,7 +240,7 @@ export default function CleanupTaskDetailPage() {
     const report = reports.find(r => r.id === reportId)
     
     // Check if the report is validated
-    if (report.validation_status !== 'validated') {
+    if (report.validation_status !== 'validated' && report.validation_status !== 'approved') {
       setNotification({ message: 'Please validate this report before marking it as complete.', type: 'warning' })
       return
     }

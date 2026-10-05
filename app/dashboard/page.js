@@ -688,7 +688,7 @@ export default function DashboardPage() {
                       </td>
                       <td>
                         <span className={`px-2 py-1 rounded text-xs font-semibold border ${getValidationColor(report.validation_status)}`}>
-                          {report.validation_status === 'validated' ? 'AI VALIDATED' : report.validation_status.replace(/_/g, ' ').toUpperCase()}
+                          {report.validation_status === 'approved' || report.validation_status === 'validated' ? 'APPROVED' : report.validation_status.replace(/_/g, ' ').toUpperCase()}
                         </span>
                       </td>
                       <td>
