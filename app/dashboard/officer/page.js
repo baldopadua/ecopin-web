@@ -97,17 +97,6 @@ export default function OfficerHomepage() {
 
   return (
     <OfficerGuard>
-      <div className="fixed inset-0 z-[-1] pointer-events-none opacity-40 mix-blend-screen grayscale">
-        <TacticalCanvas 
-            predictions={{ geojson: { type: 'FeatureCollection', features: clusters.map(c => ({
-              type: 'Feature',
-              properties: { ...c, risk_score: (c.priority_score || 0) / 10 },
-              geometry: null
-           }))} }} 
-           hideUI={true} 
-           timeHorizon="monthly"
-        />
-      </div>
       <DashboardLayout
         title="Command Center"
         subtitle={`Welcome, ${user?.full_name || 'Officer'}. System status is operational.`}
