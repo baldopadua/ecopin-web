@@ -61,11 +61,13 @@ export default function FilterBar({
         )}
 
         {/* Reset Button */}
-        {onReset && hasActiveFilters && (
+        {onReset && (
           <Button
             onClick={onReset}
             variant="secondary"
-            className="whitespace-nowrap"
+            className={`whitespace-nowrap transition-all duration-300 ${hasActiveFilters ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+            disabled={!hasActiveFilters}
+            tabIndex={hasActiveFilters ? 0 : -1}
           >
             Reset Filters
           </Button>
