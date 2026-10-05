@@ -56,7 +56,6 @@ const adminNavigation = [
     { name: 'Optimization', href: '/dashboard/admin/optimization-settings', icon: Route },
     { name: 'Audit Logs', href: '/dashboard/admin/audit-logs', icon: ScrollText },
     { name: 'System Logs', href: '/dashboard/admin/sys-logs', icon: Terminal },
-    { name: 'Spatial Scan', href: '/dashboard/spatial-scan', icon: Scan },
 ]
 
 export default function Sidebar() {

@@ -20,6 +20,7 @@ const LocationPickerMap = dynamic(
 export default function OptimizationSettings() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(null) // null | 'depot' | 'crew-<id>'
+  const [isEditingDepot, setIsEditingDepot] = useState(false)
   const [notification, setNotification] = useState(null)
 
   // Depot settings
@@ -89,6 +90,7 @@ export default function OptimizationSettings() {
         longitude: parseFloat(depot.longitude),
       })
       setNotification({ message: 'Depot settings saved successfully', type: 'success' })
+      setIsEditingDepot(false)
     } catch (err) {
       setNotification({ message: err.message || 'Failed to save depot settings', type: 'error' })
     } finally {
@@ -224,7 +226,8 @@ export default function OptimizationSettings() {
               maxLength={100}
               value={depot.name}
               onChange={(e) => handleDepotChange('name', e.target.value)}
-              className="w-full p-3 border border-border bg-surface-elevated text-text-primary focus:border-[#ccff00] focus:outline-none transition-colors"
+              disabled={!isEditingDepot}
+              className="w-full p-3 border border-border bg-surface-elevated text-text-primary focus:border-[#ccff00] focus:outline-none transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
               placeholder="e.g., SWMO Depot (PLP Center)"
             />
           </div>
@@ -235,6 +238,7 @@ export default function OptimizationSettings() {
             </label>
             <LocationPickerMap
               position={{ lat: depot.latitude, lng: depot.longitude }}
+              readOnly={!isEditingDepot}
               onChange={(latlng) => {
                 setDepot(prev => ({
                   ...prev,
@@ -250,14 +254,35 @@ export default function OptimizationSettings() {
           </div>
         </div>
 
-        <div className="mt-6 flex justify-end">
-          <button
-            onClick={handleSaveDepot}
-            disabled={saving === 'depot'}
-            className="btn-primary px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saving === 'depot' ? 'Saving...' : 'Save Depot Settings'}
-          </button>
+        <div className="mt-6 flex justify-end gap-4">
+          {!isEditingDepot ? (
+            <button
+              onClick={() => setIsEditingDepot(true)}
+              className="btn-secondary px-6 py-3"
+            >
+              Change Location
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={() => {
+                  setIsEditingDepot(false)
+                  loadAll() // reload original settings
+                }}
+                disabled={saving === 'depot'}
+                className="btn-secondary px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveDepot}
+                disabled={saving === 'depot'}
+                className="btn-primary px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {saving === 'depot' ? 'Saving...' : 'Save Depot Settings'}
+              </button>
+            </>
+          )}
         </div>
       </div>
 
