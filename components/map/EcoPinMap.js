@@ -4,6 +4,7 @@ import React from 'react'
 import { useRouter } from 'next/navigation'
 import { MapContainer, TileLayer, Marker, Popup, Polygon, Circle, useMapEvents, useMap, Polyline } from 'react-leaflet'
 import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 import 'leaflet.heat'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
@@ -106,6 +107,25 @@ function MapViewportTracker({ setZoom, setMapBounds }) {
       if (timeoutId.current) clearTimeout(timeoutId.current)
     }
   }, [map, setMapBounds])
+
+  return null
+}
+
+function MapResizer() {
+  const map = useMap()
+
+  useEffect(() => {
+    const resizeObserver = new ResizeObserver(() => {
+      map.invalidateSize()
+    })
+
+    const container = map.getContainer()
+    if (container) {
+      resizeObserver.observe(container)
+    }
+
+    return () => resizeObserver.disconnect()
+  }, [map])
 
   return null
 }
@@ -590,6 +610,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
           style={{ height: '100%', width: '100%' }}
           ref={mapRef}
         >
+          <MapResizer />
           <MapViewportTracker setZoom={setZoom} setMapBounds={setMapBounds} />
           {centerLat && centerLng && <MapCenter centerLat={centerLat} centerLng={centerLng} />}
           <TileLayer
@@ -601,19 +622,19 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
 
           {/* Cluster Markers (shown when zoomed out) */}
           {!hideClusters && showClusters && zoom <= 15 && (
-            <OutlierClusterLayer 
-              clusters={filteredClusters} 
-              selectedTemplate={selectedTemplate} 
+            <OutlierClusterLayer
+              clusters={filteredClusters}
+              selectedTemplate={selectedTemplate}
               selectionMode={selectionMode}
               onClusterSelect={onClusterSelect}
               clusterReportsMap={filteredClusterReports}
               onClusterClick={(clusterId) => {
-                 if (selectionMode && onClusterSelect) {
-                    const memberReports = filteredClusterReports[clusterId]
-                    if (memberReports && memberReports.length > 0) {
-                      onClusterSelect(memberReports.map(r => r.id))
-                    }
-                 }
+                if (selectionMode && onClusterSelect) {
+                  const memberReports = filteredClusterReports[clusterId]
+                  if (memberReports && memberReports.length > 0) {
+                    onClusterSelect(memberReports.map(r => r.id))
+                  }
+                }
               }}
             />
           )}

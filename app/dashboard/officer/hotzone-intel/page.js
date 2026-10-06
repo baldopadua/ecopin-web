@@ -29,7 +29,9 @@ export default function ClustersPage() {
       try {
         const clustersData = await fetchClusters()
         const severityRank = { high: 3, medium: 2, low: 1 }
-        const sorted = (clustersData || []).sort((a, b) => {
+        const sorted = (clustersData || [])
+          .filter(c => c.report_count > 0)
+          .sort((a, b) => {
           const rankA = severityRank[a.severity] || 0
           const rankB = severityRank[b.severity] || 0
           if (rankA !== rankB) return rankB - rankA
@@ -52,7 +54,9 @@ export default function ClustersPage() {
       await generateClusters()
       const clustersData = await fetchClusters()
       const severityRank = { high: 3, medium: 2, low: 1 }
-      const sorted = (clustersData || []).sort((a, b) => {
+      const sorted = (clustersData || [])
+        .filter(c => c.report_count > 0)
+        .sort((a, b) => {
         const rankA = severityRank[a.severity] || 0
         const rankB = severityRank[b.severity] || 0
         if (rankA !== rankB) return rankB - rankA
