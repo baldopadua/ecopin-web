@@ -72,7 +72,6 @@ export default function CleanupTaskDetailPage() {
   const [completingReportId, setCompletingReportId] = useState(null)
   const [notification, setNotification] = useState(null)
   const [expandedReports, setExpandedReports] = useState({})
-  const [uploadingReportPhotos, setUploadingReportPhotos] = useState({})
   const [lightboxImage, setLightboxImage] = useState(null)
   const [validatingReport, setValidatingReport] = useState(null)
   const [loadingEvidence, setLoadingEvidence] = useState({})
@@ -523,105 +522,6 @@ export default function CleanupTaskDetailPage() {
     }
   }
 
-  const handleReportPhotoUpload = async (reportId, photoType, file) => {
-    if (!file) return
-
-    // Validate file type
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
-    if (!validTypes.includes(file.type)) {
-      setNotification({ message: 'Invalid file type. Please upload JPEG, JPG, PNG, or WEBP images.', type: 'error' })
-      return
-    }
-
-    // Validate file size (10MB limit)
-    const maxSize = 10 * 1024 * 1024
-    if (file.size > maxSize) {
-      setNotification({ message: 'File size exceeds 10MB limit. Please upload a smaller image.', type: 'error' })
-      return
-    }
-
-    setUploadingReportPhotos(prev => ({
-      ...prev,
-      [`${reportId}-${photoType}`]: true
-    }))
-
-    const token = localStorage.getItem('authToken')
-    const formData = new FormData()
-    formData.append('image', file)
-    formData.append('photo_type', photoType)
-
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/reports/${reportId}/photo`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formData,
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || errorData.error || 'Failed to upload photo')
-      }
-
-      const data = await response.json()
-      // Refresh reports to show updated photos
-      if (task.is_custom && task.report_ids) {
-        const reportsData = await fetchReportsByIds(task.report_ids)
-        setReports(reportsData)
-      } else if (task.cluster_id) {
-        const reportsData = await fetchReportsByClusterId(task.cluster_id)
-        setReports(reportsData)
-      }
-      setNotification({ message: 'Photo uploaded successfully', type: 'success' })
-    } catch (error) {
-      console.error('Failed to upload photo:', error)
-      setNotification({ message: error.message || 'Failed to upload photo. Please try again.', type: 'error' })
-    } finally {
-      setUploadingReportPhotos(prev => ({
-        ...prev,
-        [`${reportId}-${photoType}`]: false
-      }))
-    }
-  }
-
-  const handleReportPhotoDelete = async (reportId, photoType) => {
-    if (!confirm('Are you sure you want to delete this photo? This action cannot be undone.')) {
-      return
-    }
-
-    const token = localStorage.getItem('authToken')
-
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/reports/${reportId}/photo`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ photo_type: photoType }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || errorData.error || 'Failed to delete photo')
-      }
-
-      const data = await response.json()
-      // Refresh reports to show updated photos
-      if (task.is_custom && task.report_ids) {
-        const reportsData = await fetchReportsByIds(task.report_ids)
-        setReports(reportsData)
-      } else if (task.cluster_id) {
-        const reportsData = await fetchReportsByClusterId(task.cluster_id)
-        setReports(reportsData)
-      }
-      setNotification({ message: 'Photo deleted successfully', type: 'success' })
-    } catch (error) {
-      console.error('Failed to delete photo:', error)
-      setNotification({ message: error.message || 'Failed to delete photo. Please try again.', type: 'error' })
-    }
-  }
 
   const getPhotosByType = (type) => {
     const photos = []
