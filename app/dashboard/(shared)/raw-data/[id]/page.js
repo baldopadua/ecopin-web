@@ -911,7 +911,10 @@ export default function ReportDetailPage() {
                   )}
 
                   <button
-                    onClick={() => router.push(`/dashboard/map-grid?lat=${location.latitude}&lng=${location.longitude}&id=${reportId}&validationStatus=${report.validation_status}&status=${report.status}`)}
+                    onClick={() => {
+                      const basePath = user?.role === 'officer' ? '/dashboard/officer' : '/dashboard'
+                      router.push(`${basePath}/map-grid?lat=${location.latitude}&lng=${location.longitude}&id=${reportId}&validationStatus=${report.validation_status}&status=${report.status}`)
+                    }}
                     className="btn-secondary w-full"
                   >
                     View on Map

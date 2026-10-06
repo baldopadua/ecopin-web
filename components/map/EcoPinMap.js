@@ -591,7 +591,6 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
           ref={mapRef}
         >
           <MapViewportTracker setZoom={setZoom} setMapBounds={setMapBounds} />
-          {centerLat && centerLng && <MapCenter centerLat={centerLat} centerLng={centerLng} />}
           <TileLayer
             url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
             attribution='&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
