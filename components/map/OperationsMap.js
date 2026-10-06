@@ -81,12 +81,6 @@ export default function OperationsMap({ tasks, clusters = [], selectedTemplate =
       center={mapCenter}
       zoom={hasExactPin ? 17 : 14}
       style={{ height: '100%', width: '100%', zIndex: 0 }}
-      zoomControl={false}
-      scrollWheelZoom={false}
-      dragging={false}
-      doubleClickZoom={false}
-      touchZoom={false}
-      keyboard={false}
     >
       <TileLayer
         url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
