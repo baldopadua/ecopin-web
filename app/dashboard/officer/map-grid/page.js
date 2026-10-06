@@ -1,7 +1,7 @@
 'use client'
 import { Suspense, useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import { fetchValidatedReports, fetchCleanupTasks } from '@/lib/api'
 import { OfficerGuard } from '@/components/auth/RequireRole'
@@ -20,10 +20,11 @@ const CrewTaskLayer = dynamic(
 
 function OfficerMapContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [reports, setReports] = useState([])
   const [tasks, setTasks] = useState([])
   
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'all')
   const [typeFilter, setTypeFilter] = useState('all')
   
   const [showPins, setShowPins] = useState(true)
@@ -60,6 +61,9 @@ function OfficerMapContent() {
       {/* Map Area */}
       <div className="flex-1 relative z-0 flex flex-col h-[50vh] md:h-full">
         <EcoPinMap 
+          centerLat={searchParams.get('lat') ? parseFloat(searchParams.get('lat')) : undefined}
+          centerLng={searchParams.get('lng') ? parseFloat(searchParams.get('lng')) : undefined}
+          focusReportId={searchParams.get('id')}
           hideFilterPanel={true}
           externalStatusFilter={statusFilter}
           externalIssueTypeFilter={typeFilter}

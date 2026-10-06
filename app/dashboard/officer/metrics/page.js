@@ -66,7 +66,13 @@ export default function AnalyticsPage() {
         const resolved = reportsData.filter(r => r.status === 'resolved').length
         const closed = reportsData.filter(r => r.status === 'closed').length
         const waitingForFeedback = reportsData.filter(r => r.status === 'waiting_for_feedback').length
-        const overdue = reportsData.filter(r => r.is_overdue && r.status !== 'resolved' && r.status !== 'closed').length
+        const overdue = reportsData.filter(r => {
+          if (r.status === 'resolved' || r.status === 'closed') return false;
+          if (r.is_overdue) return true;
+          const created = new Date(r.created_at);
+          const diffHours = (new Date() - created) / (1000 * 60 * 60);
+          return diffHours > 48;
+        }).length
 
         const today = new Date()
         today.setHours(0, 0, 0, 0)

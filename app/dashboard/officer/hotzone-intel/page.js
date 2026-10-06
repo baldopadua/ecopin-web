@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { fetchClusters, generateClusters } from '@/lib/api'
+import { fetchClusters } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import { OfficerGuard } from '@/components/auth/RequireRole'
 import { Target, Map as MapIcon, List } from 'lucide-react'
@@ -12,7 +12,6 @@ export default function ClustersPage() {
   const [clusters, setClusters] = useState([])
   const [filteredClusters, setFilteredClusters] = useState([])
   const [loading, setLoading] = useState(true)
-  const [isGenerating, setIsGenerating] = useState(false)
   
   // List view states
   const [searchQuery, setSearchQuery] = useState('')
@@ -47,30 +46,6 @@ export default function ClustersPage() {
     }
     loadData()
   }, [])
-
-  const handleGenerate = async () => {
-    setIsGenerating(true)
-    try {
-      await generateClusters()
-      const clustersData = await fetchClusters()
-      const severityRank = { high: 3, medium: 2, low: 1 }
-      const sorted = (clustersData || [])
-        .filter(c => c.report_count > 0)
-        .sort((a, b) => {
-        const rankA = severityRank[a.severity] || 0
-        const rankB = severityRank[b.severity] || 0
-        if (rankA !== rankB) return rankB - rankA
-        return (b.report_count || 0) - (a.report_count || 0)
-      })
-      setClusters(sorted)
-      setFilteredClusters(sorted)
-    } catch (error) {
-      console.error('Error generating clusters:', error)
-      alert('Failed to generate clusters: ' + error.message)
-    } finally {
-      setIsGenerating(false)
-    }
-  }
 
   useEffect(() => {
     let result = clusters
@@ -189,22 +164,7 @@ export default function ClustersPage() {
             { label: 'Dashboard', href: '/dashboard/officer' },
             { label: 'Hotzone Intel' }
           ]}
-        >
-          <button 
-            onClick={handleGenerate}
-            disabled={isGenerating}
-            className="bg-accent-green disabled:bg-gray-500 text-white font-mono font-bold uppercase tracking-widest border border-border rounded-xl shadow-sm dark:shadow-[2px_2px_0px_0px_#333333] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all px-6 py-3 flex items-center gap-2"
-          >
-            {isGenerating ? (
-              <>
-                <div className="w-4 h-4 border border-border border-white border-t-transparent rounded-full animate-spin" />
-                Generating...
-              </>
-            ) : (
-              'Generate Hotzones'
-            )}
-          </button>
-        </PageHeader>
+        />
 
         <div className="flex-1 flex flex-col pb-8">
             <FilterBar

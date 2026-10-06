@@ -1,9 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { MapContainer, TileLayer } from 'react-leaflet'
+import EcoPinMap from './EcoPinMap'
 import CrewTaskLayer from './CrewTaskLayer'
 import OutlierClusterLayer from './OutlierClusterLayer'
-import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
@@ -77,23 +76,19 @@ export default function OperationsMap({ tasks, clusters = [], selectedTemplate =
   if (!mounted) return null
 
   return (
-    <MapContainer
-      center={mapCenter}
-      zoom={hasExactPin ? 17 : 14}
-      style={{ height: '100%', width: '100%', zIndex: 0 }}
-      zoomControl={false}
-      scrollWheelZoom={false}
-      dragging={false}
-      doubleClickZoom={false}
-      touchZoom={false}
-      keyboard={false}
-    >
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      />
-      <CrewTaskLayer tasks={tasks} />
-      <OutlierClusterLayer clusters={clusters} selectedTemplate={selectedTemplate} />
-    </MapContainer>
+    <div style={{ height: '100%', width: '100%' }}>
+      <EcoPinMap
+        centerLat={mapCenter[0]}
+        centerLng={mapCenter[1]}
+        hideFilterPanel={true}
+        hidePins={true}
+        hideClusters={true}
+      >
+        <CrewTaskLayer tasks={tasks} />
+        {clusters && clusters.length > 0 && (
+          <OutlierClusterLayer clusters={clusters} selectedTemplate={selectedTemplate} />
+        )}
+      </EcoPinMap>
+    </div>
   )
 }

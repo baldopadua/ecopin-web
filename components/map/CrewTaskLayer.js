@@ -4,6 +4,7 @@ import { Polyline, Marker, Popup } from 'react-leaflet'
 import L from 'leaflet'
 import { Buffer } from 'buffer'
 import wkx from 'wkx'
+import EcoPinMarker from './EcoPinMarker'
 
 // Parse WKB geometry
 const parseGeometry = (geometry) => {
@@ -103,34 +104,13 @@ export default function CrewTaskLayer({ tasks = [] }) {
           
           {/* Pins for Reports */}
           {validReports.map(({ report, coords, label }) => {
-            const isCompleted = isTaskCompleted || report.status === 'resolved' || report.validation_status === 'approved' || report.validation_status === 'validated'
             return (
-              <Marker
+              <EcoPinMarker 
                 key={report.id}
+                report={report}
                 position={coords}
-                icon={createTaskReportIcon(label, color, isCompleted)}
-              >
-                <Popup>
-                  <div className="p-1 min-w-[200px]">
-                    <div className="text-xs font-semibold text-blue-600 mb-1 tracking-wider uppercase">TASK #{task.id}</div>
-                    <strong className="block text-sm text-gray-800 mb-2 truncate">
-                      {report.issue_type?.replace(/_/g, ' ')}
-                    </strong>
-                    <div className="text-sm space-y-1 text-text-secondary">
-                      <div><span className="text-text-muted">Task Status:</span> <span className="font-medium text-gray-800">{task.status.toUpperCase()}</span></div>
-                      <div><span className="text-text-muted">Report ID:</span> <span className="font-medium text-gray-800">#{report.id}</span></div>
-                    </div>
-                    <div className="mt-4">
-                      <a 
-                        href={`/dashboard/field-crew/operations/${task.id}`}
-                        className="block text-center w-full bg-blue-600 text-white font-medium text-sm py-2 rounded shadow-sm hover:bg-blue-700 transition-colors"
-                      >
-                        View Operation
-                      </a>
-                    </div>
-                  </div>
-                </Popup>
-              </Marker>
+                customUrl={`/dashboard/field-crew/operations/${task.id}`}
+              />
             )
           })}
         </div>

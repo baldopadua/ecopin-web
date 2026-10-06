@@ -96,7 +96,7 @@ export default function Sidebar() {
     }
 
     return (
-        <aside className={`${isCollapsed ? 'w-24' : 'w-72'} bg-primary h-screen flex flex-col transition-all duration-300 z-50 relative`}>
+        <aside className={`${isCollapsed ? 'w-24' : 'w-72'} bg-primary dark:bg-[#151515] dark:border-r dark:border-border h-screen flex flex-col transition-all duration-300 z-50 relative`}>
 
             {/* Logo */}
             <div className={`p-6 flex items-center h-[88px] ${isCollapsed ? 'justify-center px-2' : 'justify-between pl-8'}`}>

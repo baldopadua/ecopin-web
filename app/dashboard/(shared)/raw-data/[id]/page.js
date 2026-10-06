@@ -600,7 +600,7 @@ export default function ReportDetailPage() {
                   <div className="p-4 border border-border rounded-lg">
                     <div className="flex justify-between items-center mb-3">
                       <h3 className="font-semibold">Before Photo</h3>
-                      {report.before_photo_url && (
+                      {user?.role === 'field_crew' && report.before_photo_url && (
                         <button
                           onClick={() => handlePhotoDelete('before')}
                           className="px-3 py-1 bg-error hover:bg-error/90 text-white text-sm rounded transition-colors"
@@ -611,7 +611,7 @@ export default function ReportDetailPage() {
                     </div>
                     {report.before_photo_url ? (
                       <img src={report.before_photo_url} alt="Before" className="w-full h-48 object-cover rounded-lg" />
-                    ) : (
+                    ) : user?.role === 'field_crew' ? (
                       <div
                         className={`border border-border border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${uploadingBefore ? 'border-border bg-surface' : 'border-border hover:border-accent-green hover:bg-accent-green/5'
                           }`}
@@ -649,6 +649,10 @@ export default function ReportDetailPage() {
                           </>
                         )}
                       </div>
+                    ) : (
+                      <div className="h-48 bg-surface-elevated rounded-lg flex items-center justify-center border border-dashed border-border">
+                        <p className="text-text-muted">No before photo uploaded</p>
+                      </div>
                     )}
                   </div>
 
@@ -656,7 +660,7 @@ export default function ReportDetailPage() {
                   <div className="p-4 border border-border rounded-lg">
                     <div className="flex justify-between items-center mb-3">
                       <h3 className="font-semibold">After Photo</h3>
-                      {report.after_photo_url && (
+                      {user?.role === 'field_crew' && report.after_photo_url && (
                         <button
                           onClick={() => handlePhotoDelete('after')}
                           className="px-3 py-1 bg-error hover:bg-error/90 text-white text-sm rounded transition-colors"
@@ -667,7 +671,7 @@ export default function ReportDetailPage() {
                     </div>
                     {report.after_photo_url ? (
                       <img src={report.after_photo_url} alt="After" className="w-full h-48 object-cover rounded-lg" />
-                    ) : (
+                    ) : user?.role === 'field_crew' ? (
                       <div
                         className={`border border-border border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${uploadingAfter ? 'border-border bg-surface' : 'border-border hover:border-accent-green hover:bg-accent-green/5'
                           }`}
@@ -704,6 +708,10 @@ export default function ReportDetailPage() {
                             <p className="text-xs text-text-muted mt-1">JPG, PNG, or WEBP • Max 10MB</p>
                           </>
                         )}
+                      </div>
+                    ) : (
+                      <div className="h-48 bg-surface-elevated rounded-lg flex items-center justify-center border border-dashed border-border">
+                        <p className="text-text-muted">No after photo uploaded</p>
                       </div>
                     )}
                   </div>
@@ -903,7 +911,10 @@ export default function ReportDetailPage() {
                   )}
 
                   <button
-                    onClick={() => router.push(`/dashboard/map-grid?lat=${location.latitude}&lng=${location.longitude}&id=${reportId}&validationStatus=${report.validation_status}&status=${report.status}`)}
+                    onClick={() => {
+                      const basePath = user?.role === 'officer' ? '/dashboard/officer' : '/dashboard'
+                      router.push(`${basePath}/map-grid?lat=${location.latitude}&lng=${location.longitude}&id=${reportId}&validationStatus=${report.validation_status}&status=${report.status}`)
+                    }}
                     className="btn-secondary w-full"
                   >
                     View on Map
