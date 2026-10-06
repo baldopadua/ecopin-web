@@ -23,6 +23,15 @@ export default function OfficerReportsPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [validationFilter, setValidationFilter] = useState('all')
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('filter') === 'overdue') {
+        setStatusFilter('overdue')
+      }
+    }
+  }, [])
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 8
@@ -55,7 +64,15 @@ export default function OfficerReportsPage() {
       filtered = filtered.filter(r => r.issue_type === typeFilter)
     }
 
-    if (statusFilter !== 'all') {
+    if (statusFilter === 'overdue') {
+      const now = new Date()
+      filtered = filtered.filter(r => {
+        if (r.is_overdue) return true;
+        const created = new Date(r.created_at)
+        const diffHours = (now - created) / (1000 * 60 * 60)
+        return diffHours > 48
+      })
+    } else if (statusFilter !== 'all') {
       filtered = filtered.filter(r => r.status === statusFilter)
     }
 
@@ -192,6 +209,7 @@ export default function OfficerReportsPage() {
               onChange: setStatusFilter,
               options: [
                 { value: 'all', label: 'All Status' },
+                { value: 'overdue', label: 'Overdue (SLA Risk)' },
                 { value: 'unresolved', label: 'Unresolved' },
                 { value: 'in_progress', label: 'In Progress' },
                 { value: 'resolved', label: 'Resolved' },

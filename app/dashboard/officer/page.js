@@ -124,12 +124,12 @@ export default function OfficerHomepage() {
              subtitle={!loading && slaRiskTasks.length > 0 ? `${slaRiskTasks.length} report(s) exceeded 48hr threshold.` : 'All reports within SLA limit.'}
              icon={<AlertTriangle className="w-6 h-6" />} 
              color={slaRiskTasks.length > 0 ? "error" : "success"}
-             onClick={() => router.push('/dashboard/officer/reports')}
+             onClick={() => router.push(slaRiskTasks.length > 0 ? '/dashboard/officer/reports?filter=overdue' : '/dashboard/officer/reports')}
              className={`group transition-all hover:border-border dark:hover:border-white ${slaRiskTasks.length > 0 ? "animate-pulse border-error bg-error/5" : ""}`}
            >
              <div className="mt-3 pt-2.5 border-t border-border flex items-center justify-between">
                <Link
-                 href="/dashboard/officer/reports"
+                 href={slaRiskTasks.length > 0 ? '/dashboard/officer/reports?filter=overdue' : '/dashboard/officer/reports'}
                  onClick={(e) => e.stopPropagation()}
                  className={`text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1 group-hover:underline ${
                    slaRiskTasks.length > 0 ? 'text-error dark:text-red-400' : 'text-text-secondary group-hover:text-text-primary'
