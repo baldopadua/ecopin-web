@@ -79,6 +79,7 @@ export default function CleanupTaskDetailPage() {
   const abortControllersRef = useRef({})
   const [viewMode, setViewMode] = useState('table') // 'table' or 'detail'
   const [selectedReportId, setSelectedReportId] = useState(null)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [showLifecycleDropdown, setShowLifecycleDropdown] = useState(false)
   const [updatingLifecycle, setUpdatingLifecycle] = useState(false)
   const lifecycleDropdownRef = useRef(null)
@@ -746,6 +747,7 @@ export default function CleanupTaskDetailPage() {
               <table className="ecopin-table">
                 <thead>
                   <tr>
+                    <th>Date / Time</th>
                     <th>Target</th>
                     <th>Type</th>
                     <th>Status</th>
@@ -755,6 +757,9 @@ export default function CleanupTaskDetailPage() {
                 <tbody>
                   {reports.map((report) => (
                     <tr key={report.id}>
+                      <td className="font-mono text-xs whitespace-nowrap">
+                        {new Date(report.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </td>
                       <td className="font-bold">{report.title}</td>
                       <td>{report.issue_type}</td>
                       <td><StatusBadge status={report.status} type="report" /></td>
@@ -861,7 +866,13 @@ export default function CleanupTaskDetailPage() {
                   <div className="flex items-center gap-3">
                      <div>
                         <h2 className="text-lg font-bold uppercase tracking-tight leading-tight">{reports.find(r => r.id === selectedReportId)?.title}</h2>
-                        <span className="text-[10px] text-text-muted font-mono uppercase tracking-widest">{reports.find(r => r.id === selectedReportId)?.issue_type}</span>
+                        <div className="flex items-center gap-2">
+                           <span className="text-[10px] text-text-muted font-mono uppercase tracking-widest">{reports.find(r => r.id === selectedReportId)?.issue_type}</span>
+                           <span className="text-text-muted text-[10px]">•</span>
+                           <span className="text-[10px] text-text-muted font-mono uppercase tracking-widest">
+                             {new Date(reports.find(r => r.id === selectedReportId)?.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                           </span>
+                        </div>
                      </div>
                   </div>
                   <button onClick={() => setSelectedReportId(null)} className="hidden md:block text-text-muted hover:text-text-primary transition-colors">
