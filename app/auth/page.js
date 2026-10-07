@@ -63,6 +63,14 @@ export default function AuthPage() {
 
       console.log('Authentication successful:', data);
 
+      if (data.requirePasswordChange) {
+        // Temporarily store token for the password change request
+        localStorage.setItem('tempAuthToken', data.token);
+        localStorage.removeItem('authToken'); // Don't allow full access yet
+        router.push('/force-change-password');
+        return;
+      }
+
       const userRole = data.user?.role || 'citizen'
       if (userRole === 'citizen') {
         localStorage.removeItem('authToken')

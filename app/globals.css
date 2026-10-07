@@ -359,6 +359,11 @@ html.dark select.input {
   color-scheme: dark;
 }
 
+select.input option {
+  color: var(--text-primary);
+  background-color: var(--surface);
+}
+
 html.dark select.input option {
   background-color: #141414;
   color: #FFFFFF;
@@ -426,7 +431,7 @@ html.dark .card {
 .ecopin-table tbody tr:hover span,
 .ecopin-table tbody tr:hover div,
 .ecopin-table tbody tr:hover p,
-.ecopin-table tbody tr:hover button {
+.ecopin-table tbody tr:hover button, .ecopin-table tbody tr:hover select, .ecopin-table tbody tr:hover .input {
   @apply text-white border-white;
 }
 
