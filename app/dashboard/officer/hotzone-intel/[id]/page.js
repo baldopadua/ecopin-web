@@ -13,6 +13,9 @@ import { Map as MapIcon, ChevronLeft, Target, AlertTriangle, Layers, Pen } from 
 import dynamic from 'next/dynamic'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
+import { Download } from 'lucide-react'
 
 const normalizeString = (str) => {
   if (!str) return '';
@@ -70,6 +73,7 @@ export default function ClusterDetailPage() {
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [editingTitle, setEditingTitle] = useState('')
   const [savingTitle, setSavingTitle] = useState(false)
+  const [exporting, setExporting] = useState(false)
   
   const router = useRouter()
   const params = useParams()
@@ -126,6 +130,85 @@ export default function ClusterDetailPage() {
      } else {
         router.push(`/dashboard/officer/operations/create?preselect=${clusterId}`)
      }
+  }
+
+  const exportPDF = () => {
+    setExporting(true)
+    
+    setTimeout(() => {
+      try {
+        const doc = new jsPDF()
+        
+        // Brand color: #0052CC (EcoPin Primary)
+        const primaryColor = [0, 82, 204]
+        
+        // Add Header
+        doc.setFillColor(...primaryColor)
+        doc.rect(0, 0, 210, 40, 'F')
+        
+        doc.setTextColor(255, 255, 255)
+        doc.setFontSize(24)
+        doc.setFont('helvetica', 'bold')
+        doc.text('EcoPin Cluster Report', 14, 25)
+        
+        doc.setFontSize(10)
+        doc.setFont('helvetica', 'normal')
+        const todayDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+        const clusterLabel = cluster?.label || `Cluster #${cluster?.id?.slice(0,8) || 'Unknown'}`
+        doc.text(`Generated on: ${todayDate} | ${clusterLabel}`, 14, 32)
+        
+        doc.setTextColor(0, 0, 0)
+        
+        // Key Statistics Table
+        doc.setFontSize(14)
+        doc.setFont('helvetica', 'bold')
+        doc.text('Target Profile', 14, 55)
+        
+        autoTable(doc, {
+          startY: 60,
+          head: [['Metric', 'Value', 'Metric', 'Value']],
+          body: [
+            ['Severity Score', Math.round(cluster?.severity_score || 0).toString(), 'Primary Signature', normalizeString(cluster?.issue_type)],
+            ['Total Reports', reports.length.toString(), 'Radius', `${Math.round(cluster?.radius_meters || 50)}m`],
+          ],
+          headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [245, 247, 250] },
+          theme: 'grid',
+          styles: { fontSize: 10, cellPadding: 5 }
+        })
+        
+        let currentY = doc.lastAutoTable.finalY + 15
+        
+        // Constituent Reports Table
+        doc.setFontSize(14)
+        doc.setFont('helvetica', 'bold')
+        doc.text('Constituent Reports', 14, currentY)
+        
+        const reportTableData = reports.map(r => [
+          r.title || 'Untitled',
+          normalizeString(r.issue_type) || 'Unknown',
+          new Date(r.created_at).toLocaleDateString(),
+          r.status ? normalizeString(r.status) : 'Unresolved'
+        ])
+        
+        autoTable(doc, {
+          startY: currentY + 5,
+          head: [['Title', 'Type', 'Date', 'Status']],
+          body: reportTableData,
+          headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [245, 247, 250] },
+          theme: 'grid',
+          styles: { fontSize: 10, cellPadding: 5 }
+        })
+        
+        doc.save(`EcoPin-Cluster-${cluster?.id?.slice(0,8)}.pdf`)
+      } catch (err) {
+        console.error('PDF generation failed', err)
+        alert('Failed to generate PDF report')
+      } finally {
+        setExporting(false)
+      }
+    }, 100)
   }
 
   if (loading) return (
@@ -301,7 +384,14 @@ export default function ClusterDetailPage() {
               <h2 className="text-xl font-bold uppercase tracking-tight flex items-center gap-2">
                  <Layers className="w-5 h-5 text-accent-green" /> Constituent Reports
               </h2>
-              <ExportButton data={reports} filename={`cluster-${cluster.id}-reports.csv`} />
+              <button
+                onClick={exportPDF}
+                disabled={exporting || reports.length === 0}
+                className="px-4 py-2 bg-transparent text-text-primary font-bold border border-border dark:border-[#333333] hover:bg-surface-elevated transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Download className="w-4 h-4" /> 
+                {exporting ? 'GENERATING PDF...' : 'EXPORT PDF'}
+              </button>
            </div>
            
            {reports.length === 0 ? (
