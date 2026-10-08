@@ -102,15 +102,16 @@ export default function OutlierClusterLayer({ clusters, selectedTemplate, onClus
         const center = parseGeometry(cluster.center || cluster.location)
         if (!center) return null
 
-        const isOutlier = cluster.is_outlier === true
+        const hasSlaBreach = (clusterReportsMap?.[cluster.id] || []).some(
+          report => report.breached_at != null || report.lifecycle_state === 'sla_breached'
+        )
         
         // 30% opacity for non-selected template
         let opacity = 1.0;
-        if (selectedTemplate === 'sweeper' && !isOutlier) opacity = 0.3;
-        if (selectedTemplate === 'standard' && isOutlier) opacity = 0.3;
+        if (selectedTemplate === 'sweeper' && !hasSlaBreach) opacity = 0.3;
 
         let iconHtml;
-        if (isOutlier) {
+        if (hasSlaBreach) {
           iconHtml = `
             <div class="cluster-marker outlier" style="opacity: ${opacity};">
               <div class="cluster-border red"></div>
@@ -132,7 +133,7 @@ export default function OutlierClusterLayer({ clusters, selectedTemplate, onClus
         }
 
         const icon = L.divIcon({
-          className: isOutlier ? 'outlier-cluster-marker' : 'standard-cluster-marker',
+          className: hasSlaBreach ? 'breached-cluster-marker' : 'standard-cluster-marker',
           html: iconHtml,
           iconSize: [40, 40],
           iconAnchor: [20, 20]
@@ -152,8 +153,8 @@ export default function OutlierClusterLayer({ clusters, selectedTemplate, onClus
           >
             <Popup>
               <div className="p-2 min-w-[200px]">
-                <div className={`text-xs font-semibold mb-1 tracking-wider uppercase ${isOutlier ? 'text-red-600' : 'text-blue-600'}`}>
-                  {isOutlier ? 'OUTLIER CLUSTER' : 'STANDARD CLUSTER'} #{cluster.id}
+                <div className={`text-xs font-semibold mb-1 tracking-wider uppercase ${hasSlaBreach ? 'text-red-600' : 'text-blue-600'}`}>
+                  {hasSlaBreach ? 'CLUSTER WITH BREACHED REPORT' : 'STANDARD CLUSTER'} #{cluster.id}
                 </div>
                 <strong className="block text-sm text-gray-800 mb-2">
                   {normalizeString(cluster.issue_type)}
@@ -166,7 +167,7 @@ export default function OutlierClusterLayer({ clusters, selectedTemplate, onClus
                       {cluster.severity?.toUpperCase()}
                     </span>
                   </div>
-                  {isOutlier && (
+                  {hasSlaBreach && (
                     <div className="mt-2 p-1.5 bg-red-50 border border-red-200 rounded text-xs">
                       <span className="text-red-600 font-bold">SLA Breach Duration:</span> {cluster.breach_duration || cluster.breach_duration_hours || '> 48'} hours
                     </div>

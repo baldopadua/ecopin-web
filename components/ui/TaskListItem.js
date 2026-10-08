@@ -17,10 +17,11 @@ export default function TaskListItem({ task, onTap }) {
   const status = task.status || 'pending'
   const priorityInfo = TaskPriority[priority] || TaskPriority.low
   const statusInfo = TaskStatus[status] || TaskStatus.pending
+  const isSweeperTask = task.dispatch_kind === 'sweeper'
 
   return (
     <div 
-      className={`p-3 rounded-lg border hover:bg-surface-elevated transition-colors cursor-pointer ${task.is_outlier ? 'border-red-500' : 'border-border'}`}
+      className={`p-3 rounded-lg border hover:bg-surface-elevated transition-colors cursor-pointer ${isSweeperTask ? 'border-red-500' : 'border-border'}`}
       onClick={onTap}
     >
       <div className="flex justify-between items-start mb-2">
@@ -29,9 +30,9 @@ export default function TaskListItem({ task, onTap }) {
           {priorityInfo.label}
         </div>
       </div>
-      {task.is_outlier && (
+      {isSweeperTask && (
         <div className="mb-2">
-          <span className="px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700">Outlier Collection Route</span>
+          <span className="px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700">Sweeper Route</span>
         </div>
       )}
       <div className="flex items-center gap-2 text-xs text-text-muted mb-2">
@@ -47,7 +48,7 @@ export default function TaskListItem({ task, onTap }) {
         </div>
         <div className="flex flex-col items-end">
           <span className="text-xs text-text-muted">{task.estimated_time || 'Time not specified'}</span>
-          {task.is_outlier && task.sla_breach_duration && (
+          {isSweeperTask && task.sla_breach_duration && (
             <span className="text-xs text-red-600 font-semibold mt-1">Breach: {task.sla_breach_duration}h</span>
           )}
         </div>
