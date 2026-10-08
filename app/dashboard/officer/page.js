@@ -76,6 +76,9 @@ export default function OfficerHomepage() {
      return diffHours > 48
   })
 
+  // Manual Review tasks
+  const manualReviewTasks = reports.filter(t => t.validation_status === 'manual_review' || t.validation_status === 'Manual_Review')
+
   // Critical hotzones: top 3 highest severity (now using priority_score)
   const criticalClusters = [...clusters].sort((a, b) => (b.priority_score || 0) - (a.priority_score || 0)).slice(0, 3)
   
@@ -141,11 +144,27 @@ export default function OfficerHomepage() {
              </div>
            </StatsCard>
            <StatsCard 
-             title="Optimization Score" 
-             value={`${optimizationScore}%`} 
-             icon={<CloudLightning className="w-6 h-6" />} 
-             color="info"
-           />
+             title="Manual Review" 
+             value={manualReviewTasks.length} 
+             subtitle={!loading && manualReviewTasks.length > 0 ? `${manualReviewTasks.length} pending review.` : 'No reports pending review.'}
+             icon={<AlertTriangle className="w-6 h-6" />} 
+             color={manualReviewTasks.length > 0 ? "warning" : "success"}
+             onClick={() => router.push(manualReviewTasks.length > 0 ? '/dashboard/officer/reports?filter=manual_review' : '/dashboard/officer/reports')}
+             className={`group transition-all hover:border-border dark:hover:border-white ${manualReviewTasks.length > 0 ? "animate-pulse border-warning bg-warning/5" : ""}`}
+           >
+             <div className="mt-3 pt-2.5 border-t border-border flex items-center justify-between">
+               <Link
+                 href={manualReviewTasks.length > 0 ? '/dashboard/officer/reports?filter=manual_review' : '/dashboard/officer/reports'}
+                 onClick={(e) => e.stopPropagation()}
+                 className={`text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1 group-hover:underline ${
+                   manualReviewTasks.length > 0 ? 'text-warning dark:text-yellow-400' : 'text-text-secondary group-hover:text-text-primary'
+                 }`}
+               >
+                 {manualReviewTasks.length > 0 ? 'Review Reports' : 'View Reports'}
+                 <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+               </Link>
+             </div>
+           </StatsCard>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
