@@ -1,5 +1,5 @@
 'use client'
-import Input from './Input'
+import React from 'react'
 
 /**
  * Universal Date Range Picker component
@@ -20,21 +20,23 @@ export default function DateRangePicker({
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      <Input
-        label="From"
-        type="date"
-        value={startDate}
-        onChange={(e) => handleStartDateChange(e.target.value)}
-        containerClassName="flex-1 min-w-[150px]"
-      />
-      <div className="hidden sm:flex items-center pt-8 text-text-muted">—</div>
-      <Input
-        label="To"
-        type="date"
-        value={endDate}
-        onChange={(e) => handleEndDateChange(e.target.value)}
-        containerClassName="flex-1 min-w-[150px]"
-      />
+      <div className="flex-1 min-w-[150px]">
+        <input
+          type="date"
+          value={startDate}
+          onChange={(e) => handleStartDateChange(e.target.value)}
+          className="w-full bg-surface border border-border text-sm font-bold uppercase tracking-wider p-3 outline-none focus:border-accent-green text-text-primary"
+        />
+      </div>
+      <div className="hidden sm:flex items-center text-text-muted">—</div>
+      <div className="flex-1 min-w-[150px]">
+        <input
+          type="date"
+          value={endDate}
+          onChange={(e) => handleEndDateChange(e.target.value)}
+          className="w-full bg-surface border border-border text-sm font-bold uppercase tracking-wider p-3 outline-none focus:border-accent-green text-text-primary"
+        />
+      </div>
     </div>
   )
 }
