@@ -1,10 +1,12 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import PageHeader from '@/components/layout/PageHeader'
 import { fetchPublicReports, fetchSatisfactionAnalytics, getAccuracyMetrics } from '@/lib/api'
 import { SkeletonLine, SkeletonStatCard, SkeletonChartCard } from '@/components/ui/Skeleton'
 import { OfficerGuard } from '@/components/auth/RequireRole'
 import { Bar, Doughnut, Line } from 'react-chartjs-2'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -33,10 +35,17 @@ const SATISFACTION_COLORS = ['#EF4444', '#F59E0B', '#9CA3AF', '#3B82F6', '#10B98
 const SATISFACTION_LABELS = ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied']
 
 export default function AnalyticsPage() {
+  const barChartRef = useRef(null)
+  const lineChartRef = useRef(null)
+  const doughnutIssueRef = useRef(null)
+  const doughnutSatRef = useRef(null)
+  const doughnutStatusRef = useRef(null)
+
   const [reports, setReports] = useState([])
   const [satisfactionData, setSatisfactionData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [exporting, setExporting] = useState(false)
   const [stats, setStats] = useState({
     total: 0,
     unresolved: 0,
@@ -289,9 +298,105 @@ export default function AnalyticsPage() {
     ]
   }
 
+  const exportPDF = () => {
+    setExporting(true)
+    
+    setTimeout(() => {
+      try {
+        const doc = new jsPDF()
+        
+        // Brand color: #0052CC (EcoPin Primary)
+        const primaryColor = [0, 82, 204]
+        
+        // Add Header
+        doc.setFillColor(...primaryColor)
+        doc.rect(0, 0, 210, 40, 'F')
+        
+        doc.setTextColor(255, 255, 255)
+        doc.setFontSize(24)
+        doc.setFont('helvetica', 'bold')
+        doc.text('EcoPin Metrics Report', 14, 25)
+        
+        doc.setFontSize(10)
+        doc.setFont('helvetica', 'normal')
+        const todayDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+        doc.text(`Generated on: ${todayDate} | Officer Dashboard`, 14, 32)
+        
+        doc.setTextColor(0, 0, 0)
+        
+        // Key Statistics Table
+        doc.setFontSize(14)
+        doc.setFont('helvetica', 'bold')
+        doc.text('Key Statistics', 14, 55)
+        
+        autoTable(doc, {
+          startY: 60,
+          head: [['Metric', 'Value', 'Metric', 'Value']],
+          body: [
+            ['Total Reports', stats.total.toString(), 'Resolution Rate', `${stats.resolutionRate}%`],
+            ['Unresolved', stats.unresolved.toString(), 'Resolved Today', stats.resolvedToday.toString()],
+            ['In Progress', stats.inProgress.toString(), 'Waiting for Feedback', stats.waitingForFeedback.toString()],
+            ['Resolved/Closed', (stats.resolved + stats.closed).toString(), 'Overdue Reports', stats.overdue.toString()],
+            ['Avg. Resolution Time', stats.avgResolutionTime, '', '']
+          ],
+          headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [245, 247, 250] },
+          theme: 'grid',
+          styles: { fontSize: 10, cellPadding: 5 }
+        })
+        
+        let currentY = doc.lastAutoTable.finalY + 20
+        
+        // Helper to add chart images
+        const addChart = (ref, title, y, x = 14, width = 180, height = 90) => {
+          if (ref.current) {
+            if (y + height + 20 > 297) {
+              doc.addPage()
+              y = 20
+            }
+            
+            doc.setFontSize(14)
+            doc.setFont('helvetica', 'bold')
+            doc.text(title, x, y)
+            
+            const imgData = ref.current.toBase64Image()
+            // In light mode, the chart background is transparent, so it will show up fine on white PDF
+            doc.addImage(imgData, 'PNG', x, y + 5, width, height)
+            
+            return y + height + 20
+          }
+          return y
+        }
+        
+        // Add Bar & Line Charts
+        currentY = addChart(barChartRef, 'Reports per Week', currentY)
+        currentY = addChart(lineChartRef, 'Resolution Rate Over Time', currentY)
+        
+        // Page break for pie charts
+        doc.addPage()
+        currentY = 20
+        
+        currentY = addChart(doughnutIssueRef, 'Reports by Issue Type', currentY, 14, 90, 90)
+        
+        // Render Satisfaction Distribution side-by-side if available
+        if (satisfactionData && satisfactionData.total > 0) {
+          addChart(doughnutSatRef, 'Satisfaction Distribution', currentY - 110, 105, 90, 90)
+        }
+        
+        currentY = addChart(doughnutStatusRef, 'Reports by Status', currentY, 14, 90, 90)
+        
+        doc.save('EcoPin-Metrics-Report.pdf')
+      } catch (err) {
+        console.error('PDF export failed:', err)
+      } finally {
+        setExporting(false)
+      }
+    }, 500) // Small delay to let UI render if needed
+  }
+
   return (
     <OfficerGuard>
-      <div className="p-8">
+      <div className="p-8" id="metrics-content">
       <PageHeader
         title="Metrics"
         subtitle="View metrics and insights"
@@ -299,7 +404,16 @@ export default function AnalyticsPage() {
           { label: 'Dashboard', href: '/dashboard' },
           { label: 'Metrics' }
         ]}
-      />
+      >
+        <button
+          onClick={exportPDF}
+          disabled={exporting || loading}
+          className="btn-secondary whitespace-nowrap flex items-center gap-2"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+          {exporting ? 'EXPORTING...' : 'EXPORT PDF'}
+        </button>
+      </PageHeader>
 
       {error && (
         <div className="mb-6 p-4 bg-error/10 border border-error/30 text-error rounded-lg">
@@ -403,7 +517,7 @@ export default function AnalyticsPage() {
             ) : weeklyVolumeData.length === 0 ? (
               <div className="chart-placeholder">No data available for the selected period</div>
             ) : (
-              <Bar data={weeklyVolumeChartData} options={{ maintainAspectRatio: false }} />
+              <Bar ref={barChartRef} data={weeklyVolumeChartData} options={{ maintainAspectRatio: false }} />
             )}
           </div>
         </div>
@@ -419,7 +533,7 @@ export default function AnalyticsPage() {
             ) : resolutionRateData.length === 0 ? (
               <div className="chart-placeholder">No data available for the selected period</div>
             ) : (
-              <Line data={resolutionRateChartData} options={{ maintainAspectRatio: false }} />
+              <Line ref={lineChartRef} data={resolutionRateChartData} options={{ maintainAspectRatio: false }} />
             )}
           </div>
         </div>
@@ -435,7 +549,7 @@ export default function AnalyticsPage() {
             ) : issueTypeData.length === 0 ? (
               <div className="chart-placeholder">No data available</div>
             ) : (
-              <Doughnut data={issueTypeChartData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
+              <Doughnut ref={doughnutIssueRef} data={issueTypeChartData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
             )}
           </div>
         </div>
@@ -451,7 +565,7 @@ export default function AnalyticsPage() {
             ) : !satisfactionChartData || satisfactionData.total === 0 ? (
               <div className="chart-placeholder">No ratings available</div>
             ) : (
-              <Doughnut data={satisfactionChartData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
+              <Doughnut ref={doughnutSatRef} data={satisfactionChartData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
             )}
           </div>
         </div>
@@ -467,7 +581,7 @@ export default function AnalyticsPage() {
             ) : statusData.length === 0 ? (
               <div className="chart-placeholder">No data available</div>
             ) : (
-              <Doughnut data={statusChartData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
+              <Doughnut ref={doughnutStatusRef} data={statusChartData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
             )}
           </div>
         </div>
