@@ -180,11 +180,11 @@ export default function ReportDetailPage() {
       try {
         const activeUploadType = !report.before_photo_url ? 'before' : 'after'
         if (activeUploadType === 'before') {
-          if (!report.stage || report.stage === 'submitted' || report.stage === 'pending') {
-            await updateLifecycleStage(reportId, 'acknowledged')
+          if (!report.stage || report.stage === 'submitted' || report.stage === 'pending' || report.stage === 'assigned') {
+            await updateLifecycleStage(reportId, 'in_progress')
           }
         } else if (activeUploadType === 'after') {
-          await updateLifecycleStage(reportId, 'responded')
+          await updateLifecycleStage(reportId, 'resolved')
         }
       } catch (stageError) {
         console.error('Failed to advance lifecycle stage:', stageError)
