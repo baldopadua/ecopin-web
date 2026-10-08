@@ -1,6 +1,7 @@
 /* TemplateSelector.module.css */
 .templateSelector {
   display: flex;
+  flex-wrap: wrap;
   gap: 1rem;
   padding: 1rem;
   background: #f5f5f5;
@@ -9,6 +10,7 @@
 
 .templateOption {
   flex: 1;
+  min-width: 12rem;
   padding: 1rem;
   border: 2px solid #ccc;
   border-radius: 8px;

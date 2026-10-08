@@ -24,6 +24,13 @@ export default function TemplateSelector({ selectedTemplate, onTemplateChange, o
           {outlierCount === 0 && <span style={{marginLeft: '8px', fontSize: '0.9rem', color: '#28a745'}}>None eligible</span>}
         </div>
       </button>
+      <button type="button" aria-pressed={selectedTemplate === 'mixed'}
+        className={`${styles.templateOption} ${selectedTemplate === 'mixed' ? styles.selected : ''}`}
+        onClick={() => onTemplateChange('mixed')}
+      >
+        <h4>Mixed Workflow</h4>
+        <div className={styles.clusterCount}>{standardCount} clusters · {outlierCount} eligible reports</div>
+      </button>
     </div>
   );
 }

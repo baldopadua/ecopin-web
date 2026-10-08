@@ -1,6 +1,6 @@
 'use client'
 import React, { createContext, useContext, useState, useCallback } from 'react'
-import { generatePlan, commitPlan } from '@/lib/api/optimization'
+import { generatePlan, getPlanJob, getDispatchPlan, commitPlan } from '@/lib/api/optimization'
 import { useRouter } from 'next/navigation'
 
 const TaskContext = createContext()
@@ -15,62 +15,50 @@ export function TaskProvider({ children }) {
   const [optimizationProgress, setOptimizationProgress] = useState({ percent: 0, message: '' })
   const [globalNotification, setGlobalNotification] = useState(null)
   const [draftPlan, setDraftPlan] = useState(null)
+  const [planningJob, setPlanningJob] = useState(null)
 
   const startOptimization = useCallback(async (settings = {}, onSuccess, onError) => {
     if (isOptimizing) return
     setIsOptimizing(true)
     setGlobalNotification(null)
 
-    const loadingSteps = [
-      { percent: 25, message: 'Calculating MCDA priority scores...' },
-      { percent: 45, message: 'Mapping hotzones to cleanup tasks...' },
-      { percent: 60, message: 'Finding available field crews...' },
-      { percent: 80, message: 'Executing greedy assignment algorithm...' },
-      { percent: 90, message: 'Generating simulated routes & ETA...' },
-    ]
-
-    let stepIndex = 0
-    const progressInterval = setInterval(() => {
-      if (stepIndex < loadingSteps.length) {
-        setOptimizationProgress(loadingSteps[stepIndex])
-        stepIndex++
-      }
-    }, 1500)
-
     try {
-      const result = await generatePlan(settings)
-      clearInterval(progressInterval)
-
-      if (result.plan) {
-        setOptimizationProgress({ percent: 100, message: 'Optimization pipeline completed!' })
-
-        const generatedDraft = {
-          ...result.plan,
-          status: 'draft_plan',
-          selectedCount: result.selectedCount,
-          omittedCount: result.omittedLoggedCount,
-          capacityUtilized: result.capacityUtilized
-        }
-        setDraftPlan(generatedDraft)
-
-        setGlobalNotification({
-          message: `Draft plan generated! ${result.selectedCount} tasks selected.`,
-          type: 'success',
-          link: '/dashboard/officer/optimization'
-        })
-        if (onSuccess) onSuccess(result)
-      } else {
-        setOptimizationProgress({ percent: 100, message: 'Done' })
-        setGlobalNotification({ message: result.message || 'No tasks to optimize', type: 'info' })
-        if (onSuccess) onSuccess(result)
+      const queued = await generatePlan(settings)
+      if (!queued.jobId) throw new Error('Planning service returned no job ID')
+      setPlanningJob({ jobId: queued.jobId, status: queued.status || 'queued' })
+      setOptimizationProgress({ percent: 20, message: 'Planning job queued' })
+      let job = queued
+      while (job.status !== 'completed' && job.status !== 'failed') {
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        job = await getPlanJob(queued.jobId)
+        setPlanningJob(job)
+        setOptimizationProgress(job.status === 'running'
+          ? { percent: 65, message: 'Solver is building routes' }
+          : { percent: 20, message: 'Planning job queued' })
       }
+      if (job.status === 'failed') throw new Error(`Planning failed: ${job.errorCode || 'unknown error'}`)
+      if (!job.planId) throw new Error('Completed job has no draft plan')
+      const result = await getDispatchPlan(job.planId)
+      const selectedCount = result.items.filter(item => item.is_selected && item.item_type !== 'bundled_report').length
+      const generatedDraft = {
+        ...result.plan, status: 'draft_plan', selectedCount,
+        omittedCount: result.items.filter(item => !item.is_selected).length,
+        capacityUtilized: result.capacity.generalist?.used || result.capacity.used || 0,
+        groups: result.groups, rejectedBundles: result.rejectedBundles,
+        capacity: result.capacity
+      }
+      setDraftPlan(generatedDraft)
+      setOptimizationProgress({ percent: 100, message: 'Draft plan ready' })
+      setGlobalNotification({ message: `Draft plan generated with ${selectedCount} tasks.`,
+        type: 'success', link: '/dashboard/officer/optimization' })
+      if (onSuccess) onSuccess({ ...result, plan: generatedDraft,
+        selectedCount, omittedLoggedCount: generatedDraft.omittedCount })
     } catch (error) {
-      clearInterval(progressInterval)
       console.error('Optimization error:', error)
       setGlobalNotification({ message: error.message || 'Failed to generate optimization', type: 'error' })
       if (onError) onError(error)
     } finally {
-      setTimeout(() => setIsOptimizing(false), 2000)
+      setIsOptimizing(false)
     }
   }, [isOptimizing])
 
@@ -116,7 +104,7 @@ export function TaskProvider({ children }) {
   }, [isOptimizing])
 
   return (
-    <TaskContext.Provider value={{ isOptimizing, optimizationProgress, draftPlan, setDraftPlan, startOptimization, commitOptimization }}>
+    <TaskContext.Provider value={{ isOptimizing, optimizationProgress, planningJob, draftPlan, setDraftPlan, startOptimization, commitOptimization }}>
       {children}
 
       {/* Global Notification Toast */}

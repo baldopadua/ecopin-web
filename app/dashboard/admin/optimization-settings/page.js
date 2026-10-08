@@ -41,6 +41,37 @@ export default function OptimizationSettings() {
     max_tasks_per_shift: 10,
   })
 
+  const fleetPayload = crew => ({
+    supports_standard: crew.supports_standard ?? true,
+    supports_sweeper: crew.supports_sweeper ?? false,
+    speed_factor: Number(crew.speed_factor ?? 1),
+    service_time_factor: Number(crew.service_time_factor ?? 1),
+    vehicle_type: crew.vehicle_type ?? 'compactor',
+    hazmat_certified: crew.hazmat_certified ?? false,
+    max_volume_m3: crew.max_volume_m3 ?? null,
+    max_weight_kg: crew.max_weight_kg ?? null,
+    starting_volume_m3: crew.starting_volume_m3 ?? null,
+    starting_weight_kg: crew.starting_weight_kg ?? null,
+    load_measured_at: crew.load_measured_at ?? null,
+  })
+
+  const validateFleet = crew => {
+    for (const [load, maximum, label] of [
+      ['starting_volume_m3', 'max_volume_m3', 'volume'],
+      ['starting_weight_kg', 'max_weight_kg', 'weight'],
+    ]) {
+      if (crew[maximum] != null && crew[load] != null && Number(crew[load]) > Number(crew[maximum])) {
+        setNotification({ message: `Starting ${label} exceeds vehicle capacity`, type: 'error' })
+        return false
+      }
+    }
+    if ((crew.starting_volume_m3 != null || crew.starting_weight_kg != null) && !crew.load_measured_at) {
+      setNotification({ message: 'Enter when the starting load was measured', type: 'error' })
+      return false
+    }
+    return true
+  }
+
   const loadAll = async () => {
     try {
       setLoading(true)
@@ -113,6 +144,7 @@ export default function OptimizationSettings() {
       setNotification({ message: 'Max tasks must be between 1 and 50', type: 'error' })
       return
     }
+    if (!validateFleet(crew)) return
 
     try {
       setSaving(`crew-${crew.id}`)
@@ -120,10 +152,7 @@ export default function OptimizationSettings() {
         shift_start: crew.shift_start,
         shift_end: crew.shift_end,
         max_tasks_per_shift: parseInt(crew.max_tasks_per_shift),
-        supports_standard: crew.supports_standard ?? true,
-        supports_sweeper: crew.supports_sweeper ?? false,
-        speed_factor: Number(crew.speed_factor ?? 1),
-        service_time_factor: Number(crew.service_time_factor ?? 1),
+        ...fleetPayload(crew),
       })
       setNotification({ message: `${crew.name} settings saved successfully`, type: 'success' })
     } catch (err) {
@@ -150,10 +179,11 @@ export default function OptimizationSettings() {
       setNotification({ message: 'Max tasks must be between 1 and 50', type: 'error' })
       return
     }
+    if (!validateFleet(newCrew)) return
 
     try {
       setSaving('new-crew')
-      const created = await createFieldCrew(newCrew)
+      const created = await createFieldCrew({ ...newCrew, ...fleetPayload(newCrew) })
       setCrews(prev => [...prev, created])
       setShowAddCrew(false)
       setNewCrew({ name: '', shift_start: '08:00', shift_end: '17:00', max_tasks_per_shift: 10 })

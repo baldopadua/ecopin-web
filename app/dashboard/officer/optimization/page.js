@@ -153,7 +153,7 @@ export default function OptimizationPage() {
 
     const activeSettings = {
       ...settings,
-      mode: selectedTemplate === 'sweeper' ? 'sweeper' : 'standard'
+      mode: selectedTemplate
     }
 
     await startOptimization(
@@ -205,7 +205,12 @@ export default function OptimizationPage() {
       (result) => {
         const pending = result.routing_status === 'needs_replan' || result.routing_status === 'routing'
         const skipped = result.results?.filter(group => group.status === 'skipped').length || 0
-        setNotification({ message: pending ? `Reports claimed; routes pending. ${result.warning || 'Retry this plan within 30 minutes.'}` : `Routes published. ${skipped} group(s) skipped because eligibility changed.`, type: pending ? 'warning' : 'success' })
+        const omittedSatellites = result.results?.reduce((sum, group) =>
+          sum + (group.omitted_satellite_ids?.length || 0), 0) || 0
+        setNotification({ message: pending
+          ? `Reports claimed; routes need replanning. ${result.warning || 'Review this plan within 30 minutes.'}`
+          : `Routes published. ${skipped} group(s) skipped; ${omittedSatellites} satellite report(s) became unavailable.`,
+        type: pending || omittedSatellites ? 'warning' : 'success' })
         if (!pending) setDraftPlan(null) // Clear draft on successful commit
         loadPreviousRuns()
         if (result.run?.id) {
@@ -584,6 +589,49 @@ export default function OptimizationPage() {
           {/* Commit Plan Button for draft plans */}
           {currentProposal.status === 'draft_plan' && (
             <div className="mt-6 pt-4 border-t border-border">
+              {currentProposal.capacity && (
+                <div className="mb-6" aria-label="Planning capacity">
+                  <h4 className="font-bold mb-2">Capacity</h4>
+                  <div className="h-3 border border-border bg-surface-elevated overflow-hidden">
+                    <div className="h-full bg-accent-green" style={{ width: `${Math.min(100, Math.round(100 * (currentProposal.capacity.generalist?.used || 0) / Math.max(1, currentProposal.capacity.generalist?.minutes || 1)))}%` }} />
+                  </div>
+                  <p className="text-xs text-text-muted mt-1">Generalist {currentProposal.capacity.generalist?.used || 0} / {currentProposal.capacity.generalist?.minutes || 0} min · Reserved for satellites {currentProposal.capacity.generalist?.reserved || 0} min · Specialist {currentProposal.capacity.specialist?.minutes || 0} min</p>
+                </div>
+              )}
+              {currentProposal.groups?.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="font-bold mb-2">Proposed groups</h4>
+                  <div className="space-y-2 max-h-72 overflow-y-auto">
+                    {currentProposal.groups.map(group => (
+                      <div key={group.group_key} className="border border-border p-3 bg-surface-elevated">
+                        <div className="flex justify-between gap-2 text-sm font-medium">
+                          <span>{group.anchor?.item_type === 'cluster' ? 'Cluster anchor' : 'Sweeper report'} · {group.group_key}</span>
+                          <span>{group.anchor?.is_selected ? 'Selected' : group.anchor?.reason || 'Deferred'}</span>
+                        </div>
+                        {group.satellites?.length > 0 && (
+                          <ul className="ml-5 mt-2 list-disc text-xs text-text-secondary">
+                            {group.satellites.map(satellite => (
+                              <li key={satellite.id}>Report {satellite.report_id} · {satellite.is_selected ? `Stop ${satellite.bundle_order}` : satellite.reason}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {currentProposal.rejectedBundles?.length > 0 && (
+                <div className="mb-6 border border-warning p-3" role="status">
+                  <h4 className="font-bold mb-2">Bundles not included</h4>
+                  <ul className="text-xs space-y-1 max-h-40 overflow-y-auto">
+                    {currentProposal.rejectedBundles.map((entry, index) => (
+                      <li key={`${entry.report_id || entry.group_key}-${index}`}>
+                        {entry.report_id || entry.group_key}: {entry.reason}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <div className="p-4 bg-info/10 text-info border border-info mb-4">
                 <strong>Draft Plan Generated</strong>
                 <p className="text-sm">This plan selects exactly the workload your crews can handle today based on their available hours. Routes and tasks will only be generated once committed.</p>
