@@ -39,7 +39,7 @@ export default function EvidenceGallery({ reports = [] }) {
 
     return () => {
       isMounted = false
-      abortController.abort()
+      abortController.abort('Component unmounted')
     }
   }, [reports])
 

@@ -159,6 +159,55 @@ function OfficerMapContent() {
               </div>
             </div>
             
+            <div className="h-px bg-border/50 w-full" />
+
+            {/* Pin Legend */}
+            <div>
+              <h3 className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-3">Pin Legend</h3>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 rounded-full border-[2px] border-white flex items-center justify-center shadow-sm" style={{ backgroundColor: 'var(--error)' }}>
+                    <img src="/pin-icon.svg" alt="pin" className="w-2.5 h-2.5" />
+                  </div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">Unresolved</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 rounded-full border-[2px] border-white flex items-center justify-center shadow-sm" style={{ backgroundColor: 'var(--warning)' }}>
+                    <img src="/pin-icon.svg" alt="pin" className="w-2.5 h-2.5" />
+                  </div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">In Progress</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 rounded-full border-[2px] border-white flex items-center justify-center shadow-sm" style={{ backgroundColor: 'var(--success)' }}>
+                    <img src="/pin-icon.svg" alt="pin" className="w-2.5 h-2.5" />
+                  </div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">Resolved</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="h-px bg-border/50 w-full my-4" />
+
+            {/* Cluster Legend */}
+            <div>
+              <h3 className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-3">Cluster Legend</h3>
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="relative flex items-center justify-center w-8 h-8 rounded-full border-[3px] border-[#007bff]" style={{ backgroundColor: 'rgba(0, 123, 255, 0.2)' }}>
+                    <span className="text-white text-[10px] font-bold" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>5</span>
+                  </div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">Standard Cluster</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="relative flex items-center justify-center w-8 h-8 rounded-full border-[3px] border-[#dc3545]" style={{ backgroundColor: 'rgba(220, 53, 69, 0.2)' }}>
+                    <span className="absolute -top-1 -right-1 bg-[#ffc107] rounded-full p-[2px] text-[8px] leading-none">⚠</span>
+                    <span className="text-white text-[10px] font-bold" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>3</span>
+                  </div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">Outlier Cluster</span>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
         </div>
