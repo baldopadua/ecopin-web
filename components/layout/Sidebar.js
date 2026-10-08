@@ -20,7 +20,7 @@ import {
     ChevronLeft,
     ChevronRight,
     Route,
-    CloudLightning
+    CloudLightning,
 } from 'lucide-react'
 
 const citizenNavigation = [
@@ -54,6 +54,7 @@ const adminNavigation = [
     { name: 'Users', href: '/dashboard/admin/users', icon: Users },
     { name: 'System', href: '/dashboard/admin/settings', icon: Settings },
     { name: 'Optimization', href: '/dashboard/admin/optimization-settings', icon: Route },
+    { name: 'Sweeper Settings', href: '/dashboard/admin/sweeper-settings', icon: Route },
     { name: 'Audit Logs', href: '/dashboard/admin/audit-logs', icon: ScrollText },
     { name: 'System Logs', href: '/dashboard/admin/sys-logs', icon: Terminal },
 ]
