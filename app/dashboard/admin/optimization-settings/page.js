@@ -1,4 +1,5 @@
 'use client'
+import FleetCapabilities from '@/components/optimization/FleetCapabilities'
 import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import PageHeader from '@/components/layout/PageHeader'
@@ -40,10 +41,6 @@ export default function OptimizationSettings() {
     max_tasks_per_shift: 10,
   })
 
-  useEffect(() => {
-    loadAll()
-  }, [])
-
   const loadAll = async () => {
     try {
       setLoading(true)
@@ -66,6 +63,10 @@ export default function OptimizationSettings() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    queueMicrotask(() => { void loadAll() })
+  }, [])
 
   const handleSaveDepot = async () => {
     // Validate
@@ -119,6 +120,10 @@ export default function OptimizationSettings() {
         shift_start: crew.shift_start,
         shift_end: crew.shift_end,
         max_tasks_per_shift: parseInt(crew.max_tasks_per_shift),
+        supports_standard: crew.supports_standard ?? true,
+        supports_sweeper: crew.supports_sweeper ?? false,
+        speed_factor: Number(crew.speed_factor ?? 1),
+        service_time_factor: Number(crew.service_time_factor ?? 1),
       })
       setNotification({ message: `${crew.name} settings saved successfully`, type: 'success' })
     } catch (err) {
@@ -345,6 +350,7 @@ export default function OptimizationSettings() {
                 />
               </div>
             </div>
+            <FleetCapabilities crew={newCrew} onChange={(key,value)=>setNewCrew(prev=>({...prev,[key]:value}))} />
             <div className="mt-4 flex justify-end">
               <button
                 onClick={handleCreateCrew}
@@ -358,7 +364,7 @@ export default function OptimizationSettings() {
         )}
 
         {crews.length === 0 ? (
-          <p className="text-text-muted text-sm">No field crews found. Click "+ Add Crew" above to create one.</p>
+          <p className="text-text-muted text-sm">No field crews found. Click &quot;+ Add Crew&quot; above to create one.</p>
         ) : (
           <div className="space-y-6">
             {crews.map((crew) => (
@@ -417,6 +423,7 @@ export default function OptimizationSettings() {
                   </div>
                 </div>
 
+                <FleetCapabilities crew={crew} onChange={(key,value)=>handleCrewChange(crew.id,key,value)} />
                 <div className="mt-4 flex justify-end">
                   <button
                     onClick={() => handleSaveCrew(crew)}

@@ -218,53 +218,18 @@ export default function OptimizationSettings({
             Advanced Settings
           </span>
           {!showAdvanced && (
-            <span className="text-[10px] font-mono normal-case">Breaks · Overtime · Priority · Task Types · Capacity</span>
+            <span className="text-[10px] font-mono normal-case">Breaks · Overtime · Task Types · Capacity</span>
           )}
         </button>
 
         {showAdvanced && (
           <div className="px-4 pb-4 border-t border-border space-y-5 pt-4">
 
-            {/* Break Management */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-text-muted mb-2">
-                  Break Duration
-                </label>
-                <select
-                  disabled={disabled}
-                  value={settings.break_duration_min ?? 60}
-                  onChange={e => update('break_duration_min', Number(e.target.value))}
-                  className="w-full border border-border bg-surface text-text-primary text-sm font-bold px-3 py-2 focus:outline-none focus:border-[#ccff00] disabled:opacity-50"
-                >
-                  {BREAK_DURATIONS.map(d => (
-                    <option key={d} value={d}>{d === 0 ? 'No break' : `${d} minutes`}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-text-muted mb-2">
-                  Break Window
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="time"
-                    disabled={disabled || (settings.break_duration_min ?? 60) === 0}
-                    value={settings.break_window_start || '12:00'}
-                    onChange={e => update('break_window_start', e.target.value)}
-                    className="flex-1 border border-border bg-surface text-text-primary text-sm font-bold px-3 py-2 focus:outline-none focus:border-[#ccff00] disabled:opacity-40"
-                  />
-                  <span className="text-text-muted font-mono text-xs">to</span>
-                  <input
-                    type="time"
-                    disabled={disabled || (settings.break_duration_min ?? 60) === 0}
-                    value={settings.break_window_end || '13:30'}
-                    onChange={e => update('break_window_end', e.target.value)}
-                    className="flex-1 border border-border bg-surface text-text-primary text-sm font-bold px-3 py-2 focus:outline-none focus:border-[#ccff00] disabled:opacity-40"
-                  />
-                </div>
-              </div>
-            </div>
+            <label className="block text-sm">Break duration
+              <select disabled={disabled} value={settings.break_duration_min??60} onChange={event=>update('break_duration_min',Number(event.target.value))} className="block w-full border border-border p-2 bg-surface mt-2">
+                {BREAK_DURATIONS.map(value=><option key={value} value={value}>{value} minutes</option>)}
+              </select>
+            </label>
 
             {/* Overtime Tolerance */}
             <div>
@@ -292,34 +257,6 @@ export default function OptimizationSettings({
                   )
                 })}
               </div>
-            </div>
-
-            {/* Age vs Priority Slider */}
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-text-muted mb-2">
-                Age vs. Priority Sort
-              </label>
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-mono text-text-muted whitespace-nowrap">Oldest First</span>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  step="10"
-                  disabled={disabled}
-                  value={settings.priority_age_weight ?? 50}
-                  onChange={e => update('priority_age_weight', Number(e.target.value))}
-                  className="flex-1 accent-[#ccff00] h-2 cursor-pointer disabled:opacity-50"
-                />
-                <span className="text-xs font-mono text-text-muted whitespace-nowrap">Priority First</span>
-              </div>
-              <p className="text-[10px] font-mono text-text-muted mt-1">
-                {(settings.priority_age_weight ?? 50) <= 20
-                  ? 'Strongly favoring oldest unresolved tasks'
-                  : (settings.priority_age_weight ?? 50) >= 80
-                  ? 'Strongly favoring highest-priority tasks'
-                  : 'Balanced blend of age and priority score'}
-              </p>
             </div>
 
             {/* Task Type Focus */}
@@ -359,29 +296,10 @@ export default function OptimizationSettings({
 
             {/* Density Focus + Max Tasks */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-text-muted mb-2">
-                  Density Focus (Clustering)
-                </label>
-                <button
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => update('density_focus', !settings.density_focus)}
-                  className={`w-full flex items-center justify-between px-4 py-3 border border-border font-bold text-sm uppercase tracking-wide transition-all duration-150 disabled:opacity-50
-                    ${settings.density_focus
-                      ? 'bg-[#ccff00] border-[#ccff00] text-text-primary shadow-sm'
-                      : 'border-border text-text-muted hover:border-[#ccff00]'
-                    }`}
-                >
-                  <span>{settings.density_focus ? 'ON — Minimize Travel Distance' : 'OFF — Spread by Priority'}</span>
-                  <span className={`w-4 h-4 border border-border rounded-full transition-colors ${settings.density_focus ? 'bg-black border-border' : 'border-current'}`} />
-                </button>
-                <p className="text-[10px] font-mono text-text-muted mt-1">
-                  {settings.density_focus
-                    ? 'Algorithm clusters tasks geographically, even if a higher-priority task is further away.'
-                    : 'Algorithm selects tasks by priority, regardless of geographic distance.'}
-                </p>
-              </div>
+              <label className="block text-sm">Usable shift capacity
+                <input type="number" min="10" max="100" step="5" disabled={disabled} value={Math.round((settings.capacity_utilization??1)*100)} onChange={event=>update('capacity_utilization',Number(event.target.value)/100)} className="block w-full border border-border p-2 bg-surface mt-2" />
+                <span className="text-xs text-text-muted">Percent of time available after breaks and overtime.</span>
+              </label>
 
               <div>
                 <label htmlFor="max-tasks-cap" className="block text-xs font-bold uppercase tracking-wider text-text-muted mb-2">

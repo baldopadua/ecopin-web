@@ -116,7 +116,6 @@ export default function OptimizationPage() {
 
   const loadPreviousRuns = useCallback(async () => {
     try {
-      setRunsLoading(true)
       const data = await getOptimizationRuns()
       setPreviousRuns(data)
     } catch (err) {
@@ -127,17 +126,24 @@ export default function OptimizationPage() {
   }, [])
 
   useEffect(() => {
-    loadPreviousRuns()
-    loadPendingClusters()
-    fetchLiveWeather()
-    loadTemplates()
+    queueMicrotask(() => {
+      void loadPreviousRuns()
+      void loadPendingClusters()
+      void fetchLiveWeather()
+      void loadTemplates()
+    })
   }, [loadPreviousRuns, loadPendingClusters, fetchLiveWeather, loadTemplates])
 
   useEffect(() => {
-    if (draftPlan) {
-      setCurrentProposal(draftPlan)
-      setCurrentProposalRoutes([])
-    }
+    if (!draftPlan) return
+    let cancelled = false
+    queueMicrotask(() => {
+      if (!cancelled) {
+        setCurrentProposal(draftPlan)
+        setCurrentProposalRoutes([])
+      }
+    })
+    return () => { cancelled = true }
   }, [draftPlan])
 
   const handleGenerate = async () => {
@@ -147,7 +153,7 @@ export default function OptimizationPage() {
 
     const activeSettings = {
       ...settings,
-      target_outliers_only: selectedTemplate === 'sweeper'
+      mode: selectedTemplate === 'sweeper' ? 'sweeper' : 'standard'
     }
 
     await startOptimization(
@@ -167,11 +173,11 @@ export default function OptimizationPage() {
     try {
       const { travel_mode, break_duration_min, break_window_start, break_window_end,
         overtime_tolerance_min, priority_age_weight, included_task_types,
-        density_focus, zone_ids, max_tasks_per_shift } = settings
+        density_focus, zone_ids, max_tasks_per_shift, capacity_utilization } = settings
       await createOptimizationTemplate(name, '', {
         travel_mode, break_duration_min, break_window_start, break_window_end,
         overtime_tolerance_min, priority_age_weight, included_task_types,
-        density_focus, zone_ids, max_tasks_per_shift,
+        density_focus, zone_ids, max_tasks_per_shift, capacity_utilization,
       })
       await loadTemplates()
       setNotification({ message: `Template "${name}" saved!`, type: 'success' })
@@ -197,11 +203,13 @@ export default function OptimizationPage() {
       planId, 
       { weather_condition: liveWeather, traffic_condition: trafficCondition },
       (result) => {
-        setNotification({ message: 'Routes finalized successfully!', type: 'success' })
-        setDraftPlan(null) // Clear draft on successful commit
+        const pending = result.routing_status === 'needs_replan' || result.routing_status === 'routing'
+        const skipped = result.results?.filter(group => group.status === 'skipped').length || 0
+        setNotification({ message: pending ? `Reports claimed; routes pending. ${result.warning || 'Retry this plan within 30 minutes.'}` : `Routes published. ${skipped} group(s) skipped because eligibility changed.`, type: pending ? 'warning' : 'success' })
+        if (!pending) setDraftPlan(null) // Clear draft on successful commit
         loadPreviousRuns()
-        if (result.optimization_run && result.optimization_run.id) {
-          router.push('/dashboard/officer/optimization/' + result.optimization_run.id)
+        if (result.run?.id) {
+          router.push('/dashboard/officer/optimization/' + result.run.id)
         }
         setActionLoading(null)
       },
@@ -431,7 +439,7 @@ export default function OptimizationPage() {
             {!isOptimizing && (
               <div className="text-sm font-medium text-text-secondary border border-border bg-surface-elevated px-4 py-2 flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-accent-green"></span>
-                <span className="font-bold text-text-primary">{selectedTemplate === 'sweeper' ? outlierCount : standardCount}</span> clusters awaiting dispatch
+                <span className="font-bold text-text-primary">{selectedTemplate === 'sweeper' ? outlierCount : standardCount}</span> {selectedTemplate === 'sweeper' ? 'reports' : 'clusters'} awaiting dispatch
               </div>
             )}
           </div>

@@ -28,7 +28,7 @@ export function TaskProvider({ children }) {
       { percent: 80, message: 'Executing greedy assignment algorithm...' },
       { percent: 90, message: 'Generating simulated routes & ETA...' },
     ]
-    
+
     let stepIndex = 0
     const progressInterval = setInterval(() => {
       if (stepIndex < loadingSteps.length) {
@@ -43,20 +43,20 @@ export function TaskProvider({ children }) {
 
       if (result.plan) {
         setOptimizationProgress({ percent: 100, message: 'Optimization pipeline completed!' })
-        
-        const generatedDraft = { 
-          ...result.plan, 
-          status: 'draft_plan', 
-          selectedCount: result.selectedCount, 
+
+        const generatedDraft = {
+          ...result.plan,
+          status: 'draft_plan',
+          selectedCount: result.selectedCount,
           omittedCount: result.omittedLoggedCount,
           capacityUtilized: result.capacityUtilized
         }
         setDraftPlan(generatedDraft)
-        
-        setGlobalNotification({ 
-          message: `Draft plan generated! ${result.selectedCount} tasks selected.`, 
-          type: 'success', 
-          link: '/dashboard/officer/optimization' 
+
+        setGlobalNotification({
+          message: `Draft plan generated! ${result.selectedCount} tasks selected.`,
+          type: 'success',
+          link: '/dashboard/officer/optimization'
         })
         if (onSuccess) onSuccess(result)
       } else {
@@ -82,8 +82,8 @@ export function TaskProvider({ children }) {
 
     const loadingSteps = [
       { percent: 30, message: 'Assigning tasks to field crews...' },
-      { percent: 50, message: 'Calculating shortest path routes...' },
-      { percent: 75, message: 'Fetching OpenStreetMap OSRM routing data...' },
+      { percent: 50, message: 'Calculating routes...' },
+      { percent: 75, message: 'Validating travel and work capacity...' },
       { percent: 90, message: 'Finalizing optimization run...' },
     ]
     let stepIndex = 0
@@ -97,12 +97,13 @@ export function TaskProvider({ children }) {
     try {
       const result = await commitPlan(planId, options)
       clearInterval(progressInterval)
-      
-      setOptimizationProgress({ percent: 100, message: 'Routes finalized and committed!' })
-      setGlobalNotification({ 
-        message: 'Routes have been finalized and crews dispatched!', 
-        type: 'success', 
-        link: '/dashboard/officer/optimization' 
+
+      const pending = result.routing_status === 'needs_replan' || result.routing_status === 'routing'
+      setOptimizationProgress({ percent: 100, message: pending ? 'Reports claimed; routing needs attention' : 'Routes published' })
+      setGlobalNotification({
+        message: pending ? 'Reports claimed; routes pending. Retry the same plan within 30 minutes.' : 'Routes published and crews dispatched.',
+        type: pending ? 'warning' : 'success',
+        link: '/dashboard/officer/optimization'
       })
       if (onSuccess) onSuccess(result)
     } catch (error) {
@@ -117,17 +118,17 @@ export function TaskProvider({ children }) {
   return (
     <TaskContext.Provider value={{ isOptimizing, optimizationProgress, draftPlan, setDraftPlan, startOptimization, commitOptimization }}>
       {children}
-      
+
       {/* Global Notification Toast */}
       {globalNotification && !isOptimizing && (
         <div className={`fixed bottom-6 right-6 z-[9999] p-4 border border-border  shadow-[4px_4px_0px_0px_#000] dark:shadow-[4px_4px_0px_0px_#fff] flex items-center gap-4 ${
-          globalNotification.type === 'success' ? 'bg-[#ccff00] text-text-primary' : 
+          globalNotification.type === 'success' ? 'bg-[#ccff00] text-text-primary' :
           globalNotification.type === 'error' ? 'bg-error text-white' : 'bg-surface-elevated text-text-primary'
         }`}>
           <p className="font-bold">{globalNotification.message}</p>
           {globalNotification.link && (
-            <button 
-              onClick={() => { setGlobalNotification(null); router.push(globalNotification.link) }} 
+            <button
+              onClick={() => { setGlobalNotification(null); router.push(globalNotification.link) }}
               className="underline font-bold text-sm hover:opacity-80"
             >
               View Here
@@ -147,7 +148,7 @@ export function TaskProvider({ children }) {
             <span className="text-xs font-mono text-text-muted">{optimizationProgress.percent}%</span>
           </div>
           <div className="w-full h-2 bg-black/20 dark:bg-surface/10 rounded-full overflow-hidden">
-            <div 
+            <div
               className="h-full bg-[#ccff00] transition-all duration-500 ease-out"
               style={{ width: `${optimizationProgress.percent}%` }}
             ></div>
