@@ -387,7 +387,7 @@ export default function UserManagement() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className="input pr-10"
-                  placeholder="New Password"
+                  placeholder="Leave blank for default: 12345678Aa@"
                 />
                 <button
                   type="button"
@@ -401,6 +401,9 @@ export default function UserManagement() {
                   )}
                 </button>
               </div>
+              <p className="text-xs text-error mt-1">
+                This will be a temporary password. The user will be required to change it on their next login.
+              </p>
             </div>
 
             {newPassword && (
