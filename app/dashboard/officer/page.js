@@ -41,7 +41,10 @@ export default function OfficerHomepage() {
           getOptimizationRuns().catch(() => [])
         ])
 
-        setTasks(tasksData || [])
+        const tasksList = Array.isArray(tasksData)
+          ? tasksData
+          : (Array.isArray(tasksData?.tasks) ? tasksData.tasks : (Array.isArray(tasksData?.data) ? tasksData.data : []))
+        setTasks(tasksList)
         const activeReports = (Array.isArray(reportsData) ? reportsData : []).filter(r => r.status !== 'resolved' && r.status !== 'closed')
         setReports(activeReports)
         setClusters(clustersData || [])
@@ -63,9 +66,15 @@ export default function OfficerHomepage() {
     loadData()
   }, [])
 
-  // Derived metrics
-  const activeTasks = tasks.filter(t => t.status === 'in_progress')
-  const pendingTasks = tasks.filter(t => t.status === 'pending')
+  // Derived metrics - Active Field Units & Active Targets based on in-progress cleanup tasks
+  const activeTasks = (Array.isArray(tasks) ? tasks : []).filter(t => {
+    const status = t?.status?.toLowerCase()?.replace(/[\s-]/g, '_')
+    return status === 'in_progress'
+  })
+  const pendingTasks = (Array.isArray(tasks) ? tasks : []).filter(t => {
+    const status = t?.status?.toLowerCase()?.replace(/[\s-]/g, '_')
+    return status === 'pending'
+  })
   
   // Calculate SLA risk: reports unresolved for more than 48 hours
   const now = new Date()
@@ -112,9 +121,23 @@ export default function OfficerHomepage() {
            <StatsCard 
              title="Active Field Units" 
              value={activeTasks.length} 
+             subtitle={!loading && activeTasks.length > 0 ? `${activeTasks.length} cleanup task${activeTasks.length === 1 ? '' : 's'} in progress.` : 'No tasks currently in progress.'}
              icon={<Users className="w-6 h-6" />} 
              color="accent"
-           />
+             onClick={() => router.push('/dashboard/officer/operations?status=in_progress')}
+             className="group transition-all hover:border-border dark:hover:border-white"
+           >
+             <div className="mt-3 pt-2.5 border-t border-border flex items-center justify-between">
+               <Link
+                 href="/dashboard/officer/operations?status=in_progress"
+                 onClick={(e) => e.stopPropagation()}
+                 className="text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1 text-text-secondary group-hover:text-text-primary group-hover:underline"
+               >
+                 View Operations
+                 <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+               </Link>
+             </div>
+           </StatsCard>
            <StatsCard 
              title="Unresolved Reports" 
              value={reports.length} 
@@ -170,39 +193,68 @@ export default function OfficerHomepage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
            {/* Left Column: Action Queue & Active Targets */}
            <div className="lg:col-span-2 space-y-8">
-              {/* Active Targets */}
+              {/* Active Targets - In-Progress Cleanup Tasks */}
               <div className="card border border-border dark:border-[#333333] rounded-xl p-6">
                  <div className="flex justify-between items-center mb-6 border-b border-border pb-3">
-                    <h2 className="text-xl font-bold tracking-tight uppercase">Active Targets</h2>
-                    <Link href="/dashboard/officer/operations" className="text-sm font-bold text-text-secondary hover:text-primary transition-colors flex items-center">
+                    <h2 className="text-xl font-bold tracking-tight uppercase flex items-center gap-2">
+                       Active Targets
+                       {!loading && (
+                          <span className="text-xs font-mono font-bold bg-warning/10 text-warning border border-warning/30 px-2 py-0.5 rounded-full">
+                             {activeTasks.length} in progress
+                          </span>
+                       )}
+                    </h2>
+                    <Link href="/dashboard/officer/operations?status=in_progress" className="text-sm font-bold text-text-secondary hover:text-accent-green transition-colors flex items-center">
                        View All <ChevronRight className="w-4 h-4 ml-1" />
                     </Link>
                  </div>
                  
                  {loading ? (
-                   <div className="grid grid-cols-2 gap-4 animate-pulse">
-                     {[1,2].map(i => <div key={i} className="h-24 bg-surface-elevated border border-border" />)}
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-pulse">
+                     {[1,2].map(i => <div key={i} className="h-28 bg-surface-elevated border border-border rounded-lg" />)}
                    </div>
                  ) : activeTasks.length === 0 ? (
-                   <div className="text-center py-8 text-text-muted bg-surface-elevated border border-dashed border-border">
-                      <p className="font-medium">No active targets</p>
+                   <div className="text-center py-8 text-text-muted bg-surface-elevated border border-dashed border-border rounded-lg">
+                      <p className="font-medium text-text-secondary">No in-progress cleanup tasks</p>
+                      <p className="text-xs text-text-muted mt-1">There are currently no cleanup tasks actively in progress.</p>
                    </div>
                  ) : (
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     {activeTasks.slice(0, 4).map(task => (
-                        <div key={task.id} className="border border-border p-4 hover:bg-surface-elevated transition-colors cursor-pointer" onClick={() => router.push(`/dashboard/officer/operations/${task.id}`)}>
-                           <div className="flex justify-between items-start mb-2">
-                              <h3 className="font-bold text-text-primary line-clamp-1 flex-1 pr-2">{task.title}</h3>
-                              <StatusBadge status={task.status} type="task" />
+                     {activeTasks.slice(0, 6).map(task => {
+                        const crewCount = task.assigned_crew_ids?.length || (task.assigned_to ? 1 : 0);
+                        const reportCount = task.reports?.length || task.report_ids?.length || 0;
+                        return (
+                           <div 
+                              key={task.id} 
+                              className="border border-border dark:border-[#333333] p-4 hover:bg-surface-elevated hover:border-accent-green transition-all cursor-pointer rounded-lg bg-surface flex flex-col justify-between group" 
+                              onClick={() => router.push(`/dashboard/officer/operations/${task.id}`)}
+                           >
+                              <div>
+                                 <div className="flex justify-between items-start gap-2 mb-2">
+                                    <h3 className="font-bold text-text-primary line-clamp-1 flex-1 group-hover:text-accent-green transition-colors">
+                                       {task.title || `Task #${task.id?.slice(0, 8)}`}
+                                    </h3>
+                                    <StatusBadge status={task.status || 'in_progress'} type="task" />
+                                 </div>
+                                 <p className="text-sm text-text-secondary line-clamp-2 mb-3 min-h-[2.5rem]">
+                                    {task.description || 'No description provided.'}
+                                 </p>
+                              </div>
+                              <div className="pt-2 border-t border-border/50 flex justify-between items-center text-xs">
+                                 <span className="text-text-muted">
+                                    Assigned: <strong className={crewCount > 0 ? "text-accent-green" : "text-text-muted"}>
+                                       {crewCount > 0 ? `${crewCount} Crew Dispatched` : 'Unassigned'}
+                                    </strong>
+                                 </span>
+                                 {reportCount > 0 && (
+                                    <span className="font-mono text-text-secondary font-medium">
+                                       {reportCount} report{reportCount > 1 ? 's' : ''}
+                                    </span>
+                                 )}
+                              </div>
                            </div>
-                           <p className="text-sm text-text-secondary line-clamp-2 mb-3 h-10">
-                              {task.description || 'No description provided.'}
-                           </p>
-                           <div className="flex justify-between items-center text-xs">
-                              <span className="text-text-muted">Assigned: {task.assigned_to ? 'Crew Dispatched' : 'Unassigned'}</span>
-                           </div>
-                        </div>
-                     ))}
+                        );
+                     })}
                    </div>
                  )}
               </div>
