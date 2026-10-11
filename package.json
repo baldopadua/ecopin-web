@@ -6,7 +6,8 @@
     "dev": "next dev -p 4001 --webpack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:public-map": "node --test --test-isolation=none tests/public-report-page.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.4",

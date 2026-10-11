@@ -1,10 +1,11 @@
 'use client'
-import React, { useEffect, useState, useMemo } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, Polygon, useMapEvents, Polyline } from 'react-leaflet'
+import React, { useEffect, useState, useMemo, useCallback } from 'react'
+import { MapContainer, TileLayer, Marker, Popup, Polygon, ZoomControl, useMap, useMapEvents, Polyline } from 'react-leaflet'
 import L from 'leaflet'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
-import { fetchValidatedReports, fetchIssueTypes, fetchClusters, fetchReportEvidence } from '@/lib/api'
+import { fetchReportEvidence } from '@/lib/api'
+import { fetchPublicReportPage } from '@/lib/api/public-report-page.mjs'
 import { supabase } from '@/lib/supabase'
 
 if (typeof window !== 'undefined' && !window.Buffer) {
@@ -13,6 +14,7 @@ if (typeof window !== 'undefined' && !window.Buffer) {
 
 const PASIG_CENTER = [14.5802, 121.0850]
 const DEFAULT_ZOOM = 14
+const ISSUE_TYPES = ['waste', 'flooding', 'pollution', 'infrastructure', 'illegal_logging', 'pending', 'others']
 
 const ImageWithLoader = ({ src, alt, className }) => {
   const [loaded, setLoaded] = useState(false)
@@ -89,21 +91,31 @@ const parseGeometry = (geometry) => {
   return null
 }
 
-function ZoomTracker({ setZoom }) {
-  const map = useMapEvents({
-    zoomend: () => setZoom(map.getZoom()),
-  })
+function ViewportTracker({ onViewport }) {
+  const map = useMap()
+  const publishViewport = useCallback(() => {
+    const bounds = map.getBounds()
+    onViewport({
+      south: Math.max(-90, bounds.getSouth()), north: Math.min(90, bounds.getNorth()),
+      west: bounds.getWest(), east: bounds.getEast(),
+    }, map.getZoom())
+  }, [map, onViewport])
+  useMapEvents({ moveend: publishViewport, zoomend: publishViewport, resize: publishViewport })
+  useEffect(() => { publishViewport() }, [publishViewport])
   return null
 }
 
 export default function PublicMap({ isDark }) {
   const [mounted, setMounted] = useState(false)
   const [reports, setReports] = useState([])
-  const [filteredReports, setFilteredReports] = useState([])
-  const [issueTypes, setIssueTypes] = useState([])
+  const issueTypes = ISSUE_TYPES
+  const [viewport, setViewport] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
+  const [refresh, setRefresh] = useState(0)
   
   // Clustering state
-  const [clusters, setClusters] = useState([])
   const [zoom, setZoom] = useState(DEFAULT_ZOOM)
 
   // Filters
@@ -119,6 +131,7 @@ export default function PublicMap({ isDark }) {
   const handleViewDetails = async (report) => {
     setDetailedReport(report)
     setDetailedEvidence([])
+    if (report.location_precision === 'approximate') return
     try {
       const evidence = await fetchReportEvidence(report.id)
       setDetailedEvidence(evidence || [])
@@ -127,36 +140,60 @@ export default function PublicMap({ isDark }) {
     }
   }
 
-  useEffect(() => {
-    import('@/lib/leaflet-fix')
-    setMounted(true)
-
-    Promise.all([
-      fetchValidatedReports({ validationStatus: 'approved' }),
-      fetchIssueTypes()
-    ]).then(([reportsData, typesData]) => {
-      setReports(reportsData || [])
-      setFilteredReports(reportsData || [])
-      setIssueTypes(typesData || [])
-    })
-
-    const subscription = supabase
-      .channel('public-reports-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'reports' }, () => {
-        fetchValidatedReports({ validationStatus: 'validated' }).then((reportsData) => {
-          setReports(reportsData || [])
-        })
-      })
-      .subscribe()
-
-    return () => subscription.unsubscribe()
+  const onViewport = useCallback((bounds, nextZoom) => {
+    setViewport(bounds)
+    setZoom(nextZoom)
   }, [])
 
   useEffect(() => {
+    let active = true
+    import('@/lib/leaflet-fix').then(() => { if (active) setMounted(true) })
+    return () => { active = false }
+  }, [])
+
+  useEffect(() => {
+    if (!viewport) return
+    const controller = new AbortController()
+    let active = true
+    const timer = setTimeout(async () => {
+      setLoading(true)
+      setLoadError(false)
+      try {
+        const page = await fetchPublicReportPage(supabase, {
+          bounds: viewport, status: statusFilter, issueType: issueTypeFilter,
+          limit: 200, signal: controller.signal,
+        })
+        if (!active) return
+        setReports(page.reports)
+        setHasMore(page.hasMore)
+      } catch (error) {
+        if (!active || controller.signal.aborted) return
+        setReports([])
+        setHasMore(false)
+        setLoadError(true)
+      } finally {
+        if (active) setLoading(false)
+      }
+    }, 250)
+    return () => {
+      active = false
+      clearTimeout(timer)
+      controller.abort()
+    }
+  }, [viewport, statusFilter, issueTypeFilter, refresh])
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (document.visibilityState === 'visible') setRefresh(value => value + 1)
+    }, 60000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const filteredReports = useMemo(() => {
     let filtered = (reports || []).filter(r => r.validation_status !== 'rejected')
     if (statusFilter !== 'all') filtered = filtered.filter(r => r.status === statusFilter)
     if (issueTypeFilter !== 'all') filtered = filtered.filter(r => r.issue_type === issueTypeFilter)
-    setFilteredReports(filtered)
+    return filtered
   }, [statusFilter, issueTypeFilter, reports])
 
   // Compute clusters purely client-side from the filtered public reports
@@ -253,6 +290,9 @@ export default function PublicMap({ isDark }) {
   return (
     <>
       <style jsx global>{`
+        .leaflet-bottom.leaflet-left .leaflet-control-zoom {
+          margin-bottom: 90px;
+        }
         .leaflet-container { 
           background-color: ${isDark ? '#000' : '#fff'}; 
           cursor: crosshair !important; 
@@ -299,12 +339,22 @@ export default function PublicMap({ isDark }) {
       `}</style>
 
       <div className="relative h-full w-full bg-surface  font-sans">
+        <div role={loadError ? 'alert' : 'status'} aria-live="polite"
+          className="absolute bottom-6 left-4 right-24 z-[500] w-fit max-w-[calc(100%-7rem)] rounded-xl border border-border bg-surface p-3 text-sm text-text-primary shadow-md">
+          {loadError ? (
+            <span>Reports could not load. <button type="button" className="underline font-bold" onClick={() => setRefresh(value => value + 1)}>Try again</button></span>
+          ) : loading ? 'Loading reports in this area…'
+            : hasMore ? 'Showing the newest 200 reports in this area. Zoom in or use filters to see more.'
+            : `${filteredReports.length} public report${filteredReports.length === 1 ? '' : 's'} in this area`}
+        </div>
         <MapContainer
           center={PASIG_CENTER}
           zoom={DEFAULT_ZOOM}
+          zoomControl={false}
           style={{ height: '100%', width: '100%', filter: 'contrast(1.1)' }}
         >
-          <ZoomTracker setZoom={setZoom} />
+          <ViewportTracker onViewport={onViewport} />
+          <ZoomControl position="bottomleft" />
           <TileLayer url={mapUrl} />
 
           {/* Render Cluster Markers (Zoom Out) */}
@@ -322,7 +372,7 @@ export default function PublicMap({ isDark }) {
                       CLUSTER #{cluster.id}
                     </strong>
                     <p className="text-sm font-medium mb-1">
-                      {cluster.report_count} Reports
+                      {cluster.report_count} visible reports
                     </p>
                     <p className="text-xs font-bold uppercase">
                       Severity: <span className={cluster.severity === 'high' ? 'text-red-500' : 'text-yellow-500'}>{cluster.severity}</span>
@@ -449,6 +499,7 @@ export default function PublicMap({ isDark }) {
         {/* Floating Filter Button (Bottom Right) */}
         {!showFilterPanel && (
           <button
+            aria-label="Filter reports"
             onClick={() => setShowFilterPanel(true)}
             className="absolute bottom-8 right-6 md:bottom-12 md:right-12 z-[1001] bg-primary text-white p-4 rounded-full drop-shadow-sm hover:-translate-y-1 hover:drop-shadow-sm transition-all flex items-center justify-center"
           >
@@ -628,5 +679,3 @@ export default function PublicMap({ isDark }) {
     </>
   )
 }
-
-
