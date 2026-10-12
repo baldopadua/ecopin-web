@@ -1,4 +1,5 @@
 'use client'
+import SecureImage from '@/components/ui/SecureImage'
 import React, { useState } from 'react'
 
 export default function PhotoGalleryCard({ task, reports }) {
@@ -47,7 +48,7 @@ export default function PhotoGalleryCard({ task, reports }) {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {task.before_photo_url && (
             <div className="relative cursor-pointer" onClick={() => setLightboxImage({ url: task.before_photo_url, type: 'before', index: 0 })}>
-              <img src={task.before_photo_url} alt="Before cleanup" className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity border border-border" />
+              <SecureImage src={task.before_photo_url} alt="Before cleanup" className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity border border-border" />
               <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">Task Before</span>
             </div>
           )}
@@ -57,7 +58,7 @@ export default function PhotoGalleryCard({ task, reports }) {
               className="relative cursor-pointer"
               onClick={() => setLightboxImage({ url: report.before_photo_url, type: 'before', index: (task.before_photo_url ? 1 : 0) + idx })}
             >
-              <img src={report.before_photo_url} alt={`Report ${report.title} Before`} className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity border border-border" />
+              <SecureImage src={report.before_photo_url} alt={`Report ${report.title} Before`} className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity border border-border" />
               <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded truncate max-w-[90%]">{report.title}</span>
             </div>
           ))}
@@ -75,7 +76,7 @@ export default function PhotoGalleryCard({ task, reports }) {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {task.after_photo_url && (
             <div className="relative cursor-pointer" onClick={() => setLightboxImage({ url: task.after_photo_url, type: 'after', index: 0 })}>
-              <img src={task.after_photo_url} alt="After cleanup" className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity border border-border" />
+              <SecureImage src={task.after_photo_url} alt="After cleanup" className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity border border-border" />
               <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">Task After</span>
             </div>
           )}
@@ -85,7 +86,7 @@ export default function PhotoGalleryCard({ task, reports }) {
               className="relative cursor-pointer"
               onClick={() => setLightboxImage({ url: report.after_photo_url, type: 'after', index: (task.after_photo_url ? 1 : 0) + idx })}
             >
-              <img src={report.after_photo_url} alt={`Report ${report.title} After`} className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity border border-border" />
+              <SecureImage src={report.after_photo_url} alt={`Report ${report.title} After`} className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity border border-border" />
               <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded truncate max-w-[90%]">{report.title}</span>
             </div>
           ))}
@@ -120,7 +121,7 @@ export default function PhotoGalleryCard({ task, reports }) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <img 
+            <SecureImage 
               src={lightboxImage.url} 
               alt="Lightbox" 
               className="max-w-full max-h-[90vh] object-contain rounded-lg"

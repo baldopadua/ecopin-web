@@ -1,4 +1,5 @@
 'use client'
+import SecureImage from '@/components/ui/SecureImage'
 import React, { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { fetchCleanupTaskById, uploadCleanupPhoto, fetchReportsByClusterId, fetchReportsByIds, fetchReportEvidence, updateLifecycleStage, logAgencyResponse, fetchAgencyResponses, fetchAvailableCrew, assignCleanupTask, updateCleanupTaskTitle } from '@/lib/api'
@@ -838,7 +839,7 @@ export default function CleanupTaskDetailPage() {
 
                  return (
                     <div className="w-full h-full relative flex items-center justify-center group">
-                       <img src={images[currentImageIndex].url} alt={images[currentImageIndex].label} className="max-w-full max-h-full object-contain" />
+                       <SecureImage src={images[currentImageIndex].url} alt={images[currentImageIndex].label} className="max-w-full max-h-full object-contain" />
                        <div className="absolute top-4 left-4 bg-black/60 text-white px-2 py-1 text-[10px] font-bold uppercase tracking-widest rounded">{images[currentImageIndex].label}</div>
                        {images.length > 1 && (
                           <div className="absolute top-4 right-4 bg-black/60 text-white px-2 py-1 text-[10px] font-bold tracking-widest rounded">{currentImageIndex + 1} / {images.length}</div>

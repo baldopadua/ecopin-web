@@ -1,4 +1,5 @@
 'use client'
+import SecureImage from '@/components/ui/SecureImage'
 import React, { useState, useEffect } from 'react'
 import { fetchReportEvidence } from '@/lib/api/reports'
 
@@ -71,7 +72,7 @@ export default function EvidenceGallery({ reports = [] }) {
               className="relative cursor-pointer border border-border overflow-hidden group"
               onClick={() => setLightboxImage(idx)}
             >
-              <img 
+              <SecureImage 
                 src={item.photo_url || item.url} 
                 alt={`Evidence for ${item.reportTitle}`} 
                 className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300" 
@@ -111,7 +112,7 @@ export default function EvidenceGallery({ reports = [] }) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <img 
+            <SecureImage 
               src={evidence[lightboxImage].photo_url || evidence[lightboxImage].url} 
               alt="Evidence Full" 
               className="max-w-full max-h-full object-contain border border-border border-white/20"

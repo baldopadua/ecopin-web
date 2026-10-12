@@ -1,4 +1,5 @@
 'use client'
+import SecureImage from '@/components/ui/SecureImage'
 import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
@@ -564,7 +565,7 @@ export default function ReportDetailPage() {
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     {evidence.map((img, index) => (
                       <div key={index} className="relative group">
-                        <img
+                        <SecureImage
                           src={img.url}
                           alt={`Evidence ${index + 1}`}
                           className="w-full h-48 object-cover rounded-lg border border-border cursor-pointer hover:opacity-90 transition-opacity"
@@ -592,7 +593,7 @@ export default function ReportDetailPage() {
                       )}
                     </div>
                     {report.before_photo_url ? (
-                      <img src={report.before_photo_url} alt="Before" className="w-full h-48 object-cover rounded-lg" />
+                      <SecureImage src={report.before_photo_url} alt="Before" className="w-full h-48 object-cover rounded-lg" />
                     ) : user?.role === 'field_crew' ? (
                       <div
                         className={`border border-border border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${uploadingBefore ? 'border-border bg-surface' : 'border-border hover:border-accent-green hover:bg-accent-green/5'
@@ -652,7 +653,7 @@ export default function ReportDetailPage() {
                       )}
                     </div>
                     {report.after_photo_url ? (
-                      <img src={report.after_photo_url} alt="After" className="w-full h-48 object-cover rounded-lg" />
+                      <SecureImage src={report.after_photo_url} alt="After" className="w-full h-48 object-cover rounded-lg" />
                     ) : user?.role === 'field_crew' ? (
                       <div
                         className={`border border-border border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${uploadingAfter ? 'border-border bg-surface' : 'border-border hover:border-accent-green hover:bg-accent-green/5'
@@ -920,7 +921,7 @@ export default function ReportDetailPage() {
             >
               ×
             </button>
-            <img
+            <SecureImage
               src={selectedImage}
               alt="Full size evidence"
               className="max-w-full max-h-[90vh] object-contain rounded-lg"

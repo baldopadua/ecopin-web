@@ -1,4 +1,5 @@
 'use client'
+import SecureImage from '@/components/ui/SecureImage'
 import React, { useEffect, useState, useMemo, useCallback } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polygon, ZoomControl, useMap, useMapEvents, Polyline } from 'react-leaflet'
 import L from 'leaflet'
@@ -25,7 +26,7 @@ const ImageWithLoader = ({ src, alt, className }) => {
           <div className="w-8 h-8 border border-border border-[#ccff00] border-t-black dark:border-t-white rounded-full animate-spin"></div>
         </div>
       )}
-      <img 
+      <SecureImage 
         src={src} 
         alt={alt} 
         className={`w-full h-full object-cover ${loaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`} 
@@ -277,8 +278,8 @@ export default function PublicMap({ isDark }) {
 
   if (!mounted) return (
     <div className="h-full w-full flex items-center justify-center bg-surface  transition-colors duration-300">
-      <img src="/Solo Logo Light.png" alt="Loading..." className="h-24 w-auto object-contain animate-pulse dark:hidden" />
-      <img src="/Solo Logo Dark.png" alt="Loading..." className="h-24 w-auto object-contain animate-pulse hidden dark:block" />
+      <SecureImage src="/Solo Logo Light.png" alt="Loading..." className="h-24 w-auto object-contain animate-pulse dark:hidden" />
+      <SecureImage src="/Solo Logo Dark.png" alt="Loading..." className="h-24 w-auto object-contain animate-pulse hidden dark:block" />
     </div>
   );
 

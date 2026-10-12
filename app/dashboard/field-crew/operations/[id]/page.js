@@ -1,4 +1,5 @@
 'use client'
+import SecureImage from '@/components/ui/SecureImage'
 import React, { useEffect, useState, useRef } from 'react'
 import { ArrowLeft, Eye, Camera, Upload, ChevronRight, CheckCircle } from 'lucide-react'
 import { useRouter, useParams } from 'next/navigation'
@@ -843,7 +844,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
                       {availableCrew.filter(crew => task.assigned_crew_ids.includes(crew.id)).map(crew => (
                         <div key={crew.id} className="flex items-center space-x-3 p-2 bg-surface-elevated rounded-lg">
                           {crew.avatar_url ? (
-                            <img
+                            <SecureImage
                               src={crew.avatar_url}
                               alt={crew.full_name}
                               className="w-10 h-10 rounded-full object-cover border border-border"
@@ -1015,7 +1016,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
             >
               ×
             </button>
-            <img src={lightboxImage.url} alt="Full view" className="w-full h-full object-contain" />
+            <SecureImage src={lightboxImage.url} alt="Full view" className="w-full h-full object-contain" />
           </div>
         </div>
       )}

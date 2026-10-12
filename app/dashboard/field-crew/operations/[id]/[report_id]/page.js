@@ -1,4 +1,5 @@
 'use client'
+import SecureImage from '@/components/ui/SecureImage'
 import React, { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, Map as MapIcon, Upload, Trash2, Camera, CheckCircle } from 'lucide-react'
@@ -344,7 +345,7 @@ export default function ReportDetailPage() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       {evidence.map((ev, i) => (
                         <a key={i} href={ev.file_url} target="_blank" rel="noreferrer" className="block relative group border border-border overflow-hidden">
-                          <img src={ev.file_url} alt="Citizen Evidence" className="w-full h-32 object-cover group-hover:scale-105 transition-transform" />
+                          <SecureImage src={ev.file_url} alt="Citizen Evidence" className="w-full h-32 object-cover group-hover:scale-105 transition-transform" />
                         </a>
                       ))}
                     </div>
@@ -367,7 +368,7 @@ export default function ReportDetailPage() {
                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                      {crewPhotos.map((photo, i) => (
                         <div key={i} className="relative group border border-border border-[#1A1A1A] ">
-                          <img src={photo.url} alt={`Crew ${photo.type}`} className="w-full h-32 object-cover" />
+                          <SecureImage src={photo.url} alt={`Crew ${photo.type}`} className="w-full h-32 object-cover" />
                           <div className="absolute top-0 right-0 bg-[#1A1A1A] text-white text-[10px] font-mono px-2 py-1 uppercase">{photo.type}</div>
                         </div>
                      ))}
