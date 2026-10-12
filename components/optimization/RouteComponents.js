@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import { Sun, CloudRain, CloudLightning, Circle, Ruler, Timer } from 'lucide-react'
+import 'leaflet/dist/leaflet.css'
 
 export const WEATHER_OPTIONS = [
   { value: 'normal', label: 'Normal', icon: <Sun className="w-4 h-4 text-warning" /> },

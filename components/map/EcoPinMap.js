@@ -583,7 +583,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
           color: #fff !important;
         }
       `}</style>
-      <div className="relative h-full w-full">
+      <div className="relative h-full w-full isolate z-0">
         <MapContainer
           key={centerLat && centerLng ? `map-${centerLat}-${centerLng}` : 'ecopin-map'}
           center={centerLat && centerLng ? [centerLat, centerLng] : PLP_CENTER}

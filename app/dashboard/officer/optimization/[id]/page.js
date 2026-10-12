@@ -116,7 +116,7 @@ export default function OptimizationRunPage() {
   const maxDur = Math.max(...routes.map(r => r.total_duration_min || 0), 1)
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 px-4 md:px-8 py-6">
+    <div className="p-8 space-y-6">
       <div className="flex items-center gap-4 mb-2">
         <button onClick={() => router.push('/dashboard/officer/optimization')} className="p-2 border border-border bg-surface-elevated hover:bg-surface text-text-muted hover:text-text-primary">
           <ArrowLeft className="w-5 h-5" />

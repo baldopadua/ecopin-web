@@ -168,7 +168,7 @@ export default function ClusterDetailPage() {
           startY: 60,
           head: [['Metric', 'Value', 'Metric', 'Value']],
           body: [
-            ['Severity Score', Math.round(cluster?.severity_score || 0).toString(), 'Primary Signature', normalizeString(cluster?.issue_type)],
+            ['Priority Level', (cluster?.priority ? cluster.priority : ((cluster?.priority_score || 0) >= 80 ? 'urgent' : (cluster?.priority_score || 0) >= 60 ? 'high' : (cluster?.priority_score || 0) >= 35 ? 'medium' : 'low')).toUpperCase(), 'Priority Score', Math.round(cluster?.priority_score || 0).toString()],
             ['Total Reports', reports.length.toString(), 'Radius', `${Math.round(cluster?.radius_meters || 50)}m`],
           ],
           headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
@@ -233,6 +233,17 @@ export default function ClusterDetailPage() {
 
   const centerLat = cluster.center_lat || (reports[0] ? parseLocation(reports[0].location, reports[0].latitude, reports[0].longitude).latitude : null)
   const centerLng = cluster.center_lng || (reports[0] ? parseLocation(reports[0].location, reports[0].latitude, reports[0].longitude).longitude : null)
+  
+  const getPriorityLabel = (c) => {
+    if (c?.priority) return c.priority;
+    const score = c?.priority_score || 0;
+    if (score >= 80) return 'urgent';
+    if (score >= 60) return 'high';
+    if (score >= 35) return 'medium';
+    return 'low';
+  };
+  const priorityScore = Math.round(cluster.priority_score || 0)
+  const priorityLabel = getPriorityLabel(cluster)
 
   const reportColumns = [
     { key: 'title', label: 'Title', width: '30%', render: v => <span className="font-bold">{v}</span> },
@@ -245,6 +256,7 @@ export default function ClusterDetailPage() {
     <OfficerGuard>
       <div className="p-8">
         
+
 
 
         <PageHeader
@@ -290,7 +302,7 @@ export default function ClusterDetailPage() {
               </div>
             )
           }
-          subtitle={`Severity Score: ${Math.round(cluster.severity_score || 0)}`}
+          subtitle={`Priority Score: ${priorityScore} (${normalizeString(priorityLabel)})`}
           breadcrumbs={[
             { label: 'Intel', href: '/dashboard/officer/hotzone-intel' },
             { label: `Cluster ${cluster.id.slice(0,8)}` }
@@ -314,8 +326,14 @@ export default function ClusterDetailPage() {
               
               <div className="space-y-6 flex-1">
                  <div>
-                    <span className="text-[10px] font-mono uppercase text-text-muted block mb-1">Severity</span>
-                    <div className="text-3xl font-bold text-error">{Math.round(cluster.severity_score || 0)}</div>
+                    <span className="text-[10px] font-mono uppercase text-text-muted block mb-1">Priority</span>
+                    <div className="text-3xl font-bold text-error">
+                      {priorityScore}
+                      <span className="text-lg font-mono font-normal text-text-muted ml-2">/ 100</span>
+                    </div>
+                    <span className="text-xs font-mono font-bold uppercase tracking-wider text-accent-green">
+                      ({priorityLabel})
+                    </span>
                  </div>
                  
                  <div>
@@ -356,8 +374,8 @@ export default function ClusterDetailPage() {
            </div>
            
            {/* Map Panel */}
-           <div className="lg:col-span-2 border border-border bg-surface-elevated relative min-h-[400px]">
-              <div className="absolute top-4 left-4 z-[400] bg-surface-elevated text-text-primary px-3 py-1.5 border border-border pointer-events-none">
+           <div className="lg:col-span-2 border border-border bg-surface-elevated relative min-h-[400px] isolate z-0">
+              <div className="absolute top-4 left-4 z-10 bg-surface-elevated text-text-primary px-3 py-1.5 border border-border pointer-events-none">
                  <span className="font-bold uppercase tracking-widest text-xs flex items-center gap-2">
                     <MapIcon className="w-3 h-3" /> Area View
                  </span>

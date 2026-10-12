@@ -30,43 +30,59 @@ function formatDuration(minutes) {
 
 function createDepotIcon() {
   return L.divIcon({
-    className: 'depot-marker',
+    className: 'custom-marker',
     html: `<div style="
-      width: 36px;
-      height: 36px;
-      background: linear-gradient(135deg, #ccff00, #a3cc00);
-      border: 3px solid #1a1a1a;
-      border-radius: 4px;
+      background-color: #0052CC;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 18px;
-      box-shadow: 2px 2px 0 #1a1a1a;
     ">🏢</div>`,
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
   })
 }
 
 function createWaypointIcon(sequenceNumber, color) {
   return L.divIcon({
-    className: 'waypoint-marker',
+    className: 'custom-marker',
     html: `<div style="
-      width: 28px;
-      height: 28px;
+      position: relative;
       background-color: ${color};
-      border: 2px solid white;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 12px;
-      font-weight: bold;
-      color: white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.4);
-    ">${sequenceNumber}</div>`,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
+    ">
+      <img src="/pin-icon.svg" alt="pin" style="width: 20px; height: 20px;" />
+      <span style="
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        background: #111827;
+        color: white;
+        border-radius: 50%;
+        width: 18px;
+        height: 18px;
+        font-size: 10px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid white;
+      ">${sequenceNumber}</span>
+    </div>`,
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
   })
 }
 

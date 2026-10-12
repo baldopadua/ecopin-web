@@ -298,7 +298,7 @@ export default function PublicMap({ isDark }) {
         }
       `}</style>
 
-      <div className="relative h-full w-full bg-surface  font-sans">
+      <div className="relative h-full w-full bg-surface font-sans isolate z-0">
         <MapContainer
           center={PASIG_CENTER}
           zoom={DEFAULT_ZOOM}
