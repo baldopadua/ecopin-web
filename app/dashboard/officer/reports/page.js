@@ -28,6 +28,8 @@ export default function OfficerReportsPage() {
       const params = new URLSearchParams(window.location.search)
       if (params.get('filter') === 'overdue') {
         setStatusFilter('overdue')
+      } else if (params.get('filter') === 'manual_review') {
+        setValidationFilter('manual_review')
       }
     }
   }, [])
@@ -77,7 +79,11 @@ export default function OfficerReportsPage() {
     }
 
     if (validationFilter !== 'all') {
-      filtered = filtered.filter(r => r.validation_status === validationFilter)
+      if (validationFilter === 'manual_review') {
+        filtered = filtered.filter(r => r.validation_status === 'manual_review' || r.validation_status === 'Manual_Review')
+      } else {
+        filtered = filtered.filter(r => r.validation_status === validationFilter)
+      }
     }
 
     setFilteredReports(filtered)

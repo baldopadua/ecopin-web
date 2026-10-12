@@ -24,11 +24,22 @@ export default function CleanupTasksPage() {
   const itemsPerPage = 8
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const statusParam = params.get('status')
+      if (statusParam) {
+        setStatusFilter(statusParam)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
     const loadTasks = async () => {
       try {
         const data = await fetchCleanupTasks()
-        setTasks(data)
-        setFilteredTasks(data)
+        const taskList = Array.isArray(data) ? data : (data?.tasks || [])
+        setTasks(taskList)
+        setFilteredTasks(taskList)
       } catch (error) {
         console.error('Failed to load cleanup tasks:', error)
       } finally {

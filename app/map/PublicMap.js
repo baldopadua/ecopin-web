@@ -338,7 +338,7 @@ export default function PublicMap({ isDark }) {
         }
       `}</style>
 
-      <div className="relative h-full w-full bg-surface  font-sans">
+<div className="relative h-full w-full bg-surface font-sans isolate z-0">
         <div role={loadError ? 'alert' : 'status'} aria-live="polite"
           className="absolute bottom-6 left-4 right-24 z-[500] w-fit max-w-[calc(100%-7rem)] rounded-xl border border-border bg-surface p-3 text-sm text-text-primary shadow-md">
           {loadError ? (

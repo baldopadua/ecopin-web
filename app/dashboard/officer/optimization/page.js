@@ -696,7 +696,11 @@ export default function OptimizationPage() {
               </thead>
               <tbody>
                 {previousRuns.slice((currentPage - 1) * runsPerPage, currentPage * runsPerPage).map(run => (
-                  <tr key={run.id}>
+                  <tr 
+                    key={run.id}
+                    onClick={() => handleViewRun(run.id)}
+                    className="cursor-pointer hover:bg-surface-elevated transition-colors"
+                  >
                     <td>{formatDate(run.created_at)}</td>
                     <td>
                       <span className={`text-xs px-2 py-1 border font-bold font-mono uppercase ${STATUS_STYLES[run.status] || ''}`}>
@@ -717,10 +721,12 @@ export default function OptimizationPage() {
                       </span>
                     </td>
                     <td>
-
                       <button
-                        onClick={() => handleViewRun(run.id)}
-                        className="text-xs font-bold underline uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewRun(run.id);
+                        }}
+                        className="text-xs font-bold underline uppercase tracking-wider flex items-center gap-1 cursor-pointer hover:text-primary transition-colors"
                       >
                         VIEW
                       </button>

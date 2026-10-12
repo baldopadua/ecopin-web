@@ -676,8 +676,8 @@ export default function CleanupTaskDetailPage() {
       <div className="flex flex-col gap-8 mt-2">
          
          <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-            <div className="xl:col-span-3 h-[400px] border border-border dark:border-[#333333] relative flex flex-col bg-surface-elevated shrink-0">
-               <div className="absolute top-4 left-4 z-[400] bg-black text-white px-3 py-1.5 border border-border border-accent-green pointer-events-none">
+            <div className="xl:col-span-3 h-[400px] border border-border dark:border-[#333333] relative flex flex-col bg-surface-elevated shrink-0 isolate z-0">
+               <div className="absolute top-4 left-4 z-10 bg-black text-white px-3 py-1.5 border border-border border-accent-green pointer-events-none">
                   <h3 className="font-bold uppercase tracking-widest text-xs">Route Map</h3>
                </div>
                <div className="flex-1 z-0 relative">

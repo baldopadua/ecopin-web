@@ -487,8 +487,8 @@ export default function ReportDetailPage() {
                             size="large"
                           />
                         )}
-                        {report.lifecycle_stage && (
-                          <StatusBadge status={report.lifecycle_stage} type="lifecycle" size="large" />
+                        {(report.stage || report.lifecycle_stage) && (
+                          <StatusBadge status={report.stage || report.lifecycle_stage} type="lifecycle" size="large" />
                         )}
                       </>
                     )}
@@ -499,8 +499,9 @@ export default function ReportDetailPage() {
                   <div className="absolute top-3 left-3 right-3 h-1 bg-gray-300 dark:bg-gray-700 -z-10" />
                   {/* Colored progress line */}
                   {(() => {
-                    const stages = ['submitted', 'verified', 'assigned', 'in_progress', 'resolved', 'closed']
-                    const currentIndex = stages.indexOf(report.lifecycle_stage)
+                    const currentStageValue = report.stage || report.lifecycle_stage
+                    const stages = ['submitted', 'assigned', 'in_progress', 'resolved', 'closed']
+                    const currentIndex = stages.indexOf(currentStageValue)
                     const totalSegments = stages.length - 1
 
                     let lineWidthCalc = '0px'
@@ -517,11 +518,12 @@ export default function ReportDetailPage() {
                       />
                     )
                   })()}
-                  {['submitted', 'verified', 'assigned', 'in_progress', 'resolved', 'closed'].map((stage, index) => {
-                    const stages = ['submitted', 'verified', 'assigned', 'in_progress', 'resolved', 'closed']
-                    const currentIndex = stages.indexOf(report.lifecycle_stage)
+                  {['submitted', 'assigned', 'in_progress', 'resolved', 'closed'].map((stage, index) => {
+                    const currentStageValue = report.stage || report.lifecycle_stage
+                    const stages = ['submitted', 'assigned', 'in_progress', 'resolved', 'closed']
+                    const currentIndex = stages.indexOf(currentStageValue)
                     const isCompleted = currentIndex >= index
-                    const isCurrent = report.lifecycle_stage === stage
+                    const isCurrent = currentStageValue === stage
                     return (
                       <div key={stage} className="flex-1 flex flex-col items-center z-10">
                         <div className={`w-6 h-6 rounded-full ${isCurrent ? 'bg-[var(--primary)] ring-4 ring-[var(--primary)]/20' : isCompleted ? 'bg-[var(--primary)]' : 'bg-gray-300 dark:bg-gray-700'} transition-all relative`} />
