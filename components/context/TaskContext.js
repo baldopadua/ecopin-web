@@ -40,17 +40,24 @@ export function TaskProvider({ children }) {
       if (!job.planId) throw new Error('Completed job has no draft plan')
       const result = await getDispatchPlan(job.planId)
       const selectedCount = result.items.filter(item => item.is_selected && item.item_type !== 'bundled_report').length
+      const unselectedItems = result.items.filter(item => !item.is_selected && item.item_type !== 'bundled_report')
+      const outsideBufferCount = new Set((result.rejectedBundles || [])
+        .filter(entry => entry.reason === 'outside_buffer' && entry.report_id)
+        .map(entry => entry.report_id)).size
       const generatedDraft = {
         ...result.plan, status: 'draft_plan', selectedCount,
-        omittedCount: result.items.filter(item => !item.is_selected).length,
-        capacityUtilized: result.capacity.generalist?.used || result.capacity.used || 0,
+        omittedCount: unselectedItems.length,
+        outsideBufferCount,
+        plannedCrewCount: result.plannedCrewCount || 0,
+        proposedRoutes: result.proposedRoutes || [],
+        capacityUtilized: result.capacity.used || 0,
         groups: result.groups, rejectedBundles: result.rejectedBundles,
         capacity: result.capacity
       }
       setDraftPlan(generatedDraft)
       setOptimizationProgress({ percent: 100, message: 'Draft plan ready' })
       setGlobalNotification({ message: `Draft plan generated with ${selectedCount} tasks.`,
-        type: 'success', link: '/dashboard/officer/optimization' })
+        type: selectedCount ? 'success' : 'warning' })
       if (onSuccess) onSuccess({ ...result, plan: generatedDraft,
         selectedCount, omittedLoggedCount: generatedDraft.omittedCount })
     } catch (error) {
@@ -87,11 +94,14 @@ export function TaskProvider({ children }) {
       clearInterval(progressInterval)
 
       const pending = result.routing_status === 'needs_replan' || result.routing_status === 'routing'
-      setOptimizationProgress({ percent: 100, message: pending ? 'Reports claimed; routing needs attention' : 'Routes published' })
+      const empty = result.routing_status === 'empty' || !result.tasks?.length
+      setOptimizationProgress({ percent: 100, message: empty ? 'No tasks dispatched' : pending ? 'Reports claimed; routing needs attention' : 'Routes published' })
       setGlobalNotification({
-        message: pending ? 'Reports claimed; routes pending. Retry the same plan within 30 minutes.' : 'Routes published and crews dispatched.',
-        type: pending ? 'warning' : 'success',
-        link: '/dashboard/officer/optimization'
+        message: empty ? 'No tasks dispatched. Review crew availability and plan exclusions.'
+          : pending ? 'Reports claimed; routes pending. Retry the same plan within 30 minutes.'
+          : 'Routes published and crews dispatched.',
+        type: empty || pending ? 'warning' : 'success',
+        link: !empty && result.run?.id ? `/dashboard/officer/optimization/${result.run.id}` : null
       })
       if (onSuccess) onSuccess(result)
     } catch (error) {
@@ -99,7 +109,7 @@ export function TaskProvider({ children }) {
       setGlobalNotification({ message: error.message || 'Failed to commit plan', type: 'error' })
       if (onError) onError(error)
     } finally {
-      setTimeout(() => setIsOptimizing(false), 2000)
+      setIsOptimizing(false)
     }
   }, [isOptimizing])
 

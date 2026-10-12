@@ -204,16 +204,19 @@ export default function OptimizationPage() {
       { weather_condition: liveWeather, traffic_condition: trafficCondition },
       (result) => {
         const pending = result.routing_status === 'needs_replan' || result.routing_status === 'routing'
+        const empty = result.routing_status === 'empty' || !result.tasks?.length
         const skipped = result.results?.filter(group => group.status === 'skipped').length || 0
         const omittedSatellites = result.results?.reduce((sum, group) =>
           sum + (group.omitted_satellite_ids?.length || 0), 0) || 0
-        setNotification({ message: pending
+        setNotification({ message: empty
+          ? 'No tasks were dispatched. Review crew availability and plan exclusions.'
+          : pending
           ? `Reports claimed; routes need replanning. ${result.warning || 'Review this plan within 30 minutes.'}`
           : `Routes published. ${skipped} group(s) skipped; ${omittedSatellites} satellite report(s) became unavailable.`,
-        type: pending || omittedSatellites ? 'warning' : 'success' })
-        if (!pending) setDraftPlan(null) // Clear draft on successful commit
+        type: empty || pending || omittedSatellites ? 'warning' : 'success' })
+        if (!pending && !empty) setDraftPlan(null)
         loadPreviousRuns()
-        if (result.run?.id) {
+        if (!empty && result.run?.id) {
           router.push('/dashboard/officer/optimization/' + result.run.id)
         }
         setActionLoading(null)
@@ -479,7 +482,7 @@ export default function OptimizationPage() {
           {/* Route Info Header */}
           <RouteInfoHeader
             eta={currentProposal.status === 'draft_plan' 
-              ? formatDuration((currentProposal.capacityUtilized || 0) / Math.max(1, currentProposal.total_crews_available || 1)) 
+              ? formatDuration((currentProposal.capacityUtilized || 0) / Math.max(1, currentProposal.plannedCrewCount || 1))
               : formatDuration((currentProposal.total_estimated_duration_min || currentProposalRoutes.reduce((sum, r) => sum + (r.total_duration_min || 0), 0)) / Math.max(1, currentProposalRoutes.length || currentProposal.num_crews || 1))
             }
             weather={
@@ -505,19 +508,23 @@ export default function OptimizationPage() {
             </div>
             <div className="bg-surface-elevated border border-border p-3">
               <p className="text-xs font-mono uppercase tracking-wider text-text-muted">Crews</p>
-              <p className="text-2xl font-bold text-text-primary">{currentProposal.num_crews || currentProposal.total_crews_available || 0}</p>
+              <p className="text-2xl font-bold text-text-primary">{currentProposal.plannedCrewCount || 0}</p>
             </div>
             <div className="bg-surface-elevated border border-border p-3">
               <p className="text-xs font-mono uppercase tracking-wider text-text-muted">Est. Distance</p>
               <p className="text-2xl font-bold text-text-primary">
-                {currentProposal.status === 'draft_plan' ? 'TBD' : formatDistance(currentProposalRoutes.reduce((sum, r) => sum + (r.total_distance_meters || 0), 0))}
+                {currentProposal.status === 'draft_plan'
+                  ? currentProposal.proposedRoutes?.length
+                    ? formatDistance(currentProposal.proposedRoutes.reduce((sum, r) => sum + r.distanceMeters, 0))
+                    : 'TBD'
+                  : formatDistance(currentProposalRoutes.reduce((sum, r) => sum + (r.total_distance_meters || 0), 0))}
               </p>
             </div>
             <div className="bg-surface-elevated border border-border p-3">
               <p className="text-xs font-mono uppercase tracking-wider text-text-muted">Est. Duration (Avg/Crew)</p>
               <p className="text-2xl font-bold text-text-primary">
                 {currentProposal.status === 'draft_plan' 
-                  ? formatDuration((currentProposal.capacityUtilized || 0) / Math.max(1, currentProposal.total_crews_available || 1)) 
+                  ? formatDuration((currentProposal.capacityUtilized || 0) / Math.max(1, currentProposal.plannedCrewCount || 1))
                   : formatDuration((currentProposalRoutes.reduce((sum, r) => sum + (r.total_duration_min || 0), 0)) / Math.max(1, currentProposalRoutes.length || currentProposal.num_crews || 1))
                 }
               </p>
@@ -634,15 +641,16 @@ export default function OptimizationPage() {
               )}
               <div className="p-4 bg-info/10 text-info border border-info mb-4">
                 <strong>Draft Plan Generated</strong>
-                <p className="text-sm">This plan selects exactly the workload your crews can handle today based on their available hours. Routes and tasks will only be generated once committed.</p>
+                <p className="text-sm">Review the selected tasks and exclusions before dispatch. Estimates use available crew time; physical load requires configured vehicle and task estimates.</p>
                 <ul className="list-disc ml-5 mt-2 text-sm font-mono">
                   <li>Tasks Selected for Dispatch: {currentProposal.selectedCount}</li>
-                  <li>Tasks Deferred due to lack of capacity: {currentProposal.omittedCount}</li>
+                  <li>Tasks Not Selected: {currentProposal.omittedCount}</li>
+                  {currentProposal.outsideBufferCount > 0 && <li>Reports Outside Bundle Radius: {currentProposal.outsideBufferCount}</li>}
                 </ul>
               </div>
               <button
                 onClick={() => handleCommitPlan(currentProposal.id)}
-                disabled={actionLoading}
+                disabled={Boolean(actionLoading) || !currentProposal.selectedCount}
                 className="w-full px-6 py-3 bg-success text-white font-bold border border-border border-success hover:bg-success/80 transition-colors disabled:opacity-50"
               >
                 {actionLoading === 'commit' ? 'Routing Tasks...' : <span className="flex items-center justify-center"><Check className="w-5 h-5 mr-2" /> Commit Plan & Generate Routes</span>}
