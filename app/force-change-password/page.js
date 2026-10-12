@@ -1,4 +1,5 @@
 'use client'
+import {updateAuthToken} from '@/lib/auth-token.mjs'
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { forceChangePassword } from '@/lib/api/auth'
@@ -108,7 +109,7 @@ export default function ForceChangePasswordPage() {
       await forceChangePassword(newPassword)
       
       const token = localStorage.getItem('tempAuthToken')
-      localStorage.setItem('authToken', token)
+      updateAuthToken(token)
       localStorage.removeItem('tempAuthToken')
       localStorage.setItem('lastActivity', Date.now().toString())
 

@@ -1,4 +1,5 @@
 'use client'
+import {updateAuthToken} from '@/lib/auth-token.mjs'
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
@@ -57,7 +58,7 @@ export default function AuthPage() {
       }
 
       if (data.token) {
-        localStorage.setItem('authToken', data.token);
+        updateAuthToken(data.token);
         localStorage.setItem('lastActivity', Date.now().toString());
       }
 
@@ -66,21 +67,21 @@ export default function AuthPage() {
       if (data.requirePasswordChange) {
         // Temporarily store token for the password change request
         localStorage.setItem('tempAuthToken', data.token);
-        localStorage.removeItem('authToken'); // Don't allow full access yet
+        updateAuthToken(null); // Don't allow full access yet
         router.push('/force-change-password');
         return;
       }
 
       const userRole = data.user?.role || 'citizen'
       if (userRole === 'citizen') {
-        localStorage.removeItem('authToken')
+        updateAuthToken(null)
         setError('Authorized personnel only. Contact an administrator to create an account.')
         setLoading(false)
         return
       }
 
       if (userRole === 'field_crew') {
-        localStorage.removeItem('authToken')
+        updateAuthToken(null)
         setError('Field crew web access is restricted. Please use the mobile application.')
         setLoading(false)
         return

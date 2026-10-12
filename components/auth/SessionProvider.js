@@ -1,4 +1,5 @@
 'use client'
+import {updateAuthToken} from '@/lib/auth-token.mjs'
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { getTimeoutMinutes } from '@/lib/api/system'
@@ -16,7 +17,7 @@ export function SessionProvider({ children }) {
   const handleSessionExpired = useCallback(() => {
     if (isShowingModalRef.current) return // Prevent duplicate modals
     
-    localStorage.removeItem('authToken')
+    updateAuthToken(null)
     localStorage.removeItem('refreshToken')
     localStorage.removeItem('lastActivity')
     isShowingModalRef.current = true
@@ -32,7 +33,7 @@ export function SessionProvider({ children }) {
     try {
       const validationResult = await validateSession()
       if (!validationResult.valid) {
-        localStorage.removeItem('authToken')
+        updateAuthToken(null)
         localStorage.removeItem('refreshToken')
         localStorage.removeItem('lastActivity')
         if (!isShowingModalRef.current) {
@@ -100,7 +101,7 @@ export function SessionProvider({ children }) {
       const timeoutMs = sessionTimeoutMinutes * 60 * 1000
 
       if (!lastActivity) {
-        localStorage.removeItem('authToken')
+        updateAuthToken(null)
         localStorage.removeItem('refreshToken')
         if (!isShowingModalRef.current) {
           isShowingModalRef.current = true
@@ -113,7 +114,7 @@ export function SessionProvider({ children }) {
       
       // Check if session has expired
       if (timeSinceActivity > timeoutMs) {
-        localStorage.removeItem('authToken')
+        updateAuthToken(null)
         localStorage.removeItem('refreshToken')
         localStorage.removeItem('lastActivity')
         if (!isShowingModalRef.current) {
@@ -139,7 +140,7 @@ export function SessionProvider({ children }) {
             import('@/lib/api/auth').then(({ refreshAuthToken }) => {
               refreshAuthToken().then((newToken) => {
                 if (!newToken && jwtExpTime < Date.now()) {
-                  localStorage.removeItem('authToken')
+                  updateAuthToken(null)
                   localStorage.removeItem('refreshToken')
                   localStorage.removeItem('lastActivity')
                   if (!isShowingModalRef.current) {
@@ -152,7 +153,7 @@ export function SessionProvider({ children }) {
           }
 
           if (jwtExpTime < currentTime) {
-            localStorage.removeItem('authToken')
+            updateAuthToken(null)
             localStorage.removeItem('refreshToken')
             localStorage.removeItem('lastActivity')
             if (!isShowingModalRef.current) {
@@ -164,7 +165,7 @@ export function SessionProvider({ children }) {
         }
       } catch (e) {
         // If JWT parsing fails, consider session expired
-        localStorage.removeItem('authToken')
+        updateAuthToken(null)
         localStorage.removeItem('refreshToken')
         localStorage.removeItem('lastActivity')
         if (!isShowingModalRef.current) {
@@ -220,7 +221,7 @@ export function SessionProvider({ children }) {
         // Then do server-side validation for additional security (async)
         validateSession().then(validationResult => {
           if (!validationResult.valid) {
-            localStorage.removeItem('authToken')
+            updateAuthToken(null)
             localStorage.removeItem('refreshToken')
             localStorage.removeItem('lastActivity')
             if (!isShowingModalRef.current) {
@@ -255,7 +256,7 @@ export function SessionProvider({ children }) {
     }
 
     const handleSessionExpiredEvent = () => {
-      localStorage.removeItem('authToken')
+      updateAuthToken(null)
       localStorage.removeItem('refreshToken')
       localStorage.removeItem('lastActivity')
       if (!isShowingModalRef.current) {

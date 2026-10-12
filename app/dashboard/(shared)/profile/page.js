@@ -1,4 +1,5 @@
 'use client'
+import {updateAuthToken} from '@/lib/auth-token.mjs'
 import { useState, useEffect } from 'react'
 import { Edit2, Check, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -68,7 +69,7 @@ export default function ProfilePage() {
     try {
       await logout()
     } finally {
-      localStorage.removeItem('authToken')
+      updateAuthToken(null)
       router.push('/auth')
     }
   }

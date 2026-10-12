@@ -1,4 +1,5 @@
 'use client'
+import {updateAuthToken} from '@/lib/auth-token.mjs'
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Sidebar from '@/components/layout/Sidebar'
@@ -30,7 +31,7 @@ export default function DashboardLayout({ children }) {
         })
 
         if (!response.ok) {
-          localStorage.removeItem('authToken')
+          updateAuthToken(null)
           router.push('/auth')
           return
         }
@@ -45,7 +46,7 @@ export default function DashboardLayout({ children }) {
           router.push('/dashboard/admin')
         } else if (userRole === 'field_crew') {
           // Immediately block field crew from any dashboard pages
-          localStorage.removeItem('authToken')
+          updateAuthToken(null)
           router.push('/auth')
           return
         } else if (userRole === 'officer' && pathname === '/dashboard') {
@@ -56,7 +57,7 @@ export default function DashboardLayout({ children }) {
         }
       } catch (error) {
         console.error('Failed to fetch user data:', error)
-        localStorage.removeItem('authToken')
+        updateAuthToken(null)
         router.push('/auth')
       }
     }
