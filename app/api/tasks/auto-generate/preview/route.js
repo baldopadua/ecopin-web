@@ -22,10 +22,121 @@ const parseLocation = (location, latitude, longitude) => {
   return { latitude: null, longitude: null }
 }
 
+function haversineDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371.0 // Radius of earth in km
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLon = (lon2 - lon1) * Math.PI / 180
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) ** 2
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
+}
+
+function calculateDetourTimeMinutes(start, end, waypoint, averageSpeedKmh = 30.0) {
+  const distDirect = haversineDistance(start.lat, start.lon, end.lat, end.lon)
+  const distVia = haversineDistance(start.lat, start.lon, waypoint.lat, waypoint.lon) +
+    haversineDistance(waypoint.lat, waypoint.lon, end.lat, end.lon)
+  const extraDistKm = Math.max(0, distVia - distDirect)
+  return (extraDistKm / averageSpeedKmh) * 60.0
+}
+
+function calculatePriorityScore(baseSeverity, createdAtStr, agingFactor, maxEscalationCap) {
+  const createdAt = createdAtStr ? new Date(createdAtStr) : new Date()
+  const diffMs = Math.max(0, Date.now() - createdAt.getTime())
+  const daysUnresolved = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+  const escalation = Math.min(daysUnresolved * agingFactor, maxEscalationCap)
+  return (baseSeverity || 1.0) + escalation
+}
+
+function generateTasksNative(payload) {
+  const {
+    aging_factor = 1.5,
+    max_escalation_cap = 10.0,
+    max_detour_minutes = 5.0,
+    max_detour_time_per_task = 15.0,
+    start_location = { lat: 14.561433, lon: 121.075636 },
+    clusters = [],
+    individual_reports = []
+  } = payload
+
+  const allTargets = []
+
+  for (const c of clusters) {
+    const score = calculatePriorityScore(c.base_severity, c.created_at, aging_factor, max_escalation_cap)
+    allTargets.push({
+      ...c,
+      priority_score: score,
+      is_cluster: true
+    })
+  }
+
+  const indReports = individual_reports.map(r => ({
+    ...r,
+    priority_score: calculatePriorityScore(r.base_severity, r.created_at, aging_factor, max_escalation_cap),
+    is_cluster: false,
+    assigned: false
+  }))
+
+  for (const r of indReports) {
+    allTargets.push(r)
+  }
+
+  // Sort descending by priority score
+  allTargets.sort((a, b) => b.priority_score - a.priority_score)
+
+  const tasks = []
+
+  for (const target of allTargets) {
+    if (!target.is_cluster && target.assigned) continue
+
+    const task = {
+      primary_target_id: target.id,
+      primary_target_is_cluster: target.is_cluster,
+      primary_priority: target.priority_score,
+      target_lat: target.lat,
+      target_lon: target.lon,
+      included_reports: [],
+      cumulative_detour_minutes: 0.0
+    }
+
+    if (!target.is_cluster) {
+      target.assigned = true
+    }
+
+    // Evaluate potential detour reports
+    for (const report of indReports) {
+      if (!report.assigned) {
+        const detourMins = calculateDetourTimeMinutes(
+          start_location,
+          { lat: target.lat, lon: target.lon },
+          { lat: report.lat, lon: report.lon }
+        )
+
+        if (detourMins <= max_detour_minutes) {
+          if (task.cumulative_detour_minutes + detourMins <= max_detour_time_per_task) {
+            task.included_reports.push({
+              report_id: report.id,
+              detour_time_minutes: detourMins,
+              priority_score: report.priority_score
+            })
+            task.cumulative_detour_minutes += detourMins
+            report.assigned = true
+          }
+        }
+      }
+    }
+
+    tasks.push(task)
+  }
+
+  return tasks
+}
+
 export async function POST(req) {
   try {
     const body = await req.json()
-    const { config } = body
+    const { config = {} } = body
 
     // Fetch depot from optimization_settings
     let depotLat = 14.561433
@@ -53,7 +164,7 @@ export async function POST(req) {
 
       if (error) {
         console.error('Supabase error:', error)
-        return NextResponse.json({ error: 'Failed to fetch reports' }, { status: 500 })
+        return NextResponse.json({ error: 'Failed to fetch reports: ' + error.message }, { status: 500 })
       }
 
       allData = [...allData, ...data]
@@ -67,17 +178,14 @@ export async function POST(req) {
       !(r.on_private_property && r.property_owner_consent_status === 'denied')
     )
 
-    // Separate into clusters and individual reports based on is_cluster
-    // (Assuming is_cluster exists, otherwise all are individual)
     const clusters = eligibleReports.filter(r => r.is_cluster)
     const individual_reports = eligibleReports.filter(r => !r.is_cluster)
 
-    // 2. Call the FastAPI ML Model
     const mlPayload = {
-      aging_factor: config.aging_factor,
-      max_escalation_cap: config.max_escalation_cap,
-      max_detour_minutes: config.max_detour_minutes,
-      max_detour_time_per_task: config.max_detour_time_per_task,
+      aging_factor: Number(config.aging_factor ?? 1.5),
+      max_escalation_cap: Number(config.max_escalation_cap ?? 10.0),
+      max_detour_minutes: Number(config.max_detour_minutes ?? 5.0),
+      max_detour_time_per_task: Number(config.max_detour_time_per_task ?? 15.0),
       start_location: {
         lat: depotLat,
         lon: depotLon
@@ -104,24 +212,33 @@ export async function POST(req) {
       }).filter(r => r.lat !== null && r.lon !== null)
     }
 
-    // Default to localhost:8000 for the FastAPI server
-    const mlResponse = await fetch('http://localhost:8000/generate_tasks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(mlPayload)
-    })
+    let mlData = null
 
-    if (!mlResponse.ok) {
-      const err = await mlResponse.text()
-      console.error('ML API Error:', err)
-      return NextResponse.json({ error: 'ML Model Error' }, { status: 500 })
+    // Attempt external microservice if running
+    try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 2000)
+      const mlResponse = await fetch('http://localhost:8000/generate_tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mlPayload),
+        signal: controller.signal
+      })
+      clearTimeout(timeoutId)
+      if (mlResponse.ok) {
+        mlData = await mlResponse.json()
+      }
+    } catch (_) {
+      // Python microservice offline — fallback to embedded native solver
     }
 
-    const mlData = await mlResponse.json()
-    return NextResponse.json(mlData)
+    if (!mlData || !Array.isArray(mlData.tasks)) {
+      mlData = { tasks: generateTasksNative(mlPayload) }
+    }
 
+    return NextResponse.json(mlData)
   } catch (error) {
     console.error('Preview error:', error)
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+    return NextResponse.json({ error: error.message || 'Failed to generate routes' }, { status: 500 })
   }
 }

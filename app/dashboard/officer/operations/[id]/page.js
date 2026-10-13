@@ -10,7 +10,8 @@ import Notification from '@/components/ui/Notification'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
 import dynamic from 'next/dynamic'
-import { Pen } from 'lucide-react'
+import { Pen, Users } from 'lucide-react'
+import { OfficerGuard } from '@/components/auth/RequireRole'
 
 const OperationsMap = dynamic(() => import('@/components/map/OperationsMap'), { 
   ssr: false,
@@ -64,7 +65,7 @@ const parseLocation = (location, latitude, longitude) => {
   return { latitude: null, longitude: null }
 }
 
-export default function CleanupTaskDetailPage() {
+function CleanupTaskDetailContent() {
   const [task, setTask] = useState(null)
   const [reports, setReports] = useState([])
   const [reportsEvidence, setReportsEvidence] = useState({})
@@ -90,7 +91,7 @@ export default function CleanupTaskDetailPage() {
   const [agencyResponses, setAgencyResponses] = useState([])
   const [availableCrew, setAvailableCrew] = useState([])
   const [showAssignmentModal, setShowAssignmentModal] = useState(false)
-  const [tempCrewIds, setTempCrewIds] = useState([])
+  const [selectedCrewId, setSelectedCrewId] = useState(null)
   const [assigning, setAssigning] = useState(false)
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [editingTitle, setEditingTitle] = useState('')
@@ -158,17 +159,17 @@ export default function CleanupTaskDetailPage() {
   // uploads the final after photo for the last unresolved report. No manual
   // officer action is required or exposed here.
 
-  const handleAssignTask = async (selectedCrewIds) => {
+  const handleAssignTask = async (crewId) => {
     setAssigning(true)
     try {
-      await assignCleanupTask(taskId, selectedCrewIds)
+      await assignCleanupTask(taskId, crewId)
       const updatedTask = await fetchCleanupTaskById(taskId)
       setTask(updatedTask)
       setShowAssignmentModal(false)
-      setNotification({ message: 'Task assigned successfully', type: 'success' })
+      setNotification({ message: 'Crew deployed successfully', type: 'success' })
     } catch (error) {
       console.error('Failed to assign task:', error)
-      setNotification({ message: 'Failed to assign task. Please try again.', type: 'error' })
+      setNotification({ message: error.message || 'Failed to assign crew. Please try again.', type: 'error' })
     } finally {
       setAssigning(false)
     }
@@ -699,17 +700,34 @@ export default function CleanupTaskDetailPage() {
                     </div>
                     
                     <div>
-                       <span className="block text-[10px] font-mono uppercase text-text-muted mb-1">Assigned Units</span>
-                       {task.assigned_crew_ids && task.assigned_crew_ids.length > 0 ? (
+                       <span className="block text-[10px] font-mono uppercase text-text-muted mb-1">Assigned Field Crew</span>
+                       {task.assigned_field_crew_id ? (
+                          (() => {
+                             const crew = availableCrew.find(c => c.id === task.assigned_field_crew_id)
+                             return (
+                               <div className="bg-background p-3 border border-border">
+                                 <div className="flex items-center gap-3">
+                                   <div className="w-8 h-8 bg-surface-elevated rounded-full flex items-center justify-center font-bold text-xs border border-border">
+                                     <Users className="w-4 h-4 text-accent-green" />
+                                   </div>
+                                   <div>
+                                     <div className="font-mono text-sm font-bold">{crew ? (crew.crew_name || crew.name) : `Crew ${task.assigned_field_crew_id.slice(0, 8)}`}</div>
+                                     <div className="text-[10px] text-text-muted font-mono">{crew?.member_count || task.assigned_crew_ids?.length || 0} Members</div>
+                                   </div>
+                                 </div>
+                               </div>
+                             )
+                          })()
+                       ) : task.assigned_crew_ids && task.assigned_crew_ids.length > 0 ? (
                           <div className="flex flex-col gap-2">
                              {task.assigned_crew_ids.map(id => {
                                 const crew = availableCrew.find(c => c.id === id)
                                 return (
                                   <div key={id} className="flex items-center gap-3 bg-background p-2 border border-border">
                                     <div className="w-8 h-8 bg-surface-elevated rounded-full flex items-center justify-center font-bold text-xs border border-border">
-                                      {crew ? crew.full_name[0] : 'U'}
+                                      {crew ? (crew.crew_name || crew.name || crew.full_name || 'C')[0] : 'U'}
                                     </div>
-                                    <span className="font-mono text-sm">{crew ? crew.full_name : `Unit ${id.slice(0,4)}`}</span>
+                                    <span className="font-mono text-sm">{crew ? (crew.crew_name || crew.name || crew.full_name) : `Unit ${id.slice(0,4)}`}</span>
                                   </div>
                                 )
                              })}
@@ -723,12 +741,12 @@ export default function CleanupTaskDetailPage() {
                   <div className="mt-auto space-y-3 pt-4 border-t border-border shrink-0">
                      <button 
                         onClick={() => {
-                          setTempCrewIds(task.assigned_crew_ids || [])
+                          setSelectedCrewId(task.assigned_field_crew_id || null)
                           setShowAssignmentModal(true)
                         }}
                         className="w-full border border-border py-3 text-xs font-bold uppercase tracking-widest text-text-primary hover:bg-black hover:text-white dark:hover:bg-surface dark:hover:text-text-primary transition-colors"
                      >
-                        {task.assigned_crew_ids?.length > 0 ? 'Update Roster' : 'Assign Units'}
+                        {task.assigned_field_crew_id || task.assigned_crew_ids?.length > 0 ? 'Reassign Crew' : 'Dispatch Crew'}
                      </button>
                      {/* Completion is triggered automatically by the field crew app
                          uploading the after photo. This panel reflects the live status. */}
@@ -787,25 +805,36 @@ export default function CleanupTaskDetailPage() {
       {showAssignmentModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[900]">
           <div className="bg-surface-elevated border border-border dark:border-[#333333] p-6 max-w-md w-full mx-4 shadow-sm">
-            <h2 className="text-xl font-bold uppercase tracking-tight mb-4">Deploy Units</h2>
+            <h2 className="text-xl font-bold uppercase tracking-tight mb-4">Deploy Field Crew</h2>
             <div className="space-y-2 max-h-60 overflow-y-auto mb-6">
               {availableCrew.length === 0 ? (
-                <p className="text-sm text-text-muted font-mono">No units available</p>
+                <p className="text-sm text-text-muted font-mono">No field crews available</p>
               ) : (
                 availableCrew.map(crew => (
-                  <label key={crew.id} className="flex items-center space-x-3 p-3 border border-border hover:border-accent-green cursor-pointer transition-colors bg-background">
-                    <input type="checkbox" checked={tempCrewIds.includes(crew.id)} onChange={(e) => {
-                        let newIds = e.target.checked ? [...tempCrewIds, crew.id] : tempCrewIds.filter(id => id !== crew.id);
-                        setTempCrewIds(newIds);
-                      }}
-                      className="rounded-xl border border-border text-accent-green focus:ring-accent-green w-5 h-5 bg-transparent" />
-                    <div className="flex-1 font-mono text-sm font-bold uppercase">{crew.full_name}</div>
+                  <label key={crew.id} className={`flex items-center space-x-3 p-3 border cursor-pointer transition-colors ${selectedCrewId === crew.id ? 'border-accent-green bg-accent-green/5' : 'border-border hover:border-accent-green bg-background'}`}>
+                    <input 
+                      type="radio" 
+                      name="fieldCrewSelection"
+                      checked={selectedCrewId === crew.id} 
+                      onChange={() => setSelectedCrewId(crew.id)}
+                      className="rounded-full border border-border text-accent-green focus:ring-accent-green w-5 h-5 bg-transparent" 
+                    />
+                    <div className="flex-1">
+                      <div className="font-mono text-sm font-bold uppercase">{crew.crew_name || crew.name || crew.full_name}</div>
+                      <div className="text-xs text-text-muted">
+                        {crew.member_count ? `${crew.member_count} members` : crew.status ? `Status: ${crew.status}` : 'Field Crew Unit'}
+                      </div>
+                    </div>
                   </label>
                 ))
               )}
             </div>
             <div className="flex gap-4">
-              <button onClick={() => handleAssignTask(tempCrewIds)} disabled={assigning} className="btn-primary flex-1 py-3 text-xs">
+              <button 
+                onClick={() => handleAssignTask(selectedCrewId)} 
+                disabled={assigning || !selectedCrewId} 
+                className="btn-primary flex-1 py-3 text-xs"
+              >
                 {assigning ? 'DEPLOYING...' : 'CONFIRM DEPLOYMENT'}
               </button>
               <button onClick={() => setShowAssignmentModal(false)} className="btn-secondary flex-1 py-3 text-xs">CANCEL</button>
@@ -926,5 +955,13 @@ export default function CleanupTaskDetailPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function CleanupTaskDetailPage() {
+  return (
+    <OfficerGuard>
+      <CleanupTaskDetailContent />
+    </OfficerGuard>
   )
 }

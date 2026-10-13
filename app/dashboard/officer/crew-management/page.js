@@ -5,6 +5,7 @@ import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
 import { SkeletonCard } from '@/components/ui/Skeleton'
 import { getCrewsWithMembers, updateCrewMembers, getUnassignedFieldCrew } from '@/lib/api/optimization'
+import { OfficerGuard } from '@/components/auth/RequireRole'
 
 function getInitials(name) {
   if (!name) return '?'
@@ -183,7 +184,7 @@ function CrewCard({ crew, onAdd, onRemove, unassigned, notification, setNotifica
   )
 }
 
-export default function CrewManagementPage() {
+function CrewManagementContent() {
   const [crews, setCrews] = useState([])
   const [unassigned, setUnassigned] = useState([])
   const [loading, setLoading] = useState(true)
@@ -372,3 +373,12 @@ export default function CrewManagementPage() {
     </div>
   )
 }
+
+export default function CrewManagementPage() {
+  return (
+    <OfficerGuard>
+      <CrewManagementContent />
+    </OfficerGuard>
+  )
+}
+

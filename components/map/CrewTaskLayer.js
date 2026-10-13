@@ -5,6 +5,7 @@ import L from 'leaflet'
 import { Buffer } from 'buffer'
 import wkx from 'wkx'
 import EcoPinMarker from './EcoPinMarker'
+import { useUser } from '@/components/auth/UserContext'
 
 // Parse WKB geometry
 const parseGeometry = (geometry) => {
@@ -62,7 +63,13 @@ function createTaskReportIcon(label, color, isCompleted) {
   })
 }
 
-export default function CrewTaskLayer({ tasks = [] }) {
+export default function CrewTaskLayer({ tasks = [], basePath }) {
+  const user = useUser()
+  const defaultBasePath = user?.role === 'field_crew'
+    ? '/dashboard/field-crew/operations'
+    : '/dashboard/officer/operations'
+  const effectiveBasePath = basePath || defaultBasePath
+
   const renderedTasks = useMemo(() => {
     if (!tasks || tasks.length === 0) return null
 
@@ -109,14 +116,14 @@ export default function CrewTaskLayer({ tasks = [] }) {
                 key={report.id}
                 report={report}
                 position={coords}
-                customUrl={`/dashboard/field-crew/operations/${task.id}`}
+                customUrl={`${effectiveBasePath}/${task.id}`}
               />
             )
           })}
         </div>
       )
     })
-  }, [tasks])
+  }, [tasks, effectiveBasePath])
 
   return <>{renderedTasks}</>
 }

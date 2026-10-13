@@ -79,6 +79,7 @@ export default function CreateCleanupTaskPage() {
     max_detour_time_per_task: STRATEGIES[0].config.max_detour_time_per_task
   })
   const [generatedTasks, setGeneratedTasks] = useState(null)
+  const [generationError, setGenerationError] = useState(null)
   const [generating, setGenerating] = useState(false)
   
   const [strategy, setStrategy] = useState('standard')
@@ -187,6 +188,7 @@ export default function CreateCleanupTaskPage() {
   const handlePreviewRoutes = async () => {
     setGenerating(true)
     setGeneratedTasks(null)
+    setGenerationError(null)
     
     try {
       const res = await fetch('/api/tasks/auto-generate/preview', {
@@ -197,9 +199,17 @@ export default function CreateCleanupTaskPage() {
         })
       })
       
-      if (!res.ok) throw new Error('Failed to generate routes')
-      
       const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || data.message || 'Failed to generate routes')
+      }
+
+      if (!data.tasks || data.tasks.length === 0) {
+        setGeneratedTasks([])
+        setNotification({ message: 'No eligible unresolved reports found for route generation.', type: 'info' })
+        return
+      }
       
       // Map tasks to add crew selection arrays and title input
       const preparedTasks = data.tasks.map((task, idx) => ({
@@ -209,10 +219,12 @@ export default function CreateCleanupTaskPage() {
       }))
       
       setGeneratedTasks(preparedTasks)
-      setNotification({ message: 'Preview generated successfully!', type: 'success' })
+      setNotification({ message: `Generated ${preparedTasks.length} optimized route(s)!`, type: 'success' })
     } catch (error) {
-      console.error(error)
-      setNotification({ message: 'Error generating routes', type: 'error' })
+      console.error('Route generation failed:', error)
+      const message = error.message || 'Error generating routes'
+      setGenerationError(message)
+      setNotification({ message, type: 'error' })
     } finally {
       setGenerating(false)
     }
@@ -620,7 +632,39 @@ export default function CreateCleanupTaskPage() {
           </div>
 
           <div className="lg:col-span-2 space-y-6">
-            {generatedTasks ? (
+            {generationError ? (
+              <div className="card border-error/40 bg-error/5 p-6">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-error/20 text-error flex items-center justify-center font-bold text-sm shrink-0">!</div>
+                  <div className="flex-1">
+                    <h3 className="text-sm font-bold uppercase tracking-wide text-error mb-1">Route Generation Failed</h3>
+                    <p className="text-sm text-text-muted mb-4">{generationError}</p>
+                    <button 
+                      onClick={handlePreviewRoutes} 
+                      disabled={generating}
+                      className="btn-secondary py-2 px-4 text-xs font-bold uppercase tracking-widest border-error/50 hover:bg-error/10"
+                    >
+                      {generating ? 'Retrying...' : 'Retry Generation'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : generatedTasks && generatedTasks.length === 0 ? (
+              <div className="card h-full flex items-center justify-center border-dashed border border-border bg-transparent">
+                <div className="text-center p-8">
+                  <div className="text-4xl mb-4">📍</div>
+                  <h3 className="text-lg font-bold text-text-primary mb-2">No Routes Generated</h3>
+                  <p className="text-text-muted mb-4">No eligible, unassigned reports are currently pending that match the routing criteria.</p>
+                  <button 
+                    onClick={handlePreviewRoutes} 
+                    disabled={generating}
+                    className="btn-secondary py-2 px-4 text-xs font-bold uppercase tracking-widest"
+                  >
+                    Refresh & Retry
+                  </button>
+                </div>
+              </div>
+            ) : generatedTasks && generatedTasks.length > 0 ? (
               <div className="card">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-lg font-bold text-text-primary">Review Proposed Routes</h2>

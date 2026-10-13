@@ -2,11 +2,12 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
-import { getAuditLogs } from '@/lib/api'
+import { getSystemLogs } from '@/lib/api/admin'
 import FilterBar from '@/components/ui/FilterBar'
 import DataTable from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
 import StatusBadge from '@/components/ui/StatusBadge'
+import { AdminGuard } from '@/components/auth/RequireRole'
 
 export default function SystemLogs() {
   const router = useRouter()
@@ -25,11 +26,12 @@ export default function SystemLogs() {
   const loadLogs = async () => {
     try {
       setLoading(true)
-      const data = await getAuditLogs()
+      setError(null)
+      const data = await getSystemLogs()
       setAllLogs(data.logs || [])
     } catch (err) {
       console.error('Failed to load system logs:', err)
-      setError('Failed to load system logs')
+      setError(err.message || 'Failed to load system logs')
     } finally {
       setLoading(false)
     }
@@ -121,63 +123,80 @@ export default function SystemLogs() {
   ]
 
   return (
-    <div className="p-8">
-      <PageHeader
-        title="System Logs"
-        subtitle="View system activity and actions"
-        breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Admin', href: '/dashboard/admin' },
-          { label: 'System Logs' }
-        ]}
-      />
-
-      {/* Filters */}
-      <FilterBar
-        filters={[
-          {
-            label: 'All Actions',
-            value: filters.action_type,
-            onChange: (val) => setFilters(prev => ({ ...prev, action_type: val })),
-            options: [
-              { value: '', label: 'All Actions' },
-              { value: 'login', label: 'Login' },
-              { value: 'logout', label: 'Logout' },
-              { value: 'password_change', label: 'Password Change' },
-              { value: 'profile_update', label: 'Profile/Role Update' },
-              { value: 'user_created', label: 'User Created' },
-              { value: 'account_deletion', label: 'User Deleted' }
-            ]
-          }
-        ]}
-        showDateRange={true}
-        dateRange={{ start: filters.start_date, end: filters.end_date }}
-        onDateRangeChange={(range) => setFilters(prev => ({ ...prev, start_date: range.start, end_date: range.end }))}
-        onReset={handleResetFilters}
-        resultsCount={logs.length}
-        loading={loading}
-        sticky={false}
-      />
-
-      {/* Logs Table */}
-      <DataTable
-        columns={tableColumns}
-        data={paginatedLogs}
-        loading={loading}
-        emptyMessage="No system logs found"
-      />
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-          itemsPerPage={itemsPerPage}
-          totalItems={logs.length}
-          className="mt-6"
+    <AdminGuard>
+      <div className="p-8">
+        <PageHeader
+          title="System Logs"
+          subtitle="View system activity and actions"
+          breadcrumbs={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Admin', href: '/dashboard/admin' },
+            { label: 'System Logs' }
+          ]}
         />
-      )}
-    </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-error/10 border border-error/30 text-error flex justify-between items-center">
+            <div>
+              <p className="font-bold text-sm">Failed to load system logs</p>
+              <p className="text-xs">{error}</p>
+            </div>
+            <button
+              onClick={loadLogs}
+              className="btn-secondary py-1 px-3 text-xs font-bold uppercase tracking-wider"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* Filters */}
+        <FilterBar
+          filters={[
+            {
+              label: 'All Actions',
+              value: filters.action_type,
+              onChange: (val) => setFilters(prev => ({ ...prev, action_type: val })),
+              options: [
+                { value: '', label: 'All Actions' },
+                { value: 'login', label: 'Login' },
+                { value: 'logout', label: 'Logout' },
+                { value: 'password_change', label: 'Password Change' },
+                { value: 'profile_update', label: 'Profile/Role Update' },
+                { value: 'user_created', label: 'User Created' },
+                { value: 'account_deletion', label: 'User Deleted' }
+              ]
+            }
+          ]}
+          showDateRange={true}
+          dateRange={{ start: filters.start_date, end: filters.end_date }}
+          onDateRangeChange={(range) => setFilters(prev => ({ ...prev, start_date: range.start, end_date: range.end }))}
+          onReset={handleResetFilters}
+          resultsCount={logs.length}
+          loading={loading}
+          sticky={false}
+        />
+
+        {/* Logs Table */}
+        <DataTable
+          columns={tableColumns}
+          data={paginatedLogs}
+          loading={loading}
+          emptyMessage="No system logs found"
+        />
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+            itemsPerPage={itemsPerPage}
+            totalItems={logs.length}
+            className="mt-6"
+          />
+        )}
+      </div>
+    </AdminGuard>
   )
 }
