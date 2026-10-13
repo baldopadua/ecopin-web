@@ -137,6 +137,10 @@ const formatSeverityScore = (score) => {
 }
 
 // Custom Pin Icon: high-visibility photo pin with pointer and status pip, no numbers
+// Pin Icon Cache to avoid recreating L.divIcon instances and DOM destruction on every render
+const pinIconCache = new Map()
+
+// Custom Pin Icon: high-visibility photo pin with pointer and status pip, no numbers
 const createPinIcon = (imageOrUrl, isSelected = false, isDark = false, status = null, isCluster = false) => {
   let imageUrl = imageOrUrl
   if (typeof imageOrUrl === 'object' && imageOrUrl !== null) {
@@ -150,6 +154,10 @@ const createPinIcon = (imageOrUrl, isSelected = false, isDark = false, status = 
   const safeImageUrl = (typeof imageUrl === 'string' && imageUrl.trim().length > 0 && !imageUrl.includes('<') && !imageUrl.includes('"'))
     ? imageUrl
     : fallbackImage
+
+  const cacheKey = `${safeImageUrl}|${isSelected ? 1 : 0}|${isDark ? 1 : 0}|${status || ''}|${isCluster ? 1 : 0}`
+  const cached = pinIconCache.get(cacheKey)
+  if (cached) return cached
 
   const size = isSelected ? 50 : (isCluster ? 46 : 42)
   const pointerHeight = isSelected ? 8 : 7
@@ -190,7 +198,7 @@ const createPinIcon = (imageOrUrl, isSelected = false, isDark = false, status = 
     "></div>
   ` : ''
 
-  return L.divIcon({
+  const icon = L.divIcon({
     className: 'custom-pin-marker',
     html: `
       <div class="ecopin-pin-wrapper" style="
@@ -243,22 +251,32 @@ const createPinIcon = (imageOrUrl, isSelected = false, isDark = false, status = 
     iconAnchor: [size / 2, totalHeight],
     popupAnchor: [0, -totalHeight - 4]
   })
+
+  pinIconCache.set(cacheKey, icon)
+  return icon
 }
 
+const geometryCache = new Map()
 const parseGeometry = (geometry) => {
   if (!geometry) return null
+  if (geometryCache.has(geometry)) return geometryCache.get(geometry)
   try {
     if (typeof geometry === 'string') {
       const buffer = Buffer.from(geometry, 'hex')
       const parsed = wkx.Geometry.parse(buffer)
       if (parsed && parsed.x && parsed.y) {
-        return [parsed.y, parsed.x]
+        const res = [parsed.y, parsed.x]
+        geometryCache.set(geometry, res)
+        return res
       }
     } else if (typeof geometry === 'object' && geometry.type === 'Point') {
       const [lng, lat] = geometry.coordinates
-      return [lat, lng]
+      const res = [lat, lng]
+      geometryCache.set(geometry, res)
+      return res
     }
   } catch (error) {}
+  geometryCache.set(geometry, null)
   return null
 }
 
@@ -438,7 +456,7 @@ function FloatingMapControls({
       {/* Top-Left Floating Controls */}
       <div className="absolute top-3 left-3 z-[400] flex flex-wrap items-center gap-2 pointer-events-auto">
         {/* Verified Reports Trust Badge */}
-        <div className="flex items-center gap-1.5 bg-white/95 dark:bg-[#1C1C1C]/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-800/40 shadow-sm text-xs font-semibold text-emerald-700 dark:text-emerald-400 select-none">
+        <div className="flex items-center gap-1.5 bg-white/95 dark:bg-[#1C1C1C]/95 px-3.5 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-800/40 shadow-sm text-xs font-semibold text-emerald-700 dark:text-emerald-400 select-none">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
           <span>Verified Reports Only</span>
         </div>
@@ -446,12 +464,12 @@ function FloatingMapControls({
         {/* Find points of interest pill */}
         <div className="relative" data-poi-dropdown>
           <button 
-            type="button"
+            type="button" 
             onClick={() => setShowPoiInput(!showPoiInput)}
             className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border shadow-sm text-xs font-semibold transition-all ${
               showPoiInput 
                 ? 'bg-blue-50 dark:bg-[#0052CC]/25 text-blue-900 dark:text-[#60A5FA] border-blue-300 dark:border-[#0052CC]/50' 
-                : 'bg-white/95 dark:bg-[#1C1C1C]/95 backdrop-blur-md text-gray-700 dark:text-gray-200 border-gray-200 dark:border-[#333] hover:text-gray-900 dark:hover:text-white hover:shadow'
+                : 'bg-white/95 dark:bg-[#1C1C1C]/95 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-[#333] hover:text-gray-900 dark:hover:text-white hover:shadow'
             }`}
           >
             <Compass className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
@@ -536,7 +554,7 @@ function FloatingMapControls({
 
       {/* Top-Right Zoom Controls Pill */}
       <div className="absolute top-3 right-3 z-[400] pointer-events-auto">
-        <div className="flex items-center bg-white/95 dark:bg-[#1C1C1C]/95 backdrop-blur-md rounded-full border border-gray-200 dark:border-[#333] shadow-sm overflow-hidden text-gray-700 dark:text-gray-200 font-bold divide-x divide-gray-200 dark:divide-[#333] hover:shadow transition-shadow">
+        <div className="flex items-center bg-white/95 dark:bg-[#1C1C1C]/95 rounded-full border border-gray-200 dark:border-[#333] shadow-sm overflow-hidden text-gray-700 dark:text-gray-200 font-bold divide-x divide-gray-200 dark:divide-[#333] hover:shadow transition-shadow">
           <button 
             type="button" 
             onClick={() => map.zoomOut()}
@@ -818,7 +836,24 @@ export default function PublicMap({ user: initialUser, hasSession: initialHasSes
     }
 
     // Default: debounced viewport-based fetching
-    if (!viewport) return
+    if (!viewport || activeNavTab !== 'reports') return
+
+    // If allReports is already loaded in memory, filter client-side instantaneously for zero-latency panning!
+    if (allReports.length > 0) {
+      const inView = allReports.filter(r => {
+        let lat = r.latitude, lng = r.longitude
+        if (!lat || !lng) {
+          const geom = parseGeometry(r.location)
+          if (geom) { lat = geom[0]; lng = geom[1] }
+        }
+        if (!lat || !lng) return false
+        return lat >= viewport.south && lat <= viewport.north && lng >= viewport.west && lng <= viewport.east
+      })
+      setReports(inView)
+      setHasMore(false)
+      return
+    }
+
     const timer = setTimeout(async () => {
       setLoading(true)
       setLoadError(false)
@@ -848,7 +883,7 @@ export default function PublicMap({ user: initialUser, hasSession: initialHasSes
       clearTimeout(timer)
       controller.abort()
     }
-  }, [viewport, locationFilter, statusFilter, issueTypeFilter, refresh])
+  }, [viewport, locationFilter, statusFilter, issueTypeFilter, refresh, allReports, activeNavTab])
 
   // Periodic refresh
   useEffect(() => {
@@ -1425,6 +1460,33 @@ export default function PublicMap({ user: initialUser, hasSession: initialHasSes
     });
     return reportMap;
   }, [filteredReports]);
+
+  // Pre-calculated polygon geometries to avoid expensive trigonometric sorting during render
+  const clusterPolygonData = useMemo(() => {
+    return filteredClusters.map((cluster) => {
+      const memberReports = filteredClusterReports[cluster.id]
+      if (!memberReports || memberReports.length < 3) return null
+
+      const polygonPoints = memberReports.map(report => {
+        let latitude = report.latitude, longitude = report.longitude
+        if (!latitude || !longitude) {
+          const geom = parseGeometry(report.location)
+          if (geom) { latitude = geom[0]; longitude = geom[1] }
+        }
+        return (latitude && longitude) ? [latitude, longitude] : null
+      }).filter(Boolean)
+
+      if (polygonPoints.length < 3) return null
+
+      const centerLat = polygonPoints.reduce((s, p) => s + p[0], 0) / polygonPoints.length
+      const centerLng = polygonPoints.reduce((s, p) => s + p[1], 0) / polygonPoints.length
+      const sortedPoints = [...polygonPoints].sort((a, b) => {
+        return Math.atan2(a[1] - centerLng, a[0] - centerLat) - Math.atan2(b[1] - centerLng, b[0] - centerLat)
+      })
+
+      return { id: cluster.id, positions: sortedPoints }
+    }).filter(Boolean)
+  }, [filteredClusters, filteredClusterReports]);
 
   // Formatted cluster list for Points of Interest
   const poiClusters = useMemo(() => {
@@ -2130,11 +2192,11 @@ export default function PublicMap({ user: initialUser, hasSession: initialHasSes
           border: none !important;
         }
         .custom-pin-marker .ecopin-pin-wrapper {
-          transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
           will-change: transform;
         }
         .custom-pin-marker:hover .ecopin-pin-wrapper {
           transform: scale(1.15) translateY(-3px);
+          transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
           z-index: 999;
         }
 
@@ -2709,6 +2771,7 @@ export default function PublicMap({ user: initialUser, hasSession: initialHasSes
                 center={PASIG_CENTER}
                 zoom={DEFAULT_ZOOM}
                 zoomControl={false}
+                preferCanvas={true}
                 style={{ height: '100%', width: '100%', background: isDark ? '#121212' : '#f3f4f6' }}
               >
                 <ViewportTracker onViewport={onViewport} />
@@ -2765,39 +2828,17 @@ export default function PublicMap({ user: initialUser, hasSession: initialHasSes
                 })}
 
                 {/* Cluster Polygons */}
-                {showClusters && zoom > 14 && filteredClusters.map((cluster) => {
-                  const memberReports = filteredClusterReports[cluster.id]
-                  if (!memberReports || memberReports.length < 3) return null
-
-                  const polygonPoints = memberReports.map(report => {
-                    let latitude = report.latitude, longitude = report.longitude
-                    if (!latitude || !longitude) {
-                      const geom = parseGeometry(report.location)
-                      if (geom) { latitude = geom[0]; longitude = geom[1] }
-                    }
-                    return (latitude && longitude) ? [latitude, longitude] : null
-                  }).filter(Boolean)
-
-                  if (polygonPoints.length < 3) return null
-
-                  const centerLat = polygonPoints.reduce((s, p) => s + p[0], 0) / polygonPoints.length
-                  const centerLng = polygonPoints.reduce((s, p) => s + p[1], 0) / polygonPoints.length
-                  const sortedPoints = [...polygonPoints].sort((a, b) => {
-                    return Math.atan2(a[1] - centerLng, a[0] - centerLat) - Math.atan2(b[1] - centerLng, b[0] - centerLat)
-                  })
-
-                  return (
-                    <Polygon
-                      key={`polygon-${cluster.id}`}
-                      positions={sortedPoints}
-                      color="#0052CC"
-                      fillColor="#0052CC"
-                      fillOpacity={isDark ? 0.25 : 0.15}
-                      weight={2}
-                      dashArray="4 4"
-                    />
-                  )
-                })}
+                {showClusters && zoom > 14 && clusterPolygonData.map((cluster) => (
+                  <Polygon
+                    key={`polygon-${cluster.id}`}
+                    positions={cluster.positions}
+                    color="#0052CC"
+                    fillColor="#0052CC"
+                    fillOpacity={isDark ? 0.25 : 0.15}
+                    weight={2}
+                    dashArray="4 4"
+                  />
+                ))}
 
                 {/* Individual Pins */}
                 {showPins && processedReportsInfo.parsedReports.map((report) => {
@@ -2972,7 +3013,7 @@ export default function PublicMap({ user: initialUser, hasSession: initialHasSes
               </MapContainer>
 
               <div className="absolute bottom-4 left-4 z-[400] pointer-events-none">
-                <div className="bg-white/95 dark:bg-[#1C1C1C]/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-gray-200/90 dark:border-[#333] shadow-sm text-xs text-gray-600 dark:text-gray-300 font-medium">
+                <div className="bg-white/95 dark:bg-[#1C1C1C]/95 px-3.5 py-1.5 rounded-full border border-gray-200/90 dark:border-[#333] shadow-sm text-xs text-gray-600 dark:text-gray-300 font-medium">
                   {loading ? (
                     <span className="flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-[#0052CC] animate-pulse"></span>
