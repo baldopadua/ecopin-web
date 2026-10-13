@@ -2,29 +2,50 @@
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import Navbar from '../../components/layout/Navbar'
-import { CheckCircle2, ShieldAlert, MapPin, Smartphone } from 'lucide-react'
+import PublicHeader from '@/components/layout/PublicHeader'
+import { 
+  Download, 
+  MapPin, 
+  ShieldAlert, 
+  ShieldCheck, 
+  CheckCircle2, 
+  Smartphone, 
+  ArrowRight,
+  ExternalLink,
+  ChevronRight,
+  ChevronDown,
+  RefreshCw,
+  Camera,
+  Compass,
+  AlertTriangle,
+  Bell,
+  Settings
+} from 'lucide-react'
 
 export default function DownloadsPage() {
   const [downloadStarted, setDownloadStarted] = useState(false)
-  const [isEntering, setIsEntering] = useState(true)
+  const [openFaq, setOpenFaq] = useState(null)
   const [theme, setTheme] = useState('light')
   const [hasSession, setHasSession] = useState(false)
   const [user, setUser] = useState(null)
-  const [isExiting, setIsExiting] = useState(false)
-  const router = useRouter()
 
   useEffect(() => {
     // Theme setup
     const isDarkMode = document.documentElement.classList.contains('dark')
-    setTheme(isDarkMode ? 'dark' : 'light')
+    const savedTheme = localStorage.getItem('theme')
+    if (savedTheme === 'dark' || (!savedTheme && isDarkMode)) {
+      document.documentElement.classList.add('dark')
+      setTheme('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+      setTheme('light')
+    }
 
     // Session setup
     const token = localStorage.getItem('authToken')
     if (token) {
       setHasSession(true)
-      fetch(process.env.NEXT_PUBLIC_BACKEND_API_URL + '/api/auth/me', {
+      fetch((process.env.NEXT_PUBLIC_BACKEND_API_URL || '') + '/api/auth/me', {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       .then(res => res.json())
@@ -34,10 +55,7 @@ export default function DownloadsPage() {
       .catch(console.error)
     }
 
-    // End the cinematic enter wipe after 1s
-    setTimeout(() => setIsEntering(false), 1000)
-
-    // Automatically trigger download after a short delay
+    // Automatically trigger APK download after short delay
     const timer = setTimeout(() => {
       const a = document.createElement('a')
       a.href = '/ecopin-app-release.apk'
@@ -46,7 +64,7 @@ export default function DownloadsPage() {
       a.click()
       document.body.removeChild(a)
       setDownloadStarted(true)
-    }, 1500)
+    }, 1200)
 
     return () => clearTimeout(timer)
   }, [])
@@ -63,158 +81,325 @@ export default function DownloadsPage() {
     }
   }
 
-  function handleBack(e) {
-    e.preventDefault()
-    setIsExiting(true)
-    setTimeout(() => {
-      router.push('/')
-    }, 900)
-  }
-
-  if (isEntering) {
-    return (
-      <main className="min-h-screen bg-surface  relative flex items-center justify-center overflow-hidden transition-colors duration-300">
-        {/* Logo underneath */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center z-0">
-          <img src="/Full Logo Light.png" alt="EcoPin" className="h-10 sm:h-12 w-auto object-contain dark:hidden" />
-          <img src="/Full Logo Dark.png" alt="EcoPin" className="h-10 sm:h-12 w-auto object-contain hidden dark:block" />
-          <div className="mt-6 font-bold uppercase tracking-[0.3em] text-[10px] text-text-primary/50 /50 animate-pulse">
-            Loading
-          </div>
-        </div>
-
-        {/* Wipe overlay */}
-        <div 
-          className="fixed inset-0 bg-primary z-10" 
-          style={{ 
-            transformOrigin: 'right',
-            animation: 'wipeRight 0.9s cubic-bezier(0.8, 0, 0.2, 1) forwards'
-          }} 
-        >
-          <style dangerouslySetInnerHTML={{
-            __html: `
-            @keyframes wipeRight {
-              0% { transform: scaleX(1); }
-              100% { transform: scaleX(0); }
-            }
-            `
-          }} />
-        </div>
-      </main>
-    )
+  const handleManualDownload = () => {
+    const a = document.createElement('a')
+    a.href = '/ecopin-app-release.apk'
+    a.download = 'ecopin-app-release.apk'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    setDownloadStarted(true)
   }
 
   return (
-    <main className="min-h-screen bg-background  text-text-primary  flex flex-col transition-colors duration-300 relative">
-      {isExiting && (
-        <div 
-          className="fixed inset-0 bg-primary z-[9999] flex flex-col items-center justify-center" 
-          style={{ 
-            animation: 'wipeInRightClip 0.9s cubic-bezier(0.8, 0, 0.2, 1) forwards'
-          }} 
-        >
-          <img src="/Auth Logo.png" alt="EcoPin" className="h-16 md:h-20 w-auto object-contain relative z-10" />
-          <div className="mt-6 font-bold uppercase tracking-[0.3em] text-[10px] text-white/50 animate-pulse">
-            Loading
+    <div className="min-h-screen bg-gray-50/70 dark:bg-[#121212] text-gray-900 dark:text-gray-100 flex flex-col font-sans transition-colors duration-300">
+      {/* Top Navigation Bar identical to Map Page */}
+      <PublicHeader 
+        activeNav="downloads"
+        theme={theme}
+        toggleTheme={toggleTheme}
+        user={user}
+        hasSession={hasSession}
+      />
+
+      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-8 sm:space-y-10">
+        
+        {/* 1. HERO DOWNLOAD CARD: Clean Map Aesthetics with Active Pulsing Animation */}
+        <section className="bg-white dark:bg-[#1C1C1C] rounded-3xl border border-gray-200/90 dark:border-[#2A2A2A] p-6 sm:p-10 shadow-xs text-center space-y-4 relative overflow-hidden">
+          {/* Animated Download Icon with Pulsing Ripple Rings */}
+          <div className="relative inline-flex items-center justify-center mx-auto mb-1">
+            {downloadStarted && (
+              <>
+                <span className="absolute -inset-3 rounded-3xl bg-blue-500/20 dark:bg-blue-400/20 pointer-events-none download-pulse-ring" />
+                <span className="absolute -inset-1 rounded-2xl bg-blue-500/30 dark:bg-blue-400/30 pointer-events-none download-pulse-ring-inner" />
+              </>
+            )}
+            <div className="relative w-16 h-16 rounded-2xl bg-blue-50 dark:bg-[#0052CC]/15 text-[#0052CC] dark:text-[#60A5FA] flex items-center justify-center shadow-xs border border-blue-200/60 dark:border-[#0052CC]/30 z-10 transition-transform">
+              <Download className={`w-8 h-8 ${downloadStarted ? 'download-bounce-subtle' : ''}`} />
+            </div>
           </div>
-          <style dangerouslySetInnerHTML={{
-            __html: `
-            @keyframes wipeInRightClip {
-              0% { clip-path: inset(0 100% 0 0); }
-              100% { clip-path: inset(0 0 0 0); }
-            }
-            `
-          }} />
-        </div>
-      )}
-      {/* Shared Navbar exactly like root */}
-      <div className="fixed top-0 left-0 right-0 z-50 p-4 transition-all duration-300">
-        <Navbar 
-          theme={theme} 
-          toggleTheme={toggleTheme} 
-          hasSession={hasSession}
-          user={user}
-          isFloating={true} 
-          className="shadow-sm"
-        />
-      </div>
-      
-      <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-12 mt-32 pb-24">
-        
-        {/* Pulsing Graphic */}
-        <div className="relative mb-12">
-          <img src="/Full Logo Dark.png" alt="EcoPin" className="h-20 md:h-28 object-contain relative z-10 hidden dark:block animate-bounce" />
-          <img src="/Full Logo Light.png" alt="EcoPin" className="h-20 md:h-28 object-contain relative z-10 dark:hidden animate-bounce" />
-        </div>
 
-        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold uppercase tracking-tight mb-4 text-center">
-          {downloadStarted ? "Downloading..." : "Starting Download"}
-        </h1>
-        
-        <p className="text-lg md:text-xl font-medium opacity-70 mb-16 text-center max-w-2xl px-4">
-          If your download doesn't start automatically within a few seconds, 
-          <a href="/ecopin-app-release.apk" download className="text-[#0052CC] dark:text-[#60A5FA] ml-2 hover:underline font-bold">
-            click here to retry.
-          </a>
-        </p>
+          <div>
+            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold border mb-3 transition-all duration-300 ${
+              downloadStarted 
+                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40 shadow-xs' 
+                : 'bg-blue-50 text-[#0052CC] dark:bg-[#0052CC]/15 dark:text-[#60A5FA] border-blue-200 dark:border-[#0052CC]/30'
+            }`}>
+              {downloadStarted ? (
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                </span>
+              ) : (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#0052CC] dark:text-[#60A5FA]" />
+              )}
+              <span>
+                {downloadStarted ? "Downloading now • Check your browser downloads" : "Preparing download package..."}
+              </span>
+            </div>
 
-        {/* Installation Guide & Tooltips */}
-        <div className="w-full max-w-4xl bg-surface dark:bg-surface border border-border  rounded-3xl p-8 md:p-12 shadow-sm dark:shadow-none mx-auto relative overflow-hidden">
-          <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-widest mb-10 border-b-4 border-border  pb-4 flex items-center gap-3">
-            <Smartphone className="w-8 h-8" strokeWidth={3} /> Installation Guide
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white tracking-tight">
+              Downloading EcoPin for Android
+            </h1>
+            
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2 max-w-lg mx-auto leading-relaxed">
+              The official citizen environmental reporting app for Pasig City. If your browser didn&apos;t prompt the download automatically, click below to retry.
+            </p>
+
+            {/* Pulsing Active Download Progress Bar */}
+            <div className="max-w-xs sm:max-w-sm mx-auto pt-3 pb-1">
+              <div className="h-1.5 w-full bg-blue-50 dark:bg-[#252525] rounded-full overflow-hidden relative border border-blue-100 dark:border-[#333]">
+                <div 
+                  className={`h-full rounded-full bg-gradient-to-r from-blue-500 via-[#0052CC] to-blue-400 ${
+                    downloadStarted ? 'download-shimmer-active' : 'w-1/4 animate-pulse'
+                  }`} 
+                />
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-gray-400 dark:text-gray-500 mt-1.5 px-0.5">
+                <span className="flex items-center gap-1.5">
+                  <span className={`w-1.5 h-1.5 rounded-full ${downloadStarted ? 'bg-emerald-500 animate-pulse' : 'bg-blue-400'}`} />
+                  {downloadStarted ? 'ecopin-app-release.apk' : 'Connecting to mirror...'}
+                </span>
+                <span className="font-mono">~28 MB</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={handleManualDownload}
+              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#0052CC] hover:bg-[#0042A3] active:scale-[0.98] text-white font-semibold text-sm shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Download className={`w-4 h-4 ${downloadStarted ? 'download-bounce-subtle' : ''}`} />
+              <span>{downloadStarted ? "Download Again (~28 MB)" : "Download .APK Directly (~28 MB)"}</span>
+            </button>
+
+            <Link
+              href="/mobile"
+              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gray-50 dark:bg-[#252525] hover:bg-gray-100 dark:hover:bg-[#2C2C2C] border border-gray-200 dark:border-[#333] text-gray-700 dark:text-gray-200 font-semibold text-sm transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+            >
+              <Smartphone className="w-4 h-4 text-[#0052CC] dark:text-[#60A5FA]" />
+              <span>View App Features</span>
+            </Link>
+          </div>
+
+          <div className="pt-3 border-t border-gray-100 dark:border-[#2A2A2A] flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-gray-400 dark:text-gray-500">
+            <span>Version: 1.0</span>
+            <span>&bull;</span>
+            <span>Requires: Android 8.0 or newer</span>
+            <span>&bull;</span>
+            <span>Official Pasig City LGU App</span>
+          </div>
+        </section>
+
+        {/* 2. 3-STEP QUICK SETUP: Clean & Minimalist */}
+        <section className="bg-white dark:bg-[#1C1C1C] rounded-2xl border border-gray-200/90 dark:border-[#2A2A2A] p-5 sm:p-6 shadow-xs">
+          <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white mb-4 tracking-tight">
+            How to Install
           </h2>
-          
-          <div className="space-y-10 relative z-10">
-            {/* Step 1 */}
-            <div className="flex gap-6 items-start">
-              <div className="w-12 h-12 shrink-0 bg-black text-white dark:bg-surface dark:text-text-primary rounded-full flex items-center justify-center font-bold text-2xl shadow-md border border-border ">1</div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+            <div className="flex items-start gap-3">
+              <span className="w-6 h-6 rounded-full bg-blue-50 dark:bg-[#0052CC]/20 text-[#0052CC] dark:text-[#60A5FA] font-bold text-xs flex items-center justify-center shrink-0 border border-blue-200/60 dark:border-[#0052CC]/30">
+                1
+              </span>
               <div>
-                <h3 className="font-bold text-xl md:text-2xl uppercase mb-2">Unknown Sources</h3>
-                <p className="opacity-80 leading-relaxed">
-                  Since EcoPin is an internal city deployment tool, your Android device may block the direct installation. 
-                  Go to <strong>Settings &gt; Security &gt; Install Unknown Apps</strong> and grant permission to your web browser or file manager to install the APK.
+                <h3 className="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white">
+                  Open APK
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">
+                  Tap <span className="font-medium text-gray-700 dark:text-gray-300">ecopin-app-release.apk</span> in your notification tray or Downloads.
                 </p>
               </div>
             </div>
 
-            {/* Step 2 */}
-            <div className="flex gap-6 items-start">
-              <div className="w-12 h-12 shrink-0 bg-black text-white dark:bg-surface dark:text-text-primary rounded-full flex items-center justify-center font-bold text-2xl shadow-md border border-border ">2</div>
+            <div className="flex items-start gap-3">
+              <span className="w-6 h-6 rounded-full bg-blue-50 dark:bg-[#0052CC]/20 text-[#0052CC] dark:text-[#60A5FA] font-bold text-xs flex items-center justify-center shrink-0 border border-blue-200/60 dark:border-[#0052CC]/30">
+                2
+              </span>
               <div>
-                <h3 className="font-bold text-xl md:text-2xl uppercase mb-2 flex items-center gap-2">
-                  Google Play Protect <ShieldAlert className="w-6 h-6 text-yellow-500" />
+                <h3 className="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white">
+                  Install Anyway
                 </h3>
-                <p className="opacity-80 leading-relaxed">
-                  If Google Play Protect flags the app as unrecognized during installation, simply tap <strong>More details</strong> and select <strong>Install anyway</strong>. Our app is completely safe, actively developed, and securely communicates with local government servers.
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">
+                  If prompted by Android, tap <strong className="font-medium text-gray-700 dark:text-gray-300">More details &rarr; Install anyway</strong>.
                 </p>
               </div>
             </div>
 
-            {/* Step 3 */}
-            <div className="flex gap-6 items-start">
-              <div className="w-12 h-12 shrink-0 bg-primary text-white rounded-full flex items-center justify-center font-bold text-2xl shadow-sm border border-border">3</div>
+            <div className="flex items-start gap-3">
+              <span className="w-6 h-6 rounded-full bg-blue-50 dark:bg-[#0052CC]/20 text-[#0052CC] dark:text-[#60A5FA] font-bold text-xs flex items-center justify-center shrink-0 border border-blue-200/60 dark:border-[#0052CC]/30">
+                3
+              </span>
               <div>
-                <h3 className="font-bold text-xl md:text-2xl uppercase mb-2 flex items-center gap-2">
-                  Required Permissions <MapPin className="w-6 h-6" />
+                <h3 className="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white">
+                  Allow Permissions
                 </h3>
-                <p className="opacity-80 leading-relaxed">
-                  Upon first launch, you <strong>MUST</strong> grant <strong>Location Permissions (Precise)</strong> to utilize the automated geospatial clustering features. Without it, you cannot submit accurate environmental pin drops. You must also grant <strong>Camera Permissions</strong> to capture field evidence.
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">
+                  Open the app and tap <strong className="font-medium text-gray-700 dark:text-gray-300">Allow</strong> for Location &amp; Camera when asked.
                 </p>
               </div>
             </div>
           </div>
-          
-          {/* Decorative background element */}
-          <div className="absolute -bottom-20 -right-20 text-[#F4F0EA] dark:text-[#2A2A2A] z-0 pointer-events-none">
-             <CheckCircle2 className="w-96 h-96 opacity-50" strokeWidth={1} />
+        </section>
+
+        {/* 3. COMMON QUESTIONS: Minimal Collapsible Accordion (Zero Text Overload) */}
+        <section className="bg-white dark:bg-[#1C1C1C] rounded-2xl border border-gray-200/90 dark:border-[#2A2A2A] p-5 sm:p-6 shadow-xs">
+          <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white mb-2 tracking-tight">
+            Need Help?
+          </h2>
+
+          <div className="divide-y divide-gray-100 dark:divide-[#2A2A2A]">
+            {[
+              {
+                q: "Phone blocked the installation?",
+                a: "Tap More details, then select Install anyway. If asked, toggle on 'Allow from this source' for your browser or file manager."
+              },
+              {
+                q: "Map pin not snapping to your street?",
+                a: "Turn on your phone's GPS and select 'Precise Location' under EcoPin permissions so the pin marks your exact spot."
+              },
+              {
+                q: "Camera won't open in the app?",
+                a: "Make sure Camera permission is allowed for EcoPin in your phone settings. It is only accessed while taking report photos."
+              },
+              {
+                q: "Not receiving cleanup updates?",
+                a: "Enable Notifications for EcoPin in settings to receive alerts when city sweepers arrive and complete cleanups."
+              }
+            ].map((faq, i) => {
+              const isOpen = openFaq === i
+              return (
+                <div key={i} className="py-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setOpenFaq(isOpen ? null : i)}
+                    className="w-full flex items-center justify-between text-left py-1 text-xs sm:text-sm font-medium text-gray-800 dark:text-gray-200 hover:text-[#0052CC] dark:hover:text-[#60A5FA] transition-colors cursor-pointer"
+                  >
+                    <span>{faq.q}</span>
+                    <ChevronDown className={`w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180 text-[#0052CC] dark:text-[#60A5FA]' : ''}`} />
+                  </button>
+                  {isOpen && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 pt-1 pb-0.5 leading-relaxed">
+                      {faq.a}
+                    </p>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </section>
+
+        {/* 4. SAFETY & MUNICIPAL AUTHENTICITY CARD */}
+        <section className="p-6 bg-gradient-to-r from-blue-50/80 via-indigo-50/40 to-transparent dark:from-[#0052CC]/15 dark:via-indigo-950/20 dark:to-transparent border border-blue-100 dark:border-[#0052CC]/30 rounded-3xl shadow-xs flex flex-col sm:flex-row gap-5 items-start sm:items-center justify-between">
+          <div className="space-y-1.5 max-w-xl">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-[#0052CC] dark:text-[#60A5FA]" />
+              <h3 className="font-bold text-sm sm:text-base text-gray-900 dark:text-white">
+                Official Pasig City Civic Infrastructure
+              </h3>
+            </div>
+            <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+              EcoPin connects directly to Pasig City municipal servers for the Solid Waste Management Office. It contains zero advertisements, third-party trackers, or hidden analytics.
+            </p>
+          </div>
+
+          <Link
+            href="/"
+            className="px-5 py-2.5 rounded-xl bg-white dark:bg-[#1C1C1C] border border-gray-200 dark:border-[#333] text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-[#252525] font-semibold text-xs flex items-center gap-2 transition-colors flex-shrink-0 shadow-xs"
+          >
+            <MapPin className="w-3.5 h-3.5 text-[#0052CC] dark:text-[#60A5FA]" />
+            <span>Open Public Live Map</span>
+          </Link>
+        </section>
+      </main>
+
+      {/* Clean Footer matching Map page */}
+      <footer className="border-t border-gray-200/80 dark:border-[#2A2A2A] bg-white dark:bg-[#1C1C1C] py-5 px-4 sm:px-6 transition-colors duration-300 mt-auto">
+        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500 dark:text-gray-400">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-gray-700 dark:text-gray-300">EcoPin &bull; Pasig City</span>
+            <span>&bull;</span>
+            <span>Solid Waste Management Office</span>
+          </div>
+          <div>
+            <span>swmo@pasigcity.gov.ph &bull; 09173726888</span>
           </div>
         </div>
-        
-        <button onClick={handleBack} className="mt-12 font-bold uppercase tracking-widest text-sm border-b border-border  pb-1 hover:text-[#0052CC] hover:border-[#0052CC] transition-colors">
-          Return to Home
-        </button>
-      </div>
-    </main>
+      </footer>
+
+      {/* Download Pulse & Shimmer Animations */}
+      <style jsx>{`
+        @keyframes pulseRing {
+          0% {
+            transform: scale(0.92);
+            opacity: 0.8;
+          }
+          50% {
+            transform: scale(1.22);
+            opacity: 0.2;
+          }
+          100% {
+            transform: scale(1.35);
+            opacity: 0;
+          }
+        }
+        @keyframes pulseRingInner {
+          0% {
+            transform: scale(1);
+            opacity: 0.7;
+          }
+          50% {
+            transform: scale(1.12);
+            opacity: 0.25;
+          }
+          100% {
+            transform: scale(1.18);
+            opacity: 0;
+          }
+        }
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(250%);
+          }
+        }
+        @keyframes bounceSubtle {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(3px);
+          }
+        }
+        .download-pulse-ring {
+          animation: pulseRing 2s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+        }
+        .download-pulse-ring-inner {
+          animation: pulseRingInner 2s cubic-bezier(0.2, 0.8, 0.2, 1) infinite 0.35s;
+        }
+        .download-shimmer-active {
+          width: 45%;
+          animation: shimmer 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+        .download-bounce-subtle {
+          animation: bounceSubtle 1.2s ease-in-out infinite;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .download-pulse-ring,
+          .download-pulse-ring-inner,
+          .download-shimmer-active,
+          .download-bounce-subtle {
+            animation: none;
+          }
+          .download-shimmer-active {
+            width: 100%;
+          }
+        }
+      `}</style>
+    </div>
   )
 }
-

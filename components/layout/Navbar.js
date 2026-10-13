@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
+import LoadingScreen from '@/components/ui/LoadingScreen';
+
 export default function Navbar({ 
   theme, 
   toggleTheme, 
@@ -46,27 +48,7 @@ export default function Navbar({
 
   const navContent = (
     <>
-      {isExiting && (
-        <div 
-          className="fixed inset-0 bg-primary z-[9999] flex flex-col items-center justify-center" 
-          style={{ 
-            animation: 'wipeInRightClip 0.9s cubic-bezier(0.8, 0, 0.2, 1) forwards'
-          }} 
-        >
-          <img src="/Auth Logo.png" alt="EcoPin" className="h-16 md:h-20 w-auto object-contain relative z-10" />
-          <div className="mt-6 font-bold uppercase tracking-[0.3em] text-[10px] text-white/50 animate-pulse">
-            Loading
-          </div>
-          <style dangerouslySetInnerHTML={{
-            __html: `
-            @keyframes wipeInRightClip {
-              0% { clip-path: inset(0 100% 0 0); }
-              100% { clip-path: inset(0 0 0 0); }
-            }
-            `
-          }} />
-        </div>
-      )}
+      {isExiting && <LoadingScreen mode="in" />}
       <button onClick={handleLogoClick} className="cursor-pointer transition-all bg-transparent border-none p-0 outline-none">
         <img src="/Full Logo Light.png" alt="EcoPin" className="h-8 md:h-10 w-auto dark:hidden" />
         <img src="/Full Logo Dark.png" alt="EcoPin" className="h-8 md:h-10 w-auto hidden dark:block" />
@@ -74,9 +56,10 @@ export default function Navbar({
       
       <div className="flex items-center gap-6 ml-auto">
         <nav className="hidden md:flex gap-6 items-center">
-          <a href="/#about" className="text-sm font-bold uppercase tracking-widest text-text-primary  hover:text-[#0052CC] transition-colors">About</a>
-          <a href="/#features" className="text-sm font-bold uppercase tracking-widest text-text-primary  hover:text-[#0052CC] transition-colors">Features</a>
-          <a href="/map" onClick={(e) => handleLinkClick(e, '/map')} className="text-sm font-bold uppercase tracking-widest text-text-primary  hover:text-[#0052CC] transition-colors cursor-pointer">Live Map</a>
+          <a href="/mobile#features" className="text-sm font-bold uppercase tracking-widest text-text-primary hover:text-[#0052CC] transition-colors">Features</a>
+          <a href="/mobile#how-it-works" className="text-sm font-bold uppercase tracking-widest text-text-primary hover:text-[#0052CC] transition-colors">How It Works</a>
+          <a href="/downloads" onClick={(e) => handleLinkClick(e, '/downloads')} className="text-sm font-bold uppercase tracking-widest text-text-primary hover:text-[#0052CC] transition-colors cursor-pointer">Download APK</a>
+          <a href="/" onClick={(e) => handleLinkClick(e, '/')} className="text-sm font-bold uppercase tracking-widest text-[#0052CC] dark:text-[#60A5FA] transition-colors cursor-pointer">Live Map</a>
         </nav>
 
         <div className="hidden md:flex items-center gap-4">
@@ -118,9 +101,10 @@ export default function Navbar({
   const mobileMenu = isMenuOpen && (
     <div className="fixed inset-0 z-[1200] bg-background  flex flex-col items-center justify-center p-6 border-b-4 border-border  pointer-events-auto">
       <nav className="flex flex-col gap-6 items-center w-full max-w-sm">
-        <a href="/#about" onClick={() => setIsMenuOpen(false)} className="w-full text-center text-2xl font-bold uppercase tracking-widest text-text-primary  py-2 hover:opacity-70">About</a>
-        <a href="/#features" onClick={() => setIsMenuOpen(false)} className="w-full text-center text-2xl font-bold uppercase tracking-widest text-text-primary  py-2 hover:opacity-70">Features</a>
-        <a href="/map" onClick={(e) => handleLinkClick(e, '/map')} className="w-full text-center text-2xl font-bold uppercase tracking-widest text-text-primary  py-2 hover:opacity-70 cursor-pointer">Live Map</a>
+        <a href="/mobile#features" onClick={() => setIsMenuOpen(false)} className="w-full text-center text-2xl font-bold uppercase tracking-widest text-text-primary py-2 hover:opacity-70">Features</a>
+        <a href="/mobile#how-it-works" onClick={() => setIsMenuOpen(false)} className="w-full text-center text-2xl font-bold uppercase tracking-widest text-text-primary py-2 hover:opacity-70">How It Works</a>
+        <a href="/downloads" onClick={(e) => handleLinkClick(e, '/downloads')} className="w-full text-center text-2xl font-bold uppercase tracking-widest text-text-primary py-2 hover:opacity-70 cursor-pointer">Download APK</a>
+        <a href="/" onClick={(e) => handleLinkClick(e, '/')} className="w-full text-center text-2xl font-bold uppercase tracking-widest text-[#0052CC] dark:text-[#60A5FA] py-2 hover:opacity-70 cursor-pointer">Live Map</a>
         
         <button
           onClick={toggleTheme}
