@@ -430,10 +430,25 @@ html.dark .card {
 .ecopin-table tbody tr:hover td,
 .ecopin-table tbody tr:hover span,
 .ecopin-table tbody tr:hover div,
-.ecopin-table tbody tr:hover p,
-.ecopin-table tbody tr:hover button, .ecopin-table tbody tr:hover select, .ecopin-table tbody tr:hover .input {
+.ecopin-table tbody tr:hover p {
   @apply text-white border-white;
 }
+.ecopin-table tbody tr:hover button:not(.btn-primary),
+.ecopin-table tbody tr:hover select,
+.ecopin-table tbody tr:hover .input {
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+
+.ecopin-table tbody tr:hover button:not(.btn-primary):hover {
+  background-color: var(--surface-elevated);
+  color: var(--color-action, #0052CC);
+  border-color: var(--color-action, #0052CC);
+}
+
+
+
+
 
 /* Chart card styles */
 .chart-card {

@@ -129,12 +129,12 @@ export default function OptimizationSettings({
                 onClick={() => update('travel_mode', value)}
                 className={`flex flex-col items-start p-3 border text-left transition-all duration-150 disabled:opacity-50 cursor-pointer
                   ${active
-                    ? 'bg-surface-elevated border-[#ccff00] text-text-primary shadow-[2px_2px_0px_0px_#ccff00]'
-                    : 'bg-surface border-border text-text-muted hover:border-[#ccff00]/60 hover:text-text-primary'
+                    ? 'bg-primary/5 border-primary text-text-primary shadow-sm'
+                    : 'bg-surface border-border text-text-muted hover:border-primary/60 hover:text-text-primary'
                   }`}
               >
                 <div className="flex items-center gap-2 mb-1">
-                  <Icon className={`w-4 h-4 ${active ? 'text-[#ccff00]' : 'text-text-muted'}`} />
+                  <Icon className={`w-4 h-4 ${active ? 'text-primary' : 'text-text-muted'}`} />
                   <span className="text-sm font-bold uppercase tracking-wide">{label}</span>
                 </div>
                 {hint && <span className="text-[10px] font-mono text-text-muted">{hint}</span>}
@@ -178,7 +178,7 @@ export default function OptimizationSettings({
                     disabled={disabled}
                     value={settings._templateId || ''}
                     onChange={handleTemplateSelect}
-                    className="w-full appearance-none border border-border bg-surface-elevated text-text-primary text-xs font-bold px-3 py-2 pr-8 focus:outline-none focus:border-[#ccff00] disabled:opacity-50 cursor-pointer"
+                    className="w-full appearance-none border border-border bg-surface-elevated text-text-primary text-xs font-bold px-3 py-2 pr-8 focus:outline-none focus:border-primary disabled:opacity-50 cursor-pointer"
                   >
                     <option value="">— Custom Settings —</option>
                     {templates.filter(t => t.is_default).length > 0 && (
@@ -204,7 +204,7 @@ export default function OptimizationSettings({
                     type="button"
                     disabled={disabled}
                     onClick={() => setShowSaveInput(true)}
-                    className="flex items-center gap-1.5 px-3 py-2 border border-border text-xs font-bold uppercase tracking-wider text-text-primary hover:border-[#ccff00] hover:text-[#ccff00] transition-colors disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-2 border border-border text-xs font-bold uppercase tracking-wider text-text-primary hover:border-primary hover:text-primary transition-colors disabled:opacity-50"
                   >
                     <Save className="w-3.5 h-3.5" />
                     Save Preset
@@ -218,13 +218,13 @@ export default function OptimizationSettings({
                       value={newTemplateName}
                       onChange={e => setNewTemplateName(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') setShowSaveInput(false) }}
-                      className="border border-[#ccff00] bg-surface-elevated text-text-primary text-xs px-2 py-1.5 focus:outline-none w-36"
+                      className="border border-primary bg-surface-elevated text-text-primary text-xs px-2 py-1.5 focus:outline-none w-36"
                     />
                     <button
                       type="button"
                       onClick={handleSave}
                       disabled={saving || !newTemplateName.trim()}
-                      className="p-1.5 bg-[#ccff00] text-black border border-[#ccff00] hover:bg-[#bbee00] disabled:opacity-50 transition-colors"
+                      className="p-1.5 bg-primary text-white border border-primary hover:bg-primary/90 disabled:opacity-50 transition-colors"
                     >
                       <Check className="w-3.5 h-3.5" />
                     </button>
@@ -258,7 +258,7 @@ export default function OptimizationSettings({
                   disabled={disabled}
                   value={settings.break_duration_min ?? 60}
                   onChange={e => update('break_duration_min', Number(e.target.value))}
-                  className="w-full border border-border p-2 bg-surface text-text-primary text-xs font-bold focus:outline-none focus:border-[#ccff00]"
+                  className="w-full border border-border p-2 bg-surface text-text-primary text-xs font-bold focus:outline-none focus:border-primary"
                 >
                   {breakDurations.map(val => (
                     <option key={val} value={val}>{val} minutes</option>
@@ -282,8 +282,8 @@ export default function OptimizationSettings({
                         onClick={() => update('overtime_tolerance_min', value)}
                         className={`flex-1 py-1.5 px-2 border text-xs font-bold font-mono transition-all disabled:opacity-50
                           ${active
-                            ? 'bg-[#ccff00] border-[#ccff00] text-black font-bold'
-                            : 'border-border text-text-muted bg-surface hover:border-[#ccff00]'
+                            ? 'bg-primary border-primary text-white font-bold'
+                            : 'border-border text-text-muted bg-surface hover:border-primary'
                           }`}
                       >
                         {label}
@@ -309,7 +309,7 @@ export default function OptimizationSettings({
                   disabled={disabled}
                   value={Math.round((settings.capacity_utilization ?? 1) * 100)}
                   onChange={e => update('capacity_utilization', Number(e.target.value) / 100)}
-                  className="w-full border border-border p-2 bg-surface text-text-primary text-xs font-bold font-mono focus:outline-none focus:border-[#ccff00]"
+                  className="w-full border border-border p-2 bg-surface text-text-primary text-xs font-bold font-mono focus:outline-none focus:border-primary"
                 />
                 <p className="text-[10px] font-mono text-text-muted mt-1">Target utilization percentage of available crew minutes.</p>
               </div>
@@ -325,7 +325,7 @@ export default function OptimizationSettings({
                   disabled={disabled}
                   value={settings.max_tasks_per_shift ?? 15}
                   onChange={e => update('max_tasks_per_shift', Math.max(1, Number(e.target.value) || 1))}
-                  className="w-full border border-border p-2 bg-surface text-text-primary text-xs font-bold font-mono focus:outline-none focus:border-[#ccff00]"
+                  className="w-full border border-border p-2 bg-surface text-text-primary text-xs font-bold font-mono focus:outline-none focus:border-primary"
                 />
                 <p className="text-[10px] font-mono text-text-muted mt-1">Upper limit per crew to prevent fatigue.</p>
               </div>
@@ -344,8 +344,8 @@ export default function OptimizationSettings({
                     <label
                       key={type}
                       className={`flex items-center gap-2 border px-3 py-2 cursor-pointer transition-colors text-xs
-                        ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-[#ccff00]'}
-                        ${included ? 'border-[#ccff00] bg-[#ccff00]/10 font-bold' : 'border-border bg-surface text-text-muted'}`}
+                        ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-primary'}
+                        ${included ? 'border-primary bg-primary/10 font-bold text-primary' : 'border-border bg-surface text-text-muted'}`}
                     >
                       <input
                         type="checkbox"
@@ -357,7 +357,7 @@ export default function OptimizationSettings({
                             ? current.filter(t => t !== type)
                             : [...current, type])
                         }}
-                        className="accent-[#ccff00] w-3.5 h-3.5"
+                        className="accent-primary w-3.5 h-3.5"
                       />
                       <span className="truncate">{type}</span>
                     </label>

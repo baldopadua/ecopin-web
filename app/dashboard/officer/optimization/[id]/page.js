@@ -264,9 +264,9 @@ export default function OptimizationRunPage() {
 
         {/* Dispatched & Active Operational Banner */}
         {run.status === 'approved' && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-accent-green/10 border border-accent-green/30 mt-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-primary/10 border border-primary/30 mt-6">
             <div className="flex items-center gap-3">
-              <CheckCircle2 className="w-5 h-5 text-accent-green flex-shrink-0" />
+              <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
               <div>
                 <p className="font-bold text-text-primary text-sm">Dispatched & Active in Field Operations</p>
                 <p className="text-xs text-text-muted">Waypoints and cleanup task assignments are published to field crews.</p>
@@ -282,7 +282,7 @@ export default function OptimizationRunPage() {
               </button>
               <button
                 onClick={() => router.push('/dashboard/officer/operations')}
-                className="px-5 py-2.5 bg-accent-green text-black font-bold uppercase tracking-wider text-xs border border-border hover:brightness-105 transition-all shadow-sm"
+                className="px-5 py-2.5 bg-primary text-white font-bold uppercase tracking-wider text-xs border border-primary hover:bg-action-hover transition-all shadow-sm cursor-pointer"
               >
                 Monitor Live Operations
               </button>
@@ -303,7 +303,7 @@ export default function OptimizationRunPage() {
             <button
               onClick={handleApprove}
               disabled={actionLoading}
-              className="flex-1 px-6 py-3 bg-accent-green text-black font-bold uppercase tracking-wider border border-border hover:brightness-105 transition-all disabled:opacity-50"
+              className="flex-1 px-6 py-3 bg-primary text-white font-bold uppercase tracking-wider border border-primary hover:bg-action-hover transition-all disabled:opacity-50 cursor-pointer"
             >
               {actionLoading === 'approve' ? 'Dispatching...' : <span className="flex items-center justify-center"><CheckCircle2 className="w-5 h-5 mr-2" /> Confirm & Dispatch to Crews</span>}
             </button>

@@ -93,7 +93,7 @@ export default function DisassembleModal({ isOpen, targetId, onClose, onDisassem
         {/* Loading State */}
         {loading && (
           <div className="py-12 flex flex-col items-center justify-center text-text-muted space-y-3 font-mono text-sm">
-            <Loader2 className="w-8 h-8 animate-spin text-[#ccff00]" />
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
             <p>Auditing plan tasks, reports, and cluster locks...</p>
           </div>
         )}
@@ -151,7 +151,7 @@ export default function DisassembleModal({ isOpen, targetId, onClose, onDisassem
               </div>
               <div className="bg-surface border border-border p-3">
                 <p className="text-[10px] font-mono uppercase tracking-wider text-text-muted">Reports Restored</p>
-                <p className="text-xl font-bold text-accent-green">{preview.reports_count}</p>
+                <p className="text-xl font-bold text-primary">{preview.reports_count}</p>
                 <p className="text-[10px] font-mono text-text-muted mt-0.5">Reset to unresolved queue</p>
               </div>
               <div className="bg-surface border border-border p-3">

@@ -1,6 +1,7 @@
 'use client'
 import SecureImage from '@/components/ui/SecureImage'
-import { useEffect, useState, useRef } from 'react'
+import ImageLightbox from '@/components/ui/ImageLightbox'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
   fetchReportById,
@@ -33,7 +34,7 @@ export default function ReportDetailPage() {
   const [evidence, setEvidence] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [selectedImage, setSelectedImage] = useState(null)
+  const [lightboxIndex, setLightboxIndex] = useState(null)
   const [showStatusDropdown, setShowStatusDropdown] = useState(false)
   const [updatingStatus, setUpdatingStatus] = useState(false)
   const [uploadingBefore, setUploadingBefore] = useState(false)
@@ -80,6 +81,30 @@ export default function ReportDetailPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const allReportPhotos = useMemo(() => {
+    const list = []
+    if (report?.image_url) list.push({ url: report.image_url, label: 'Reported Photo' })
+    ;(evidence || []).forEach((e, idx) => {
+      const url = e.url || e.photo_url || e.file_url
+      if (url && !list.some(item => item.url === url)) {
+        list.push({ url, label: e.name || `Evidence Photo #${idx + 1}` })
+      }
+    })
+    if (report?.before_photo_url && !list.some(item => item.url === report.before_photo_url)) {
+      list.push({ url: report.before_photo_url, label: 'Before Cleanup Photo' })
+    }
+    if (report?.after_photo_url && !list.some(item => item.url === report.after_photo_url)) {
+      list.push({ url: report.after_photo_url, label: 'After Cleanup Photo' })
+    }
+    return list
+  }, [report, evidence])
+
+  const openLightboxAtUrl = (url) => {
+    if (!url) return
+    const found = allReportPhotos.findIndex(item => item.url === url)
+    setLightboxIndex(found >= 0 ? found : 0)
   }
 
   useEffect(() => {
@@ -464,7 +489,7 @@ export default function ReportDetailPage() {
             {/* Main Content */}
             <div className="lg:col-span-3 space-y-6">
               {/* Lifecycle Timeline - Read-only display */}
-              <div className="card border border-border border-[var(--accent-green)]">
+              <div className="card border border-border border-primary">
                 <div className="text-center mb-6">
                   <h2 className="text-2xl font-bold text-text-primary mb-2">Report Lifecycle</h2>
                   <div className="flex justify-center gap-3 flex-wrap">
@@ -569,7 +594,7 @@ export default function ReportDetailPage() {
                           src={img.url}
                           alt={`Evidence ${index + 1}`}
                           className="w-full h-48 object-cover rounded-lg border border-border cursor-pointer hover:opacity-90 transition-opacity"
-                          onClick={() => setSelectedImage(img.url)}
+                          onClick={() => openLightboxAtUrl(img.url)}
                         />
                       </div>
                     ))}
@@ -593,7 +618,12 @@ export default function ReportDetailPage() {
                       )}
                     </div>
                     {report.before_photo_url ? (
-                      <SecureImage src={report.before_photo_url} alt="Before" className="w-full h-48 object-cover rounded-lg" />
+                      <SecureImage 
+                        src={report.before_photo_url} 
+                        alt="Before" 
+                        className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity" 
+                        onClick={() => openLightboxAtUrl(report.before_photo_url)}
+                      />
                     ) : user?.role === 'field_crew' ? (
                       <div
                         className={`border border-border border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${uploadingBefore ? 'border-border bg-surface' : 'border-border hover:border-accent-green hover:bg-accent-green/5'
@@ -653,10 +683,15 @@ export default function ReportDetailPage() {
                       )}
                     </div>
                     {report.after_photo_url ? (
-                      <SecureImage src={report.after_photo_url} alt="After" className="w-full h-48 object-cover rounded-lg" />
+                      <SecureImage 
+                        src={report.after_photo_url} 
+                        alt="After" 
+                        className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity" 
+                        onClick={() => openLightboxAtUrl(report.after_photo_url)}
+                      />
                     ) : user?.role === 'field_crew' ? (
                       <div
-                        className={`border border-border border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${uploadingAfter ? 'border-border bg-surface' : 'border-border hover:border-accent-green hover:bg-accent-green/5'
+                        className={`border border-border border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${uploadingAfter ? 'border-border bg-surface' : 'border-border hover:border-primary hover:bg-primary/5'
                           }`}
                         onClick={() => document.getElementById('after-photo-input').click()}
                         onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-accent-green', 'bg-accent-green/10'); }}
@@ -908,27 +943,14 @@ export default function ReportDetailPage() {
             </div>
           </div>
 
-      {/* Full Image Modal */}
-      {selectedImage && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[2000]"
-          onClick={() => setSelectedImage(null)}
-        >
-          <div className="relative max-w-5xl max-h-[90vh] p-4">
-            <button
-              onClick={() => setSelectedImage(null)}
-              className="absolute -top-12 right-0 text-white text-4xl hover:text-gray-300 transition-colors"
-            >
-              ×
-            </button>
-            <SecureImage
-              src={selectedImage}
-              alt="Full size evidence"
-              className="max-w-full max-h-[90vh] object-contain rounded-lg"
-            />
-          </div>
-        </div>
-      )}
+      {/* Reusable Image Lightbox with Multi-Photo Navigation & Zoom */}
+      <ImageLightbox
+        images={allReportPhotos}
+        currentIndex={lightboxIndex}
+        isOpen={lightboxIndex !== null}
+        onClose={() => setLightboxIndex(null)}
+        onNavigate={(newIdx) => setLightboxIndex(newIdx)}
+      />
 
       {notification && (
         <Notification

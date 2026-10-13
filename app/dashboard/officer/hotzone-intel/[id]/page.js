@@ -8,6 +8,8 @@ import DataTable from '@/components/ui/DataTable'
 import StatusBadge from '@/components/ui/StatusBadge'
 import EvidenceGallery from '@/components/ui/EvidenceGallery'
 import ExportButton from '@/components/ui/ExportButton'
+import ReportDetailModal from '@/components/reports/ReportDetailModal'
+import { fetchReportEvidence } from '@/lib/api/reports'
 import { OfficerGuard } from '@/components/auth/RequireRole'
 import { Map as MapIcon, ChevronLeft, Target, AlertTriangle, Layers, Pen } from 'lucide-react'
 import dynamic from 'next/dynamic'
@@ -74,6 +76,8 @@ export default function ClusterDetailPage() {
   const [editingTitle, setEditingTitle] = useState('')
   const [savingTitle, setSavingTitle] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [selectedReport, setSelectedReport] = useState(null)
+  const [reportEvidenceMap, setReportEvidenceMap] = useState({})
   
   const router = useRouter()
   const params = useParams()
@@ -102,8 +106,22 @@ export default function ClusterDetailPage() {
     })
   }, [clusterId])
 
+  const handleViewReport = async (report) => {
+    setSelectedReport(report)
+    if (!reportEvidenceMap[report.id]) {
+      try {
+        const ev = await fetchReportEvidence(report.id)
+        if (Array.isArray(ev)) {
+          setReportEvidenceMap(prev => ({ ...prev, [report.id]: ev }))
+        }
+      } catch (err) {
+        console.error('Failed to load evidence for report:', err)
+      }
+    }
+  }
+
   const handleRowClick = (report) => {
-    router.push(`/dashboard/raw-data/${report.id}`)
+    handleViewReport(report)
   }
 
   const handleSaveTitle = async () => {
@@ -249,7 +267,24 @@ export default function ClusterDetailPage() {
     { key: 'title', label: 'Title', width: '30%', render: v => <span className="font-bold">{v}</span> },
     { key: 'issue_type', label: 'Type', width: '20%' },
     { key: 'created_at', label: 'Date', width: '15%', render: v => new Date(v).toLocaleDateString() },
-    { key: 'status', label: 'Status', width: '20%', render: v => <StatusBadge status={v} /> },
+    { key: 'status', label: 'Status', width: '15%', render: v => <StatusBadge status={v} /> },
+    {
+      key: 'actions',
+      label: 'Action',
+      width: '20%',
+      render: (_, row) => (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            handleViewReport(row)
+          }}
+          className="text-xs font-bold uppercase tracking-wider border border-border px-3 py-1 text-text-primary bg-surface hover:text-primary hover:border-primary hover:bg-surface-elevated transition-colors cursor-pointer rounded-xs"
+        >
+          View Data
+        </button>
+      )
+    }
   ]
 
   return (
@@ -274,7 +309,7 @@ export default function ClusterDetailPage() {
                 <button 
                   onClick={handleSaveTitle}
                   disabled={savingTitle}
-                  className="px-3 py-1 text-sm font-bold uppercase tracking-widest bg-accent-green text-white border border-border border-accent-green hover:bg-black hover:border-border transition-colors"
+                  className="px-3 py-1 text-sm font-bold uppercase tracking-widest bg-primary text-white border border-primary hover:bg-primary/90 transition-colors"
                 >
                   {savingTitle ? 'Saving...' : 'Save'}
                 </button>
@@ -396,11 +431,11 @@ export default function ClusterDetailPage() {
            </div>
         </div>
 
-        {/* Reports List */}
+         {/* Reports List */}
         <div className="card p-6 border border-border rounded-xl">
            <div className="flex justify-between items-center mb-6 border-b border-border pb-3">
               <h2 className="text-xl font-bold uppercase tracking-tight flex items-center gap-2">
-                 <Layers className="w-5 h-5 text-accent-green" /> Constituent Reports
+                 <Layers className="w-5 h-5 text-primary" /> Constituent Reports
               </h2>
               <button
                 onClick={exportPDF}
@@ -428,6 +463,14 @@ export default function ClusterDetailPage() {
         {/* Evidence Gallery */}
         <EvidenceGallery reports={reports} />
         
+        {/* Report Detail Modal */}
+        {selectedReport && (
+          <ReportDetailModal
+            report={selectedReport}
+            evidence={reportEvidenceMap[selectedReport.id] || []}
+            onClose={() => setSelectedReport(null)}
+          />
+        )}
       </div>
     </OfficerGuard>
   )

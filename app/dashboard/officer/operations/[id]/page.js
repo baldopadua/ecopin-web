@@ -12,6 +12,7 @@ import { Buffer } from 'buffer'
 import dynamic from 'next/dynamic'
 import { Pen, Users } from 'lucide-react'
 import { OfficerGuard } from '@/components/auth/RequireRole'
+import ReportDetailModal from '@/components/reports/ReportDetailModal'
 
 const OperationsMap = dynamic(() => import('@/components/map/OperationsMap'), { 
   ssr: false,
@@ -785,7 +786,7 @@ function CleanupTaskDetailContent() {
                       <td>
                         <button
                           onClick={() => handleViewReportDetail(report.id)}
-                          className="text-xs font-bold uppercase tracking-widest border border-border px-3 py-1 hover:border-accent-green hover:text-accent-green transition-colors"
+                          className="text-xs font-bold uppercase tracking-widest border border-border px-3 py-1 text-text-primary bg-surface hover:text-primary hover:border-primary hover:bg-surface-elevated transition-colors cursor-pointer rounded-xs"
                         >
                           View Data
                         </button>
@@ -811,13 +812,13 @@ function CleanupTaskDetailContent() {
                 <p className="text-sm text-text-muted font-mono">No field crews available</p>
               ) : (
                 availableCrew.map(crew => (
-                  <label key={crew.id} className={`flex items-center space-x-3 p-3 border cursor-pointer transition-colors ${selectedCrewId === crew.id ? 'border-accent-green bg-accent-green/5' : 'border-border hover:border-accent-green bg-background'}`}>
+                  <label key={crew.id} className={`flex items-center space-x-3 p-3 border cursor-pointer transition-colors ${selectedCrewId === crew.id ? 'border-primary bg-primary/5' : 'border-border hover:border-primary bg-background'}`}>
                     <input 
                       type="radio" 
                       name="fieldCrewSelection"
                       checked={selectedCrewId === crew.id} 
                       onChange={() => setSelectedCrewId(crew.id)}
-                      className="rounded-full border border-border text-accent-green focus:ring-accent-green w-5 h-5 bg-transparent" 
+                      className="rounded-full border border-border text-primary focus:ring-primary w-5 h-5 bg-transparent" 
                     />
                     <div className="flex-1">
                       <div className="font-mono text-sm font-bold uppercase">{crew.crew_name || crew.name || crew.full_name}</div>
@@ -844,115 +845,12 @@ function CleanupTaskDetailContent() {
       )}
 
       {selectedReportId && (
-        <div className="fixed inset-0 bg-black/80 z-[900] p-4 md:p-8 overflow-y-auto flex cursor-pointer" onClick={() => setSelectedReportId(null)}>
-          <div className="m-auto bg-surface-elevated flex flex-col md:flex-row w-full max-w-5xl h-[600px] max-h-[90vh] shadow-sm rounded-xl overflow-hidden relative border border-border dark:border-[#333333] cursor-auto" onClick={(e) => e.stopPropagation()}>
-            {/* Close Button Mobile (absolute) */}
-            <button onClick={() => setSelectedReportId(null)} className="md:hidden absolute top-4 right-4 z-50 bg-black/50 text-white rounded-full p-2 hover:bg-black/70">
-               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-            </button>
-
-            {/* Left Side: Images */}
-            <div className="w-full md:w-[60%] bg-black flex-shrink-0 relative overflow-hidden flex items-center justify-center border-b md:border-b-0 md:border-r border-border dark:border-[#333333]">
-              {(() => {
-                 const r = reports.find(rep => rep.id === selectedReportId);
-                 const evs = reportsEvidence[selectedReportId] || [];
-                 const images = [];
-                 if (r.image_url) images.push({ url: r.image_url, label: 'Reported' });
-                 if (r.before_photo_url) images.push({ url: r.before_photo_url, label: 'Before' });
-                 if (r.after_photo_url) images.push({ url: r.after_photo_url, label: 'After' });
-                 evs.forEach(img => images.push({ url: img.file_url || img.url, label: 'Evidence' }));
-
-                 if (images.length === 0) {
-                    return <div className="text-white/50 font-mono text-sm uppercase tracking-widest">No Visual Evidence</div>;
-                 }
-
-                 return (
-                    <div className="w-full h-full relative flex items-center justify-center group">
-                       <SecureImage src={images[currentImageIndex].url} alt={images[currentImageIndex].label} className="max-w-full max-h-full object-contain" />
-                       <div className="absolute top-4 left-4 bg-black/60 text-white px-2 py-1 text-[10px] font-bold uppercase tracking-widest rounded">{images[currentImageIndex].label}</div>
-                       {images.length > 1 && (
-                          <div className="absolute top-4 right-4 bg-black/60 text-white px-2 py-1 text-[10px] font-bold tracking-widest rounded">{currentImageIndex + 1} / {images.length}</div>
-                       )}
-
-                       {images.length > 1 && (
-                          <>
-                            <button onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(prev => prev > 0 ? prev - 1 : images.length - 1); }} className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80">
-                               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
-                            </button>
-                            <button onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(prev => prev < images.length - 1 ? prev + 1 : 0); }} className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80">
-                               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
-                            </button>
-                          </>
-                       )}
-                    </div>
-                 );
-              })()}
-            </div>
-
-            {/* Right Side: Details & Audit */}
-            <div className="w-full md:w-[40%] flex flex-col h-full bg-surface-elevated">
-               {/* Header */}
-               <div className="flex justify-between items-center p-4 border-b border-border dark:border-[#333333] shrink-0 bg-background/50">
-                  <div className="flex items-center gap-3">
-                     <div>
-                        <h2 className="text-lg font-bold uppercase tracking-tight leading-tight">{reports.find(r => r.id === selectedReportId)?.title}</h2>
-                        <div className="flex items-center gap-2">
-                           <span className="text-[10px] text-text-muted font-mono uppercase tracking-widest">{reports.find(r => r.id === selectedReportId)?.issue_type}</span>
-                           <span className="text-text-muted text-[10px]">•</span>
-                           <span className="text-[10px] text-text-muted font-mono uppercase tracking-widest">
-                             {new Date(reports.find(r => r.id === selectedReportId)?.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                           </span>
-                        </div>
-                     </div>
-                  </div>
-                  <button onClick={() => setSelectedReportId(null)} className="hidden md:block text-text-muted hover:text-text-primary transition-colors">
-                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                  </button>
-               </div>
-
-               {/* Scrollable Content (Comments) */}
-               <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                  {/* Caption / Description */}
-                  <div>
-                     <span className="font-bold text-sm mr-2">{reports.find(r => r.id === selectedReportId)?.title}</span>
-                     <span className="text-sm text-text-primary whitespace-pre-line">{reports.find(r => r.id === selectedReportId)?.description}</span>
-                  </div>
-
-                  <hr className="border-border border-dashed" />
-
-                  {/* Actions */}
-                  {/* Read-only status — field crew app drives completion via after photo upload */}
-                  {(() => {
-                     const r = reports.find(rep => rep.id === selectedReportId);
-                     const isCompleted = r?.status === 'resolved' || r?.status === 'completed';
-                     return isCompleted ? (
-                        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-success border border-success/30 bg-success/10 px-3 py-2">
-                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M20 6L9 17l-5-5"/></svg>
-                           Resolved
-                        </div>
-                     ) : null;
-                  })()}
-
-                  <hr className="border-border border-dashed" />
-
-                  {/* Audit Trail */}
-                  <div className="space-y-4">
-                     <h3 className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Audit Log</h3>
-                     {agencyResponses.length > 0 ? (
-                        agencyResponses.map((res, i) => (
-                          <div key={i} className="mb-2 border-l border-accent-green pl-3">
-                             <div className="text-[10px] font-mono text-text-muted">{new Date(res.created_at).toLocaleString()}</div>
-                             <div className="text-sm text-text-primary mt-1">{res.action_details}</div>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-xs text-text-muted italic">No activity recorded yet.</p>
-                      )}
-                  </div>
-               </div>
-            </div>
-          </div>
-        </div>
+        <ReportDetailModal
+          report={reports.find(r => r.id === selectedReportId)}
+          evidence={reportsEvidence[selectedReportId] || []}
+          agencyResponses={agencyResponses}
+          onClose={() => setSelectedReportId(null)}
+        />
       )}
     </div>
   )

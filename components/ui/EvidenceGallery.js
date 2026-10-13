@@ -1,5 +1,6 @@
 'use client'
 import SecureImage from '@/components/ui/SecureImage'
+import ImageLightbox from '@/components/ui/ImageLightbox'
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { fetchBatchReportEvidence } from '@/lib/api/reports'
 
@@ -158,7 +159,7 @@ export default function EvidenceGallery({ reports = [] }) {
               <button
                 type="button"
                 onClick={() => setDisplayLimit(prev => prev + 24)}
-                className="btn-secondary text-sm font-mono uppercase tracking-wider py-2 px-6 hover:border-accent-green transition-colors"
+                className="btn-secondary text-sm font-mono uppercase tracking-wider py-2 px-6 hover:border-primary transition-colors"
               >
                 Load More Photos ({evidence.length - displayLimit} remaining)
               </button>
@@ -171,53 +172,14 @@ export default function EvidenceGallery({ reports = [] }) {
         </div>
       )}
 
-      {/* Lightbox */}
-      {lightboxImage !== null && evidence[lightboxImage] && (
-        <div 
-          className="fixed inset-0 bg-black/95 z-[100] flex items-center justify-center backdrop-blur-sm"
-          onClick={() => setLightboxImage(null)}
-        >
-          <div className="relative w-full max-w-5xl h-[90vh] p-4 flex flex-col items-center justify-center" onClick={e => e.stopPropagation()}>
-            <button 
-              className="absolute top-4 right-4 text-white hover:text-accent-green z-50 p-2 transition-colors border border-transparent hover:border-accent-green bg-black/50"
-              onClick={() => setLightboxImage(null)}
-              aria-label="Close lightbox"
-            >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-            <button 
-              className="absolute left-4 text-white hover:text-accent-green z-50 p-3 transition-colors border border-transparent hover:border-accent-green bg-black/50"
-              onClick={handlePreviousPhoto}
-              aria-label="Previous photo"
-            >
-              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <SecureImage 
-              src={getOptimizedImageUrl(evidence[lightboxImage].photo_url || evidence[lightboxImage].url, { width: 1600 })} 
-              alt="Evidence Full" 
-              decoding="async"
-              className="max-w-full max-h-full object-contain border border-white/20"
-            />
-            <button 
-              className="absolute right-4 text-white hover:text-accent-green z-50 p-3 transition-colors border border-transparent hover:border-accent-green bg-black/50"
-              onClick={handleNextPhoto}
-              aria-label="Next photo"
-            >
-              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white bg-black/80 px-4 py-2 font-mono text-sm border border-white/20">
-              {evidence[lightboxImage].reportTitle || `Report ${evidence[lightboxImage].reportId}`} 
-              <span className="opacity-50 ml-2">({lightboxImage + 1} / {evidence.length})</span>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Reusable Lightbox */}
+      <ImageLightbox
+        images={evidence}
+        currentIndex={lightboxImage}
+        isOpen={lightboxImage !== null}
+        onClose={() => setLightboxImage(null)}
+        onNavigate={(newIdx) => setLightboxImage(newIdx)}
+      />
     </div>
   )
 }
