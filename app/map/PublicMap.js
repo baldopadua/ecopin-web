@@ -264,14 +264,34 @@ const parseGeometry = (geometry) => {
 
 function ViewportTracker({ onViewport }) {
   const map = useMap()
+  const lastBoundsRef = useRef(null)
+
   const publishViewport = useCallback(() => {
+    if (!map) return
     const bounds = map.getBounds()
-    onViewport({
-      south: Math.max(-90, bounds.getSouth()), 
-      north: Math.min(90, bounds.getNorth()),
-      west: bounds.getWest(), 
-      east: bounds.getEast(),
-    }, map.getZoom())
+    if (!bounds || typeof bounds.getSouth !== 'function') return
+
+    const south = Math.max(-90, bounds.getSouth())
+    const north = Math.min(90, bounds.getNorth())
+    const west = bounds.getWest()
+    const east = bounds.getEast()
+    const currentZoom = map.getZoom()
+
+    const last = lastBoundsRef.current
+    const EPS = 0.00005
+    if (
+      last &&
+      last.zoom === currentZoom &&
+      Math.abs(last.south - south) < EPS &&
+      Math.abs(last.north - north) < EPS &&
+      Math.abs(last.west - west) < EPS &&
+      Math.abs(last.east - east) < EPS
+    ) {
+      return
+    }
+
+    lastBoundsRef.current = { south, north, west, east, zoom: currentZoom }
+    onViewport({ south, north, west, east }, currentZoom)
   }, [map, onViewport])
   
   useMapEvents({ 
@@ -644,6 +664,7 @@ export default function PublicMap({ user: initialUser, hasSession: initialHasSes
   }, [initialUser, initialHasSession])
   const [reports, setReports] = useState([])
   const [allReports, setAllReports] = useState([])
+  const [loadingAllReports, setLoadingAllReports] = useState(true)
   const [viewport, setViewport] = useState(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
@@ -736,27 +757,30 @@ export default function PublicMap({ user: initialUser, hasSession: initialHasSes
     })
   }, [])
 
-  // Fetch all reports across database for global location filtering and accurate location counts
+  // Fetch all reports across database for global gallery view, location filtering, and accurate city-wide counts
   useEffect(() => {
     let active = true
     const loadAllReports = async () => {
       try {
+        setLoadingAllReports(true)
         const page = await fetchPublicReportPage(supabase, {
           bounds: { south: -85, north: 85, west: -180, east: 180 },
-          status: statusFilter,
-          issueType: issueTypeFilter,
+          status: 'all',
+          issueType: 'all',
           limit: 500
         })
         if (active && page.reports) {
           setAllReports(page.reports)
         }
       } catch (err) {
-        console.error('Failed to load all reports for location filter:', err)
+        console.error('Failed to load all reports for gallery/city-wide:', err)
+      } finally {
+        if (active) setLoadingAllReports(false)
       }
     }
     loadAllReports()
     return () => { active = false }
-  }, [statusFilter, issueTypeFilter, refresh])
+  }, [refresh])
 
   // Data fetching: when a location filter is active, load all reports; otherwise debounce viewport
   useEffect(() => {
@@ -855,9 +879,22 @@ export default function PublicMap({ user: initialUser, hasSession: initialHasSes
     return () => { active = false }
   }, [refresh])
 
-  const onViewport = useCallback((bounds, nextZoom) => {
-    setViewport(bounds)
-    setZoom(nextZoom)
+  const onViewport = useCallback((nextBounds, nextZoom) => {
+    if (!nextBounds) return
+    setViewport(prev => {
+      if (!prev) return nextBounds
+      const EPS = 0.00005
+      if (
+        Math.abs(prev.south - nextBounds.south) < EPS &&
+        Math.abs(prev.north - nextBounds.north) < EPS &&
+        Math.abs(prev.west - nextBounds.west) < EPS &&
+        Math.abs(prev.east - nextBounds.east) < EPS
+      ) {
+        return prev
+      }
+      return nextBounds
+    })
+    setZoom(prev => (prev === nextZoom ? prev : nextZoom))
   }, [])
 
   // Dismiss open filter dropdowns and POI search on outside-click or Escape key
@@ -1004,9 +1041,10 @@ export default function PublicMap({ user: initialUser, hasSession: initialHasSes
     return list
   }, [filteredReports, sortBy])
 
-  // Category counts across current verified public reports
+  // Category counts across current verified public reports (calculated city-wide when allReports loaded)
   const categoryCounts = useMemo(() => {
-    const verifiedReports = (reports || []).filter(isReportVerified)
+    const sourceReports = (allReports && allReports.length > 0) ? allReports : reports
+    const verifiedReports = (sourceReports || []).filter(isReportVerified)
     const counts = { all: verifiedReports.length }
     ISSUE_TYPES.forEach(cat => { counts[cat] = 0 })
     verifiedReports.forEach(r => {
@@ -1015,7 +1053,7 @@ export default function PublicMap({ user: initialUser, hasSession: initialHasSes
       }
     })
     return counts
-  }, [reports])
+  }, [allReports, reports])
 
   // Filter counts for badges (strictly across verified reports)
   const filterCounts = useMemo(() => {
@@ -1127,9 +1165,10 @@ export default function PublicMap({ user: initialUser, hasSession: initialHasSes
     setFlyCoords({ coords: PASIG_CENTER, zoom: DEFAULT_ZOOM, isReset: true, timestamp: Date.now() })
   }, [])
 
-  // Gallery Reports (strictly displays verified reports, filtered by gallery search, saved status, status, category, severity, and sorted)
+  // Gallery Reports (strictly displays verified reports across the entire city, filtered by gallery search, saved status, status, category, severity, and sorted)
   const galleryReports = useMemo(() => {
-    let list = (reports || []).filter(isReportVerified)
+    const sourceReports = (allReports && allReports.length > 0) ? allReports : reports
+    let list = (sourceReports || []).filter(isReportVerified)
 
     // Saved only filter
     if (onlySaved) {
@@ -1193,9 +1232,9 @@ export default function PublicMap({ user: initialUser, hasSession: initialHasSes
     }
 
     return list
-  }, [reports, onlySaved, savedReportIds, galleryStatusFilter, galleryCategoryFilter, gallerySeverityFilter, gallerySearch, gallerySortBy])
+  }, [allReports, reports, onlySaved, savedReportIds, galleryStatusFilter, galleryCategoryFilter, gallerySeverityFilter, gallerySearch, gallerySortBy])
 
-  // Prefetch evidence for visible gallery items
+  // Prefetch evidence for visible gallery items in a single non-blocking parallel batch
   useEffect(() => {
     if (activeNavTab !== 'gallery' || galleryReports.length === 0) return
     let isCancelled = false
@@ -1207,24 +1246,34 @@ export default function PublicMap({ user: initialUser, hasSession: initialHasSes
     if (toFetch.length === 0) return
 
     const loadEvidenceBatch = async () => {
-      for (const rep of toFetch) {
-        if (isCancelled) break
-        try {
-          const ev = await fetchReportEvidence(rep.id)
-          if (!isCancelled) {
-            setEvidenceCache(prev => ({ ...prev, [rep.id]: ev || [] }))
-          }
-        } catch {
-          if (!isCancelled) {
-            setEvidenceCache(prev => ({ ...prev, [rep.id]: [] }))
-          }
+      try {
+        const results = await Promise.all(
+          toFetch.map(async (rep) => {
+            try {
+              const ev = await fetchReportEvidence(rep.id)
+              return { id: rep.id, ev: ev || [] }
+            } catch {
+              return { id: rep.id, ev: [] }
+            }
+          })
+        )
+        if (!isCancelled) {
+          setEvidenceCache(prev => {
+            const next = { ...prev }
+            for (const item of results) {
+              next[item.id] = item.ev
+            }
+            return next
+          })
         }
+      } catch (err) {
+        console.error('Evidence batch prefetch failed:', err)
       }
     }
 
     loadEvidenceBatch()
     return () => { isCancelled = true }
-  }, [activeNavTab, galleryReports, evidenceCache])
+  }, [activeNavTab, galleryReports])
 
   // Keyboard navigation for Lightbox and Details Drawer
   useEffect(() => {
@@ -2806,8 +2855,7 @@ export default function PublicMap({ user: initialUser, hasSession: initialHasSes
                           <Popup 
                             className="custom-floating-popup"
                             closeButton={true}
-                            autoPan={true}
-                            autoPanPadding={[24, 24]}
+                            autoPan={false}
                           >
                             <div className="font-sans text-gray-900 dark:text-gray-100 bg-white dark:bg-[#1C1C1C]">
                               <div className="relative w-full h-36 bg-gray-100 dark:bg-gray-800 overflow-hidden rounded-t-[18px]">
@@ -3264,8 +3312,16 @@ export default function PublicMap({ user: initialUser, hasSession: initialHasSes
 
           {/* Gallery Content with slide-over / sidebar details */}
           <div className="flex-1 flex min-h-0 overflow-hidden relative">
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 custom-scrollbar">
-              {galleryReports.length === 0 ? (
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 custom-scrollbar" style={{ WebkitOverflowScrolling: 'touch', willChange: 'scroll-position' }}>
+              {loadingAllReports && allReports.length === 0 && reports.length === 0 ? (
+                <div className="max-w-md mx-auto h-72 flex flex-col items-center justify-center text-center p-8 bg-white dark:bg-[#1C1C1C] rounded-3xl border border-gray-200 dark:border-[#2A2A2A] shadow-xs mt-8">
+                  <Loader2 className="w-8 h-8 text-[#0052CC] dark:text-[#60A5FA] animate-spin mb-3" />
+                  <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">Loading incident gallery...</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Fetching verified community reports across Pasig City.
+                  </p>
+                </div>
+              ) : galleryReports.length === 0 ? (
                 <div className="max-w-md mx-auto h-72 flex flex-col items-center justify-center text-center p-8 bg-white dark:bg-[#1C1C1C] rounded-3xl border border-gray-200 dark:border-[#2A2A2A] shadow-xs mt-8">
                   {onlySaved ? (
                     <>
@@ -3321,39 +3377,42 @@ export default function PublicMap({ user: initialUser, hasSession: initialHasSes
                       <div 
                         key={report.id}
                         onClick={() => handleViewDetails(report)}
+                        style={{ transform: 'translateZ(0)', contain: 'content' }}
                         className={`group bg-white dark:bg-[#1E1E1E] rounded-2xl border ${
                           detailedReport?.id === report.id
                             ? 'border-[#0052CC] ring-2 ring-[#0052CC]/25 dark:border-[#60A5FA]'
                             : 'border-gray-200/90 dark:border-[#2A2A2A] hover:border-[#0052CC]/50'
-                        } overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col cursor-pointer`}
+                        } overflow-hidden shadow-xs hover:shadow-xl transition-[border-color,box-shadow] duration-200 flex flex-col cursor-pointer`}
                       >
                         {/* Photo Container */}
                         <div className={`relative ${galleryViewMode === 'showcase' ? 'aspect-[16/9]' : 'aspect-[16/10]'} bg-gray-100 dark:bg-gray-800 overflow-hidden`}>
                           <img 
                             src={imgUrl} 
                             alt={report.title} 
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                            loading="lazy"
+                            decoding="async"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
                           />
                           
                           {/* Status Badge */}
                           <div className="absolute top-2.5 left-2.5">
                             {report.status === 'resolved' ? (
-                              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-600 text-white shadow-xs backdrop-blur-sm flex items-center gap-1">
+                              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-600 text-white shadow-xs flex items-center gap-1">
                                 <CheckCircle className="w-3 h-3 text-white" />
                                 <span>Resolved & Cleared</span>
                               </span>
                             ) : report.status === 'urgent' || report.severity_level === 'high' ? (
-                              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-600 text-white shadow-xs backdrop-blur-sm flex items-center gap-1">
+                              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-600 text-white shadow-xs flex items-center gap-1">
                                 <AlertCircle className="w-3 h-3 text-white" />
                                 <span>High Priority</span>
                               </span>
                             ) : report.status === 'in_progress' ? (
-                              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#0052CC] text-white shadow-xs backdrop-blur-sm flex items-center gap-1">
+                              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#0052CC] text-white shadow-xs flex items-center gap-1">
                                 <Clock className="w-3 h-3 text-white" />
                                 <span>In Progress</span>
                               </span>
                             ) : (
-                              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500 text-white shadow-xs backdrop-blur-sm">
+                              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500 text-white shadow-xs">
                                 {report.status?.replace(/_/g, ' ') || 'Unresolved'}
                               </span>
                             )}
@@ -3366,14 +3425,14 @@ export default function PublicMap({ user: initialUser, hasSession: initialHasSes
                               e.stopPropagation()
                               toggleSaveReport(report.id)
                             }}
-                            className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center backdrop-blur-sm transition-all z-10"
+                            className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-black/60 hover:bg-black/85 text-white flex items-center justify-center transition-colors duration-150 z-10 shadow-xs"
                             title={isSaved ? "Remove from bookmarks" : "Save report"}
                           >
                             <Bookmark className={`w-4 h-4 ${isSaved ? 'text-amber-400 fill-amber-400' : 'text-white'}`} />
                           </button>
 
                           {/* Bottom Left: Category Pill */}
-                          <div className="absolute bottom-2.5 left-2.5 bg-white/95 dark:bg-black/80 px-2.5 py-1 rounded-full text-[10px] font-bold capitalize text-gray-800 dark:text-gray-200 backdrop-blur-sm shadow-xs flex items-center gap-1">
+                          <div className="absolute bottom-2.5 left-2.5 bg-white/95 dark:bg-[#1E1E1E]/95 px-2.5 py-1 rounded-full text-[10px] font-bold capitalize text-gray-800 dark:text-gray-200 shadow-xs flex items-center gap-1 border border-gray-100 dark:border-white/10">
                             {getCategoryIcon(report.issue_type)}
                             <span>{report.issue_type?.replace(/_/g, ' ')}</span>
                           </div>
@@ -3381,17 +3440,17 @@ export default function PublicMap({ user: initialUser, hasSession: initialHasSes
                           {/* Bottom Right: Evidence / Photos Counter Badge */}
                           <div className="absolute bottom-2.5 right-2.5">
                             {evidenceList.length > 0 ? (
-                              <span className="bg-black/75 text-white px-2 py-0.5 rounded-full text-[10px] font-bold backdrop-blur-xs flex items-center gap-1 shadow-xs border border-white/20">
+                              <span className="bg-black/80 text-white px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-xs border border-white/20">
                                 <Camera className="w-3 h-3 text-[#60A5FA]" />
                                 <span>{evidenceList.length} Photos</span>
                               </span>
                             ) : hasRealPhotos ? (
-                              <span className="bg-black/75 text-white px-2 py-0.5 rounded-full text-[10px] font-bold backdrop-blur-xs flex items-center gap-1 shadow-xs border border-white/20">
+                              <span className="bg-black/80 text-white px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-xs border border-white/20">
                                 <Sparkles className="w-3 h-3 text-emerald-400" />
                                 <span>Proof Attached</span>
                               </span>
                             ) : (
-                              <span className="bg-black/60 text-gray-300 px-2 py-0.5 rounded-full text-[9px] font-medium backdrop-blur-xs">
+                              <span className="bg-black/70 text-gray-300 px-2 py-0.5 rounded-full text-[9px] font-medium shadow-xs">
                                 Field Baseline
                               </span>
                             )}
