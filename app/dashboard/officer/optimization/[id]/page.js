@@ -5,6 +5,7 @@ import { getOptimizationRunById, approveOptimization, discardOptimization } from
 import { fetchReportsByIds } from '@/lib/api/reports'
 import RouteInfoHeader from '@/components/ui/RouteInfoHeader'
 import EvidenceGallery from '@/components/ui/EvidenceGallery'
+import DisassembleModal from '@/components/optimization/DisassembleModal'
 import { 
   WEATHER_OPTIONS, 
   TRAFFIC_OPTIONS, 
@@ -15,7 +16,7 @@ import {
   CrewRouteCard, 
   RouteMapView 
 } from '@/components/optimization/RouteComponents'
-import { Sun, Circle, Map, CheckCircle2, XCircle, ArrowLeft } from 'lucide-react'
+import { Sun, Circle, Map, CheckCircle2, XCircle, ArrowLeft, RotateCcw } from 'lucide-react'
 
 export default function OptimizationRunPage() {
   const { id } = useParams()
@@ -25,10 +26,10 @@ export default function OptimizationRunPage() {
   const [actionLoading, setActionLoading] = useState(null)
   const [proposalReports, setProposalReports] = useState([])
   const [notification, setNotification] = useState(null)
+  const [isDisassembleModalOpen, setIsDisassembleModalOpen] = useState(false)
 
   const loadRun = useCallback(async () => {
     try {
-      setLoading(true)
       const data = await getOptimizationRunById(id)
       setRun(data)
       
@@ -57,18 +58,22 @@ export default function OptimizationRunPage() {
   }, [id])
 
   useEffect(() => {
-    if (id) loadRun()
+    if (id) {
+      queueMicrotask(() => {
+        void loadRun()
+      })
+    }
   }, [id, loadRun])
 
   const handleApprove = async () => {
     setActionLoading('approve')
     try {
       await approveOptimization(id)
-      setNotification({ message: 'Optimization approved and tasks dispatched!', type: 'success' })
+      setNotification({ message: 'Dispatched! Routes and tasks published to field crews.', type: 'success' })
       loadRun()
     } catch (err) {
       console.error(err)
-      setNotification({ message: 'Failed to approve optimization', type: 'error' })
+      setNotification({ message: 'Failed to dispatch optimization', type: 'error' })
     } finally {
       setActionLoading(null)
     }
@@ -78,14 +83,22 @@ export default function OptimizationRunPage() {
     setActionLoading('discard')
     try {
       await discardOptimization(id)
-      setNotification({ message: 'Optimization discarded', type: 'info' })
+      setNotification({ message: 'Optimization proposal discarded', type: 'info' })
       loadRun()
     } catch (err) {
       console.error(err)
-      setNotification({ message: 'Failed to discard optimization', type: 'error' })
+      setNotification({ message: 'Failed to discard optimization proposal', type: 'error' })
     } finally {
       setActionLoading(null)
     }
+  }
+
+  const handleDisassembled = (result) => {
+    setNotification({
+      message: result?.message || 'Plan disassembled successfully. Backlog restored.',
+      type: 'success'
+    })
+    loadRun()
   }
 
   if (loading) {
@@ -242,34 +255,76 @@ export default function OptimizationRunPage() {
           <div className="mb-6">
             <h4 className="font-bold text-text-primary mb-3 flex items-center gap-2">
               <Map className="w-5 h-5" /> Route Map
-              <span className="text-xs font-mono text-text-muted">(polylines are straight-line estimates)</span>
             </h4>
             <div className="border border-border" style={{ height: '400px' }}>
-              <RouteMapView routes={routes} />
+              <RouteMapView routes={routes} travelMode={run?.settings_snapshot?.travel_mode || 'DRIVING'} />
             </div>
           </div>
         )}
 
-        {/* Approve / Discard Buttons */}
+        {/* Dispatched & Active Operational Banner */}
+        {run.status === 'approved' && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-accent-green/10 border border-accent-green/30 mt-6">
+            <div className="flex items-center gap-3">
+              <CheckCircle2 className="w-5 h-5 text-accent-green flex-shrink-0" />
+              <div>
+                <p className="font-bold text-text-primary text-sm">Dispatched & Active in Field Operations</p>
+                <p className="text-xs text-text-muted">Waypoints and cleanup task assignments are published to field crews.</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={() => setIsDisassembleModalOpen(true)}
+                className="px-4 py-2.5 bg-transparent border border-error text-error font-bold uppercase tracking-wider text-xs hover:bg-error/10 transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" /> Disassemble Plan
+              </button>
+              <button
+                onClick={() => router.push('/dashboard/officer/operations')}
+                className="px-5 py-2.5 bg-accent-green text-black font-bold uppercase tracking-wider text-xs border border-border hover:brightness-105 transition-all shadow-sm"
+              >
+                Monitor Live Operations
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Discarded state banner */}
+        {run.status === 'discarded' && (
+          <div className="p-4 bg-surface-elevated border border-border text-text-muted mt-6 text-sm font-mono flex items-center gap-2">
+            <XCircle className="w-4 h-4 text-error" /> This optimization run has been disassembled. Assigned cleanup tasks were undone and backlog items have been restored.
+          </div>
+        )}
+
+        {/* Approve / Disassemble Buttons for uncommitted runs */}
         {run.status === 'proposed' && (
           <div className="flex gap-4 mt-6 pt-4 border-t border-border">
             <button
               onClick={handleApprove}
               disabled={actionLoading}
-              className="flex-1 px-6 py-3 bg-success text-white font-bold border border-border border-success hover:bg-success/80 transition-colors disabled:opacity-50"
+              className="flex-1 px-6 py-3 bg-accent-green text-black font-bold uppercase tracking-wider border border-border hover:brightness-105 transition-all disabled:opacity-50"
             >
-              {actionLoading === 'approve' ? 'Approving...' : <span className="flex items-center justify-center"><CheckCircle2 className="w-5 h-5 mr-2" /> Approve Optimization</span>}
+              {actionLoading === 'approve' ? 'Dispatching...' : <span className="flex items-center justify-center"><CheckCircle2 className="w-5 h-5 mr-2" /> Confirm & Dispatch to Crews</span>}
             </button>
             <button
-              onClick={handleDiscard}
+              onClick={() => setIsDisassembleModalOpen(true)}
               disabled={actionLoading}
-              className="flex-1 px-6 py-3 bg-transparent text-error font-bold border border-border border-error hover:bg-error/10 transition-colors disabled:opacity-50"
+              className="flex-1 px-6 py-3 bg-transparent text-error font-bold uppercase tracking-wider border border-border border-error hover:bg-error/10 transition-colors disabled:opacity-50 text-xs"
             >
-              {actionLoading === 'discard' ? 'Discarding...' : <span className="flex items-center justify-center"><XCircle className="w-5 h-5 mr-2" /> Discard</span>}
+              <span className="flex items-center justify-center"><RotateCcw className="w-4 h-4 mr-2" /> Disassemble Plan</span>
             </button>
           </div>
         )}
       </div>
+
+      {/* Plan Disassembly Confirmation Modal */}
+      <DisassembleModal
+        isOpen={isDisassembleModalOpen}
+        targetId={id}
+        onClose={() => setIsDisassembleModalOpen(false)}
+        onDisassembled={handleDisassembled}
+      />
     </div>
   )
 }

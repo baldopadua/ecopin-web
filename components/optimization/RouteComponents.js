@@ -164,7 +164,7 @@ export function CrewRouteCard({ route, index, color }) {
 
 const PLP_CENTER = [14.561433, 121.075636]
 
-export function RouteMapView({ routes }) {
+export function RouteMapView({ routes, travelMode = 'DRIVING' }) {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -176,10 +176,11 @@ export function RouteMapView({ routes }) {
     if (!routes) return []
     return routes.map((route, idx) => ({
       ...route,
+      travelMode: route.travel_mode || route.travelMode || travelMode,
       crewName: route.field_crews?.name || `Crew ${idx + 1}`,
       color: CREW_COLORS[idx % CREW_COLORS.length],
     }))
-  }, [routes])
+  }, [routes, travelMode])
 
   if (!mounted) {
     return (
@@ -199,7 +200,7 @@ export function RouteMapView({ routes }) {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
       />
-      <RouteLayer routes={routeData} />
+      <RouteLayer routes={routeData} travelMode={travelMode} />
     </MapContainer>
   )
 }

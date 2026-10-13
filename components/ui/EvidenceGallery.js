@@ -1,7 +1,7 @@
 'use client'
 import SecureImage from '@/components/ui/SecureImage'
 import React, { useState, useEffect } from 'react'
-import { fetchReportEvidence } from '@/lib/api/reports'
+import { fetchBatchReportEvidence } from '@/lib/api/reports'
 
 export default function EvidenceGallery({ reports = [] }) {
   const [evidence, setEvidence] = useState([])
@@ -15,14 +15,17 @@ export default function EvidenceGallery({ reports = [] }) {
     const loadEvidence = async () => {
       setLoading(true)
       try {
-        const promises = reports.map(r => 
-          fetchReportEvidence(r.id, abortController.signal).then(ev => 
-            (ev || []).map(item => ({ ...item, reportTitle: r.title, reportId: r.id }))
-          ).catch(() => [])
-        )
-        const results = await Promise.all(promises)
+        const reportIds = reports.map(r => r.id).filter(Boolean)
+        const evidenceMap = await fetchBatchReportEvidence(reportIds, abortController.signal)
         if (isMounted) {
-          setEvidence(results.flat())
+          const aggregated = []
+          for (const r of reports) {
+            const items = evidenceMap[r.id] || []
+            items.forEach(item => {
+              aggregated.push({ ...item, reportTitle: r.title, reportId: r.id })
+            })
+          }
+          setEvidence(aggregated)
         }
       } catch (error) {
         console.error('Failed to load evidence', error)

@@ -9,8 +9,9 @@ import EvidenceGallery from '@/components/ui/EvidenceGallery'
 import Pagination from '@/components/ui/Pagination'
 import OptimizationSettings from '@/components/optimization/OptimizationSettings'
 import TemplateSelector from '@/components/ui/TemplateSelector'
+import DisassembleModal from '@/components/optimization/DisassembleModal'
 import { useTask } from '@/components/context/TaskContext'
-import { Sun, CloudRain, CloudLightning, Circle, Globe, Map, Check, CheckCircle2, XCircle, Ruler, Timer } from 'lucide-react'
+import { Sun, CloudRain, CloudLightning, Circle, Globe, Map, Check, CheckCircle2, XCircle, Ruler, Timer, RotateCcw } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { 
   WEATHER_OPTIONS, 
@@ -29,6 +30,7 @@ import {
   getOptimizationRuns,
   fetchWorkQueue,
   getOptimizationTemplates,
+  getOptimizationOptions,
   createOptimizationTemplate,
   deleteOptimizationTemplate,
 } from '@/lib/api/optimization'
@@ -51,6 +53,35 @@ const DEFAULT_SETTINGS = {
 
 
 
+function formatOperationalReason(reason) {
+  switch (reason) {
+    case 'insufficient_capacity':
+    case 'cap_time':
+    case 'shift_exceeded':
+      return 'Shift capacity full · queued for next shift';
+    case 'cap_volume':
+    case 'capacity_volume':
+      return 'Vehicle volume full · queued for next shift';
+    case 'cap_weight':
+    case 'capacity_weight':
+      return 'Vehicle weight full · queued for next shift';
+    case 'outside_buffer':
+      return 'Outside route cluster radius';
+    case 'cap_detour':
+      return 'Detour limit reached · queued for next shift';
+    case 'hazard_review':
+      return 'Requires safety/hazard review';
+    case 'no_capable_crew':
+      return 'No qualified crew available on shift';
+    case 'unknown_load':
+      return 'Awaiting vehicle assignment · queued for next shift';
+    case 'deferred_by_compute_limit':
+      return 'Queued in backlog';
+    default:
+      return 'Retained in backlog for next shift';
+  }
+}
+
 export default function OptimizationPage() {
   const router = useRouter()
   const { isOptimizing, optimizationProgress, draftPlan, setDraftPlan, startOptimization, commitOptimization } = useTask()
@@ -70,6 +101,10 @@ export default function OptimizationPage() {
   const [showRequeueConfirm, setShowRequeueConfirm] = useState(false)
   const [settings, setSettings] = useState(DEFAULT_SETTINGS)
   const [templates, setTemplates] = useState([])
+  const [options, setOptions] = useState(null)
+  const [dispatchSuccess, setDispatchSuccess] = useState(null)
+  const [disassembleTargetId, setDisassembleTargetId] = useState(null)
+  const [isDisassembleModalOpen, setIsDisassembleModalOpen] = useState(false)
   const runsPerPage = 10
 
 
@@ -98,6 +133,15 @@ export default function OptimizationPage() {
       }
     } catch (err) {
       console.error('Failed to load templates', err)
+    }
+  }, [])
+
+  const loadOptions = useCallback(async () => {
+    try {
+      const data = await getOptimizationOptions()
+      setOptions(data)
+    } catch (err) {
+      console.warn('Failed to load optimization options from backend, using defaults', err)
     }
   }, [])
 
@@ -131,8 +175,9 @@ export default function OptimizationPage() {
       void loadPendingClusters()
       void fetchLiveWeather()
       void loadTemplates()
+      void loadOptions()
     })
-  }, [loadPreviousRuns, loadPendingClusters, fetchLiveWeather, loadTemplates])
+  }, [loadPreviousRuns, loadPendingClusters, fetchLiveWeather, loadTemplates, loadOptions])
 
   useEffect(() => {
     if (!draftPlan) return
@@ -140,7 +185,7 @@ export default function OptimizationPage() {
     queueMicrotask(() => {
       if (!cancelled) {
         setCurrentProposal(draftPlan)
-        setCurrentProposalRoutes([])
+        setCurrentProposalRoutes(draftPlan.proposedRoutes || [])
       }
     })
     return () => { cancelled = true }
@@ -161,7 +206,7 @@ export default function OptimizationPage() {
       (result) => {
         if (result.plan) {
           setCurrentProposal({ ...result.plan, status: 'draft_plan', selectedCount: result.selectedCount, omittedCount: result.omittedLoggedCount })
-          setCurrentProposalRoutes([]) 
+          setCurrentProposalRoutes(result.proposedRoutes || result.plan.proposedRoutes || []) 
           loadPendingClusters()
           loadPreviousRuns()
         }
@@ -203,22 +248,40 @@ export default function OptimizationPage() {
       planId, 
       { weather_condition: liveWeather, traffic_condition: trafficCondition },
       (result) => {
-        const pending = result.routing_status === 'needs_replan' || result.routing_status === 'routing'
-        const empty = result.routing_status === 'empty' || !result.tasks?.length
-        const skipped = result.results?.filter(group => group.status === 'skipped').length || 0
-        const omittedSatellites = result.results?.reduce((sum, group) =>
-          sum + (group.omitted_satellite_ids?.length || 0), 0) || 0
-        setNotification({ message: empty
-          ? 'No tasks were dispatched. Review crew availability and plan exclusions.'
-          : pending
-          ? `Reports claimed; routes need replanning. ${result.warning || 'Review this plan within 30 minutes.'}`
-          : `Routes published. ${skipped} group(s) skipped; ${omittedSatellites} satellite report(s) became unavailable.`,
-        type: empty || pending || omittedSatellites ? 'warning' : 'success' })
-        if (!pending && !empty) setDraftPlan(null)
-        loadPreviousRuns()
-        if (!empty && result.run?.id) {
-          router.push('/dashboard/officer/optimization/' + result.run.id)
+        const isFailed = result.routing_status === 'failed' || result.routing_status === 'needs_replan'
+        const isPending = result.routing_status === 'routing'
+        const isEmpty = result.routing_status === 'empty' || !result.tasks?.length
+
+        if (isEmpty) {
+          setNotification({
+            message: 'No tasks were dispatched. Please verify that field crews are available and active on shift.',
+            type: 'warning'
+          })
+        } else if (isFailed) {
+          setNotification({
+            message: result.warning || 'Could not finalize routes due to shift schedule limits. All reports were safely returned to your backlog.',
+            type: 'error'
+          })
+        } else if (isPending) {
+          setNotification({
+            message: 'Routes are currently being computed in the background. Please check back shortly.',
+            type: 'info'
+          })
+        } else {
+          setNotification({
+            message: `Dispatch Confirmed! ${result.tasks?.length || 0} tasks assigned and routes published to field crews.`,
+            type: 'success'
+          })
+          setDispatchSuccess({
+            runId: result.run?.id,
+            tasksCount: result.tasks?.length || 0,
+            crewsCount: result.tasks ? new Set(result.tasks.map(t => t.assigned_field_crew_id)).size : 0,
+          })
         }
+
+        if (!isPending && !isEmpty && !isFailed) setDraftPlan(null)
+        loadPreviousRuns()
+        loadPendingClusters()
         setActionLoading(null)
       },
       (error) => {
@@ -260,6 +323,25 @@ export default function OptimizationPage() {
     router.push('/dashboard/officer/optimization/' + runId)
   }
 
+  const handleOpenDisassemble = (targetId) => {
+    setDisassembleTargetId(targetId)
+    setIsDisassembleModalOpen(true)
+  }
+
+  const handleDisassembled = (result) => {
+    setNotification({
+      message: result?.message || 'Plan disassembled successfully. Tasks undone and backlog restored.',
+      type: 'success'
+    })
+    if (currentProposal && (currentProposal.id === result?.plan_id || currentProposal.id === result?.run_id)) {
+      setCurrentProposal(null)
+      setCurrentProposalRoutes([])
+      setDraftPlan(null)
+    }
+    loadPreviousRuns()
+    loadPendingClusters()
+  }
+
   const weatherLabel = WEATHER_OPTIONS.find(w => w.value === (currentProposal?.weather_condition || liveWeather))?.label || 'Normal'
   const trafficLabel = TRAFFIC_OPTIONS.find(t => t.value === (currentProposal?.traffic_condition || trafficCondition))?.label || 'Low'
 
@@ -282,39 +364,20 @@ export default function OptimizationPage() {
           <div>
             <h3 className="text-warning font-bold uppercase tracking-wider text-sm flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-warning animate-pulse"></span>
-              Action Required: Pending Proposal
+              Action Required: Pending Dispatch Proposal
             </h3>
             <p className="text-xs text-text-primary mt-1 font-mono">
-              You have an optimization plan generated on {formatDate(pendingProposal.created_at)} waiting for approval.
+              You have an optimization plan generated on {formatDate(pendingProposal.created_at)} awaiting dispatch confirmation.
             </p>
           </div>
-          <button
-            onClick={() => handleViewRun(pendingProposal.id)}
-            className="px-4 py-2 bg-warning text-text-primary font-bold uppercase text-xs hover:bg-warning/80 transition-colors"
-          >
-            Review & Approve
-          </button>
-        </div>
-      )}
-
-
-      {pendingProposal && (
-        <div className="mb-6 p-4 border border-border border-warning bg-warning/10 flex items-center justify-between">
-          <div>
-            <h3 className="text-warning font-bold uppercase tracking-wider text-sm flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-warning animate-pulse"></span>
-              Action Required: Pending Proposal
-            </h3>
-            <p className="text-xs text-text-primary mt-1 font-mono">
-              You have an optimization plan generated on {formatDate(pendingProposal.created_at)} waiting for approval.
-            </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleViewRun(pendingProposal.id)}
+              className="px-4 py-2 bg-warning text-black font-bold uppercase text-xs hover:bg-warning/80 transition-colors"
+            >
+              Review & Dispatch
+            </button>
           </div>
-          <button
-            onClick={() => handleViewRun(pendingProposal.id)}
-            className="px-4 py-2 bg-warning text-text-primary font-bold uppercase text-xs hover:bg-warning/80 transition-colors"
-          >
-            Review & Approve
-          </button>
         </div>
       )}
 
@@ -354,50 +417,36 @@ export default function OptimizationPage() {
         </div>
       )}
 
-      {/* Conditions Overview */}
+      {/* ── Municipal Dispatch Console ───────────────────────── */}
       <div className="card border border-border mb-6">
-        <h3 className="font-bold text-text-primary mb-4 flex items-center gap-2">
-          <Globe className="w-5 h-5" /> Real-World Conditions
-          <span className="text-xs font-mono font-normal text-text-muted">(Sourced via live APIs)</span>
-        </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Weather */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 mb-4 border-b border-border gap-2">
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-2 flex items-center gap-2">
-              Weather Condition
-              <span className="text-[10px] bg-accent-green text-white px-1.5 py-0.5 font-bold uppercase tracking-wider">Live</span>
-            </label>
-            <div className="flex gap-2">
-              <div className="flex-1 px-3 py-2 text-sm border border-border bg-surface-elevated text-text-primary font-bold">
-                <span className="flex items-center justify-center gap-2">
-                  {WEATHER_OPTIONS.find(w => w.value === liveWeather)?.icon || <Sun className="w-4 h-4 text-orange-500" />} 
-                  {WEATHER_OPTIONS.find(w => w.value === liveWeather)?.label || 'Normal'}
-                </span>
-              </div>
-            </div>
-            <p className="text-xs text-text-muted mt-2 font-mono">Real-time data via Open-Meteo API</p>
+            <h3 className="font-bold text-text-primary text-base uppercase tracking-wide flex items-center gap-2">
+              <Globe className="w-4 h-4 text-[#ccff00]" />
+              Municipal Dispatch Console
+            </h3>
+            <p className="text-xs text-text-muted mt-0.5 font-mono">
+              Autonomous solver optimizes routes with live weather buffers and TomTom traffic matrix.
+            </p>
           </div>
 
-          {/* Traffic */}
-          <div>
-            <label className="block text-sm font-medium text-text-primary mb-2 flex items-center gap-2">
-              Traffic Condition
-              <span className="text-[10px] bg-accent-green text-white px-1.5 py-0.5 font-bold uppercase tracking-wider">Live</span>
-            </label>
-            <div className="flex gap-2">
-              <div className="flex-1 px-3 py-2 text-sm border border-border bg-surface-elevated text-text-primary font-bold">
-                <span className="flex items-center justify-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-success animate-pulse" /> Routing with Live Traffic
-                </span>
-              </div>
-            </div>
-            <p className="text-xs text-text-muted mt-2 font-mono">Real-time routing via TomTom API</p>
+          {/* Autonomous Environmental Context Badge */}
+          <div className="flex items-center gap-2 text-xs font-mono bg-surface border border-border px-3 py-1.5">
+            <span className="flex items-center gap-1.5 text-text-primary">
+              {WEATHER_OPTIONS.find(w => w.value === liveWeather)?.icon || <Sun className="w-3.5 h-3.5 text-orange-400" />}
+              <span className="capitalize">{liveWeather}</span>
+              {liveWeather === 'rainy' && <span className="text-[10px] text-accent-green font-bold">(+15% buffer)</span>}
+            </span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1.5 text-text-primary">
+              <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+              <span>Live Traffic</span>
+            </span>
           </div>
         </div>
 
-        {/* Template Selector */}
-        <div className="mt-6 mb-6">
+        {/* 1. Target Dispatch Focus */}
+        <div className="mb-5">
           <TemplateSelector
             selectedTemplate={selectedTemplate}
             onTemplateChange={setSelectedTemplate}
@@ -406,74 +455,147 @@ export default function OptimizationPage() {
           />
         </div>
 
-        {/* Settings Panel */}
-        <div className="mt-6">
+        {/* 2. Fleet Travel Mode & Collapsible Advanced Settings */}
+        <div className="mb-6">
           <OptimizationSettings
             settings={settings}
             onChange={setSettings}
             templates={templates}
+            options={options}
             onSaveTemplate={handleSaveTemplate}
             onDeleteTemplate={handleDeleteTemplate}
             disabled={isOptimizing}
           />
         </div>
 
-        {/* Generate Button and Progress */}
-        <div className="mt-6">
-          <div className="flex flex-col md:flex-row md:items-center gap-4">
+        {/* 3. Action Bar: Generate Optimization */}
+        <div className="pt-4 border-t border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
             <button
               onClick={handleGenerate}
               disabled={isOptimizing}
-              className="btn-primary px-6 py-3 w-full md:w-auto text-base font-bold disabled:opacity-50 flex items-center justify-center gap-2 shadow-none hover:translate-x-0 hover:translate-y-0 hover:shadow-none"
+              className="px-6 py-3 bg-[#ccff00] text-black border border-[#ccff00] text-sm font-bold uppercase tracking-wider hover:bg-[#bbee00] transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm cursor-pointer"
             >
               {isOptimizing ? (
-              <span className="flex items-center gap-2 justify-center">
-                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                Processing...
-              </span>
-            ) : (
-              <>
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                  <path d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm.53 5.47a.75.75 0 00-1.06 0l-3 3a.75.75 0 101.06 1.06l1.72-1.72v5.69a.75.75 0 001.5 0v-5.69l1.72 1.72a.75.75 0 101.06-1.06l-3-3z" />
-                </svg>
-                Generate Optimization
-              </>
-            )}
+                <span className="flex items-center gap-2">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Calculating Routes...
+                </span>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4" />
+                  Generate Route Proposal
+                </>
+              )}
             </button>
-            
+
             {!isOptimizing && (
-              <div className="text-sm font-medium text-text-secondary border border-border bg-surface-elevated px-4 py-2 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-accent-green"></span>
-                <span className="font-bold text-text-primary">{selectedTemplate === 'sweeper' ? outlierCount : standardCount}</span> {selectedTemplate === 'sweeper' ? 'reports' : 'clusters'} awaiting dispatch
-              </div>
+              <span className="text-xs font-mono text-text-muted">
+                <span className="font-bold text-text-primary">
+                  {selectedTemplate === 'sweeper' ? outlierCount : selectedTemplate === 'mixed' ? `${standardCount + outlierCount}` : standardCount}
+                </span>{' '}
+                {selectedTemplate === 'sweeper' ? 'reports' : selectedTemplate === 'mixed' ? 'clusters & reports' : 'clusters'} available for dispatch
+              </span>
             )}
           </div>
-          
-          {isOptimizing && (
-            <div className="mt-6">
-              <div className="flex justify-between text-sm font-bold text-text-primary mb-2 font-mono uppercase tracking-wider">
-                <span>{optimizationProgress.message || 'Processing...'}</span>
-                <span>{optimizationProgress.percent || 0}%</span>
-              </div>
-              <div className="w-full bg-border h-4 border border-border">
-                <div 
-                  className="bg-[#ccff00] h-full transition-all duration-300 border-r border-border" 
-                  style={{ width: `${optimizationProgress.percent || 0}%` }}
-                ></div>
-              </div>
-            </div>
-          )}
         </div>
+
+        {isOptimizing && (
+          <div className="mt-4 pt-3 border-t border-border">
+            <div className="flex justify-between text-xs font-bold text-text-primary mb-1.5 font-mono uppercase tracking-wider">
+              <span>{optimizationProgress.message || 'Solving...'}</span>
+              <span>{optimizationProgress.percent || 0}%</span>
+            </div>
+            <div className="w-full bg-surface h-2.5 border border-border overflow-hidden">
+              <div 
+                className="bg-[#ccff00] h-full transition-all duration-300" 
+                style={{ width: `${optimizationProgress.percent || 0}%` }}
+              />
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Post-Dispatch Confirmation Card */}
+      {dispatchSuccess && (
+        <div className="card p-6 bg-accent-green/10 border-2 border-accent-green mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-fadeIn">
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="w-6 h-6 text-accent-green flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-bold text-text-primary text-base uppercase tracking-wide">
+                Dispatch Confirmed — Field Crews Active
+              </h3>
+              <p className="text-sm text-text-secondary mt-1">
+                {dispatchSuccess.tasksCount} cleanup tasks dispatched across {dispatchSuccess.crewsCount} crews. Routes and waypoints are now active on crew devices.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            <button
+              onClick={() => router.push('/dashboard/officer/operations')}
+              className="flex-1 md:flex-initial px-5 py-2.5 bg-accent-green text-black font-bold uppercase tracking-wider text-xs border border-border hover:brightness-105 transition-all shadow-sm"
+            >
+              Monitor Live Operations
+            </button>
+            {dispatchSuccess.runId && (
+              <button
+                onClick={() => router.push('/dashboard/officer/optimization/' + dispatchSuccess.runId)}
+                className="flex-1 md:flex-initial px-4 py-2.5 bg-surface border border-border text-text-primary font-bold uppercase tracking-wider text-xs hover:border-[#ccff00] transition-colors"
+              >
+                View Route Details
+              </button>
+            )}
+            <button
+              onClick={() => { setDispatchSuccess(null); setCurrentProposal(null); }}
+              className="px-3 py-2 text-text-muted hover:text-text-primary text-xs font-mono"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Current Proposal Result */}
       {currentProposal && currentProposal.status === 'draft_plan' && (
         <div className="card border border-border mb-6">
+          {/* Dispatch Proposal Headline Banner */}
+          <div className="p-4 bg-accent-green/10 border border-accent-green mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-accent-green animate-pulse" />
+                <h4 className="font-bold text-text-primary text-base uppercase tracking-wide">
+                  Proposed Dispatch Plan Ready
+                </h4>
+              </div>
+              <p className="text-xs text-text-secondary mt-1">
+                <span className="font-bold text-accent-green">{currentProposal.num_tasks_optimized || currentProposal.selectedCount || 0} tasks</span> scheduled across <span className="font-bold text-text-primary">{currentProposal.plannedCrewCount || 0} crews</span>.
+                {(currentProposal.omittedCount > 0) && (
+                  <span className="text-text-muted"> · {currentProposal.omittedCount} remaining tasks kept in Backlog queue for subsequent shift.</span>
+                )}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => handleCommitPlan(currentProposal.id)}
+                disabled={Boolean(actionLoading) || !currentProposal.selectedCount}
+                className="px-5 py-2.5 bg-accent-green text-black font-bold uppercase tracking-wider text-xs border border-border hover:brightness-105 transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap cursor-pointer"
+              >
+                {actionLoading === 'commit' ? (
+                  'Publishing Routes...'
+                ) : (
+                  <>
+                    <Check className="w-4 h-4 mr-0.5" /> Confirm & Dispatch Crews
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-text-primary text-lg">Proposal Result</h3>
+            <h3 className="font-bold text-text-primary text-lg">Proposal Metrics & Route Breakdown</h3>
             <span className={`text-xs px-3 py-1 border font-bold font-mono uppercase tracking-wider ${STATUS_STYLES[currentProposal.status] || STATUS_STYLES.draft}`}>
               {currentProposal.status?.toUpperCase()}
             </span>
@@ -497,7 +619,6 @@ export default function OptimizationPage() {
                 {trafficLabel}
               </span>
             }
-            isSimulated={true}
           />
 
           {/* Summary Stats */}
@@ -536,7 +657,7 @@ export default function OptimizationPage() {
             <div className="space-y-4 mb-6">
               {currentProposalRoutes.map((route, idx) => (
                 <CrewRouteCard
-                  key={route.id}
+                  key={route.id || route.crewId || route.vehicle_id || `route-${idx}`}
                   route={route}
                   index={idx}
                   color={CREW_COLORS[idx % CREW_COLORS.length]}
@@ -560,7 +681,7 @@ export default function OptimizationPage() {
                   const heightPct = Math.max(8, (dur / maxDur) * 100);
                   const color = CREW_COLORS[i % CREW_COLORS.length];
                   return (
-                    <div key={r.id} className="flex-1 flex flex-col items-center gap-2 group pt-6">
+                    <div key={r.id || r.crewId || r.vehicle_id || `histogram-${i}`} className="flex-1 flex flex-col items-center gap-2 group pt-6">
                       <div className="w-full bg-black/10 dark:bg-surface/5 relative h-full flex items-end rounded-t-sm">
                         <div 
                           className="w-full transition-all duration-500 hover:brightness-110 relative rounded-t-sm"
@@ -585,10 +706,9 @@ export default function OptimizationPage() {
             <div className="mb-6">
               <h4 className="font-bold text-text-primary mb-3 flex items-center gap-2">
                 <Map className="w-5 h-5" /> Route Map
-                <span className="text-xs font-mono text-text-muted">(polylines are straight-line estimates)</span>
               </h4>
               <div className="border border-border" style={{ height: '400px' }}>
-                <RouteMapView routes={currentProposalRoutes} />
+                <RouteMapView routes={currentProposalRoutes} travelMode={settings.travel_mode || 'DRIVING'} />
               </div>
             </div>
           )}
@@ -597,83 +717,137 @@ export default function OptimizationPage() {
           {currentProposal.status === 'draft_plan' && (
             <div className="mt-6 pt-4 border-t border-border">
               {currentProposal.capacity && (
-                <div className="mb-6" aria-label="Planning capacity">
-                  <h4 className="font-bold mb-2">Capacity</h4>
-                  <div className="h-3 border border-border bg-surface-elevated overflow-hidden">
-                    <div className="h-full bg-accent-green" style={{ width: `${Math.min(100, Math.round(100 * (currentProposal.capacity.generalist?.used || 0) / Math.max(1, currentProposal.capacity.generalist?.minutes || 1)))}%` }} />
+                <div className="mb-6 bg-surface-elevated border border-border p-4" aria-label="Planning capacity">
+                  <div className="flex items-center justify-between text-xs mb-2">
+                    <span className="font-bold text-text-primary uppercase tracking-wider">Fleet Shift Workload</span>
+                    <span className="font-mono text-accent-green font-bold">
+                      {Math.min(100, Math.round(100 * (currentProposal.capacity.used || currentProposal.capacity.generalist?.used || 0) / Math.max(1, currentProposal.capacity.totalMinutes || currentProposal.capacity.generalist?.minutes || 1)))}% Capacity Utilized
+                    </span>
                   </div>
-                  <p className="text-xs text-text-muted mt-1">Generalist {currentProposal.capacity.generalist?.used || 0} / {currentProposal.capacity.generalist?.minutes || 0} min · Reserved for satellites {currentProposal.capacity.generalist?.reserved || 0} min · Specialist {currentProposal.capacity.specialist?.minutes || 0} min</p>
+                  <div className="h-2.5 border border-border bg-surface overflow-hidden">
+                    <div
+                      className="h-full bg-accent-green transition-all duration-300"
+                      style={{ width: `${Math.min(100, Math.round(100 * (currentProposal.capacity.used || currentProposal.capacity.generalist?.used || 0) / Math.max(1, currentProposal.capacity.totalMinutes || currentProposal.capacity.generalist?.minutes || 1)))}%` }}
+                    />
+                  </div>
+                  <p className="text-[11px] text-text-muted mt-2 font-mono">
+                    {currentProposal.capacity.used || currentProposal.capacity.generalist?.used || 0} min scheduled across {currentProposal.plannedCrewCount || 1} available crews (out of {currentProposal.capacity.totalMinutes || currentProposal.capacity.generalist?.minutes || 0} total shift min)
+                    {currentProposal.capacity.generalist?.reserved > 0 && ` · includes ${currentProposal.capacity.generalist.reserved} min reserved for local satellite pickups`}
+                  </p>
                 </div>
               )}
               {currentProposal.groups?.length > 0 && (
                 <div className="mb-6">
-                  <h4 className="font-bold mb-2">Proposed groups</h4>
-                  <div className="space-y-2 max-h-72 overflow-y-auto">
-                    {currentProposal.groups.map(group => (
-                      <div key={group.group_key} className="border border-border p-3 bg-surface-elevated">
-                        <div className="flex justify-between gap-2 text-sm font-medium">
-                          <span>{group.anchor?.item_type === 'cluster' ? 'Cluster anchor' : 'Sweeper report'} · {group.group_key}</span>
-                          <span>{group.anchor?.is_selected ? 'Selected' : group.anchor?.reason || 'Deferred'}</span>
+                  <h4 className="font-bold mb-3 flex items-center justify-between text-text-primary">
+                    <span>Scheduled Dispatch Groups</span>
+                    <span className="text-xs font-mono text-text-muted">
+                      {currentProposal.groups.filter(g => g.anchor?.is_selected).length} groups scheduled
+                    </span>
+                  </h4>
+                  <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                    {currentProposal.groups.filter(g => g.anchor?.is_selected).map(group => (
+                      <div key={group.group_key} className="border border-border p-3.5 bg-surface-elevated">
+                        <div className="flex justify-between items-center gap-2 text-sm font-semibold">
+                          <span className="flex items-center gap-2 text-text-primary">
+                            <span className="w-2 h-2 rounded-full bg-accent-green" />
+                            {group.anchor?.item_type === 'cluster' ? 'Cluster Cleanup' : 'Sweeper Pickup'} · {group.group_key}
+                          </span>
+                          <span className="text-[11px] font-mono text-accent-green bg-accent-green/10 border border-accent-green/30 px-2 py-0.5 font-bold uppercase">
+                            Scheduled
+                          </span>
                         </div>
-                        {group.satellites?.length > 0 && (
-                          <ul className="ml-5 mt-2 list-disc text-xs text-text-secondary">
-                            {group.satellites.map(satellite => (
-                              <li key={satellite.id}>Report {satellite.report_id} · {satellite.is_selected ? `Stop ${satellite.bundle_order}` : satellite.reason}</li>
-                            ))}
-                          </ul>
+                        {group.satellites?.filter(s => s.is_selected)?.length > 0 && (
+                          <div className="ml-4 mt-2.5 pt-2 border-t border-border/40">
+                            <p className="text-[10px] font-mono text-text-muted mb-1 uppercase tracking-wider">Bundled Stops:</p>
+                            <ul className="space-y-1 text-xs text-text-secondary">
+                              {group.satellites.filter(s => s.is_selected).map(satellite => (
+                                <li key={satellite.id} className="flex items-center justify-between font-mono">
+                                  <span>Report {satellite.report_id}</span>
+                                  <span className="text-text-primary font-bold">Stop #{satellite.bundle_order}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
                         )}
                       </div>
                     ))}
                   </div>
                 </div>
               )}
-              {currentProposal.rejectedBundles?.length > 0 && (
-                <div className="mb-6 border border-warning p-3" role="status">
-                  <h4 className="font-bold mb-2">Bundles not included</h4>
-                  <ul className="text-xs space-y-1 max-h-40 overflow-y-auto">
-                    {currentProposal.rejectedBundles.map((entry, index) => (
-                      <li key={`${entry.report_id || entry.group_key}-${index}`}>
-                        {entry.report_id || entry.group_key}: {entry.reason}
-                      </li>
+
+              {/* Clean Backlog Queue for Deferred Items */}
+              {((currentProposal.omittedCount > 0) || (currentProposal.rejectedBundles?.length > 0)) && (
+                <details className="mb-6 border border-border bg-surface-elevated p-3 group">
+                  <summary className="text-xs font-bold uppercase tracking-wider text-text-muted cursor-pointer hover:text-text-primary flex items-center justify-between">
+                    <span>Remaining Backlog Queue ({currentProposal.omittedCount || currentProposal.rejectedBundles?.length || 0} tasks queued for next shift)</span>
+                    <span className="text-[10px] font-mono text-text-muted">Inspect details</span>
+                  </summary>
+                  <div className="mt-3 space-y-1.5 max-h-40 overflow-y-auto text-xs font-mono text-text-secondary pt-2 border-t border-border">
+                    {currentProposal.groups?.filter(g => !g.anchor?.is_selected).map(group => (
+                      <div key={group.group_key} className="flex justify-between py-1 border-b border-border/30">
+                        <span>{group.group_key}</span>
+                        <span className="text-text-muted">{formatOperationalReason(group.anchor?.reason)}</span>
+                      </div>
                     ))}
-                  </ul>
-                </div>
+                    {currentProposal.rejectedBundles?.map((entry, index) => (
+                      <div key={`${entry.report_id || entry.group_key}-${index}`} className="flex justify-between py-1 border-b border-border/30">
+                        <span>Report {entry.report_id || entry.group_key}</span>
+                        <span className="text-text-muted">{formatOperationalReason(entry.reason)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </details>
               )}
-              <div className="p-4 bg-info/10 text-info border border-info mb-4">
-                <strong>Draft Plan Generated</strong>
-                <p className="text-sm">Review the selected tasks and exclusions before dispatch. Estimates use available crew time; physical load requires configured vehicle and task estimates.</p>
-                <ul className="list-disc ml-5 mt-2 text-sm font-mono">
-                  <li>Tasks Selected for Dispatch: {currentProposal.selectedCount}</li>
-                  <li>Tasks Not Selected: {currentProposal.omittedCount}</li>
-                  {currentProposal.outsideBufferCount > 0 && <li>Reports Outside Bundle Radius: {currentProposal.outsideBufferCount}</li>}
-                </ul>
+
+              <div className="p-4 bg-surface-elevated border border-border mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <h4 className="font-bold text-text-primary text-base flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-accent-green animate-pulse" />
+                    Ready for Crew Dispatch
+                  </h4>
+                  <p className="text-xs text-text-muted mt-1">
+                    Route sequences, travel times, and vehicle capacity have been automatically determined.
+                  </p>
+                </div>
+                <div className="flex gap-3 text-xs font-mono">
+                  <div className="px-3 py-1.5 bg-surface border border-border">
+                    <span className="text-text-muted">Scheduled: </span>
+                    <span className="font-bold text-accent-green">{currentProposal.selectedCount}</span>
+                  </div>
+                  <div className="px-3 py-1.5 bg-surface border border-border">
+                    <span className="text-text-muted">In Backlog: </span>
+                    <span className="font-bold text-text-primary">{currentProposal.omittedCount}</span>
+                  </div>
+                </div>
               </div>
-              <button
-                onClick={() => handleCommitPlan(currentProposal.id)}
-                disabled={Boolean(actionLoading) || !currentProposal.selectedCount}
-                className="w-full px-6 py-3 bg-success text-white font-bold border border-border border-success hover:bg-success/80 transition-colors disabled:opacity-50"
-              >
-                {actionLoading === 'commit' ? 'Routing Tasks...' : <span className="flex items-center justify-center"><Check className="w-5 h-5 mr-2" /> Commit Plan & Generate Routes</span>}
-              </button>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={() => handleCommitPlan(currentProposal.id)}
+                  disabled={Boolean(actionLoading) || !currentProposal.selectedCount}
+                  className="w-full px-6 py-3.5 bg-accent-green text-black font-bold uppercase tracking-wider border border-border hover:brightness-105 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm text-sm"
+                >
+                  {actionLoading === 'commit' ? (
+                    'Publishing Routes & Dispatching Crews...'
+                  ) : (
+                    <>
+                      <Check className="w-5 h-5 mr-1" /> Confirm & Dispatch to Field Crews
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           )}
 
-          {/* Approve / Discard Buttons for generated optimization runs */}
+          {/* Approve Button for generated optimization runs */}
           {currentProposal.status === 'proposed' && (
             <div className="flex gap-4 mt-6 pt-4 border-t border-border">
               <button
                 onClick={() => handleApprove(currentProposal.id)}
                 disabled={actionLoading}
-                className="flex-1 px-6 py-3 bg-success text-white font-bold border border-border border-success hover:bg-success/80 transition-colors disabled:opacity-50"
+                className="w-full px-6 py-3.5 bg-accent-green text-black font-bold uppercase tracking-wider border border-border hover:brightness-105 transition-all disabled:opacity-50 text-sm"
               >
-                {actionLoading === 'approve' ? 'Approving...' : <span className="flex items-center justify-center"><CheckCircle2 className="w-5 h-5 mr-2" /> Approve Optimization</span>}
-              </button>
-              <button
-                onClick={() => handleDiscard(currentProposal.id)}
-                disabled={actionLoading}
-                className="flex-1 px-6 py-3 bg-transparent text-error font-bold border border-border border-error hover:bg-error/10 transition-colors disabled:opacity-50"
-              >
-                {actionLoading === 'discard' ? 'Discarding...' : <span className="flex items-center justify-center"><XCircle className="w-5 h-5 mr-2" /> Discard</span>}
+                {actionLoading === 'approve' ? 'Publishing & Dispatching...' : <span className="flex items-center justify-center"><CheckCircle2 className="w-5 h-5 mr-2" /> Confirm & Dispatch to Field Crews</span>}
               </button>
             </div>
           )}
@@ -728,16 +902,30 @@ export default function OptimizationPage() {
                         {TRAFFIC_OPTIONS.find(t => t.value === (run.traffic_condition?.toLowerCase() || 'low'))?.label || 'Low'}
                       </span>
                     </td>
-                    <td>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleViewRun(run.id);
-                        }}
-                        className="text-xs font-bold underline uppercase tracking-wider flex items-center gap-1 cursor-pointer hover:text-primary transition-colors"
-                      >
-                        VIEW
-                      </button>
+                    <td className="whitespace-nowrap">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewRun(run.id);
+                          }}
+                          className="text-xs font-bold underline uppercase tracking-wider flex items-center gap-1 cursor-pointer hover:text-primary transition-colors"
+                        >
+                          VIEW
+                        </button>
+                        {run.status !== 'discarded' && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenDisassemble(run.id);
+                            }}
+                            className="text-xs font-bold text-error uppercase tracking-wider flex items-center gap-1 cursor-pointer hover:underline transition-colors"
+                            title="Disassemble plan and restore backlog"
+                          >
+                            <RotateCcw className="w-3 h-3" /> DISASSEMBLE
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -760,6 +948,14 @@ export default function OptimizationPage() {
           </div>
         )}
       </div>
+
+      {/* Plan Disassembly Confirmation Modal */}
+      <DisassembleModal
+        isOpen={isDisassembleModalOpen}
+        targetId={disassembleTargetId}
+        onClose={() => setIsDisassembleModalOpen(false)}
+        onDisassembled={handleDisassembled}
+      />
     </div>
   )
 }

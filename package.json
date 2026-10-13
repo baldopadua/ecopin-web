@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:public-map": "node --test --test-isolation=none tests/public-report-page.test.mjs"
+    "test:public-map": "node --test --test-isolation=none tests/public-report-page.test.mjs",
+    "test:reports": "node --env-file=.env --test tests/reports-access.test.mjs",
+    "test": "npm run test:public-map && node --test tests/private-media.test.mjs && node --test tests/optimization-response.test.mjs && npm run test:reports"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.4",

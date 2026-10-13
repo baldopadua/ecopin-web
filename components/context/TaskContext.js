@@ -1,6 +1,6 @@
 'use client'
 import React, { createContext, useContext, useState, useCallback } from 'react'
-import { generatePlan, getPlanJob, getDispatchPlan, commitPlan } from '@/lib/api/optimization'
+import { generatePlan, getPlanJob, getDispatchPlan, commitPlan, disassemblePlan } from '@/lib/api/optimization'
 import { useRouter } from 'next/navigation'
 
 const TaskContext = createContext()
@@ -28,9 +28,23 @@ export function TaskProvider({ children }) {
       setPlanningJob({ jobId: queued.jobId, status: queued.status || 'queued' })
       setOptimizationProgress({ percent: 20, message: 'Planning job queued' })
       let job = queued
+      let pollRateLimitAttempts = 0
       while (job.status !== 'completed' && job.status !== 'failed') {
         await new Promise(resolve => setTimeout(resolve, 2000))
-        job = await getPlanJob(queued.jobId)
+        try {
+          job = await getPlanJob(queued.jobId)
+        } catch (pollErr) {
+          if ((pollErr.status === 429 || pollErr.isRateLimited) && pollRateLimitAttempts < 2) {
+            pollRateLimitAttempts++
+            setOptimizationProgress({
+              percent: 30,
+              message: 'Server busy, waiting a moment before checking job status...'
+            })
+            await new Promise(resolve => setTimeout(resolve, 5000))
+            continue
+          }
+          throw pollErr
+        }
         setPlanningJob(job)
         setOptimizationProgress(job.status === 'running'
           ? { percent: 65, message: 'Solver is building routes' }
@@ -93,28 +107,80 @@ export function TaskProvider({ children }) {
       const result = await commitPlan(planId, options)
       clearInterval(progressInterval)
 
-      const pending = result.routing_status === 'needs_replan' || result.routing_status === 'routing'
-      const empty = result.routing_status === 'empty' || !result.tasks?.length
-      setOptimizationProgress({ percent: 100, message: empty ? 'No tasks dispatched' : pending ? 'Reports claimed; routing needs attention' : 'Routes published' })
-      setGlobalNotification({
-        message: empty ? 'No tasks dispatched. Review crew availability and plan exclusions.'
-          : pending ? 'Reports claimed; routes pending. Retry the same plan within 30 minutes.'
-          : 'Routes published and crews dispatched.',
-        type: empty || pending ? 'warning' : 'success',
-        link: !empty && result.run?.id ? `/dashboard/officer/optimization/${result.run.id}` : null
+      const isFailed = result.routing_status === 'failed' || result.routing_status === 'needs_replan'
+      const isPending = result.routing_status === 'routing'
+      const isEmpty = result.routing_status === 'empty' || !result.tasks?.length
+
+      let toastMessage = 'Dispatch Confirmed! Routes have been published and assigned to field crews.'
+      let toastType = 'success'
+
+      if (isEmpty) {
+        toastMessage = 'No tasks could be dispatched. Please verify that field crews are available and on shift.'
+        toastType = 'warning'
+      } else if (isFailed) {
+        toastMessage = result.warning || 'Could not finalize routes due to shift schedule limits. All reports were safely returned to your backlog.'
+        toastType = 'error'
+      } else if (isPending) {
+        toastMessage = 'Routes are currently being computed in the background. Please check the dashboard shortly.'
+        toastType = 'info'
+      }
+
+      setOptimizationProgress({
+        percent: 100,
+        message: isEmpty ? 'No tasks scheduled' : isFailed ? 'Routing failed — reports restored' : isPending ? 'Routes computing...' : 'Dispatch complete'
       })
-      if (onSuccess) onSuccess(result)
+      setGlobalNotification({
+        message: toastMessage,
+        type: toastType,
+        link: !isEmpty && !isFailed && result.run?.id ? `/dashboard/officer/optimization/${result.run.id}` : null
+      })
+      if (onSuccess && !isFailed) onSuccess(result)
+      else if (onError && isFailed) onError(new Error(toastMessage))
     } catch (error) {
       clearInterval(progressInterval)
-      setGlobalNotification({ message: error.message || 'Failed to commit plan', type: 'error' })
+      setGlobalNotification({ message: error.message || 'Failed to dispatch plan. Reports remain safe in your backlog.', type: 'error' })
       if (onError) onError(error)
     } finally {
       setIsOptimizing(false)
     }
   }, [isOptimizing])
 
+  const disassembleOptimization = useCallback(async (planOrRunId, onSuccess, onError) => {
+    if (isOptimizing) return
+    setIsOptimizing(true)
+    setOptimizationProgress({ percent: 50, message: 'Disassembling plan and resetting backlog...' })
+    setGlobalNotification(null)
+
+    try {
+      const result = await disassemblePlan(planOrRunId)
+      setDraftPlan(prev => {
+        if (prev && (prev.id === planOrRunId || prev.optimization_run_id === planOrRunId)) {
+          return null
+        }
+        return prev
+      })
+      setOptimizationProgress({ percent: 100, message: 'Plan disassembled' })
+      setGlobalNotification({
+        message: result.message || 'Plan disassembled successfully. Backlog restored.',
+        type: 'info'
+      })
+      if (onSuccess) onSuccess(result)
+      return result
+    } catch (error) {
+      console.error('Failed to disassemble plan:', error)
+      setGlobalNotification({
+        message: error.message || 'Failed to disassemble plan',
+        type: 'error'
+      })
+      if (onError) onError(error)
+      throw error
+    } finally {
+      setIsOptimizing(false)
+    }
+  }, [isOptimizing])
+
   return (
-    <TaskContext.Provider value={{ isOptimizing, optimizationProgress, planningJob, draftPlan, setDraftPlan, startOptimization, commitOptimization }}>
+    <TaskContext.Provider value={{ isOptimizing, optimizationProgress, planningJob, draftPlan, setDraftPlan, startOptimization, commitOptimization, disassembleOptimization }}>
       {children}
 
       {/* Global Notification Toast */}

@@ -47,7 +47,7 @@ export async function POST(req) {
 
     while (true) {
       const { data, error } = await supabase
-        .from('reports_view')
+        .from('public_reports')
         .select('*')
         .range(page * pageSize, (page + 1) * pageSize - 1)
 
