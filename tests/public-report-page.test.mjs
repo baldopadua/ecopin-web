@@ -2,9 +2,32 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import { createClient } from '@supabase/supabase-js';
-import { fetchPublicReportPage } from '../lib/api/public-report-page.mjs';
+import { fetchPublicReportPage, fetchPublicReportById } from '../lib/api/public-report-page.mjs';
 
 const bounds = { south: 14.5, north: 14.7, west: 121, east: 121.2 };
+
+test('report links read one reviewed row from the public projection', async () => {
+  await withApi(async (db, requests) => {
+    assert.equal((await fetchPublicReportById(db, 'a')).id, 'a');
+    assert.equal(requests[0].pathname, '/rest/v1/public_reports');
+    assert.equal(requests[0].searchParams.get('id'), 'eq.a');
+    assert.equal(requests[0].searchParams.get('limit'), '1');
+    assert.equal(requests[0].searchParams.get('select').includes('user_id'), false);
+  }, [{ id: 'a', validation_status: 'approved' }]);
+});
+
+test('report links cannot reveal an unreviewed or missing report', async () => {
+  await withApi(async db => assert.equal(await fetchPublicReportById(db, 'a'), null), [{ id: 'a', validation_status: 'pending' }]);
+  await withApi(async db => assert.equal(await fetchPublicReportById(db, 'missing'), null), []);
+});
+
+test('aborted report links never issue a query', async () => {
+  await withApi(async (db, requests) => {
+    const controller = new AbortController(); controller.abort();
+    await assert.rejects(fetchPublicReportById(db, 'a', controller.signal));
+    assert.equal(requests.length, 0);
+  });
+});
 
 async function withApi(run, response = [{id:'a'}, {id:'b'}, {id:'c'}], status = 200) {
   const requests = [];

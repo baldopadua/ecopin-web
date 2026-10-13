@@ -1,0 +1,44 @@
+.page { min-height: 100svh; }
+.topBar { max-width: 1280px; width: 100%; margin: auto; padding: 24px 48px; display: flex; align-items: center; justify-content: space-between; }
+.back { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: var(--landing-muted); font-size: 14px; }
+.theme { width: 44px; height: 44px; border-radius: 50%; color: var(--landing-muted); display: grid; place-items: center; background: var(--landing-soft); }
+.main { max-width: 1280px; margin: 0 auto; padding: 32px 48px 64px; display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: stretch; }
+.story h2 { font-size: clamp(36px, 4vw, 56px); line-height: 1.08; font-weight: 500; letter-spacing: -.045em; margin: 0; }
+.story > p { font-size: 16px; line-height: 1.75; color: var(--landing-muted); max-width: 440px; margin: 24px 0; }
+.story figure { position: relative; height: 280px; margin: 32px 0 24px; border-radius: 16px; overflow: hidden; }
+.story figure img { object-fit: cover; }
+.story figcaption { position: absolute; bottom: 0; left: 0; right: 0; padding: 48px 24px 24px; display: flex; align-items: center; gap: 8px; color: white; background: linear-gradient(transparent, #101e2bd9); font-size: 13px; }
+.formSection { max-width: 420px; width: 100%; order: 2; }
+.story { order: 1; display: flex; flex-direction: column; gap: 16px; }
+.story .photoCycle { position: relative; flex: 1; min-height: 480px; height: auto; margin: 0; overflow: hidden; border-radius: 16px; }
+.photoCycle img { object-fit: cover; transition: opacity 1.6s ease, transform 8s ease; }
+.photoActive { opacity: 1; transform: scale(1.025); }
+.photoInactive { opacity: 0; transform: scale(1); }
+.photoCycle figcaption { padding-right: 112px; font-size: 12px; }
+.photoControls { position: absolute; right: 16px; bottom: 12px; display: flex; align-items: center; gap: 8px; z-index: 1; color: white; font-size: 12px; }
+.photoControls button { width: 44px; height: 44px; background: #101e2b99; border: 1px solid #ffffff30; border-radius: 50%; display: grid; place-items: center; }
+.formSection h1 { font-size: clamp(32px, 3vw, 44px); font-weight: 500; letter-spacing: -.035em; line-height: 1.15; margin: 0; }
+.description { color: var(--landing-muted); font-size: 16px; line-height: 1.75; margin: 16px 0 32px; }
+.form { display: flex; flex-direction: column; gap: 24px; }
+.form label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; }
+.form input { width: 100%; min-height: 48px; padding: 12px 16px; border: 1px solid var(--landing-border); background: var(--landing-soft); color: var(--landing-text); border-radius: 12px; font: inherit; font-size: 15px; }
+.form input::placeholder { color: var(--landing-muted); }
+.form input:focus-visible { outline: 3px solid var(--landing-blue); outline-offset: 4px; }
+.password { position: relative; }
+.password input { padding-right: 56px; }
+.password button { position: absolute; right: 4px; top: 2px; width: 44px; height: 44px; color: var(--landing-muted); display: grid; place-items: center; border-radius: 8px; }
+.form > button { width: 100%; }
+.form button:disabled { opacity: .65; cursor: wait; }
+.error { display: flex; align-items: flex-start; gap: 12px; background: #fff1f2; color: #9f1239; border: 1px solid #fecdd3; padding: 16px; border-radius: 12px; font-size: 14px; line-height: 1.6; }
+.error svg { flex-shrink: 0; margin-top: 2px; }
+.error p { margin: 0; }
+:global(.dark) .error { background: #321b23; color: #fda4af; border-color: #64303f; }
+.citizenNote { display: flex; gap: 16px; padding: 24px; margin-top: 32px; border-radius: 16px; background: var(--landing-green-bg); }
+.citizenNote > svg { flex-shrink: 0; color: var(--landing-green); }
+.page .citizenNote h2 { font-size: 16px; font-weight: 500; letter-spacing: 0; line-height: 1.4; }
+.citizenNote p { color: var(--landing-muted); font-size: 13px; line-height: 1.7; margin: 8px 0 4px; }
+.citizenNote a { color: var(--landing-blue); min-height: 44px; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; }
+.help { color: var(--landing-muted); font-size: 12px; line-height: 1.7; margin-top: 24px; }
+@media (max-width: 1024px) { .main { padding: 48px 24px; gap: 48px; } }
+@media (max-width: 767px) { .topBar { padding: 16px 24px; } .main { padding: 24px; grid-template-columns: 1fr; gap: 24px; } .formSection { max-width: 480px; margin: auto; order: 1; } .story { order: 2; align-items: center; } .citizenNote { padding: 20px; } }
+@media (prefers-reduced-motion: reduce) { .photoCycle img { transition: none; } }
