@@ -50,16 +50,16 @@ body {
   --spacing-xxxl: 64px;
 
   /* Border Radius */
-  --radius-button: 0px;
-  --radius-card: 0px;
-  --radius-input: 0px;
-  --radius-dialog: 0px;
-  --radius-chip: 0px;
+  --radius-button: 999px;
+  --radius-card: 16px;
+  --radius-input: 12px;
+  --radius-dialog: 24px;
+  --radius-chip: 999px;
 
   /* Shadows */
   --shadow-card: var(--shadow-sm);
   --shadow-floating: var(--shadow-md);
-  --shadow-dialog: 12px 12px 0px rgba(0, 0, 0, 1);
+  --shadow-dialog: 0 24px 64px rgba(0, 0, 0, 0.15);
 
   /* Type Scale */
   --font-display-size: 48px;
@@ -177,7 +177,7 @@ html.dark {
   /* Shadows adjusted for dark mode */
   --shadow-card: var(--shadow-sm);
   --shadow-floating: var(--shadow-md);
-  --shadow-dialog: 12px 12px 0px rgba(255, 255, 255, 1);
+  --shadow-dialog: 0 24px 64px rgba(0, 0, 0, 0.4);
 }
 
 body {
@@ -400,7 +400,7 @@ html.dark .card {
 }
 
 .ecopin-table {
-  @apply w-full text-left font-mono;
+  @apply w-full text-left;
 }
 
 .ecopin-table thead tr {
@@ -408,7 +408,7 @@ html.dark .card {
 }
 
 .ecopin-table th {
-  @apply text-left py-3 px-4 text-xs font-bold uppercase tracking-widest text-text-muted;
+  @apply text-left py-3 px-4 text-sm font-medium text-text-secondary;
 }
 
 .ecopin-table td {
@@ -416,7 +416,7 @@ html.dark .card {
 }
 
 .ecopin-table tbody tr {
-  @apply border-b border-border  transition-colors cursor-pointer;
+  @apply border-b border-border transition-colors;
 }
 
 .ecopin-table tbody tr:last-child {
@@ -424,14 +424,7 @@ html.dark .card {
 }
 
 .ecopin-table tbody tr:hover {
-  @apply bg-primary;
-}
-
-.ecopin-table tbody tr:hover td,
-.ecopin-table tbody tr:hover span,
-.ecopin-table tbody tr:hover div,
-.ecopin-table tbody tr:hover p {
-  @apply text-white border-white;
+  @apply bg-surface-elevated;
 }
 .ecopin-table tbody tr:hover button:not(.btn-primary),
 .ecopin-table tbody tr:hover select,

@@ -16,7 +16,10 @@ export default function DataTable({
   onSort = null,
   className = '',
   showHeader = true,
-  rowClassName = ''
+  rowClassName = '',
+  getRowKey = row => row.id,
+  rowActionLabel = row => `Open ${row.title || row.full_name || row.name || 'details'}`,
+  caption = 'Results'
 }) {
   const handleSort = (key) => {
     if (!sortable || !onSort) return
@@ -44,7 +47,7 @@ export default function DataTable({
 
   if (loading) {
     return (
-      <div className={`ecopin-table-container ${className}`}>
+      <div className={`ecopin-table-container ${className}`} aria-busy="true" aria-label={`Loading ${caption.toLowerCase()}`}>
         <table className="ecopin-table">
           <colgroup>
             {columns.map((col, index) => (
@@ -80,8 +83,8 @@ export default function DataTable({
 
   if (data.length === 0) {
     return (
-      <div className={`bg-surface-elevated border border-border rounded-xl shadow-sm dark:shadow-[2px_2px_0px_0px_#333333] p-8 ${className}`}>
-        <div className="text-center py-10 text-text-muted font-mono uppercase tracking-widest">
+      <div role="status" className={`bg-surface border border-border rounded-2xl p-8 ${className}`}>
+        <div className="text-center py-6 text-text-secondary">
           <p className="text-lg mb-1">{emptyMessage}</p>
         </div>
       </div>
@@ -89,8 +92,9 @@ export default function DataTable({
   }
 
   return (
-    <div className={`ecopin-table-container ${className}`}>
+    <div className={`ecopin-table-container ${className}`} role="region" aria-label={caption} tabIndex={0}>
       <table className="ecopin-table">
+        <caption className="sr-only">{caption}</caption>
         <colgroup>
           {columns.map((col, index) => (
             <col key={index} style={{ width: col.width || 'auto' }} />
@@ -102,13 +106,13 @@ export default function DataTable({
               {columns.map((col, index) => (
                 <th
                   key={index}
-                  className={sortable && onSort ? 'cursor-pointer hover:text-accent-green' : ''}
-                  onClick={() => sortable && handleSort(col.key)}
+                  scope="col"
+                  aria-sort={sortable && onSort && col.sortable !== false ? (sortKey === col.key ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none') : undefined}
                 >
-                  <div className="flex items-center">
+                  {sortable && onSort && col.sortable !== false ? <button type="button" className="flex items-center min-h-11 gap-2 text-left" onClick={() => handleSort(col.key)}>
                     {col.label}
                     {renderSortIcon(col.key)}
-                  </div>
+                  </button> : col.label}
                 </th>
               ))}
             </tr>
@@ -117,15 +121,20 @@ export default function DataTable({
         <tbody>
           {data.map((row, rowIndex) => (
             <tr
-              key={rowIndex}
+              key={getRowKey(row) ?? rowIndex}
               className={`${
                 onRowClick ? 'cursor-pointer table-row-interactive' : ''
               } ${typeof rowClassName === 'function' ? rowClassName(row, rowIndex) : rowClassName}`}
-              onClick={() => onRowClick && onRowClick(row, rowIndex)}
+              onClick={event => {
+                if (event.target.closest('button, a, input, select, textarea, [role="button"]')) return
+                onRowClick?.(row, rowIndex)
+              }}
             >
               {columns.map((col, colIndex) => (
                 <td key={colIndex}>
                   {col.render ? col.render(row[col.key], row, rowIndex) : row[col.key]}
+                  {onRowClick && colIndex === 0 && <button type="button" className="block text-sm text-secondary min-h-11 underline underline-offset-4"
+                    aria-label={rowActionLabel(row)} onClick={() => onRowClick(row, rowIndex)}>Open details</button>}
                 </td>
               ))}
             </tr>

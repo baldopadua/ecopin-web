@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, useRef, useCallback } f
 import { useRouter } from 'next/navigation'
 import { getTimeoutMinutes } from '@/lib/api/system'
 import { validateSession } from '@/lib/api/auth'
+import Dialog from '@/components/ui/Dialog'
 
 const SessionContext = createContext(null)
 
@@ -291,7 +292,7 @@ export function SessionProvider({ children }) {
     <SessionContext.Provider value={{ handleSessionExpired, validateSessionWithServer }}>
       {children}
       {showSessionExpiredModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <Dialog open={showSessionExpiredModal} labelledBy="session-expired-title" dismissible={false}>
           <div className="card max-w-md w-full">
             <div className="text-center">
               <div className="mb-4">
@@ -309,19 +310,19 @@ export function SessionProvider({ children }) {
                   />
                 </svg>
               </div>
-              <h2 className="text-xl font-bold text-text-primary mb-2">Session Expired</h2>
+              <h2 id="session-expired-title" className="text-xl font-medium text-text-primary mb-2">Sign in to continue</h2>
               <p className="text-text-secondary mb-6">
-                You have been logged out due to inactivity. Please sign in again to continue.
+                Your session has ended. Sign in again to open your workspace.
               </p>
               <button
                 onClick={handleModalClose}
-                className="btn-primary w-full"
+                className="btn-primary w-full min-h-12"
               >
-                Return to Login
+                Return to sign in
               </button>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
     </SessionContext.Provider>
   )

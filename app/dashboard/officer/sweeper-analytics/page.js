@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import PageHeader from '@/components/layout/PageHeader'
+import Notification from '@/components/ui/Notification'
 import { OfficerGuard } from '@/components/auth/RequireRole'
 import { fetchSweeperMetrics, exportSweeperMetrics } from '@/lib/api/sweeper'
 import { fetchClusters } from '@/lib/api/clusters'
@@ -35,6 +36,7 @@ export default function SweeperAnalyticsPage() {
   const [metrics, setMetrics] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [notification, setNotification] = useState(null)
   const [clusters, setClusters] = useState([])
   const [isExporting, setIsExporting] = useState(false)
   
@@ -70,7 +72,7 @@ export default function SweeperAnalyticsPage() {
       await exportSweeperMetrics(dateRange, region)
     } catch (error) {
       console.error('Export failed:', error)
-      alert('Failed to export metrics. Please try again.')
+      setNotification({ type: 'error', message: 'Metrics could not export. Please try again.' })
     } finally {
       setIsExporting(false)
     }
@@ -129,6 +131,7 @@ export default function SweeperAnalyticsPage() {
 
   return (
     <OfficerGuard>
+      {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
       <div className="p-8">
         <PageHeader
           title="Sweeper Workflow Analytics"

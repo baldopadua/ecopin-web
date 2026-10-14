@@ -757,3 +757,29 @@ Explain downloading the APK, finding it in Downloads, and following Android's in
 Sources: [downloads](app/downloads/page.js) and [styles](app/downloads/Downloads.module.css).
 
 The refinements browser check verifies feature removals, map theme changes, popup font parity, dropdown keyboard behavior without page jumps, search/layout controls, photo and report navigation, download behavior, mobile layouts, and slideshow timing/pause. Use synthetic browser fixtures; do not mutate production reports to verify visual changes.
+
+## 21. Working UI adaptation
+
+The full UI modernization in `../UI_UPDATE_BACKLOG.md` extends this civic visual language to supported working screens. The original public geometry, motion, routes, and privacy constraints remain authoritative for public pages. Staff screens use the same Outfit, civic blue, neutral charcoal, quiet borders, and semantic colors with compact task-oriented layouts.
+
+Dashboard overrides live in `components/layout/DashboardShell.module.css` and do not redefine public landing tokens globally. Working headings use 24–32px, body 14–16px, labels 14px, captions at least 12px, and sentence case. Use monospace only for actual payloads/identifiers. Shared table typography is readable Outfit; row hover preserves status colors. Buttons and filters have 44px minimum targets, 12px input/menu corners, 16px content cards, 24px dialogs, and pill actions. Elevation is subtle; hard offset dialog shadows are not part of the working design.
+
+The web shell uses a 256px sidebar, an 88px optional collapsed rail, and a 64px mobile top bar below 1024px. Mobile navigation opens a native modal drawer with Escape dismissal, background isolation, and opener focus return. Desktop links retain current-page semantics even when collapsed. Workspace content has a skip target, independent scrolling, and no permanently allocated sidebar gutter on small screens. Loading uses the same shell footprint.
+
+Staff filters share the proven public combobox behavior after verifying value compatibility: same string values/callbacks, generated unique IDs, keyboard selection/dismissal, selected state, bounded menus, and scrolling confined to the menu. Filter rows wrap, search remains labeled, reset is an explicit disabled control when inactive, and date ranges use labeled native date controls with valid bounds.
+
+Tables preserve table semantics and allow intentional horizontal scrolling within a named keyboard-focusable region. Sorting uses real buttons and aria-sort; report opening has an explicit button as well as pointer row interaction. Nested action clicks do not also open a row. Stable record IDs are preferred for keys. Pagination has named destinations/current-page state and keeps focus on the selected control instead of forcing page scrolling.
+
+Primary filled actions stay #0052CC with white content. On staff surfaces, readable status foregrounds are success #2E7D32/#83CBA0, warning #B45309/#FCD34D, error #D32F2F/#FCA5A5, information #0369A1/#82B6FF. These are display colors, not new workflow values. Written labels preserve distinctions among review, lifecycle, priority, assignment, and synchronization. No neon status override, decorative slashes, or all-caps badge tracking.
+
+The mobile contract in `../ecopin_app/DESIGN.md` adapts these rules to 48dp controls, system text scaling, safe areas, outdoor field work, and actual offline policy. Existing role access, endpoints, data, lifecycle, and private media delivery remain intact. Documentation describes the target and verified shared behavior; completion of each page remains tracked separately in the backlog.
+
+## 22. Password recovery and staff feedback
+
+The forced password-change page uses the login palette, Outfit, the same labeled input/password-control anatomy, and a 480px reading container. It shows the server-configured password requirements, mismatch feedback, retained values after rejection, named visibility controls, a real updating state, and a submission lock. Back navigation clears the temporary token immediately; successful change preserves the existing token promotion and workspace destination. No artificial wait, continuous button pulse, blue wipe, or tiny uppercase loading text remains.
+
+Staff notifications announce outcomes. Errors/warnings persist until dismissed; routine information/success may expire after six seconds. Messages wrap within the viewport and include a named 44px dismiss control. Photo deletion uses a themed confirmation that identifies the selected report evidence and irreversible removal; Cancel receives initial focus. The confirmed operation uses the existing endpoint/role conditions.
+
+Shared report/evidence dialogs use native modal stacking plus explicit Tab cycling and opener focus restoration. Closing a nested viewer returns to its report; closing the report returns to its opener. Photo stage backgrounds are intentionally black for uncropped inspection, while report information follows the theme. Viewer actions have 44px targets, written captions/counts, arrows, zoom, and Escape. On mobile, Close and Expand occupy opposite upper corners; details share the remaining height below the photo rather than being clipped. Evidence thumbnails are keyboard buttons. Batch evidence requests can opt into explicit failure reporting; retry distinguishes failed loading from a genuinely empty photo set. Existing callers retain their previous API helper behavior.
+
+These behaviors are verified by `tests/password-recovery.browser.cjs` and `tests/staff-media.browser.cjs` using synthetic staff data. Verification of other page-specific dialogs remains in the backlog.

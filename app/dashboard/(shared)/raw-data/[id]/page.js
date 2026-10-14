@@ -13,6 +13,7 @@ import {
 } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
+import useConfirmation from '@/components/ui/useConfirmation'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
 import { useUser } from '@/components/auth/UserContext'
@@ -25,6 +26,7 @@ if (typeof window !== 'undefined' && !window.Buffer) {
 }
 
 export default function ReportDetailPage() {
+  const { confirm: confirmAction, confirmation } = useConfirmation()
   const params = useParams()
   const router = useRouter()
   const user = useUser()
@@ -320,7 +322,7 @@ export default function ReportDetailPage() {
   }
 
   const handlePhotoDelete = async (photoType) => {
-    if (!confirm('Are you sure you want to delete this photo? This action cannot be undone.')) {
+    if (!await confirmAction({ title: 'Delete report photo?', description: 'This removes the selected evidence photo from this report. This action cannot be undone.', action: 'Delete photo' })) {
       return
     }
 
@@ -952,6 +954,7 @@ export default function ReportDetailPage() {
         onNavigate={(newIdx) => setLightboxIndex(newIdx)}
       />
 
+      {confirmation}
       {notification && (
         <Notification
           message={notification.message}

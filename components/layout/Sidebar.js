@@ -1,11 +1,15 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
+import SecureImage from '@/components/ui/SecureImage'
 import { usePathname } from 'next/navigation'
 import { useUser } from '../auth/UserContext'
-import { OfficerGuard, FieldCrewGuard } from '../auth/RequireRole'
+import styles from './DashboardShell.module.css'
 import { useTask } from '../context/TaskContext'
 import {
+    Menu,
+    X,
     LayoutDashboard,
     Map,
     Target,
@@ -64,104 +68,70 @@ export default function Sidebar() {
     const user = useUser()
     const { isOptimizing } = useTask()
     const [isCollapsed, setIsCollapsed] = useState(false)
+    const [drawerOpen, setDrawerOpen] = useState(false)
+    const drawer = useRef(null)
+    const menuButton = useRef(null)
+    const navigation = user?.role === 'admin' ? adminNavigation
+        : user?.role === 'officer' ? officerNavigation
+        : user?.role === 'field_crew' ? fieldCrewNavigation : citizenNavigation
 
-    const renderNavItems = (navigation) => {
-        return navigation.map((item) => {
-            const isRootPath = ['/dashboard/field-crew', '/dashboard/admin', '/dashboard/officer', '/dashboard'].includes(item.href);
-            const isActive = isRootPath ? pathname === item.href : pathname.startsWith(item.href);
-            const Icon = item.icon;
-            return (
-                <div key={item.name} className="relative w-full flex">
-                    <Link
-                        href={item.href}
-                        className={`sidebar-item flex-1 flex items-center gap-4 text-sm transition-all duration-300 w-full mb-1 ${
-                            isActive
-                                ? 'sidebar-item-active font-semibold'
-                                : 'text-white/70 hover:text-white font-medium hover:bg-surface/10'
-                        } ${isCollapsed ? 'justify-center pl-0 pr-4 py-4' : 'px-4 py-3'}`}
-                        title={isCollapsed ? item.name : undefined}
-                    >
-                        {Icon && item.name === 'Optimization' && isOptimizing ? (
-                            <svg className={`animate-spin w-5 h-5 shrink-0 ${isActive ? 'text-primary' : 'text-white/70 group-hover:text-white'}`} viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                            </svg>
-                        ) : Icon ? (
-                            <Icon className={`w-[22px] h-[22px] shrink-0 transition-transform duration-300 ${isActive ? 'stroke-[2.5px] text-primary scale-110' : 'stroke-[2px] group-hover:scale-110 text-white/70 group-hover:text-white'}`} />
-                        ) : null}
-                        {!isCollapsed && <span className="whitespace-nowrap tracking-wide">{item.name}</span>}
-                    </Link>
-                </div>
-            );
-        });
-    }
+    const closeDrawer = () => drawer.current?.close()
+    const openDrawer = () => { drawer.current?.showModal(); setDrawerOpen(true) }
+    useEffect(() => {
+        const desktop = matchMedia('(min-width: 1024px)')
+        const closeOnDesktop = () => { if (desktop.matches) drawer.current?.close() }
+        desktop.addEventListener('change', closeOnDesktop)
+        return () => desktop.removeEventListener('change', closeOnDesktop)
+    }, [])
 
-    return (
-        <aside className={`${isCollapsed ? 'w-24' : 'w-72'} bg-primary dark:bg-[#151515] dark:border-r dark:border-border h-screen flex flex-col transition-all duration-300 z-50 relative`}>
-
-            {/* Logo */}
-            <div className={`p-6 flex items-center h-[88px] ${isCollapsed ? 'justify-center px-2' : 'justify-between pl-8'}`}>
-                {!isCollapsed && (
-                    <Link href="/" className="cursor-pointer hover:opacity-80 transition-opacity">
-                        <img src="/Full Logo Dark.png" alt="EcoPin" className="h-8 md:h-10 w-auto" />
-                    </Link>
-                )}
-                <button
-                    onClick={() => setIsCollapsed(!isCollapsed)}
-                    className="p-2 text-white/70 hover:text-white transition-colors rounded-full hover:bg-surface/10"
-                    title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-                >
-                    {isCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
-                </button>
-            </div>
-
-            {/* Navigation */}
-            <nav className="flex-1 py-4 space-y-2 overflow-y-auto scrollbar-hide flex flex-col relative w-full pr-0 pl-4">
-                {/* Admin Navigation */}
-                {user?.role === 'admin' && renderNavItems(adminNavigation)}
-
-                {/* Officer Navigation */}
-                {user?.role === 'officer' && renderNavItems(officerNavigation)}
-
-                {/* Field Crew Navigation */}
-                {user?.role === 'field_crew' && renderNavItems(fieldCrewNavigation)}
-
-                {/* Citizen Navigation */}
-                {user?.role === 'citizen' && renderNavItems(citizenNavigation)}
-            </nav>
-
-            {/* User Info */}
-            <div className={`mt-auto ${isCollapsed ? 'p-4' : 'p-6'}`}>
-                <Link
-                    href="/dashboard/profile"
-                    className={`flex items-center hover:bg-surface/10 transition-colors rounded-2xl border border-white/10 ${isCollapsed ? 'p-2 justify-center' : 'p-3 justify-between'}`}
-                    title={isCollapsed ? (user?.full_name || user?.email || 'User') : undefined}
-                >
-                    <div className={`flex items-center w-full ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
-                        {user?.avatar_url ? (
-                            <img
-                                src={user.avatar_url}
-                                alt="Avatar"
-                                className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-full object-cover shadow-sm border border-white/20 shrink-0"
-                            />
-                        ) : (
-                            <div className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-full bg-surface text-primary flex items-center justify-center font-bold text-sm shadow-sm border border-white/20 shrink-0">
-                                {user?.full_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
-                            </div>
-                        )}
-                        {!isCollapsed && (
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold truncate text-white">
-                                    {user?.full_name || user?.email || 'User'}
-                                </p>
-                                <p className="text-xs text-white/70 capitalize">
-                                    {user?.role?.replace('_', ' ')}
-                                </p>
-                            </div>
-                        )}
-                    </div>
+    const content = (collapsed, mobile = false) => <aside className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''}`}>
+        <div className={styles.brand}>
+            {!collapsed && <Link href="/" aria-label="EcoPin home" onClick={mobile ? closeDrawer : undefined}>
+                <Image src="/Full Logo Light.png" width={112} height={32} alt="EcoPin" style={{ width: 'auto', height: 32 }} className="dark:brightness-0 dark:invert" />
+            </Link>}
+            <button type="button" className={styles.iconButton}
+                aria-label={mobile ? 'Close navigation' : collapsed ? 'Expand navigation' : 'Collapse navigation'}
+                aria-expanded={mobile ? undefined : !collapsed}
+                onClick={mobile ? closeDrawer : () => setIsCollapsed(value => !value)}>
+                {mobile ? <X aria-hidden="true" size={20} /> : collapsed ? <ChevronRight aria-hidden="true" size={20} /> : <ChevronLeft aria-hidden="true" size={20} />}
+            </button>
+        </div>
+        <nav aria-label="Workspace" className={styles.navigation}>
+            {navigation.map(item => {
+                const root = ['/dashboard/field-crew', '/dashboard/admin', '/dashboard/officer', '/dashboard'].includes(item.href)
+                const active = root ? pathname === item.href : pathname.startsWith(`${item.href}/`) || pathname === item.href
+                const Icon = item.icon
+                return <Link key={item.href} href={item.href} aria-current={active ? 'page' : undefined}
+                    aria-label={collapsed ? item.name : undefined} title={collapsed ? item.name : undefined}
+                    onClick={mobile ? closeDrawer : undefined} className={`${styles.navLink} ${active ? styles.active : ''}`}>
+                    <Icon aria-hidden="true" size={20} className={item.name === 'Optimization' && isOptimizing ? 'animate-spin' : ''} />
+                    {!collapsed && <span>{item.name}</span>}
+                    {item.name === 'Optimization' && isOptimizing && <span className="sr-only">Planning in progress</span>}
                 </Link>
-            </div>
-        </aside>
-    )
+            })}
+        </nav>
+        <div className={styles.account}>
+            <Link href="/dashboard/profile" className={styles.profile} onClick={mobile ? closeDrawer : undefined}
+                aria-label={collapsed ? `Profile for ${user?.full_name || user?.email || 'your account'}` : undefined}>
+                {user?.avatar_url ? <SecureImage src={user.avatar_url} alt="" className={styles.avatar} />
+                    : <span aria-hidden="true" className={styles.avatar}>{user?.full_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}</span>}
+                {!collapsed && <span className={styles.identity}>{user?.full_name || user?.email || 'Your account'}
+                    <small>{user?.role?.replaceAll('_', ' ')}</small></span>}
+            </Link>
+        </div>
+    </aside>
+
+    return <>
+        <div className={styles.desktopSidebar}>{content(isCollapsed)}</div>
+        <div className={styles.mobileBar}>
+            <Link href="/" aria-label="EcoPin home"><Image src="/Full Logo Light.png" width={112} height={32} alt="EcoPin" style={{ width: 'auto', height: 28 }} className="dark:brightness-0 dark:invert" /></Link>
+            <button ref={menuButton} type="button" className={styles.iconButton} aria-label="Open navigation"
+                aria-expanded={drawerOpen} aria-controls="workspace-drawer" onClick={openDrawer}><Menu size={24} aria-hidden="true" /></button>
+        </div>
+        <dialog ref={drawer} id="workspace-drawer" className={styles.drawer} aria-label="Workspace navigation"
+            onClick={event => { if (event.target === event.currentTarget) closeDrawer() }}
+            onClose={() => { setDrawerOpen(false); if (menuButton.current?.getClientRects().length) menuButton.current.focus() }}>
+            {content(false, true)}
+        </dialog>
+    </>
 }

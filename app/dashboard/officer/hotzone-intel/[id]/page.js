@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { fetchValidatedReports, fetchClusterById, createCleanupTask, fetchCleanupTasks, updateClusterLabel } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
+import Notification from '@/components/ui/Notification'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
 import DataTable from '@/components/ui/DataTable'
 import StatusBadge from '@/components/ui/StatusBadge'
@@ -72,6 +73,7 @@ export default function ClusterDetailPage() {
   const [existingTask, setExistingTask] = useState(null)
   const [loadingTasks, setLoadingTasks] = useState(true)
   const [error, setError] = useState(null)
+  const [notification, setNotification] = useState(null)
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [editingTitle, setEditingTitle] = useState('')
   const [savingTitle, setSavingTitle] = useState(false)
@@ -222,7 +224,7 @@ export default function ClusterDetailPage() {
         doc.save(`EcoPin-Cluster-${cluster?.id?.slice(0,8)}.pdf`)
       } catch (err) {
         console.error('PDF generation failed', err)
-        alert('Failed to generate PDF report')
+        setNotification({ type: 'error', message: 'The PDF could not generate. Please try again.' })
       } finally {
         setExporting(false)
       }
@@ -289,6 +291,7 @@ export default function ClusterDetailPage() {
 
   return (
     <OfficerGuard>
+      {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
       <div className="p-8">
         
 

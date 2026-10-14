@@ -1,5 +1,5 @@
 .root { position: relative; min-width: 0; font-family: var(--font-outfit), sans-serif; }
-.label { display: block; font-size: 11px; color: var(--landing-muted); margin-bottom: 4px; }
+.label { display: block; font-size: var(--select-label-size, 11px); color: var(--landing-muted); margin-bottom: 4px; }
 .control { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; padding: 8px 12px; background: var(--landing-bg); border: 1px solid var(--landing-border); border-radius: 12px; color: var(--landing-text); font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
 .control span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .control svg { flex-shrink: 0; color: var(--landing-muted); transition: transform .2s; }

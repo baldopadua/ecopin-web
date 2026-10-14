@@ -2,9 +2,9 @@ import Link from 'next/link'
 
 export default function PageHeader({ title, titleAccent, subtitle, breadcrumbs, children }) {
   return (
-    <div className="sticky top-0 z-[40] bg-surface -mx-8 -mt-8 px-8 pt-8 pb-4 mb-6">
+    <header className="relative bg-surface mb-6 pb-4 border-b border-border">
       {breadcrumbs && breadcrumbs.length > 0 && (
-        <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-text-muted mb-4">
+        <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 text-sm text-text-secondary mb-4">
           {breadcrumbs.map((crumb, i) => (
             <span key={i} className="flex items-center gap-2">
               {i > 0 && <span className="text-accent-green">/</span>}
@@ -13,26 +13,26 @@ export default function PageHeader({ title, titleAccent, subtitle, breadcrumbs, 
                   {crumb.label}
                 </Link>
               ) : (
-                <span className="text-text-primary">{crumb.label}</span>
+                <span aria-current="page" className="text-text-primary">{crumb.label}</span>
               )}
             </span>
           ))}
-        </div>
+        </nav>
       )}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-4xl font-bold uppercase tracking-tight text-text-primary mb-2">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl md:text-3xl font-medium tracking-tight text-text-primary mb-2 break-words">
             {title}
             {titleAccent && <span className="text-accent-green ml-2">{titleAccent}</span>}
           </h1>
           {subtitle && (
-            <p className="text-sm text-text-muted">
+            <p className="text-sm leading-relaxed text-text-secondary max-w-2xl">
               {subtitle}
             </p>
           )}
         </div>
         {children}
       </div>
-    </div>
+    </header>
   )
 }

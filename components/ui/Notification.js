@@ -1,42 +1,18 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import { X, CheckCircle, AlertCircle, Info } from 'lucide-react'
 
-export default function Notification({ message, type = 'info', duration = 3000, onClose }) {
-  const [isVisible, setIsVisible] = useState(false)
-
+export default function Notification({ message, type = 'info', duration = 6000, onClose }) {
   useEffect(() => {
-    setIsVisible(true)
-
-    const timer = setTimeout(() => {
-      setIsVisible(false)
-      setTimeout(onClose, 300)
-    }, duration)
-
+    if (type === 'error' || type === 'warning' || !duration || !onClose) return
+    const timer = setTimeout(onClose, duration)
     return () => clearTimeout(timer)
-  }, [duration, onClose])
-
-  const getBackgroundColor = () => {
-    switch (type) {
-      case 'success':
-        return 'bg-success'
-      case 'error':
-        return 'bg-error'
-      case 'warning':
-        return 'bg-warning'
-      default:
-        return 'bg-info'
-    }
-  }
-
-  return (
-    <div
-      className={`fixed bottom-4 right-4 z-[9999] transform transition-all duration-500 ease-out ${
-        isVisible ? 'translate-x-0 opacity-100 scale-100' : 'translate-x-full opacity-0 scale-95'
-      }`}
-    >
-      <div className={`${getBackgroundColor()} text-white px-6 py-4 rounded-lg shadow-lg max-w-md`}>
-        <p className="text-sm font-medium">{message}</p>
-      </div>
-    </div>
-  )
+  }, [duration, onClose, type, message])
+  const Icon = type === 'success' ? CheckCircle : type === 'error' || type === 'warning' ? AlertCircle : Info
+  return <div className="fixed bottom-4 right-4 left-4 sm:left-auto z-[9999] max-w-md bg-surface text-text-primary border border-border rounded-2xl shadow-lg p-4 flex items-start gap-3"
+    role={type === 'error' ? 'alert' : 'status'}>
+    <Icon size={20} className="shrink-0 mt-1" aria-hidden="true" />
+    <p className="text-sm leading-relaxed flex-1 min-w-0 break-words">{message}</p>
+    {onClose && <button type="button" onClick={onClose} aria-label="Dismiss notification" className="min-h-11 min-w-11 rounded-xl flex items-center justify-center hover:bg-surface-elevated"><X size={18} aria-hidden="true" /></button>}
+  </div>
 }

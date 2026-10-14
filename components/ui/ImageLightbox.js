@@ -1,6 +1,7 @@
 'use client'
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import SecureImage from '@/components/ui/SecureImage'
+import Dialog from './Dialog'
 import { getOptimizedImageUrl } from '@/components/ui/EvidenceGallery'
 import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react'
 
@@ -11,53 +12,51 @@ export default function ImageLightbox({
   onClose,
   onNavigate
 }) {
-  const [index, setIndex] = useState(currentIndex)
-  const [isZoomed, setIsZoomed] = useState(false)
+  const [position, setPosition] = useState({ source: currentIndex, index: currentIndex || 0 })
+  const [zoomedPhoto, setZoomedPhoto] = useState(null)
   const touchStartX = useRef(null)
 
-  useEffect(() => {
-    if (typeof currentIndex === 'number') {
-      setIndex(currentIndex)
-    }
-  }, [currentIndex])
+  if (position.source !== currentIndex) {
+    setPosition({ source: currentIndex, index: currentIndex || 0 })
+    setZoomedPhoto(null)
+  }
 
-  useEffect(() => {
-    setIsZoomed(false)
-  }, [index])
-
-  const normalizedImages = (images || []).map(img => {
+  const normalizedImages = React.useMemo(() => (images || []).map(img => {
     if (typeof img === 'string') return { url: img, label: '' }
     return {
       url: img.photo_url || img.file_url || img.url || '',
       label: img.label || img.reportTitle || (img.reportId ? `Report ${img.reportId}` : ''),
       title: img.title || ''
     }
-  }).filter(img => Boolean(img.url))
+  }).filter(img => Boolean(img.url)), [images])
 
   const total = normalizedImages.length
+  const index = Math.min(Math.max(position.index, 0), Math.max(0, total - 1))
   const currentImage = normalizedImages[index]
+  const isZoomed = Boolean(currentImage && zoomedPhoto === currentImage.url)
+  const toggleZoom = () => setZoomedPhoto(isZoomed ? null : currentImage.url)
 
   const handleNext = useCallback(() => {
     if (total <= 1) return
     const nextIdx = (index + 1) % total
-    setIndex(nextIdx)
+    setPosition({ source: currentIndex, index: nextIdx })
+    setZoomedPhoto(null)
     onNavigate?.(nextIdx)
-  }, [index, total, onNavigate])
+  }, [index, total, onNavigate, currentIndex])
 
   const handlePrev = useCallback(() => {
     if (total <= 1) return
     const prevIdx = (index - 1 + total) % total
-    setIndex(prevIdx)
+    setPosition({ source: currentIndex, index: prevIdx })
+    setZoomedPhoto(null)
     onNavigate?.(prevIdx)
-  }, [index, total, onNavigate])
+  }, [index, total, onNavigate, currentIndex])
 
   // Keyboard navigation & Escape-to-close
   useEffect(() => {
     if (!isOpen) return
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        onClose?.()
-      } else if (e.key === 'ArrowRight') {
+      if (e.key === 'ArrowRight') {
         handleNext()
       } else if (e.key === 'ArrowLeft') {
         handlePrev()
@@ -99,15 +98,9 @@ export default function ImageLightbox({
   if (!isOpen || !currentImage) return null
 
   return (
-    <div
-      className="fixed inset-0 z-[2000] bg-black/95 flex items-center justify-center p-2 sm:p-4 backdrop-blur-sm select-none"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Image Lightbox"
-    >
+    <Dialog open={isOpen} onClose={onClose} label="Evidence photos">
       <div
-        className="relative w-full max-w-5xl h-[92vh] flex flex-col items-center justify-center"
+        className="relative w-full max-w-5xl h-[92dvh] bg-black rounded-2xl flex flex-col items-center justify-center"
         onClick={e => e.stopPropagation()}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
@@ -116,8 +109,8 @@ export default function ImageLightbox({
         <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-50 flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setIsZoomed(z => !z)}
-            className="p-2 bg-black/60 text-white hover:text-primary transition-colors rounded-full border border-white/20 hover:border-primary"
+            onClick={toggleZoom}
+            className="p-2 min-h-11 min-w-11 bg-black/60 text-white hover:text-secondary transition-colors rounded-full border border-white/20 hover:border-secondary"
             aria-label={isZoomed ? 'Zoom out' : 'Zoom in'}
             title={isZoomed ? 'Zoom out' : 'Zoom in'}
           >
@@ -126,7 +119,7 @@ export default function ImageLightbox({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 bg-black/60 text-white hover:text-primary transition-colors rounded-full border border-white/20 hover:border-primary"
+            className="p-2 min-h-11 min-w-11 bg-black/60 text-white hover:text-secondary transition-colors rounded-full border border-white/20 hover:border-secondary"
             aria-label="Close lightbox"
             title="Close (Esc)"
           >
@@ -139,7 +132,7 @@ export default function ImageLightbox({
           <button
             type="button"
             onClick={handlePrev}
-            className="absolute left-2 sm:left-4 z-50 p-2 sm:p-3 bg-black/60 text-white hover:text-primary transition-colors rounded-full border border-white/20 hover:border-primary"
+            className="absolute left-2 sm:left-4 z-50 min-h-11 min-w-11 p-2 sm:p-3 bg-black/60 text-white hover:text-secondary transition-colors rounded-full border border-white/20 hover:border-secondary"
             aria-label="Previous photo"
             title="Previous (Left arrow)"
           >
@@ -150,7 +143,7 @@ export default function ImageLightbox({
         {/* Image Display */}
         <div
           className={`w-full h-full flex items-center justify-center p-2 sm:p-8 overflow-auto transition-transform duration-200 cursor-${isZoomed ? 'zoom-out' : 'zoom-in'}`}
-          onClick={() => setIsZoomed(z => !z)}
+          onClick={toggleZoom}
         >
           <SecureImage
             src={getOptimizedImageUrl(currentImage.url, { width: 1600 })}
@@ -167,7 +160,7 @@ export default function ImageLightbox({
           <button
             type="button"
             onClick={handleNext}
-            className="absolute right-2 sm:right-4 z-50 p-2 sm:p-3 bg-black/60 text-white hover:text-primary transition-colors rounded-full border border-white/20 hover:border-primary"
+            className="absolute right-2 sm:right-4 z-50 min-h-11 min-w-11 p-2 sm:p-3 bg-black/60 text-white hover:text-secondary transition-colors rounded-full border border-white/20 hover:border-secondary"
             aria-label="Next photo"
             title="Next (Right arrow)"
           >
@@ -176,7 +169,7 @@ export default function ImageLightbox({
         )}
 
         {/* Bottom Caption Bar */}
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 font-mono text-xs sm:text-sm border border-white/20 rounded max-w-[90%] truncate text-center">
+        <div role="status" className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 text-sm border border-white/20 rounded-xl max-w-[90%] max-h-24 overflow-auto text-center">
           <span>{currentImage.label || currentImage.title || `Photo ${index + 1}`}</span>
           {total > 1 && (
             <span className="opacity-60 ml-2 font-normal">
@@ -185,6 +178,6 @@ export default function ImageLightbox({
           )}
         </div>
       </div>
-    </div>
+    </Dialog>
   )
 }

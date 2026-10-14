@@ -8,6 +8,7 @@ import PageHeader from '@/components/layout/PageHeader'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
 import Notification from '@/components/ui/Notification'
+import useConfirmation from '@/components/ui/useConfirmation'
 import { FieldCrewGuard } from '@/components/auth/RequireRole'
 import { useUser } from '@/components/auth/UserContext'
 import PhotoGalleryCard from '@/components/ui/PhotoGalleryCard'
@@ -92,6 +93,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
   const [editFormData, setEditFormData] = useState({})
   
   const router = useRouter()
+  const { confirm: confirmAction, confirmation } = useConfirmation()
   const params = useParams()
   const taskId = params.id
   const user = useUser()
@@ -605,7 +607,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
       return
     }
 
-    if (!confirm('Are you sure you want to delete this photo? This action cannot be undone.')) {
+    if (!await confirmAction({ title: 'Delete report photo?', description: 'This removes the selected evidence photo from this report. This action cannot be undone.', action: 'Delete photo' })) {
       return
     }
 
@@ -998,6 +1000,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
             </div>
           </div>
 
+      {confirmation}
       {notification && (
         <Notification
           message={notification.message}

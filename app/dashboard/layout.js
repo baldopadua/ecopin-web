@@ -6,6 +6,7 @@ import Sidebar from '@/components/layout/Sidebar'
 import { UserProvider } from '@/components/auth/UserContext'
 import { SessionProvider } from '@/components/auth/SessionProvider'
 import { TaskProvider } from '@/components/context/TaskContext'
+import styles from '@/components/layout/DashboardShell.module.css'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL + '/api/auth'
 
@@ -63,11 +64,12 @@ export default function DashboardLayout({ children }) {
     }
 
     checkAuth()
-  }, [pathname])
+  }, [pathname, router])
 
   if (!user || isRedirecting) return (
-    <div className="flex h-screen bg-background relative">
-            <aside className="w-64 bg-surface-elevated border-r border-border h-screen flex flex-col animate-pulse z-10 relative">
+    <div className={styles.shell} aria-busy="true" aria-label="Loading workspace">
+      <div className={styles.mobileBar} aria-hidden="true"><div className="h-7 w-28 rounded-lg bg-border/50 animate-pulse" /></div>
+            <aside className={`${styles.sidebar} ${styles.desktopSidebar} animate-pulse`}>
         <div className="p-6 border-b border-border">
           <div className="h-6 w-24 rounded bg-border/50" />
         </div>
@@ -80,7 +82,7 @@ export default function DashboardLayout({ children }) {
           ))}
         </nav>
       </aside>
-      <main className="flex-1 overflow-auto bg-transparent z-10 relative">
+      <main className={styles.main}>
         <div className="p-8">
           <div className="mb-8 animate-pulse">
             <div className="h-8 w-48 rounded bg-border/50 mb-2" />
@@ -115,9 +117,10 @@ export default function DashboardLayout({ children }) {
     <SessionProvider>
       <UserProvider user={user}>
         <TaskProvider>
-          <div className="flex h-screen bg-background relative">
+          <div className={styles.shell}>
+            <a href="#workspace-content" className={styles.skip}>Skip to workspace</a>
                         <Sidebar />
-            <main className="flex-1 overflow-auto bg-transparent z-10 relative">
+            <main id="workspace-content" tabIndex={-1} className={styles.main}>
               {children}
             </main>
           </div>

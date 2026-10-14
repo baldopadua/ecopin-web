@@ -80,11 +80,8 @@ export default function StatusBadge({
   }
 
   return (
-    <span className={`inline-flex items-center gap-2 ${sizeClasses[size]} font-bold uppercase tracking-[0.15em] border border-border border-current whitespace-nowrap ${colorClass} ${className}`}>
-      <span className="text-[0.7em] opacity-50 font-mono font-bold leading-none transform -skew-x-12">
-        //
-      </span>
-      <span className="translate-y-[1px]">{displayLabel}</span>
+    <span className={`inline-flex items-center ${sizeClasses[size]} font-medium rounded-full border border-current max-w-full ${colorClass} ${className}`}>
+      <span className="break-words">{displayLabel}</span>
     </span>
   )
 }
