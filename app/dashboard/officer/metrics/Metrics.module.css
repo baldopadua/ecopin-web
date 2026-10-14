@@ -1,0 +1,30 @@
+.page { padding: 32px; max-width: 1600px; min-width: 0; margin: auto; }
+.actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.section { margin-top: 32px; }
+.page h2 { font-size: 22px; line-height: 1.4; font-weight: 500; }
+.page h3 { font-size: 19px; line-height: 1.5; font-weight: 500; }
+.description { color: var(--text-secondary); font-size: 14px; line-height: 1.7; margin: 8px 0 20px; }
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 16px; }
+.card { min-width: 0; padding: 24px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface-elevated); }
+.card dt { font-size: 14px; font-weight: 500; line-height: 1.5; }
+.card dd { margin-top: 12px; font-weight: 500; font-size: 30px; line-height: 1.3; overflow-wrap: anywhere; }
+.progress { padding: 24px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface-elevated); }
+.progress label { display: block; line-height: 1.6; margin-bottom: 12px; }
+.progress progress { width: 100%; height: 16px; accent-color: #0052cc; border: 0; border-radius: 999px; overflow: hidden; background: var(--border); }
+.progress progress::-webkit-progress-bar { background: var(--border); border-radius: 999px; }
+.progress progress::-webkit-progress-value { background: #0052cc; border-radius: 999px; }
+.progress progress::-moz-progress-bar { background: #0052cc; border-radius: 999px; }
+.charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin-top: 32px; }
+.chart { padding: 24px; border: 1px solid var(--border); border-radius: 16px; min-width: 0; background: var(--surface-elevated); }
+.stage { height: 280px; min-width: 0; position: relative; }
+.stage canvas { max-width: 100%; }
+.legend { display: grid; gap: 8px; margin-top: 24px; font-size: 14px; }
+.legend > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px; padding: 8px 0; border-top: 1px solid var(--border); }
+.legend dt { flex: 1 1 140px; min-width: 0; overflow-wrap: anywhere; line-height: 1.6; }
+.legend dd { font-weight: 500; }
+.swatch { display: inline-block; width: 12px; height: 12px; margin-right: 8px; border-radius: 3px; border: 1px solid var(--text-secondary); }
+.notice { padding: 24px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface-elevated); margin: 16px 0; }
+.notice p { line-height: 1.7; color: var(--text-secondary); margin: 8px 0 16px; }
+.empty { color: var(--text-secondary); padding: 24px 0; }
+@media (max-width: 900px) { .charts { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .page { padding: 24px 16px; } .card, .chart, .progress, .notice { padding: 20px; } }
