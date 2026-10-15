@@ -1,18 +1,20 @@
-.page { padding: 32px; min-width: 0; font-family: var(--font-outfit), sans-serif; font-size: 14px; line-height: 1.5; }
-.workspace { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; align-items: start; }
+.page { padding: 32px; min-width: 0; height: 100%; min-height: 0; overflow: hidden; display: flex; flex-direction: column;
+  font-family: var(--font-outfit), sans-serif; font-size: 14px; line-height: 1.5; }
+.page > header, .notice { flex-shrink: 0; }
+.workspace { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 320px; grid-template-rows: minmax(0, 1fr); gap: 24px; }
 .mapOnly { grid-template-columns: minmax(0, 1fr); }
-.mapPanel { min-width: 0; position: relative; isolation: isolate; height: clamp(480px, calc(100dvh - 220px), 900px);
+.mapPanel { min-width: 0; min-height: 0; position: relative; isolation: isolate; height: 100%;
   overflow: hidden; border: 1px solid var(--border); border-radius: 16px; background: var(--surface-elevated); }
 .controlToggle, .notice button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px;
   padding: 8px 16px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--workspace-link); font: inherit; font-weight: 500; }
 .controlToggle:hover { background: var(--surface-elevated); }
-.controls { min-width: 0; display: flex; flex-direction: column;
+.controls { min-width: 0; min-height: 0; height: 100%; overflow: hidden; display: flex; flex-direction: column;
   border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
-.controlsHeader { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; border-bottom: 1px solid var(--border); }
+.controlsHeader { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; border-bottom: 1px solid var(--border); }
 .controlsHeader h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 18px; font-weight: 600; color: var(--text-primary); }
 .close { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 44px; height: 44px; border-radius: 12px; color: var(--text-secondary); }
 .close:hover { background: var(--surface-elevated); }
-.controlsBody { padding: 20px; min-height: 0; }
+.controlsBody { flex: 1; padding: 20px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
 .section { min-width: 0; margin: 0 0 20px; padding: 0 0 20px; border: 0; border-bottom: 1px solid var(--border); }
 .section:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: 0; }
 .section h3, .section legend { margin: 0 0 12px; padding: 0; font-size: 16px; font-weight: 600; color: var(--text-primary); }
@@ -21,6 +23,9 @@
 .layer { display: flex; align-items: center; gap: 12px; min-height: 44px; cursor: pointer; color: var(--text-primary); }
 .layer input { width: 20px; height: 20px; flex-shrink: 0; accent-color: #0052cc; }
 .filters { display: grid; gap: 16px; }
+.filters label { display: grid; gap: 4px; font-size: 14px; color: var(--text-secondary); }
+.filters select { min-width: 0; width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 12px;
+  background: var(--surface); color: var(--text-primary); font: inherit; }
 .reset { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 12px; border-radius: 999px;
   color: var(--workspace-link); font: inherit; font-weight: 500; }
 .reset:hover:not(:disabled) { background: var(--surface-elevated); }
@@ -64,10 +69,8 @@
 .mapPanel :global(.leaflet-popup-content span[class*="bg-"]) { display: inline-block; background: var(--surface-elevated); text-transform: lowercase; }
 .mapPanel :global(.leaflet-popup-content span[class*="bg-"]::first-letter) { text-transform: uppercase; }
 @media (max-width: 1023px) {
-  .workspace { grid-template-columns: minmax(0, 1fr); gap: 16px; }
-  .mapPanel { height: 480px; }
-  .controls { max-height: none; }
-  .controlsBody { overflow: visible; }
+  .workspace { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+  .mapOnly { grid-template-rows: minmax(0, 1fr); }
 }
-@media (max-width: 767px) { .page { padding: 20px 16px; } .mapPanel { height: 420px; } .controlsBody { padding: 16px; } }
+@media (max-width: 767px) { .page { padding: 20px 16px; } .controlsBody { padding: 16px; } }
 @media (prefers-reduced-motion: reduce) { .mapPanel :global(.custom-marker div) { animation: none !important; } }

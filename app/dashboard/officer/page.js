@@ -9,7 +9,7 @@ import StatusBadge from '@/components/ui/StatusBadge'
 import { useUser } from '@/components/auth/UserContext'
 import { OfficerGuard } from '@/components/auth/RequireRole'
 import TacticalCanvas from '@/components/map/TacticalCanvas'
-import { Target, Users, AlertTriangle, CloudLightning, Brain, ChevronRight, CheckCircle2, Search, Map } from 'lucide-react'
+import { Target, Users, AlertTriangle, CloudLightning, ChevronRight, CheckCircle2, Search, Map } from 'lucide-react'
 
 export default function OfficerHomepage() {
   const router = useRouter()
@@ -21,7 +21,6 @@ export default function OfficerHomepage() {
   const [workQueue, setWorkQueue] = useState([])
   const [latestRun, setLatestRun] = useState(null)
   
-  const [hudExpanded, setHudExpanded] = useState(false)
 
   useEffect(() => {
     const loadData = async () => {
@@ -94,8 +93,6 @@ export default function OfficerHomepage() {
   // Action queue: work queue items minus active tasks, up to 5
   const actionQueueItems = workQueue.slice(0, 5)
 
-  // AI HUD Confidence
-  const aiConfidence = latestRun?.confidence_score ? Math.round(latestRun.confidence_score * 100) : 89
   const optimizationScore = latestRun?.metrics?.efficiency_score ? Math.round(latestRun.metrics.efficiency_score * 100) : 92
 
   // Helper for priority labels
@@ -369,58 +366,6 @@ export default function OfficerHomepage() {
            </div>
         </div>
 
-        {/* AI HUD (Floating/Collapsible) */}
-        <div className={`fixed bottom-6 right-6 z-50 flex flex-col items-end transition-all duration-300 ${hudExpanded ? 'translate-y-0' : 'translate-y-2'}`}>
-           {hudExpanded && (
-               <div className="mb-4 w-72 bg-surface-elevated border border-border border-accent-green shadow-2xl p-5 text-text-primary origin-bottom-right animate-in fade-in slide-in-from-bottom-4 relative">
-                 <div className="absolute -z-10 inset-0 opacity-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-accent-green via-transparent to-transparent"></div>
-                 
-                 <div className="flex justify-between items-center mb-4 border-b border-border pb-2">
-                    <h4 className="font-bold tracking-widest text-sm uppercase flex items-center gap-2">
-                       <Brain className="w-4 h-4 text-accent-green" /> Command Unit
-                    </h4>
-                    <button onClick={() => setHudExpanded(false)} className="text-text-muted hover:text-text-primary">âœ•</button>
-                 </div>
-                 
-                 <div className="space-y-3 font-mono text-sm">
-                    <div className="flex justify-between">
-                       <span className="text-text-secondary">Confidence</span>
-                       <span className="text-accent-green font-bold">{aiConfidence}%</span>
-                    </div>
-                    <div className="flex justify-between">
-                       <span className="text-text-secondary">Precision</span>
-                       <span className="text-text-primary font-bold">91.4%</span>
-                    </div>
-                    <div className="flex justify-between">
-                       <span className="text-text-secondary">Recall</span>
-                       <span className="text-text-primary font-bold">88.2%</span>
-                    </div>
-                    <div className="flex justify-between">
-                       <span className="text-text-secondary">Last Sync</span>
-                       <span className="text-text-primary">{latestRun ? new Date(latestRun.created_at).toLocaleTimeString() : 'Just now'}</span>
-                    </div>
-                 </div>
-                 
-                 <Link href="/dashboard/spatial-scan" className="mt-5 block text-center text-xs font-bold uppercase tracking-widest bg-surface text-text-primary py-2 hover:bg-accent-green hover:text-white transition-colors border border-border">
-                    View Spatial Scan â†’
-                 </Link>
-              </div>
-           )}
-           
-           {!hudExpanded && (
-              <button 
-                onClick={() => setHudExpanded(true)}
-                className="group relative flex items-center justify-center w-14 h-14 bg-surface-elevated border border-border border-accent-green shadow-lg hover:scale-105 transition-transform text-text-primary"
-              >
-                 <div className="absolute inset-0 rounded-full border border-border border-accent-green animate-ping opacity-20"></div>
-                 <Brain className="w-6 h-6 text-accent-green" />
-                 <span className="absolute -top-2 -right-2 bg-accent-green text-white text-[10px] font-bold px-1.5 py-0.5 rounded-sm">
-                    {aiConfidence}%
-                 </span>
-              </button>
-           )}
-        </div>
-        
       </DashboardLayout>
     </OfficerGuard>
   )

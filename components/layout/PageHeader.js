@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 export default function PageHeader({ title, titleAccent, subtitle, breadcrumbs, children }) {
   return (
-    <header className="relative bg-surface mb-6 pb-4 border-b border-border">
+    <header className="relative mb-6 pb-4 border-b border-border">
       {breadcrumbs && breadcrumbs.length > 0 && (
         <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 text-sm text-text-secondary mb-4">
           {breadcrumbs.map((crumb, i) => (

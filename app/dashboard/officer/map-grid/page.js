@@ -5,7 +5,6 @@ import { useSearchParams } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import { fetchValidatedReports, fetchCleanupTasks } from '@/lib/api'
 import { OfficerGuard } from '@/components/auth/RequireRole'
-import PublicSelect from '@/components/ui/PublicSelect'
 import { Map, SlidersHorizontal, X, AlertTriangle, RotateCcw } from 'lucide-react'
 import styles from './MapGrid.module.css'
 import { REPORT_PIN_STATUSES } from '@/components/map/reportPinStatus'
@@ -85,10 +84,17 @@ function OfficerMapContent() {
             <section className={styles.section} aria-labelledby="map-grid-filters-title">
               <div className={styles.sectionHeader}><h3 id="map-grid-filters-title">Report filters</h3><button type="button" className={styles.reset} disabled={!filtersActive} onClick={() => { setStatusFilter('all'); setTypeFilter('all') }}><RotateCcw size={16} aria-hidden="true" />Reset</button></div>
               <div className={styles.filters}>
-                <PublicSelect id="map-grid-status" label="Report status" value={statusFilter} onChange={setStatusFilter}
-                  options={[{ value: 'all', label: 'All statuses' }, { value: 'unresolved', label: 'Unresolved' }, { value: 'in_progress', label: 'In progress' }, { value: 'resolved', label: 'Resolved' }, { value: 'waiting_for_feedback', label: 'Waiting for feedback' }, { value: 'pending_owner_consent', label: 'Pending owner consent' }, { value: 'closed', label: 'Closed' }]} />
-                <PublicSelect id="map-grid-type" label="Issue type" value={typeFilter} onChange={setTypeFilter}
-                  options={[{ value: 'all', label: 'All issue types' }, ...issueTypes.map(type => ({ value: type, label: type.replaceAll('_', ' ') }))]} />
+                <label htmlFor="map-grid-status">Report status
+                  <select id="map-grid-status" value={statusFilter} onChange={event => setStatusFilter(event.target.value)}>
+                    {[{ value: 'all', label: 'All statuses' }, { value: 'unresolved', label: 'Unresolved' }, { value: 'in_progress', label: 'In progress' }, { value: 'resolved', label: 'Resolved' }, { value: 'waiting_for_feedback', label: 'Waiting for feedback' }, { value: 'pending_owner_consent', label: 'Pending owner consent' }, { value: 'closed', label: 'Closed' }].map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
+                </label>
+                <label htmlFor="map-grid-type">Issue type
+                  <select id="map-grid-type" value={typeFilter} onChange={event => setTypeFilter(event.target.value)}>
+                    <option value="all">All issue types</option>
+                    {issueTypes.map(type => <option key={type} value={type}>{type.replaceAll('_', ' ')}</option>)}
+                  </select>
+                </label>
               </div>
               <p className={styles.helper}>These filters apply to reports. Active cleanup task pins are a separate layer.</p>
             </section>
