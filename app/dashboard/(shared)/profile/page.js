@@ -1,13 +1,15 @@
 'use client'
 import {updateAuthToken} from '@/lib/auth-token.mjs'
-import { useState, useEffect } from 'react'
-import { Edit2, Check, X } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Edit2, Check, X, LogOut } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
 import { getSystemSettings } from '@/lib/api'
 import { logout } from '@/lib/api/auth'
 import { useUser } from '@/components/auth/UserContext'
+import Dialog from '@/components/ui/Dialog'
+import logoutStyles from './LogoutDialog.module.css'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL + '/api'
 
@@ -18,6 +20,8 @@ export default function ProfilePage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
+  const [loggingOut, setLoggingOut] = useState(false)
+  const cancelLogoutRef = useRef(null)
   const router = useRouter()
   const userCtx = useUser()
 
@@ -46,6 +50,10 @@ export default function ProfilePage() {
   const [isEditingName, setIsEditingName] = useState(false)
 
   useEffect(() => {
+    if (showLogoutModal) cancelLogoutRef.current?.focus()
+  }, [showLogoutModal])
+
+  useEffect(() => {
     const saved = localStorage.getItem('theme') || 'system'
     setTheme(saved)
     if (saved === 'dark' || (saved === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -66,6 +74,8 @@ export default function ProfilePage() {
   }
 
   const handleLogout = async () => {
+    if (loggingOut) return
+    setLoggingOut(true)
     try {
       await logout()
     } finally {
@@ -591,26 +601,35 @@ export default function ProfilePage() {
 
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-surface-elevated border border-border rounded-xl shadow-sm p-6 w-full max-w-sm mx-4">
-            <h3 className="text-lg font-bold text-text-primary mb-2">Log Out</h3>
-            <p className="text-sm text-text-muted mb-6">Are you sure you want to log out of your account?</p>
-            <div className="flex gap-3">
+        <Dialog open={showLogoutModal} onClose={() => setShowLogoutModal(false)} dismissible={!loggingOut} labelledBy="logout-title">
+          <div className={logoutStyles.panel}>
+            <div className={logoutStyles.header}>
+              <span className={logoutStyles.icon}><LogOut size={24} aria-hidden="true" /></span>
+              <button type="button" aria-label="Close logout confirmation" onClick={() => setShowLogoutModal(false)} disabled={loggingOut} className={logoutStyles.close}><X size={20} aria-hidden="true" /></button>
+            </div>
+            <h2 id="logout-title">Log out of EcoPin?</h2>
+            <p>You’ll need to sign in again to access your account.</p>
+            <div className={logoutStyles.actions}>
               <button
+                ref={cancelLogoutRef}
+                type="button"
+                disabled={loggingOut}
                 onClick={() => setShowLogoutModal(false)}
-                className="flex-1 px-4 py-2 border border-border rounded-xl text-text-primary hover:bg-surface-elevated font-medium transition-colors"
+                className={logoutStyles.cancel}
               >
                 Cancel
               </button>
               <button
+                type="button"
+                disabled={loggingOut}
                 onClick={handleLogout}
-                className="flex-1 px-4 py-2 bg-error text-white rounded-xl hover:bg-error/80 font-medium transition-colors"
+                className={logoutStyles.confirm}
               >
-                Log Out
+                {loggingOut ? 'Logging out…' : 'Log out'}
               </button>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
     </div>
   )

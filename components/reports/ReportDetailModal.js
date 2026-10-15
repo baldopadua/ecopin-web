@@ -7,7 +7,7 @@ import Dialog from '@/components/ui/Dialog'
 import { getOptimizedImageUrl } from '@/components/ui/EvidenceGallery'
 import { X, ChevronLeft, ChevronRight, Maximize2, MapPin, Calendar, Tag, AlertCircle, FileText } from 'lucide-react'
 
-export default function ReportDetailModal({ report, evidence = [], agencyResponses = [], onClose }) {
+export default function ReportDetailModal({ report, evidence = [], agencyResponses = [], onClose, className = '' }) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isLightboxOpen, setIsLightboxOpen] = useState(false)
 
@@ -27,7 +27,7 @@ export default function ReportDetailModal({ report, evidence = [], agencyRespons
 
   return (
     <>
-      <Dialog open={Boolean(report)} onClose={onClose} labelledBy="report-modal-title">
+      <Dialog className={className} open={Boolean(report)} onClose={onClose} labelledBy="report-modal-title">
         <div 
           className="bg-surface-elevated flex flex-col md:flex-row w-full max-w-5xl h-[85dvh] max-h-[750px] shadow-lg rounded-3xl overflow-hidden relative border border-border cursor-auto"
           onClick={(e) => e.stopPropagation()}

@@ -1,52 +1,29 @@
-
 'use client'
-import React from 'react'
+import styles from './SpatialScan.module.css'
 
-export default function DynamicFeed({ items, onHover, onClick, className }) {
-  return (
-    <div className={`flex flex-col gap-3 overflow-hidden ${className || 'absolute top-24 right-8 bottom-32 w-80 z-[1000] pointer-events-none'}`}>
-      <div className="flex justify-between items-center pointer-events-auto bg-surface/80 p-2 border border-border">
-         <span className="text-[10px] font-mono text-primary uppercase tracking-widest">Live Feed</span>
-         <span className="text-xs text-text-muted font-mono">{items.length} ACTIVE</span>
-      </div>
-      <div className="flex-1 overflow-y-auto pr-2 space-y-3 pointer-events-auto pb-10" style={{ scrollbarWidth: 'none' }} onWheel={(e) => e.stopPropagation()}>
-         {items.map((item, i) => {
-           const risk = item.properties?.risk_level || 'low';
-           const score = item.properties?.risk_score || 0;
-           // Random trend for demo if not provided
-           const trend = item.trend || (score > 0.8 ? 'growing' : score < 0.3 ? 'shrinking' : 'stable');
-           return (
-             <div 
-               key={item.id || i}
-               className="bg-surface/80 backdrop-blur border border-border p-4 hover:border-primary transition-all cursor-pointer group animate-fade-in relative overflow-hidden"
-               style={{ animationDelay: `${i * 0.1}s` }}
-               onMouseEnter={() => onHover && onHover(item)}
-               onMouseLeave={() => onHover && onHover(null)}
-               onClick={() => onClick && onClick(item)}
-             >
-               <div className={`absolute top-0 left-0 w-1 h-full ${
-                 risk === 'high' ? 'bg-error' : 
-                 risk === 'medium' ? 'bg-warning' : 'bg-success'
-               }`} />
-               <div className="flex justify-between items-start mb-2 pl-2">
-                  <span className="text-xs font-mono font-bold text-text-primary uppercase truncate flex-1">{item.properties?.top_issue_type?.replace(/_/g, ' ') || 'Cluster'}</span>
-                  <span className="text-[10px] font-mono px-1.5 py-0.5 bg-border text-text-primary ml-2 flex-shrink-0">#{item.properties?.rank || (i+1)}</span>
-               </div>
-               <div className="pl-2">
-                  <p className="text-[10px] font-mono text-text-secondary mb-2 truncate">
-                    {item.properties?.center_lat?.toFixed(4)}, {item.properties?.center_lng?.toFixed(4)}
-                  </p>
-                  <div className="flex justify-between items-center text-[10px] font-mono text-text-muted">
-                     <span>{item.properties?.report_count || 0} Reports</span>
-                     <span className={`flex items-center gap-1 font-bold ${trend === 'growing' ? 'text-error' : trend === 'shrinking' ? 'text-success' : 'text-info'}`}>
-                        {trend === 'growing' ? '↑ SURGE' : trend === 'shrinking' ? '↓ DECAY' : '→ STABLE'}
-                     </span>
-                  </div>
-               </div>
-             </div>
-           )
-         })}
-      </div>
+export default function DynamicFeed({ items, onHover, onClick, selectedItem, loading, error, onRetry }) {
+  return <section className={styles.feed} aria-labelledby="spatial-hotspots-title" aria-busy={loading}>
+    <div className={styles.feedHeader}>
+      <h2 id="spatial-hotspots-title">Forecast hotspots</h2>
+      <span className={styles.count}>{loading || error ? '—' : items.length}</span>
+      <p>Ordered by risk score. Select an area to view it on the map.</p>
     </div>
-  )
+    <div className={styles.feedList}>
+      {loading ? <p role="status" className={styles.empty}>Loading hotspots…</p>
+        : error ? <div className={styles.empty} role="alert"><p>{error}</p><button type="button" className={styles.secondary} onClick={onRetry}>Try again</button></div>
+        : items.length === 0 ? <p className={styles.empty}>No hotspots are available for this forecast.</p>
+        : items.map((item, index) => {
+          const properties = item.properties || {}
+          const risk = ['high', 'medium', 'low'].includes(properties.risk_level) ? properties.risk_level : 'unknown'
+          return <button type="button" key={item.id || properties.region_id || index} className={styles.hotspot}
+            aria-pressed={selectedItem === item} onClick={() => onClick?.(item)}
+            onMouseEnter={() => onHover?.(item)} onMouseLeave={() => onHover?.(null)}>
+            <span className={styles.hotspotTitle}>{properties.top_issue_type?.replaceAll('_', ' ') || 'Hotspot'}<span className={styles.rank}>#{properties.rank || index + 1}</span></span>
+            <span className={styles.coordinates}>{properties.center_lat != null && properties.center_lng != null ? `${Number(properties.center_lat).toFixed(4)}, ${Number(properties.center_lng).toFixed(4)}` : 'Coordinates unavailable'}</span>
+            <span className={styles.hotspotMeta}><span>{properties.report_count ?? 0} reports</span><span className={`${styles.risk} ${styles[risk]}`}>{risk} risk</span></span>
+            <span className={styles.score}>Risk score: {Number.isFinite(properties.risk_score) ? `${(properties.risk_score * 100).toFixed(0)}%` : 'Unavailable'}</span>
+          </button>
+        })}
+    </div>
+  </section>
 }

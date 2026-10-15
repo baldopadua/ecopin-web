@@ -10,15 +10,17 @@ import Notification from '@/components/ui/Notification'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
 import dynamic from 'next/dynamic'
-import { Pen, Users } from 'lucide-react'
+import { Pen, Users, X } from 'lucide-react'
 import { OfficerGuard } from '@/components/auth/RequireRole'
 import ReportDetailModal from '@/components/reports/ReportDetailModal'
+import Dialog from '@/components/ui/Dialog'
+import styles from './OperationDetails.module.css'
 
 const OperationsMap = dynamic(() => import('@/components/map/OperationsMap'), { 
   ssr: false,
   loading: () => (
     <div className="w-full h-full bg-surface-elevated animate-pulse flex items-center justify-center">
-      <span className="text-text-muted font-mono text-xs uppercase tracking-widest">Loading Map...</span>
+      <span className="text-text-muted text-sm" role="status">Loading map…</span>
     </div>
   )
 })
@@ -92,6 +94,9 @@ function CleanupTaskDetailContent() {
   const [agencyResponses, setAgencyResponses] = useState([])
   const [availableCrew, setAvailableCrew] = useState([])
   const [showAssignmentModal, setShowAssignmentModal] = useState(false)
+  const [assignmentError, setAssignmentError] = useState('')
+  const cancelAssignmentRef = useRef(null)
+  useEffect(() => { if (showAssignmentModal) cancelAssignmentRef.current?.focus() }, [showAssignmentModal])
   const [selectedCrewId, setSelectedCrewId] = useState(null)
   const [assigning, setAssigning] = useState(false)
   const [isEditingTitle, setIsEditingTitle] = useState(false)
@@ -162,6 +167,7 @@ function CleanupTaskDetailContent() {
 
   const handleAssignTask = async (crewId) => {
     setAssigning(true)
+    setAssignmentError('')
     try {
       await assignCleanupTask(taskId, crewId)
       const updatedTask = await fetchCleanupTaskById(taskId)
@@ -170,6 +176,7 @@ function CleanupTaskDetailContent() {
       setNotification({ message: 'Crew deployed successfully', type: 'success' })
     } catch (error) {
       console.error('Failed to assign task:', error)
+      setAssignmentError(error.message || 'The crew could not be assigned. Please try again.')
       setNotification({ message: error.message || 'Failed to assign crew. Please try again.', type: 'error' })
     } finally {
       setAssigning(false)
@@ -679,16 +686,11 @@ function CleanupTaskDetailContent() {
       <div className="flex flex-col gap-8 mt-2">
          
          <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-            <div className="xl:col-span-3 h-[400px] border border-border dark:border-[#333333] relative flex flex-col bg-surface-elevated shrink-0 isolate z-0">
-               <div className="absolute top-4 left-4 z-10 bg-black text-white px-3 py-1.5 border border-border border-accent-green pointer-events-none">
-                  <h3 className="font-bold uppercase tracking-widest text-xs">Route Map</h3>
-               </div>
-               <div className="flex-1 z-0 relative">
-                  <div className="w-full h-full">
-                     <OperationsMap tasks={[{ ...task, reports }]} />
-                  </div>
-               </div>
-            </div>
+            <section className={`xl:col-span-3 ${styles.routeCard}`} aria-labelledby="operation-route-title">
+              <div className={styles.routeHeader}><h2 id="operation-route-title">Route map</h2><p>Report locations and connections for this operation.</p></div>
+              <div className={styles.routeMap}><OperationsMap tasks={[{ ...task, reports }]} modern={true} /></div>
+            </section>
+
 
             <div className="xl:col-span-1 h-[400px]">
                <div className="h-full card p-6 border border-border dark:border-[#333333] rounded-xl bg-surface-elevated text-text-primary flex flex-col">
@@ -804,48 +806,33 @@ function CleanupTaskDetailContent() {
       )}
 
       {showAssignmentModal && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[900]">
-          <div className="bg-surface-elevated border border-border dark:border-[#333333] p-6 max-w-md w-full mx-4 shadow-sm">
-            <h2 className="text-xl font-bold uppercase tracking-tight mb-4">Deploy Field Crew</h2>
-            <div className="space-y-2 max-h-60 overflow-y-auto mb-6">
-              {availableCrew.length === 0 ? (
-                <p className="text-sm text-text-muted font-mono">No field crews available</p>
-              ) : (
-                availableCrew.map(crew => (
-                  <label key={crew.id} className={`flex items-center space-x-3 p-3 border cursor-pointer transition-colors ${selectedCrewId === crew.id ? 'border-primary bg-primary/5' : 'border-border hover:border-primary bg-background'}`}>
-                    <input 
-                      type="radio" 
-                      name="fieldCrewSelection"
-                      checked={selectedCrewId === crew.id} 
-                      onChange={() => setSelectedCrewId(crew.id)}
-                      className="rounded-full border border-border text-primary focus:ring-primary w-5 h-5 bg-transparent" 
-                    />
-                    <div className="flex-1">
-                      <div className="font-mono text-sm font-bold uppercase">{crew.crew_name || crew.name || crew.full_name}</div>
-                      <div className="text-xs text-text-muted">
-                        {crew.member_count ? `${crew.member_count} members` : crew.status ? `Status: ${crew.status}` : 'Field Crew Unit'}
-                      </div>
-                    </div>
-                  </label>
-                ))
-              )}
+        <Dialog open={showAssignmentModal} onClose={() => setShowAssignmentModal(false)} dismissible={!assigning} labelledBy="assign-crew-title">
+          <div className={styles.assignment}>
+            <div className={styles.header}>
+              <div><h2 id="assign-crew-title">Reassign field crew</h2><p>Choose an available crew for this operation.</p></div>
+              <button type="button" className={styles.close} aria-label="Close crew selection" disabled={assigning} onClick={() => setShowAssignmentModal(false)}><X size={20} aria-hidden="true" /></button>
             </div>
-            <div className="flex gap-4">
-              <button 
-                onClick={() => handleAssignTask(selectedCrewId)} 
-                disabled={assigning || !selectedCrewId} 
-                className="btn-primary flex-1 py-3 text-xs"
-              >
-                {assigning ? 'DEPLOYING...' : 'CONFIRM DEPLOYMENT'}
-              </button>
-              <button onClick={() => setShowAssignmentModal(false)} className="btn-secondary flex-1 py-3 text-xs">CANCEL</button>
+            <fieldset className={styles.crewList} disabled={assigning}>
+              <legend className="sr-only">Available field crews</legend>
+              {assignmentError && <p className={styles.assignmentError} role="alert">{assignmentError}</p>}
+              {availableCrew.length === 0 ? <p className={styles.empty}>No field crews are available.</p> : availableCrew.map(crew => (
+                <label key={crew.id} className={`${styles.crew} ${selectedCrewId === crew.id ? styles.selected : ''}`}>
+                  <input type="radio" name="fieldCrewSelection" checked={selectedCrewId === crew.id} onChange={() => setSelectedCrewId(crew.id)} />
+                  <span><strong>{crew.crew_name || crew.name || crew.full_name}</strong><small>{crew.member_count != null ? `${crew.member_count} members` : crew.status ? `Status: ${crew.status.replaceAll('_', ' ')}` : 'Field crew unit'}</small></span>
+                </label>
+              ))}
+            </fieldset>
+            <div className={styles.actions}>
+              <button ref={cancelAssignmentRef} type="button" disabled={assigning} onClick={() => setShowAssignmentModal(false)} className={styles.secondary}>Cancel</button>
+              <button type="button" onClick={() => handleAssignTask(selectedCrewId)} disabled={assigning || !selectedCrewId} className={styles.primary}>{assigning ? 'Assigning crew…' : 'Confirm assignment'}</button>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
 
       {selectedReportId && (
         <ReportDetailModal
+          className={styles.reportDialog}
           report={reports.find(r => r.id === selectedReportId)}
           evidence={reportsEvidence[selectedReportId] || []}
           agencyResponses={agencyResponses}

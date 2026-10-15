@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react'
 import { generatePlan, getPlanJob, getDispatchPlan, commitPlan, disassemblePlan } from '@/lib/api/optimization'
 import { useRouter } from 'next/navigation'
+import Notification from '@/components/ui/Notification'
 
 const TaskContext = createContext()
 
@@ -185,39 +186,22 @@ export function TaskProvider({ children }) {
 
       {/* Global Notification Toast */}
       {globalNotification && !isOptimizing && (
-        <div className={`fixed bottom-6 right-6 z-[9999] p-4 border border-border  shadow-[4px_4px_0px_0px_#000] dark:shadow-[4px_4px_0px_0px_#fff] flex items-center gap-4 ${
-          globalNotification.type === 'success' ? 'bg-[#ccff00] text-text-primary' :
-          globalNotification.type === 'error' ? 'bg-error text-white' : 'bg-surface-elevated text-text-primary'
-        }`}>
-          <p className="font-bold">{globalNotification.message}</p>
-          {globalNotification.link && (
-            <button
-              onClick={() => { setGlobalNotification(null); router.push(globalNotification.link) }}
-              className="underline font-bold text-sm hover:opacity-80"
-            >
-              View Here
-            </button>
-          )}
-          <button onClick={() => setGlobalNotification(null)} className="ml-4 font-bold hover:opacity-80">✕</button>
-        </div>
+        <Notification
+          message={globalNotification.message}
+          type={globalNotification.type}
+          onClose={() => setGlobalNotification(null)}
+          actionLabel={globalNotification.link ? 'View plan' : undefined}
+          onAction={globalNotification.link ? () => { setGlobalNotification(null); router.push(globalNotification.link) } : undefined}
+        />
       )}
 
       {/* Global Progress Toast */}
       {isOptimizing && (
-        <div className="fixed bottom-6 right-6 z-[9999] p-4 bg-surface-elevated border border-border shadow-sm min-w-[300px]">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-xs font-mono font-bold text-accent-green uppercase">
-              {optimizationProgress.message || 'Processing...'}
-            </span>
-            <span className="text-xs font-mono text-text-muted">{optimizationProgress.percent}%</span>
-          </div>
-          <div className="w-full h-2 bg-black/20 dark:bg-surface/10 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-[#ccff00] transition-all duration-500 ease-out"
-              style={{ width: `${optimizationProgress.percent}%` }}
-            ></div>
-          </div>
-        </div>
+        <Notification
+          message={optimizationProgress.message || 'Processing…'}
+          progress={optimizationProgress.percent}
+          duration={0}
+        />
       )}
     </TaskContext.Provider>
   )

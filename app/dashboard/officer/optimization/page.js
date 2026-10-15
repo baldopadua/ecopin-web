@@ -3,6 +3,8 @@ import { useEffect, useState, useCallback, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
+import Dialog from '@/components/ui/Dialog'
+import feedbackStyles from '@/components/optimization/OptimizationFeedback.module.css'
 import RouteInfoHeader from '@/components/ui/RouteInfoHeader'
 import { SkeletonForm } from '@/components/ui/Skeleton'
 import EvidenceGallery from '@/components/ui/EvidenceGallery'
@@ -362,20 +364,20 @@ export default function OptimizationPage() {
       {pendingProposal && (
         <div className="mb-6 p-4 border border-border border-warning bg-warning/10 flex items-center justify-between">
           <div>
-            <h3 className="text-warning font-bold uppercase tracking-wider text-sm flex items-center gap-2">
+            <h3 className="text-warning font-semibold normal-case tracking-normal text-sm flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-warning animate-pulse"></span>
-              Action Required: Pending Dispatch Proposal
+              Pending dispatch proposal
             </h3>
-            <p className="text-xs text-text-primary mt-1 font-mono">
+            <p className="text-xs text-text-primary mt-1 font-sans">
               You have an optimization plan generated on {formatDate(pendingProposal.created_at)} awaiting dispatch confirmation.
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => handleViewRun(pendingProposal.id)}
-              className="px-4 py-2 bg-warning text-black font-bold uppercase text-xs hover:bg-warning/80 transition-colors"
+              className="px-4 py-2 bg-warning text-black font-semibold normal-case text-xs hover:bg-warning/80 transition-colors"
             >
-              Review & Dispatch
+              Review and dispatch
             </button>
           </div>
         </div>
@@ -391,61 +393,58 @@ export default function OptimizationPage() {
 
       {/* Requeue Confirm Modal */}
       {showRequeueConfirm && (
-        <div className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4">
-          <div className="bg-surface-elevated border border-border border-warning max-w-lg w-full p-6 shadow-[8px_8px_0px_0px_#F59E0B]">
-            <h3 className="text-xl font-bold uppercase tracking-tight text-warning mb-2 flex items-center gap-2">
-              <XCircle className="w-6 h-6" /> Re-queuing Warning
-            </h3>
-            <p className="text-text-primary mb-6">
+        <Dialog open={showRequeueConfirm} onClose={() => setShowRequeueConfirm(false)} labelledBy="requeue-title">
+          <div className={feedbackStyles.panel}>
+            <div className={feedbackStyles.header}>
+              <div className={feedbackStyles.heading}><h2 id="requeue-title">Requeue warning</h2></div>
+            </div>
+            <div className={feedbackStyles.body}><p>
               Pre-assigned tasks will be re-evaluated. Old tasks not completed will be re-dispatched along with new tasks. Do you want to proceed and generate a new optimization?
-            </p>
-            <div className="flex gap-4">
-              <button 
-                onClick={handleGenerate}
-                className="btn-primary bg-warning text-text-primary border-warning flex-1 py-3 font-bold uppercase tracking-widest text-xs hover:bg-surface transition-colors"
-              >
-                Confirm & Re-queue
+            </p></div>
+            <div className={feedbackStyles.footer}>
+              <button type="button" autoFocus onClick={() => setShowRequeueConfirm(false)} className={feedbackStyles.secondary}>
+                Cancel
               </button>
               <button 
-                onClick={() => setShowRequeueConfirm(false)}
-                className="btn-secondary flex-1 py-3 font-bold uppercase tracking-widest text-xs"
+                onClick={handleGenerate}
+                className={feedbackStyles.primary}
               >
-                Cancel
+                Confirm and requeue
               </button>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
 
-      {/* ── Municipal Dispatch Console ───────────────────────── */}
+      {/* ── Dispatch settings ───────────────────────── */}
       <div className="card border border-border mb-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 mb-4 border-b border-border gap-2">
           <div>
-            <h3 className="font-bold text-text-primary text-base uppercase tracking-wide flex items-center gap-2">
+            <h3 className="font-semibold text-text-primary text-base normal-case tracking-normal flex items-center gap-2">
               <Globe className="w-4 h-4 text-primary" />
-              Municipal Dispatch Console
+              Dispatch settings
             </h3>
-            <p className="text-xs text-text-muted mt-0.5 font-mono">
+            <p className="text-xs text-text-muted mt-0.5 font-sans">
               Autonomous solver optimizes routes with live weather buffers and TomTom traffic matrix.
             </p>
           </div>
 
           {/* Autonomous Environmental Context Badge */}
-          <div className="flex items-center gap-2 text-xs font-mono bg-surface border border-border px-3 py-1.5">
+          <div className="flex items-center gap-2 text-xs font-sans bg-surface border border-border px-3 py-1.5">
             <span className="flex items-center gap-1.5 text-text-primary">
-              {WEATHER_OPTIONS.find(w => w.value === liveWeather)?.icon || <Sun className="w-3.5 h-3.5 text-orange-400" />}
+              {WEATHER_OPTIONS.find(w => w.value === liveWeather)?.icon || <Sun className="w-3.5 h-3.5 text-warning" />}
               <span className="capitalize">{liveWeather}</span>
-              {liveWeather === 'rainy' && <span className="text-[10px] text-primary font-bold">(+15% buffer)</span>}
+              {liveWeather === 'rainy' && <span className="text-xs text-primary font-semibold">(+15% buffer)</span>}
             </span>
             <span className="text-border">|</span>
             <span className="flex items-center gap-1.5 text-text-primary">
               <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
-              <span>Live Traffic</span>
+              <span>Live traffic</span>
             </span>
           </div>
         </div>
 
-        {/* 1. Target Dispatch Focus */}
+        {/* 1. Target dispatch focus */}
         <div className="mb-5">
           <TemplateSelector
             selectedTemplate={selectedTemplate}
@@ -468,13 +467,13 @@ export default function OptimizationPage() {
           />
         </div>
 
-        {/* 3. Action Bar: Generate Optimization */}
+        {/* 3. Action Bar: Generate optimization */}
         <div className="pt-4 border-t border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button
               onClick={handleGenerate}
               disabled={isOptimizing}
-              className="px-6 py-3 bg-primary text-white border border-primary text-sm font-bold uppercase tracking-wider hover:bg-action-hover transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+              className="px-6 py-3 bg-primary text-white border border-primary text-sm font-semibold normal-case tracking-normal hover:bg-action-hover transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm cursor-pointer"
             >
               {isOptimizing ? (
                 <span className="flex items-center gap-2">
@@ -493,8 +492,8 @@ export default function OptimizationPage() {
             </button>
 
             {!isOptimizing && (
-              <span className="text-xs font-mono text-text-muted">
-                <span className="font-bold text-text-primary">
+              <span className="text-xs font-sans text-text-muted">
+                <span className="font-semibold text-text-primary">
                   {selectedTemplate === 'sweeper' ? outlierCount : selectedTemplate === 'mixed' ? `${standardCount + outlierCount}` : standardCount}
                 </span>{' '}
                 {selectedTemplate === 'sweeper' ? 'reports' : selectedTemplate === 'mixed' ? 'clusters & reports' : 'clusters'} available for dispatch
@@ -505,7 +504,7 @@ export default function OptimizationPage() {
 
         {isOptimizing && (
           <div className="mt-4 pt-3 border-t border-border">
-            <div className="flex justify-between text-xs font-bold text-text-primary mb-1.5 font-mono uppercase tracking-wider">
+            <div className="flex justify-between text-xs font-semibold text-text-primary mb-1.5 font-sans normal-case tracking-normal">
               <span>{optimizationProgress.message || 'Solving...'}</span>
               <span>{optimizationProgress.percent || 0}%</span>
             </div>
@@ -525,8 +524,8 @@ export default function OptimizationPage() {
           <div className="flex items-start gap-3">
             <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0 mt-0.5" />
             <div>
-              <h3 className="font-bold text-text-primary text-base uppercase tracking-wide">
-                Dispatch Confirmed — Field Crews Active
+              <h3 className="font-semibold text-text-primary text-base normal-case tracking-normal">
+                Dispatch confirmed — field crews active
               </h3>
               <p className="text-sm text-text-secondary mt-1">
                 {dispatchSuccess.tasksCount} cleanup tasks dispatched across {dispatchSuccess.crewsCount} crews. Routes and waypoints are now active on crew devices.
@@ -536,21 +535,21 @@ export default function OptimizationPage() {
           <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
             <button
               onClick={() => router.push('/dashboard/officer/operations')}
-              className="flex-1 md:flex-initial px-5 py-2.5 bg-primary text-white font-bold uppercase tracking-wider text-xs border border-primary hover:bg-action-hover transition-all shadow-sm"
+              className="flex-1 md:flex-initial px-5 py-2.5 bg-primary text-white font-semibold normal-case tracking-normal text-xs border border-primary hover:bg-action-hover transition-all shadow-sm"
             >
-              Monitor Live Operations
+              Monitor live operations
             </button>
             {dispatchSuccess.runId && (
               <button
                 onClick={() => router.push('/dashboard/officer/optimization/' + dispatchSuccess.runId)}
-                className="flex-1 md:flex-initial px-4 py-2.5 bg-surface border border-border text-text-primary font-bold uppercase tracking-wider text-xs hover:border-primary transition-colors"
+                className="flex-1 md:flex-initial px-4 py-2.5 bg-surface border border-border text-text-primary font-semibold normal-case tracking-normal text-xs hover:border-primary transition-colors"
               >
-                View Route Details
+                View route details
               </button>
             )}
             <button
               onClick={() => { setDispatchSuccess(null); setCurrentProposal(null); }}
-              className="px-3 py-2 text-text-muted hover:text-text-primary text-xs font-mono"
+              className="px-3 py-2 text-text-muted hover:text-text-primary text-xs font-sans"
             >
               Dismiss
             </button>
@@ -558,7 +557,7 @@ export default function OptimizationPage() {
         </div>
       )}
 
-      {/* Current Proposal Result */}
+      {/* Current Proposal result */}
       {currentProposal && currentProposal.status === 'draft_plan' && (
         <div className="card border border-border mb-6">
           {/* Dispatch Proposal Headline Banner */}
@@ -566,12 +565,12 @@ export default function OptimizationPage() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
-                <h4 className="font-bold text-text-primary text-base uppercase tracking-wide">
-                  Proposed Dispatch Plan Ready
+                <h4 className="font-semibold text-text-primary text-base normal-case tracking-normal">
+                  Dispatch proposal ready
                 </h4>
               </div>
               <p className="text-xs text-text-secondary mt-1">
-                <span className="font-bold text-primary">{currentProposal.num_tasks_optimized || currentProposal.selectedCount || 0} tasks</span> scheduled across <span className="font-bold text-text-primary">{currentProposal.plannedCrewCount || 0} crews</span>.
+                <span className="font-semibold text-primary">{currentProposal.num_tasks_optimized || currentProposal.selectedCount || 0} tasks</span> scheduled across <span className="font-semibold text-text-primary">{currentProposal.plannedCrewCount || 0} crews</span>.
                 {(currentProposal.omittedCount > 0) && (
                   <span className="text-text-muted"> · {currentProposal.omittedCount} remaining tasks kept in Backlog queue for subsequent shift.</span>
                 )}
@@ -581,13 +580,13 @@ export default function OptimizationPage() {
               <button
                 onClick={() => handleCommitPlan(currentProposal.id)}
                 disabled={Boolean(actionLoading) || !currentProposal.selectedCount}
-                className="px-5 py-2.5 bg-primary text-white font-bold uppercase tracking-wider text-xs border border-primary hover:bg-action-hover transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap cursor-pointer"
+                className="px-5 py-2.5 bg-primary text-white font-semibold normal-case tracking-normal text-xs border border-primary hover:bg-action-hover transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap cursor-pointer"
               >
                 {actionLoading === 'commit' ? (
                   'Publishing Routes...'
                 ) : (
                   <>
-                    <Check className="w-4 h-4 mr-0.5" /> Confirm & Dispatch Crews
+                    <Check className="w-4 h-4 mr-0.5" /> Confirm and dispatch crews
                   </>
                 )}
               </button>
@@ -595,9 +594,9 @@ export default function OptimizationPage() {
           </div>
 
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-text-primary text-lg">Proposal Metrics & Route Breakdown</h3>
-            <span className={`text-xs px-3 py-1 border font-bold font-mono uppercase tracking-wider ${STATUS_STYLES[currentProposal.status] || STATUS_STYLES.draft}`}>
-              {currentProposal.status?.toUpperCase()}
+            <h3 className="font-semibold text-text-primary text-lg">Proposal metrics and routes</h3>
+            <span className={`text-xs px-3 py-1 border font-semibold font-sans normal-case tracking-normal ${STATUS_STYLES[currentProposal.status] || STATUS_STYLES.draft}`}>
+              {currentProposal.status?.replaceAll('_', ' ')}
             </span>
           </div>
 
@@ -609,7 +608,7 @@ export default function OptimizationPage() {
             }
             weather={
               <span className="flex items-center justify-center gap-1.5">
-                {WEATHER_OPTIONS.find(w => w.value === (currentProposal.weather_condition?.toLowerCase() || liveWeather))?.icon || <Sun className="w-4 h-4 text-orange-500" />} 
+                {WEATHER_OPTIONS.find(w => w.value === (currentProposal.weather_condition?.toLowerCase() || liveWeather))?.icon || <Sun className="w-4 h-4 text-warning" />}
                 {weatherLabel}
               </span>
             }
@@ -624,16 +623,16 @@ export default function OptimizationPage() {
           {/* Summary Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-surface-elevated border border-border p-3">
-              <p className="text-xs font-mono uppercase tracking-wider text-text-muted">Tasks</p>
-              <p className="text-2xl font-bold text-text-primary">{currentProposal.num_tasks_optimized || currentProposal.selectedCount || 0}</p>
+              <p className="text-xs font-sans normal-case tracking-normal text-text-muted">Tasks</p>
+              <p className="text-2xl font-semibold text-text-primary">{currentProposal.num_tasks_optimized || currentProposal.selectedCount || 0}</p>
             </div>
             <div className="bg-surface-elevated border border-border p-3">
-              <p className="text-xs font-mono uppercase tracking-wider text-text-muted">Crews</p>
-              <p className="text-2xl font-bold text-text-primary">{currentProposal.plannedCrewCount || 0}</p>
+              <p className="text-xs font-sans normal-case tracking-normal text-text-muted">Crews</p>
+              <p className="text-2xl font-semibold text-text-primary">{currentProposal.plannedCrewCount || 0}</p>
             </div>
             <div className="bg-surface-elevated border border-border p-3">
-              <p className="text-xs font-mono uppercase tracking-wider text-text-muted">Est. Distance</p>
-              <p className="text-2xl font-bold text-text-primary">
+              <p className="text-xs font-sans normal-case tracking-normal text-text-muted">Estimated distance</p>
+              <p className="text-2xl font-semibold text-text-primary">
                 {currentProposal.status === 'draft_plan'
                   ? currentProposal.proposedRoutes?.length
                     ? formatDistance(currentProposal.proposedRoutes.reduce((sum, r) => sum + r.distanceMeters, 0))
@@ -642,8 +641,8 @@ export default function OptimizationPage() {
               </p>
             </div>
             <div className="bg-surface-elevated border border-border p-3">
-              <p className="text-xs font-mono uppercase tracking-wider text-text-muted">Est. Duration (Avg/Crew)</p>
-              <p className="text-2xl font-bold text-text-primary">
+              <p className="text-xs font-sans normal-case tracking-normal text-text-muted">Average duration per crew</p>
+              <p className="text-2xl font-semibold text-text-primary">
                 {currentProposal.status === 'draft_plan' 
                   ? formatDuration((currentProposal.capacityUtilized || 0) / Math.max(1, currentProposal.plannedCrewCount || 1))
                   : formatDuration((currentProposalRoutes.reduce((sum, r) => sum + (r.total_duration_min || 0), 0)) / Math.max(1, currentProposalRoutes.length || currentProposal.num_crews || 1))
@@ -669,9 +668,9 @@ export default function OptimizationPage() {
           {/* Task-Time Histogram */}
           {currentProposalRoutes.length > 0 && (
             <div className="mb-6">
-              <h4 className="font-bold text-text-primary mb-3 flex items-center gap-2">
+              <h4 className="font-semibold text-text-primary mb-3 flex items-center gap-2">
                 <Timer className="w-5 h-5" /> Task-Time Histogram
-                <span className="text-xs font-mono text-text-muted">(Est. workload distribution)</span>
+                <span className="text-xs font-sans text-text-muted">(Est. workload distribution)</span>
               </h4>
               <div className="bg-surface-elevated border border-border p-4 h-48 flex items-end gap-2">
                 {currentProposalRoutes.map((r, i) => {
@@ -687,12 +686,12 @@ export default function OptimizationPage() {
                           className="w-full transition-all duration-500 hover:brightness-110 relative rounded-t-sm"
                           style={{ height: `${heightPct}%`, backgroundColor: color }}
                         >
-                           <div className="absolute -top-7 left-1/2 transform -translate-x-1/2 bg-surface text-text-primary border border-border text-[10px] px-1.5 py-0.5 rounded whitespace-nowrap font-mono shadow-sm">
+                           <div className="absolute -top-7 left-1/2 transform -translate-x-1/2 bg-surface text-text-primary border border-border text-xs px-1.5 py-0.5 rounded whitespace-nowrap font-sans shadow-sm">
                              {formatDuration(dur)}
                            </div>
                         </div>
                       </div>
-                      <span className="text-xs font-mono text-text-muted truncate max-w-full px-1">{r.field_crews?.name || `Crew ${i+1}`}</span>
+                      <span className="text-xs font-sans text-text-muted truncate max-w-full px-1">{r.field_crews?.name || `Crew ${i+1}`}</span>
                     </div>
                   )
                 })}
@@ -701,11 +700,11 @@ export default function OptimizationPage() {
           )}
 
 
-          {/* Route Map (Phase 12.3) */}
+          {/* Route map (Phase 12.3) */}
           {currentProposalRoutes.length > 0 && (
             <div className="mb-6">
-              <h4 className="font-bold text-text-primary mb-3 flex items-center gap-2">
-                <Map className="w-5 h-5" /> Route Map
+              <h4 className="font-semibold text-text-primary mb-3 flex items-center gap-2">
+                <Map className="w-5 h-5" /> Route map
               </h4>
               <div className="border border-border" style={{ height: '400px' }}>
                 <RouteMapView routes={currentProposalRoutes} travelMode={settings.travel_mode || 'DRIVING'} />
@@ -719,8 +718,8 @@ export default function OptimizationPage() {
               {currentProposal.capacity && (
                 <div className="mb-6 bg-surface-elevated border border-border p-4" aria-label="Planning capacity">
                   <div className="flex items-center justify-between text-xs mb-2">
-                    <span className="font-bold text-text-primary uppercase tracking-wider">Fleet Shift Workload</span>
-                    <span className="font-mono text-primary font-bold">
+                    <span className="font-semibold text-text-primary normal-case tracking-normal">Fleet Shift Workload</span>
+                    <span className="font-sans text-primary font-semibold">
                       {Math.min(100, Math.round(100 * (currentProposal.capacity.used || currentProposal.capacity.generalist?.used || 0) / Math.max(1, currentProposal.capacity.totalMinutes || currentProposal.capacity.generalist?.minutes || 1)))}% Capacity Utilized
                     </span>
                   </div>
@@ -730,7 +729,7 @@ export default function OptimizationPage() {
                       style={{ width: `${Math.min(100, Math.round(100 * (currentProposal.capacity.used || currentProposal.capacity.generalist?.used || 0) / Math.max(1, currentProposal.capacity.totalMinutes || currentProposal.capacity.generalist?.minutes || 1)))}%` }}
                     />
                   </div>
-                  <p className="text-[11px] text-text-muted mt-2 font-mono">
+                  <p className="text-xs text-text-muted mt-2 font-sans">
                     {currentProposal.capacity.used || currentProposal.capacity.generalist?.used || 0} min scheduled across {currentProposal.plannedCrewCount || 1} available crews (out of {currentProposal.capacity.totalMinutes || currentProposal.capacity.generalist?.minutes || 0} total shift min)
                     {currentProposal.capacity.generalist?.reserved > 0 && ` · includes ${currentProposal.capacity.generalist.reserved} min reserved for local satellite pickups`}
                   </p>
@@ -738,9 +737,9 @@ export default function OptimizationPage() {
               )}
               {currentProposal.groups?.length > 0 && (
                 <div className="mb-6">
-                  <h4 className="font-bold mb-3 flex items-center justify-between text-text-primary">
+                  <h4 className="font-semibold mb-3 flex items-center justify-between text-text-primary">
                     <span>Scheduled Dispatch Groups</span>
-                    <span className="text-xs font-mono text-text-muted">
+                    <span className="text-xs font-sans text-text-muted">
                       {currentProposal.groups.filter(g => g.anchor?.is_selected).length} groups scheduled
                     </span>
                   </h4>
@@ -752,18 +751,18 @@ export default function OptimizationPage() {
                             <span className="w-2 h-2 rounded-full bg-primary" />
                             {group.anchor?.item_type === 'cluster' ? 'Cluster Cleanup' : 'Sweeper Pickup'} · {group.group_key}
                           </span>
-                          <span className="text-[11px] font-mono text-primary bg-primary/10 border border-primary/30 px-2 py-0.5 font-bold uppercase">
+                          <span className="text-xs font-sans text-primary bg-primary/10 border border-primary/30 px-2 py-0.5 font-semibold normal-case">
                             Scheduled
                           </span>
                         </div>
                         {group.satellites?.filter(s => s.is_selected)?.length > 0 && (
                           <div className="ml-4 mt-2.5 pt-2 border-t border-border/40">
-                            <p className="text-[10px] font-mono text-text-muted mb-1 uppercase tracking-wider">Bundled Stops:</p>
+                            <p className="text-xs font-sans text-text-muted mb-1 normal-case tracking-normal">Bundled Stops:</p>
                             <ul className="space-y-1 text-xs text-text-secondary">
                               {group.satellites.filter(s => s.is_selected).map(satellite => (
-                                <li key={satellite.id} className="flex items-center justify-between font-mono">
+                                <li key={satellite.id} className="flex items-center justify-between font-sans">
                                   <span>Report {satellite.report_id}</span>
-                                  <span className="text-text-primary font-bold">Stop #{satellite.bundle_order}</span>
+                                  <span className="text-text-primary font-semibold">Stop #{satellite.bundle_order}</span>
                                 </li>
                               ))}
                             </ul>
@@ -778,11 +777,11 @@ export default function OptimizationPage() {
               {/* Clean Backlog Queue for Deferred Items */}
               {((currentProposal.omittedCount > 0) || (currentProposal.rejectedBundles?.length > 0)) && (
                 <details className="mb-6 border border-border bg-surface-elevated p-3 group">
-                  <summary className="text-xs font-bold uppercase tracking-wider text-text-muted cursor-pointer hover:text-text-primary flex items-center justify-between">
+                  <summary className="text-xs font-semibold normal-case tracking-normal text-text-muted cursor-pointer hover:text-text-primary flex items-center justify-between">
                     <span>Remaining Backlog Queue ({currentProposal.omittedCount || currentProposal.rejectedBundles?.length || 0} tasks queued for next shift)</span>
-                    <span className="text-[10px] font-mono text-text-muted">Inspect details</span>
+                    <span className="text-xs font-sans text-text-muted">Inspect details</span>
                   </summary>
-                  <div className="mt-3 space-y-1.5 max-h-40 overflow-y-auto text-xs font-mono text-text-secondary pt-2 border-t border-border">
+                  <div className="mt-3 space-y-1.5 max-h-40 overflow-y-auto text-xs font-sans text-text-secondary pt-2 border-t border-border">
                     {currentProposal.groups?.filter(g => !g.anchor?.is_selected).map(group => (
                       <div key={group.group_key} className="flex justify-between py-1 border-b border-border/30">
                         <span>{group.group_key}</span>
@@ -801,7 +800,7 @@ export default function OptimizationPage() {
 
               <div className="p-4 bg-surface-elevated border border-border mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                  <h4 className="font-bold text-text-primary text-base flex items-center gap-2">
+                  <h4 className="font-semibold text-text-primary text-base flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
                     Ready for Crew Dispatch
                   </h4>
@@ -809,14 +808,14 @@ export default function OptimizationPage() {
                     Route sequences, travel times, and vehicle capacity have been automatically determined.
                   </p>
                 </div>
-                <div className="flex gap-3 text-xs font-mono">
+                <div className="flex gap-3 text-xs font-sans">
                   <div className="px-3 py-1.5 bg-surface border border-border">
                     <span className="text-text-muted">Scheduled: </span>
-                    <span className="font-bold text-primary">{currentProposal.selectedCount}</span>
+                    <span className="font-semibold text-primary">{currentProposal.selectedCount}</span>
                   </div>
                   <div className="px-3 py-1.5 bg-surface border border-border">
                     <span className="text-text-muted">In Backlog: </span>
-                    <span className="font-bold text-text-primary">{currentProposal.omittedCount}</span>
+                    <span className="font-semibold text-text-primary">{currentProposal.omittedCount}</span>
                   </div>
                 </div>
               </div>
@@ -825,13 +824,13 @@ export default function OptimizationPage() {
                 <button
                   onClick={() => handleCommitPlan(currentProposal.id)}
                   disabled={Boolean(actionLoading) || !currentProposal.selectedCount}
-                  className="w-full px-6 py-3.5 bg-primary text-white font-bold uppercase tracking-wider border border-primary hover:bg-action-hover transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm text-sm cursor-pointer"
+                  className="w-full px-6 py-3.5 bg-primary text-white font-semibold normal-case tracking-normal border border-primary hover:bg-action-hover transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm text-sm cursor-pointer"
                 >
                   {actionLoading === 'commit' ? (
                     'Publishing Routes & Dispatching Crews...'
                   ) : (
                     <>
-                      <Check className="w-5 h-5 mr-1" /> Confirm & Dispatch to Field Crews
+                      <Check className="w-5 h-5 mr-1" /> Confirm and dispatch to field crews
                     </>
                   )}
                 </button>
@@ -845,26 +844,26 @@ export default function OptimizationPage() {
               <button
                 onClick={() => handleApprove(currentProposal.id)}
                 disabled={actionLoading}
-                className="w-full px-6 py-3.5 bg-primary text-white font-bold uppercase tracking-wider border border-primary hover:bg-action-hover transition-all disabled:opacity-50 text-sm cursor-pointer"
+                className="w-full px-6 py-3.5 bg-primary text-white font-semibold normal-case tracking-normal border border-primary hover:bg-action-hover transition-all disabled:opacity-50 text-sm cursor-pointer"
               >
-                {actionLoading === 'approve' ? 'Publishing & Dispatching...' : <span className="flex items-center justify-center"><CheckCircle2 className="w-5 h-5 mr-2" /> Confirm & Dispatch to Field Crews</span>}
+                {actionLoading === 'approve' ? 'Publishing & Dispatching...' : <span className="flex items-center justify-center"><CheckCircle2 className="w-5 h-5 mr-2" /> Confirm and dispatch to field crews</span>}
               </button>
             </div>
           )}
         </div>
       )}
 
-      {/* Previous Runs */}
+      {/* Previous runs */}
       <div className="flex flex-col gap-4">
-        <h3 className="font-bold text-text-primary text-lg uppercase tracking-tight">Previous Runs</h3>
+        <h3 className="font-semibold text-text-primary text-lg normal-case tracking-normal">Previous runs</h3>
 
         {runsLoading ? (
           <SkeletonForm fields={3} />
         ) : previousRuns.length === 0 ? (
-          <p className="text-text-muted text-sm font-mono">No optimization runs yet. Generate your first proposal above.</p>
+          <p className="text-text-muted text-sm font-sans">No optimization runs yet. Generate your first proposal above.</p>
         ) : (
           <div className="flex flex-col gap-4">
-          <div className="ecopin-table-container">
+          <div className="ecopin-table-container" role="region" aria-label="Previous optimization runs" tabIndex={0}>
             <table className="ecopin-table">
               <thead>
                 <tr>
@@ -885,14 +884,14 @@ export default function OptimizationPage() {
                   >
                     <td>{formatDate(run.created_at)}</td>
                     <td>
-                      <span className={`text-xs px-2 py-1 border font-bold font-mono uppercase ${STATUS_STYLES[run.status] || ''}`}>
+                      <span className={`text-xs px-2 py-1 border font-semibold font-sans normal-case ${STATUS_STYLES[run.status] || ''}`}>
                         {run.status}
                       </span>
                     </td>
                     <td>{run.num_tasks_optimized}</td>
                     <td>
                       <span className="flex items-center gap-2">
-                        {WEATHER_OPTIONS.find(w => w.value === (run.weather_condition?.toLowerCase() || 'normal'))?.icon || <Sun className="w-4 h-4 text-orange-500" />} 
+                        {WEATHER_OPTIONS.find(w => w.value === (run.weather_condition?.toLowerCase() || 'normal'))?.icon || <Sun className="w-4 h-4 text-warning" />}
                         {WEATHER_OPTIONS.find(w => w.value === (run.weather_condition?.toLowerCase() || 'normal'))?.label || 'Normal'}
                       </span>
                     </td>
@@ -909,9 +908,9 @@ export default function OptimizationPage() {
                             e.stopPropagation();
                             handleViewRun(run.id);
                           }}
-                          className="text-xs font-bold underline uppercase tracking-wider flex items-center gap-1 cursor-pointer hover:text-primary transition-colors"
+                          className="text-xs font-semibold underline normal-case tracking-normal flex items-center gap-1 cursor-pointer hover:text-primary transition-colors"
                         >
-                          VIEW
+                          View
                         </button>
                         {run.status !== 'discarded' && (
                           <button
@@ -919,10 +918,10 @@ export default function OptimizationPage() {
                               e.stopPropagation();
                               handleOpenDisassemble(run.id);
                             }}
-                            className="text-xs font-bold text-error uppercase tracking-wider flex items-center gap-1 cursor-pointer hover:underline transition-colors"
+                            className="text-xs font-semibold text-error normal-case tracking-normal flex items-center gap-1 cursor-pointer hover:underline transition-colors"
                             title="Disassemble plan and restore backlog"
                           >
-                            <RotateCcw className="w-3 h-3" /> DISASSEMBLE
+                            <RotateCcw className="w-3 h-3" /> Disassemble
                           </button>
                         )}
                       </div>

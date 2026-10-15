@@ -5,21 +5,21 @@ export default function TemplateSelector({ selectedTemplate, onTemplateChange, o
   const options = [
     {
       id: 'standard',
-      title: 'Clusters Focus',
+      title: 'Cluster focus',
       description: 'Consolidated waste piles',
       countLabel: `${standardCount} ${standardCount === 1 ? 'cluster' : 'clusters'}`,
       Icon: Layers,
     },
     {
       id: 'sweeper',
-      title: 'Sweeper Focus',
+      title: 'Sweeper focus',
       description: 'Street sweeps & citizen reports',
       countLabel: `${outlierCount} ${outlierCount === 1 ? 'eligible report' : 'eligible reports'}`,
       Icon: Sparkles,
     },
     {
       id: 'mixed',
-      title: 'Mixed Focus',
+      title: 'Mixed focus',
       badge: 'Recommended',
       description: 'Clusters with bundled sweeper stops',
       countLabel: `${standardCount} clusters · ${outlierCount} reports`,
@@ -29,9 +29,9 @@ export default function TemplateSelector({ selectedTemplate, onTemplateChange, o
 
   return (
     <div>
-      <label className="block text-xs font-bold uppercase tracking-wider text-text-muted mb-2">
-        1. Target Dispatch Focus
-      </label>
+      <p className="block text-sm font-semibold text-text-primary mb-3">
+        1. Target dispatch focus
+      </p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {options.map(({ id, title, description, countLabel, badge, Icon }) => {
           const isSelected = selectedTemplate === id;
@@ -48,7 +48,7 @@ export default function TemplateSelector({ selectedTemplate, onTemplateChange, o
                 }`}
             >
               {badge && (
-                <span className="absolute top-2 right-2 text-[9px] font-bold uppercase tracking-wider bg-primary text-white px-1.5 py-0.5 rounded-xs">
+                <span className="self-start mb-3 text-xs font-medium text-info bg-info/10 px-2 py-1 rounded-full">
                   {badge}
                 </span>
               )}
@@ -57,11 +57,11 @@ export default function TemplateSelector({ selectedTemplate, onTemplateChange, o
                   <Icon className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm text-text-primary uppercase tracking-wide">{title}</h4>
-                  <p className="text-[11px] text-text-muted">{description}</p>
+                  <h4 className="font-semibold text-sm text-text-primary normal-case tracking-normal">{title}</h4>
+                  <p className="text-xs text-text-muted">{description}</p>
                 </div>
               </div>
-              <div className="pt-2 border-t border-border/50 flex items-center justify-between text-xs font-mono font-bold text-text-primary">
+              <div className="pt-2 border-t border-border/50 flex items-center justify-between text-xs font-sans font-semibold text-text-primary">
                 <span>{countLabel}</span>
                 <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-primary' : 'bg-border'}`} />
               </div>

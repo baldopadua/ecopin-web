@@ -1,9 +1,12 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import dynamic from 'next/dynamic';
+import PageHeader from '@/components/layout/PageHeader';
+import styles from '@/components/ui/SpatialScan.module.css';
 import { getCurrentPredictions, fetchPredictions, getAccuracyMetrics, getAvailablePredictionDates } from '../../../lib/api/hotspot';
 import { fetchFilteredReports } from '../../../lib/api/reports';
-import TacticalCanvas from '../../../components/map/TacticalCanvas';
+const ForecastMap = dynamic(() => import('@/components/map/HotspotForecastMap'), { ssr: false });
 import CommandHUD from '../../../components/ui/CommandHUD';
 import DynamicFeed from '../../../components/ui/DynamicFeed';
 import TimePlayer from '../../../components/ui/TimePlayer';
@@ -26,6 +29,12 @@ function TacticalScanContent() {
   
   // Interaction State
   const [focusedItem, setFocusedItem] = useState(null);
+  const [currentLoading, setCurrentLoading] = useState(true);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [currentError, setCurrentError] = useState('');
+  const [historyError, setHistoryError] = useState('');
+  const [datesError, setDatesError] = useState('');
+  const historyRequest = useRef(0);
   
   // Load Initial Data
   useEffect(() => {
@@ -63,15 +72,21 @@ function TacticalScanContent() {
   };
 
   const loadCurrentPredictions = async () => {
+    setCurrentLoading(true);
+    setCurrentError('');
     try {
       const data = await getCurrentPredictions('monthly');
       setCurrentPredictions(data.data);
     } catch (err) {
       console.error('Failed to load current predictions:', err);
+      setCurrentError('The latest forecast could not load.');
+    } finally {
+      setCurrentLoading(false);
     }
   };
 
   const loadAvailableDates = async () => {
+    setDatesError('');
     try {
       const data = await getAvailablePredictionDates();
       
@@ -84,10 +99,14 @@ function TacticalScanContent() {
       }
     } catch (err) {
       console.error('Failed to load available dates:', err);
+      setDatesError('Historical dates could not load.');
     }
   };
 
   const loadHistoricalForDate = async (dateStr) => {
+    const request = ++historyRequest.current;
+    setHistoryLoading(true);
+    setHistoryError('');
     try {
       const data = await fetchPredictions({ startDate: dateStr, endDate: dateStr });
       const rawRecords = data.data || [];
@@ -134,12 +153,16 @@ function TacticalScanContent() {
         }
       });
 
+      if (request !== historyRequest.current) return;
       setHistoricalPredictions({
         region_analyses,
         geojson: { type: 'FeatureCollection', features }
       });
     } catch (err) {
       console.error('Failed to load historical data:', err);
+      if (request === historyRequest.current) setHistoryError('The forecast for this date could not load.');
+    } finally {
+      if (request === historyRequest.current) setHistoryLoading(false);
     }
   };
 
@@ -187,77 +210,49 @@ function TacticalScanContent() {
       .sort((a, b) => b.properties.risk_score - a.properties.risk_score);
   }, [currentData]);
 
+  const loading = activeTab === 'current' ? currentLoading : historyLoading;
+  const error = activeTab === 'current' ? currentError : historyError;
+  const retry = () => activeTab === 'current' ? loadCurrentPredictions() : selectedDate && loadHistoricalForDate(selectedDate);
+  const hasMapData = viewMode === 'heatmap'
+    ? currentDataWithHeatmap?.heatmap_geojson?.features?.length > 0
+    : currentDataWithHeatmap?.geojson?.features?.length > 0;
+  const heatmapNote = currentData?.heatmap_geojson
+    ? 'Heatmap intensity comes from the selected forecast.'
+    : reportsHeatmap
+      ? 'Heatmap shows report locations, which are not filtered by the selected forecast date.'
+      : 'Report locations are unavailable. Heatmap intensity uses forecast risk scores at area centers.';
+
   return (
-    <div className="flex h-screen w-full bg-background overflow-hidden font-sans">
-      
-            {/* Main Map Area */}
-      <div className="flex-1 relative h-full">
-      {/* HUD Header */}
-      <CommandHUD 
-        accuracy={accuracy} 
-        lastUpdated={lastUpdated} 
-        viewMode={viewMode} 
-        setViewMode={setViewMode} 
-      />
-
-      {/* Main Canvas Background */}
-      <TacticalCanvas 
-        predictions={currentDataWithHeatmap} 
-        timeHorizon={activeTab === 'historical' ? 'historical' : 'monthly'} 
-        viewMode={viewMode}
-        focusedItem={focusedItem}
-      />
-
-      
-
-      {/* Bottom Timeline Scrubber */}
-      <TimePlayer 
-        dates={availableDates}
-        currentDate={activeTab === 'historical' ? selectedDate : null}
-        onDateChange={handleDateChange}
-        isProjective={activeTab === 'current'}
-      />
-
-      {/* Control Switcher (Live vs Historical) */}
-      <div className="absolute top-24 left-8 z-[1000] flex flex-col gap-2 pointer-events-auto">
-         <button 
-           onClick={() => {
-             setActiveTab('current');
-             setFocusedItem(null);
-           }}
-           className={`px-6 py-3 font-bold font-mono tracking-widest uppercase border border-border flex items-center gap-3 transition-colors ${
-             activeTab === 'current' ? 'bg-primary text-white border-primary' : 'bg-surface text-text-primary border-border hover:border-text-primary'
-           }`}
-         >
-           <div className={`w-3 h-3 rounded-full ${activeTab === 'current' ? 'bg-surface animate-pulse' : 'bg-text-muted'}`}></div>
-           Live / Projected
-         </button>
-         <button 
-           onClick={() => {
-             setActiveTab('historical');
-             if (availableDates.length > 0) handleDateChange(availableDates[availableDates.length - 1]);
-           }}
-           className={`px-6 py-3 font-bold font-mono tracking-widest uppercase border border-border flex items-center gap-3 transition-colors ${
-             activeTab === 'historical' ? 'bg-text-primary text-background border-text-primary' : 'bg-surface text-text-primary border-border hover:border-text-primary'
-           }`}
-         >
-           <div className={`w-3 h-3 rounded-full ${activeTab === 'historical' ? 'bg-background' : 'bg-text-muted'}`}></div>
-           Retrospective
-         </button>
+    <div className={styles.page}>
+      <PageHeader title="Spatial scan" subtitle="Explore forecast hotspots and compare available historical snapshots."
+        breadcrumbs={[{ label: 'Officer', href: '/dashboard/officer' }, { label: 'Spatial scan' }]} />
+      <div className={styles.toolbar}>
+        <div className={styles.switcher} role="group" aria-label="Forecast period">
+          <button type="button" aria-pressed={activeTab === 'current'} onClick={() => { setActiveTab('current'); setFocusedItem(null); }}>Latest forecast</button>
+          <button type="button" aria-pressed={activeTab === 'historical'} disabled={!availableDates.length}
+            onClick={() => { setActiveTab('historical'); setFocusedItem(null); if (!selectedDate) handleDateChange(availableDates[availableDates.length - 1]); }}>Historical snapshots</button>
+        </div>
+        <CommandHUD accuracy={accuracy} lastUpdated={lastUpdated} viewMode={viewMode} setViewMode={setViewMode} />
       </div>
+      {datesError && <div className={styles.notice} role="alert">{datesError}<button type="button" onClick={loadAvailableDates}>Retry dates</button></div>}
+      <div className={styles.workspace}>
+        <section className={styles.mapPanel} aria-label="Spatial forecast map">
+          <div className={styles.map}>
+            {loading || error || !hasMapData ? <div className={styles.mapState} role="status"><p>{loading ? 'Loading forecast…' : error ? 'Forecast map unavailable' : viewMode === 'heatmap' ? 'No heatmap locations are available for this view.' : 'No risk areas are available for this forecast.'}</p></div>
+              : <ForecastMap predictions={currentDataWithHeatmap} timeHorizon={activeTab === 'historical' ? 'historical' : 'monthly'} viewModeOverride={viewMode} focusedItem={focusedItem} hideUI={true} />}
+          </div>
+          {viewMode === 'clusters' && <div className={styles.legend} aria-label="Risk level legend">
+            <span><i className={styles.high} />High risk</span><span><i className={styles.medium} />Medium risk</span><span><i className={styles.low} />Low risk</span>
+          </div>}
+          <p className={styles.mapNote}>{viewMode === 'heatmap'
+            ? heatmapNote
+            : 'Polygons show forecast risk areas. Select a hotspot in the list to center the map.'}</p>
+        </section>
+        <DynamicFeed items={loading || error ? [] : feedItems} selectedItem={focusedItem} loading={loading} error={error} onRetry={retry}
+          onClick={setFocusedItem} />
       </div>
-      {/* Right Side Feed Panel */}
-      <div className="w-96 h-full border-l border-border bg-surface relative z-[1001]">
-        {/* Right Side Feed */}
-      <DynamicFeed 
-        items={feedItems}
-        onClick={(item) => {
-          setFocusedItem(item);
-          setActiveTab('current'); // If click, snap to current
-        }}
-        className="w-full h-full pt-24 pb-8 px-4"
-        />
-      </div>
+      <TimePlayer key={activeTab} dates={availableDates} currentDate={activeTab === 'historical' ? selectedDate : null}
+        onDateChange={handleDateChange} isProjective={activeTab === 'current'} />
     </div>
   );
 }

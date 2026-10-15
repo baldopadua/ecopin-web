@@ -1,17 +1,18 @@
 'use client'
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useState, useRef } from 'react'
 import dynamic from 'next/dynamic'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import { fetchValidatedReports, fetchCleanupTasks } from '@/lib/api'
 import { OfficerGuard } from '@/components/auth/RequireRole'
-import StatusBadge from '@/components/ui/StatusBadge'
-import Pagination from '@/components/ui/Pagination'
-import { Map, Target as TargetIcon } from 'lucide-react'
+import PublicSelect from '@/components/ui/PublicSelect'
+import { Map, SlidersHorizontal, X, AlertTriangle, RotateCcw } from 'lucide-react'
+import styles from './MapGrid.module.css'
+import { REPORT_PIN_STATUSES } from '@/components/map/reportPinStatus'
 
 const EcoPinMap = dynamic(
   () => import('@/components/map/EcoPinMap'),
-  { ssr: false, loading: () => <div className="h-full w-full bg-surface-elevated animate-pulse" /> }
+  { ssr: false, loading: () => <div className={styles.loading} role="status">Loading map…</div> }
 )
 const CrewTaskLayer = dynamic(
   () => import('@/components/map/CrewTaskLayer'),
@@ -19,7 +20,6 @@ const CrewTaskLayer = dynamic(
 )
 
 function OfficerMapContent() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const [reports, setReports] = useState([])
   const [tasks, setTasks] = useState([])
@@ -32,186 +32,84 @@ function OfficerMapContent() {
   const [showHeatmap, setShowHeatmap] = useState(false)
   const [showTaskPins, setShowTaskPins] = useState(true)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [dataError, setDataError] = useState(false)
+  const controlsRef = useRef(null)
 
-  useEffect(() => {
-    Promise.all([
-      fetchValidatedReports(),
-      fetchCleanupTasks()
-    ]).then(([reportsData, tasksData]) => {
-      setReports(reportsData)
-      setTasks(tasksData)
-    })
-  }, [])
+  const loadControlData = () => {
+    setDataError(false)
+    return Promise.all([fetchValidatedReports(), fetchCleanupTasks()])
+      .then(([reportsData, tasksData]) => { setReports(reportsData); setTasks(tasksData) })
+      .catch(() => setDataError(true))
+  }
+
+  useEffect(() => { void loadControlData() }, [])
 
   const issueTypes = [...new Set(reports.map(r => r.issue_type).filter(Boolean))]
 
+  const closeControls = () => { setIsSidebarOpen(false); controlsRef.current?.focus() }
+  const filtersActive = statusFilter !== 'all' || typeFilter !== 'all'
+
   return (
-    <div className="h-full flex flex-col md:flex-row overflow-hidden bg-background relative">
-      {/* Side Panel Toggle (When Closed) */}
-      {!isSidebarOpen && (
-        <button
-          onClick={() => setIsSidebarOpen(true)}
-          className="absolute right-4 top-4 z-[1000] bg-surface-elevated border border-border p-2 shadow-lg hover:bg-accent-green hover:text-white transition-colors"
-          title="Open Map Controls"
-        >
-          <Map className="w-5 h-5" />
-        </button>
-      )}
-
-      {/* Map Area */}
-      <div className="flex-1 relative z-0 flex flex-col h-[50vh] md:h-full">
-        <EcoPinMap 
-          centerLat={searchParams.get('lat') ? parseFloat(searchParams.get('lat')) : undefined}
-          centerLng={searchParams.get('lng') ? parseFloat(searchParams.get('lng')) : undefined}
-          focusReportId={searchParams.get('id')}
-          hideFilterPanel={true}
-          externalStatusFilter={statusFilter}
-          externalIssueTypeFilter={typeFilter}
-          externalShowPins={showPins}
-          externalShowClusters={showClusters}
-          externalShowHeatmap={showHeatmap}
-          externalMaxBounds={[[14.50, 120.90], [14.80, 121.20]]}
-          externalMinZoom={12}
-        >
-          {/* Active crew tasks overlay */}
-          {showTaskPins && (
-            <CrewTaskLayer tasks={tasks.filter(t => t.status !== 'completed')} />
-          )}
-        </EcoPinMap>
-      </div>
-
-      {/* Side Panel */}
-      {isSidebarOpen && (
-        <div className="w-full md:w-[350px] border-t md:border-t-0 md:border-l border-border dark:border-[#333333] bg-surface flex flex-col h-[50vh] md:h-full z-10 overflow-y-auto custom-scrollbar">
-          <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="font-mono text-sm font-bold tracking-widest uppercase text-text-secondary flex items-center gap-2">
-                <Map className="w-4 h-4" />
-                Tactical Controls
-              </h2>
-              <button 
-                onClick={() => setIsSidebarOpen(false)}
-                className="text-text-muted hover:text-error transition-colors font-bold text-sm"
-                title="Hide Controls"
-              >
-                [ X ]
-              </button>
-            </div>
-            
-            <div className="space-y-6">
-            {/* Map Layers */}
-            <div>
-              <h3 className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-3">Map Layers</h3>
-              <div className="space-y-3">
-                {[
-                  { label: 'Report Pins', state: showPins, set: setShowPins },
-                  { label: 'Report Clusters', state: showClusters, set: setShowClusters },
-                  { label: 'Heatmap', state: showHeatmap, set: setShowHeatmap },
-                  { label: 'Cleanup Task Pins', state: showTaskPins, set: setShowTaskPins },
-                ].map(layer => (
-                  <label key={layer.label} className="flex items-center gap-3 cursor-pointer group">
-                    <input type="checkbox" checked={layer.state} onChange={(e) => layer.set(e.target.checked)} className="sr-only" />
-                    <div className={`w-5 h-5 border border-border flex items-center justify-center transition-colors ${layer.state ? 'bg-accent-green border-accent-green' : 'border-border bg-surface-elevated hover:border-accent-green/50'}`}>
-                      {layer.state && (
-                        <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
-                    </div>
-                    <span className="text-sm font-bold uppercase tracking-wider">{layer.label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className="h-px bg-border/50 w-full" />
-
-            {/* Data Filters */}
-            <div>
-              <h3 className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-3">Data Filters</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-mono text-text-muted mb-1">STATUS</label>
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="w-full bg-surface-elevated border border-border text-sm font-bold uppercase tracking-wider p-2 outline-none focus:border-accent-green"
-                  >
-                    <option value="all">ALL</option>
-                    <option value="unresolved">UNRESOLVED</option>
-                    <option value="in_progress">IN PROGRESS</option>
-                    <option value="resolved">RESOLVED</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-mono text-text-muted mb-1">POLLUTION TYPE</label>
-                  <select
-                    value={typeFilter}
-                    onChange={(e) => setTypeFilter(e.target.value)}
-                    className="w-full bg-surface-elevated border border-border text-sm font-bold uppercase tracking-wider p-2 outline-none focus:border-accent-green"
-                  >
-                    <option value="all">ALL</option>
-                    {issueTypes.map(type => (
-                      <option key={type} value={type}>{type.replace(/_/g, ' ')}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-            
-            <div className="h-px bg-border/50 w-full" />
-
-            {/* Pin Legend */}
-            <div>
-              <h3 className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-3">Pin Legend</h3>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full border-[2px] border-white flex items-center justify-center shadow-sm" style={{ backgroundColor: 'var(--error)' }}>
-                    <img src="/pin-icon.svg" alt="pin" className="w-2.5 h-2.5" />
-                  </div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">Unresolved</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full border-[2px] border-white flex items-center justify-center shadow-sm" style={{ backgroundColor: 'var(--warning)' }}>
-                    <img src="/pin-icon.svg" alt="pin" className="w-2.5 h-2.5" />
-                  </div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">In Progress</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full border-[2px] border-white flex items-center justify-center shadow-sm" style={{ backgroundColor: 'var(--success)' }}>
-                    <img src="/pin-icon.svg" alt="pin" className="w-2.5 h-2.5" />
-                  </div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">Resolved</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="h-px bg-border/50 w-full my-4" />
-
-            {/* Cluster Legend */}
-            <div>
-              <h3 className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-3">Cluster Legend</h3>
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="relative flex items-center justify-center w-8 h-8 rounded-full border-[3px] border-[#007bff]" style={{ backgroundColor: 'rgba(0, 123, 255, 0.2)' }}>
-                    <span className="text-white text-[10px] font-bold" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>5</span>
-                  </div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">Standard Cluster</span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="relative flex items-center justify-center w-8 h-8 rounded-full border-[3px] border-[#dc3545]" style={{ backgroundColor: 'rgba(220, 53, 69, 0.2)' }}>
-                    <span className="absolute -top-1 -right-1 bg-[#ffc107] rounded-full p-[2px] text-[8px] leading-none">⚠</span>
-                    <span className="text-white text-[10px] font-bold" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>3</span>
-                  </div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-text-secondary">Outlier Cluster</span>
-                </div>
-              </div>
-            </div>
-
+    <div className={styles.page}>
+      <PageHeader title="Map grid" subtitle="Explore validated environmental reports, clusters, and active cleanup tasks."
+        breadcrumbs={[{ label: 'Officer', href: '/dashboard/officer' }, { label: 'Map grid' }]}>
+        <button ref={controlsRef} type="button" className={styles.controlToggle} aria-expanded={isSidebarOpen} aria-controls="map-grid-controls"
+          onClick={() => setIsSidebarOpen(open => !open)}><SlidersHorizontal size={18} aria-hidden="true" />{isSidebarOpen ? 'Hide controls' : 'Show controls'}</button>
+      </PageHeader>
+      {dataError && <div className={styles.notice} role="alert"><p>Map filter options and cleanup task pins could not refresh. The report map loads separately.</p><button type="button" onClick={loadControlData}>Try again</button></div>}
+      <div className={`${styles.workspace} ${!isSidebarOpen ? styles.mapOnly : ''}`}>
+        <section className={styles.mapPanel} aria-label="Environmental reports map">
+          <EcoPinMap
+            centerLat={searchParams.get('lat') ? parseFloat(searchParams.get('lat')) : undefined}
+            centerLng={searchParams.get('lng') ? parseFloat(searchParams.get('lng')) : undefined}
+            focusReportId={searchParams.get('id')} hideFilterPanel={true} photoPins={true}
+            externalStatusFilter={statusFilter} externalIssueTypeFilter={typeFilter}
+            externalShowPins={showPins} externalShowClusters={showClusters} externalShowHeatmap={showHeatmap}
+            externalMaxBounds={[[14.50, 120.90], [14.80, 121.20]]} externalMinZoom={12}>
+            {showTaskPins && <CrewTaskLayer photoPins={true} tasks={tasks.filter(task => task.status !== 'completed')} />}
+          </EcoPinMap>
+        </section>
+        {isSidebarOpen && <aside id="map-grid-controls" className={styles.controls} aria-labelledby="map-grid-controls-title">
+          <div className={styles.controlsHeader}><h2 id="map-grid-controls-title"><Map size={18} aria-hidden="true" />Map controls</h2>
+            <button type="button" className={styles.close} onClick={closeControls} aria-label="Hide map controls"><X size={20} aria-hidden="true" /></button>
           </div>
-        </div>
-        </div>
-      )}
+          <div className={styles.controlsBody}>
+            <fieldset className={styles.section}><legend>Map layers</legend>
+              {[
+                { label: 'Report pins', checked: showPins, onChange: setShowPins },
+                { label: 'Report clusters', checked: showClusters, onChange: setShowClusters },
+                { label: 'Heatmap', checked: showHeatmap, onChange: setShowHeatmap },
+                { label: 'Cleanup task pins', checked: showTaskPins, onChange: setShowTaskPins },
+              ].map(layer => <label key={layer.label} className={styles.layer}><input type="checkbox" checked={layer.checked} onChange={event => layer.onChange(event.target.checked)} /><span>{layer.label}</span></label>)}
+            </fieldset>
+            <section className={styles.section} aria-labelledby="map-grid-filters-title">
+              <div className={styles.sectionHeader}><h3 id="map-grid-filters-title">Report filters</h3><button type="button" className={styles.reset} disabled={!filtersActive} onClick={() => { setStatusFilter('all'); setTypeFilter('all') }}><RotateCcw size={16} aria-hidden="true" />Reset</button></div>
+              <div className={styles.filters}>
+                <PublicSelect id="map-grid-status" label="Report status" value={statusFilter} onChange={setStatusFilter}
+                  options={[{ value: 'all', label: 'All statuses' }, { value: 'unresolved', label: 'Unresolved' }, { value: 'in_progress', label: 'In progress' }, { value: 'resolved', label: 'Resolved' }, { value: 'waiting_for_feedback', label: 'Waiting for feedback' }, { value: 'pending_owner_consent', label: 'Pending owner consent' }, { value: 'closed', label: 'Closed' }]} />
+                <PublicSelect id="map-grid-type" label="Issue type" value={typeFilter} onChange={setTypeFilter}
+                  options={[{ value: 'all', label: 'All issue types' }, ...issueTypes.map(type => ({ value: type, label: type.replaceAll('_', ' ') }))]} />
+              </div>
+              <p className={styles.helper}>These filters apply to reports. Active cleanup task pins are a separate layer.</p>
+            </section>
+            <section className={styles.section} aria-labelledby="map-grid-report-legend"><h3 id="map-grid-report-legend">Report pin legend</h3>
+              <ul className={styles.legend}>
+                {Object.entries(REPORT_PIN_STATUSES).map(([status, { label, tone, Icon }]) => <li key={status}>
+                  <span className={`${styles.photoStatus} ${styles[tone] || styles.muted}`} aria-hidden="true"><Icon size={16} /></span>{label}
+                </li>)}
+              </ul>
+              <p className={styles.helper}>Photo pins use a colored ring and status symbol. Where a report photo is unavailable, a neutral image placeholder appears. Open a pin for its written status and details.</p>
+            </section>
+            <section className={styles.section} aria-labelledby="map-grid-cluster-legend"><h3 id="map-grid-cluster-legend">Cluster legend</h3>
+              <ul className={styles.legend}>
+                <li><span className={styles.standardCluster} aria-hidden="true">#</span>Standard cluster</li>
+                <li><span className={styles.overdueCluster} aria-hidden="true"><AlertTriangle size={16} /></span>Cluster with an overdue report</li>
+              </ul>
+              <p className={styles.helper}>Numbers on cluster markers show their report counts.</p>
+            </section>
+          </div>
+        </aside>}
+      </div>
     </div>
   )
 }
@@ -219,7 +117,7 @@ function OfficerMapContent() {
 export default function OfficerMapGridPage() {
   return (
     <OfficerGuard>
-      <Suspense fallback={<div className="h-screen w-full bg-background animate-pulse" />}>
+      <Suspense fallback={<div className={styles.loading} role="status">Loading map grid…</div>}>
         <OfficerMapContent />
       </Suspense>
     </OfficerGuard>

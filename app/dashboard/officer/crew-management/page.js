@@ -1,11 +1,12 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useId } from 'react'
 import { UserPlus, UserMinus, Users, Search, ChevronDown, ChevronUp } from 'lucide-react'
 import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
 import { SkeletonCard } from '@/components/ui/Skeleton'
 import { getCrewsWithMembers, updateCrewMembers, getUnassignedFieldCrew } from '@/lib/api/optimization'
 import { OfficerGuard } from '@/components/auth/RequireRole'
+import styles from './CrewManagement.module.css'
 
 function getInitials(name) {
   if (!name) return '?'
@@ -19,12 +20,12 @@ function Avatar({ user, size = 'md' }) {
       <img
         src={user.avatar_url}
         alt={user.full_name}
-        className={`${sizeClass} rounded-full object-cover border border-border`}
+        className={`${sizeClass} ${styles.avatar}`}
       />
     )
   }
   return (
-    <div className={`${sizeClass} rounded-full bg-[#2563eb] text-white flex items-center justify-center font-bold border border-border`}>
+    <div className={`${sizeClass} ${styles.avatar} ${styles.initials}`}>
       {getInitials(user.full_name)}
     </div>
   )
@@ -32,7 +33,7 @@ function Avatar({ user, size = 'md' }) {
 
 function MemberChip({ user, onRemove, removing }) {
   return (
-    <div className="flex items-center gap-2 bg-surface-elevated border border-border px-3 py-1.5 group">
+    <div className={styles.member}>
       <Avatar user={user} size="sm" />
       <div className="min-w-0">
         <p className="text-sm font-semibold text-text-primary truncate">{user.full_name || 'Unnamed'}</p>
@@ -42,11 +43,12 @@ function MemberChip({ user, onRemove, removing }) {
         onClick={() => onRemove(user.id)}
         disabled={removing === user.id}
         title="Remove from crew"
-        className="ml-1 text-text-muted hover:text-red-500 disabled:opacity-40 transition-colors flex-shrink-0"
+        aria-label={`Remove ${user.full_name || 'member'} from crew`}
+        className={styles.remove}
       >
         {removing === user.id
-          ? <span className="text-xs font-mono">...</span>
-          : <UserMinus size={14} />
+          ? <span className="text-sm">…</span>
+          : <UserMinus size={18} aria-hidden="true" />
         }
       </button>
     </div>
@@ -57,6 +59,7 @@ function CrewCard({ crew, onAdd, onRemove, unassigned, notification, setNotifica
   const [removing, setRemoving] = useState(null)
   const [search, setSearch] = useState('')
   const [showAddPanel, setShowAddPanel] = useState(false)
+  const addPanelId = useId()
 
   const handleRemove = async (userId) => {
     setRemoving(userId)
@@ -83,30 +86,30 @@ function CrewCard({ crew, onAdd, onRemove, unassigned, notification, setNotifica
   )
 
   const statusColor =
-    crew.availability_status === 'available' ? 'text-green-600 dark:text-green-400 border-green-600/30 bg-green-50 dark:bg-green-900/20'
-    : crew.availability_status === 'on_route' ? 'text-orange-600 dark:text-orange-400 border-orange-600/30 bg-orange-50 dark:bg-orange-900/20'
-    : 'text-text-muted border-gray-400/30 bg-gray-50 dark:bg-gray-800/20'
+    crew.availability_status === 'available' ? styles.available
+    : crew.availability_status === 'on_route' ? styles.onRoute
+    : styles.unavailable
 
   return (
-    <div className="border border-border bg-surface">
+    <div className={styles.card}>
       {/* Crew Header */}
-      <div className="flex items-start justify-between p-5 border-b border-border">
+      <div className={styles.crewHeader}>
         <div>
-          <h3 className="font-bold text-text-primary text-lg">{crew.name}</h3>
-          <div className="flex items-center gap-3 mt-1">
-            <span className="text-xs text-text-muted font-mono">
+          <h2 className="font-semibold text-text-primary text-lg">{crew.name}</h2>
+          <div className="flex flex-wrap items-center gap-2 mt-1">
+            <span className="text-sm text-text-muted">
               {crew.shift_start?.slice(0, 5)} – {crew.shift_end?.slice(0, 5)}
             </span>
             <span className="text-xs text-text-muted">·</span>
-            <span className="text-xs text-text-muted">max {crew.max_tasks_per_shift} tasks</span>
+            <span className="text-sm text-text-muted">Max. {crew.max_tasks_per_shift} tasks</span>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <span className={`text-xs px-2 py-1 border font-mono uppercase tracking-wider ${statusColor}`}>
+          <span className={`${styles.badge} ${statusColor}`}>
             {crew.availability_status?.replace('_', ' ')}
           </span>
-          <span className="flex items-center gap-1 text-xs text-text-muted border border-border px-2 py-1">
-            <Users size={12} />
+          <span className={styles.badge} aria-label={`${crew.members?.length || 0} members`}>
+            <Users size={16} aria-hidden="true" />
             {crew.members?.length || 0}
           </span>
         </div>
@@ -115,7 +118,7 @@ function CrewCard({ crew, onAdd, onRemove, unassigned, notification, setNotifica
       {/* Members */}
       <div className="p-5">
         {(crew.members || []).length === 0 ? (
-          <p className="text-sm text-text-muted italic">No members assigned yet.</p>
+          <p className="text-sm text-text-muted">No members assigned yet.</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {crew.members.map(member => (
@@ -133,23 +136,26 @@ function CrewCard({ crew, onAdd, onRemove, unassigned, notification, setNotifica
         <div className="mt-4">
           <button
             onClick={() => setShowAddPanel(!showAddPanel)}
-            className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#2563eb] border border-border border-[#2563eb] px-3 py-1.5 hover:bg-[#2563eb]/10 transition-colors"
+            className={styles.addButton}
+            aria-expanded={showAddPanel}
+            aria-controls={addPanelId}
           >
-            <UserPlus size={12} />
-            Add Member
+            <UserPlus size={18} aria-hidden="true" />
+            Add member
             {showAddPanel ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
           </button>
 
           {showAddPanel && (
-            <div className="mt-3 border border-border border-[#2563eb]/40 bg-[#2563eb]/5 p-3">
+            <div id={addPanelId} className={styles.addPanel}>
               <div className="relative mb-3">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+                <Search size={16} aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
                 <input
                   type="text"
-                  placeholder="Search by name or email..."
+                  placeholder="Search by name…"
+                  aria-label={`Search people to add to ${crew.name}`}
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  className="w-full pl-8 pr-3 py-2 bg-surface border border-border text-sm text-text-primary focus:border-[#2563eb] focus:outline-none"
+                  className={styles.search}
                 />
               </div>
               {filtered.length === 0 ? (
@@ -164,14 +170,14 @@ function CrewCard({ crew, onAdd, onRemove, unassigned, notification, setNotifica
                     <button
                       key={user.id}
                       onClick={() => handleAdd(user.id)}
-                      className="w-full flex items-center gap-3 px-3 py-2 hover:bg-[#2563eb]/10 text-left transition-colors"
+                      className={styles.candidate}
                     >
                       <Avatar user={user} size="sm" />
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-text-primary truncate">{user.full_name || 'Unnamed'}</p>
                         <p className="text-xs text-text-muted truncate capitalize">{user.role?.replace('_', ' ') || 'Field Crew'}</p>
                       </div>
-                      <UserPlus size={14} className="ml-auto text-[#2563eb] flex-shrink-0" />
+                      <UserPlus size={18} className={styles.addIcon} aria-hidden="true" />
                     </button>
                   ))}
                 </div>
@@ -263,13 +269,13 @@ function CrewManagementContent() {
   )
 
   return (
-    <div className="p-8">
+    <div className={styles.page}>
       <PageHeader
-        title="Crew Management"
+        title="Crew management"
         subtitle="Assign field crew members to their teams"
         breadcrumbs={[
           { label: 'Officer', href: '/dashboard/officer' },
-          { label: 'Crew Management' }
+          { label: 'Crew management' }
         ]}
       />
 
@@ -283,7 +289,7 @@ function CrewManagementContent() {
 
       {loading ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-          <div className="lg:col-span-2 space-y-4">
+          <div className="lg:col-span-2 min-w-0 space-y-4">
             <SkeletonCard />
             <SkeletonCard />
           </div>
@@ -294,9 +300,9 @@ function CrewManagementContent() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
           {/* Crew Cards */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="lg:col-span-2 min-w-0 space-y-4">
             {crews.length === 0 ? (
-              <div className="border border-border p-10 text-center">
+              <div className={`${styles.card} p-8 text-center`}>
                 <Users size={32} className="mx-auto text-text-muted mb-3" />
                 <p className="text-text-muted">No crews found. Create one in Optimization Settings.</p>
               </div>
@@ -317,12 +323,12 @@ function CrewManagementContent() {
 
           {/* Unassigned Panel */}
           <div className="lg:col-span-1">
-            <div className="border border-border bg-surface sticky top-6">
+            <div className={`${styles.card} lg:sticky lg:top-6`}>
               <div className="p-4 border-b border-border">
-                <h2 className="font-bold text-text-primary flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-text-primary flex items-center gap-2">
                   <Users size={16} />
                   Unassigned
-                  <span className="ml-auto text-xs border border-border px-2 py-0.5 font-mono">
+                  <span className={`${styles.badge} ml-auto`}>
                     {unassigned.length}
                   </span>
                 </h2>
@@ -333,13 +339,14 @@ function CrewManagementContent() {
 
               <div className="p-3 border-b border-border">
                 <div className="relative">
-                  <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
+                  <Search size={16} aria-hidden="true" className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
                   <input
                     type="text"
-                    placeholder="Search..."
+                    placeholder="Search by name…"
+                    aria-label="Search unassigned crew members"
                     value={unassignedSearch}
                     onChange={e => setUnassignedSearch(e.target.value)}
-                    className="w-full pl-7 pr-3 py-1.5 bg-surface-elevated border border-border text-sm text-text-primary focus:border-[#2563eb] focus:outline-none"
+                    className={styles.search}
                   />
                 </div>
               </div>

@@ -13,6 +13,7 @@ import { supabase } from '@/lib/supabase'
 import Button from '@/components/ui/Button'
 import OutlierClusterLayer from './OutlierClusterLayer'
 import EcoPinMarker from './EcoPinMarker'
+import useMapPhotoEvidence from './useMapPhotoEvidence'
 
 // Polyfill Buffer for browser environment
 if (typeof window !== 'undefined' && !window.Buffer) {
@@ -176,7 +177,7 @@ function MapCenter({ centerLat, centerLng }) {
   return null
 }
 
-export default function EcoPinMap({ centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode = false, selectedReports = [], onReportSelect, hideFilterPanel = false, hidePins = false, hideClusters = false, onReportClick, onClusterSelect, children, allowedClusterIds, allowedReportIds, externalStatusFilter, externalIssueTypeFilter, externalShowPins, externalShowClusters, externalShowHeatmap, externalMaxBounds, externalMinZoom, selectedTemplate = 'standard' }) {
+export default function EcoPinMap({ centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode = false, selectedReports = [], onReportSelect, hideFilterPanel = false, hidePins = false, hideClusters = false, onReportClick, onClusterSelect, children, allowedClusterIds, allowedReportIds, externalStatusFilter, externalIssueTypeFilter, externalShowPins, externalShowClusters, externalShowHeatmap, externalMaxBounds, externalMinZoom, selectedTemplate = 'standard', photoPins = false }) {
   console.log('EcoPinMap props:', { centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode, hideFilterPanel, hidePins, hideClusters, allowedClusterIds, allowedReportIds, externalMaxBounds, externalMinZoom, selectedTemplate })
 
   const [mounted, setMounted] = useState(false)
@@ -507,6 +508,12 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
     router.push(`/dashboard/raw-data/${reportId}`)
   }, [onReportClick, router])
 
+  const visiblePhotoReports = useMemo(() => !photoPins || !showPins || !mapBounds ? [] : processedReportsInfo.parsedReports.filter(report =>
+    Number.isFinite(report.parsedLat) && Number.isFinite(report.parsedLng) && mapBounds.contains([report.parsedLat, report.parsedLng]) &&
+    !(report.cluster_id && renderedClusterIds.has(report.cluster_id) && !hideClusters && showClusters && zoom <= 15)
+  ), [photoPins, showPins, mapBounds, processedReportsInfo, renderedClusterIds, hideClusters, showClusters, zoom])
+  const pinPhotos = useMapPhotoEvidence(visiblePhotoReports, photoPins)
+
   if (!mounted) return (
     <div className="h-full w-full flex items-center justify-center bg-surface dark:bg-[#000000] transition-colors duration-300">
       <img src="/Solo Logo Light.png" alt="Loading..." className="h-24 w-auto object-contain animate-pulse dark:hidden" />
@@ -743,7 +750,9 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                     />
                   )}
                   <EcoPinMarker 
-                    report={report} 
+                    report={report}
+                    photoPin={photoPins}
+                    photo={pinPhotos[report.id]}
                     position={[latitude, longitude]} 
                     isRemoving={isRemoving} 
                     isSelected={selectedReportsSet.has(report.id)} 

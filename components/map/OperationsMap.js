@@ -36,7 +36,7 @@ const parseGeometry = (geometry) => {
   return null
 }
 
-export default function OperationsMap({ tasks, clusters = [], selectedTemplate = 'standard' }) {
+export default function OperationsMap({ tasks, clusters = [], selectedTemplate = 'standard', modern = false }) {
   const [mounted, setMounted] = useState(false)
 
   // Find exact center from tasks
@@ -84,7 +84,7 @@ export default function OperationsMap({ tasks, clusters = [], selectedTemplate =
         hidePins={true}
         hideClusters={true}
       >
-        <CrewTaskLayer tasks={tasks} />
+        <CrewTaskLayer tasks={tasks} photoPins={modern} routeColor={modern ? '#0052cc' : undefined} />
         {clusters && clusters.length > 0 && (
           <OutlierClusterLayer clusters={clusters} selectedTemplate={selectedTemplate} />
         )}

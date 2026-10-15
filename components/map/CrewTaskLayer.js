@@ -1,11 +1,12 @@
 'use client'
-import { useMemo } from 'react'
-import { Polyline, Marker, Popup } from 'react-leaflet'
+import { useMemo, useState } from 'react'
+import { Polyline, Marker, Popup, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import { Buffer } from 'buffer'
 import wkx from 'wkx'
 import EcoPinMarker from './EcoPinMarker'
 import { useUser } from '@/components/auth/UserContext'
+import useMapPhotoEvidence from './useMapPhotoEvidence'
 
 // Parse WKB geometry
 const parseGeometry = (geometry) => {
@@ -63,8 +64,15 @@ function createTaskReportIcon(label, color, isCompleted) {
   })
 }
 
-export default function CrewTaskLayer({ tasks = [], basePath }) {
+export default function CrewTaskLayer({ tasks = [], basePath, photoPins = false, routeColor }) {
   const user = useUser()
+  const map = useMapEvents({ moveend: () => { if (photoPins) setBounds(map.getBounds()) } })
+  const [bounds, setBounds] = useState(() => map.getBounds())
+  const visibleReports = useMemo(() => !photoPins ? [] : tasks.flatMap(task => task.reports || []).filter(report => {
+    const coords = parseGeometry(report.location)
+    return coords && bounds.contains(coords)
+  }), [tasks, photoPins, bounds])
+  const photos = useMapPhotoEvidence(visibleReports, photoPins)
   const defaultBasePath = user?.role === 'field_crew'
     ? '/dashboard/field-crew/operations'
     : '/dashboard/officer/operations'
@@ -77,7 +85,7 @@ export default function CrewTaskLayer({ tasks = [], basePath }) {
       if (!task.reports || task.reports.length === 0) return null
       
       const crewId = task.assigned_crew_ids && task.assigned_crew_ids.length > 0 ? task.assigned_crew_ids[0] : null
-      const color = getCrewColor(crewId)
+      const color = routeColor || getCrewColor(crewId)
       const isTaskCompleted = task.status === 'completed' || task.status === 'resolved'
 
       // Extract coordinates for all reports in this task
@@ -115,6 +123,8 @@ export default function CrewTaskLayer({ tasks = [], basePath }) {
               <EcoPinMarker 
                 key={report.id}
                 report={report}
+                photoPin={photoPins}
+                photo={photos[report.id]}
                 position={coords}
                 customUrl={`${effectiveBasePath}/${task.id}`}
               />
@@ -123,7 +133,7 @@ export default function CrewTaskLayer({ tasks = [], basePath }) {
         </div>
       )
     })
-  }, [tasks, effectiveBasePath])
+  }, [tasks, effectiveBasePath, photoPins, photos, routeColor])
 
   return <>{renderedTasks}</>
 }

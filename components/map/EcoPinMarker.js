@@ -2,6 +2,7 @@ import React from 'react'
 import { Marker, Popup } from 'react-leaflet'
 import L from 'leaflet'
 import { useRouter } from 'next/navigation'
+import ReportPhotoMarker from './ReportPhotoMarker'
 
 export const createEcoPinIcon = (status, isRemoving = false, isSelected = false) => {
   let color = 'var(--error)' // unresolved
@@ -23,7 +24,7 @@ export const createEcoPinIcon = (status, isRemoving = false, isSelected = false)
   })
 }
 
-export default function EcoPinMarker({ report, position, isRemoving = false, isSelected = false, selectionMode = false, onReportSelect, customUrl }) {
+export default function EcoPinMarker({ report, position, isRemoving = false, isSelected = false, selectionMode = false, onReportSelect, customUrl, photoPin = false, photo }) {
   const router = useRouter()
 
   const handlePopupRouting = (e, reportId) => {
@@ -35,8 +36,10 @@ export default function EcoPinMarker({ report, position, isRemoving = false, isS
     }
   }
 
+  const MarkerView = photoPin ? ReportPhotoMarker : Marker
+  const photoProps = photoPin ? { report, image: photo, selected: isSelected, removing: isRemoving } : {}
   return (
-    <Marker
+    <MarkerView {...photoProps}
       position={position}
       icon={createEcoPinIcon(report.status, isRemoving, isSelected)}
       eventHandlers={{
@@ -96,6 +99,6 @@ export default function EcoPinMarker({ report, position, isRemoving = false, isS
           )}
         </div>
       </Popup>
-    </Marker>
+    </MarkerView>
   )
 }
