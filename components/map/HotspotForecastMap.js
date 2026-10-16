@@ -6,6 +6,16 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { AlertCircle } from 'lucide-react';
 
+// These templates interpolate data only into HTML text, never attributes or styles.
+const escapePopupText = (value) => {
+  if (typeof value !== 'string' && !Number.isFinite(value)) return 'N/A';
+  return String(value).replace(/[&<>"']/g, char => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[char]);
+};
+const riskLevel = value => ['high', 'medium', 'low'].includes(value) ? value : 'unknown';
+const coordinateText = (value, limit) => Number.isFinite(value) && Math.abs(value) <= limit ? value.toFixed(5) : 'N/A';
+
 if (typeof window !== 'undefined') {
   window.L = L;
   require('leaflet.heat');
@@ -97,7 +107,7 @@ function ClusterLabelMarkers({ features }) {
             border: 2px solid white;
             box-shadow: 0 2px 8px rgba(0,0,0,0.35);
             font-family: sans-serif;
-          ">#${rank || '?'}</div>
+          ">#${escapePopupText(rank || '?')}</div>
         `,
         className: '',
         iconSize: [28, 28],
@@ -193,8 +203,8 @@ export default function HotspotForecastMap({ predictions, timeHorizon, viewModeO
 
   // ── Style for cluster polygons ──────────────────────────────────────────────
   const getFeatureStyle = (feature) => {
-    const risk = feature.properties?.risk_level || 'low';
-    const score = feature.properties?.risk_score || 0;
+    const risk = riskLevel(feature.properties?.risk_level);
+    const score = Number.isFinite(feature.properties?.risk_score) ? Math.min(1, Math.max(0, feature.properties.risk_score)) : 0;
 
     const fill = { high: '#ef4444', medium: '#f97316', low: '#22c55e' }[risk] || '#22c55e';
     const stroke = { high: '#b91c1c', medium: '#c2410c', low: '#15803d' }[risk] || '#15803d';
@@ -217,17 +227,18 @@ export default function HotspotForecastMap({ predictions, timeHorizon, viewModeO
   // ── Popup content ───────────────────────────────────────────────────────────
   const onEachFeature = (feature, layer) => {
     const p = feature.properties || {};
-    const breakdown = p.issue_breakdown || {};
+    const breakdown = p.issue_breakdown && typeof p.issue_breakdown === 'object' && !Array.isArray(p.issue_breakdown) ? p.issue_breakdown : {};
     const breakdownHtml = Object.entries(breakdown)
       .sort((a, b) => b[1] - a[1])
       .map(([type, count]) => `
         <div style="display:flex;justify-content:space-between;gap:12px;padding:2px 0">
-          <span style="text-transform:capitalize">${type.replace(/_/g, ' ')}</span>
-          <strong>${count}</strong>
+          <span style="text-transform:capitalize">${escapePopupText(type.replace(/_/g, ' '))}</span>
+          <strong>${escapePopupText(count)}</strong>
         </div>`)
       .join('') || '<div style="color:#aaa">No breakdown available</div>';
 
-    const riskColor = { high: '#ef4444', medium: '#f97316', low: '#22c55e' }[p.risk_level] || '#22c55e';
+    const risk = riskLevel(p.risk_level);
+    const riskColor = { high: '#ef4444', medium: '#f97316', low: '#22c55e' }[risk] || '#22c55e';
 
     layer.bindPopup(`
       <div style="font-family:system-ui,sans-serif;min-width:220px">
@@ -236,18 +247,18 @@ export default function HotspotForecastMap({ predictions, timeHorizon, viewModeO
             background:${riskColor};color:#fff;font-weight:700;font-size:13px;
             width:28px;height:28px;border-radius:50%;display:flex;align-items:center;
             justify-content:center;flex-shrink:0
-          ">#${p.rank || '?'}</div>
+          ">#${escapePopupText(p.rank || '?')}</div>
           <div>
-            <div style="font-weight:700;font-size:14px">Cluster #${p.rank || '?'}</div>
-            <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.04em">${p.risk_level || 'unknown'} risk</div>
+            <div style="font-weight:700;font-size:14px">Cluster #${escapePopupText(p.rank || '?')}</div>
+            <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.04em">${risk} risk</div>
           </div>
         </div>
 
         <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px">
-          <tr><td style="color:#666;padding:3px 0">Reports</td><td style="text-align:right;font-weight:600">${p.report_count ?? 'N/A'}</td></tr>
-          <tr><td style="color:#666;padding:3px 0">Risk Score</td><td style="text-align:right;font-weight:600">${p.risk_score != null ? (p.risk_score * 100).toFixed(0) + '%' : 'N/A'}</td></tr>
-          <tr><td style="color:#666;padding:3px 0">Top Issue</td><td style="text-align:right;font-weight:600;text-transform:capitalize">${(p.top_issue_type || 'N/A').replace(/_/g, ' ')}</td></tr>
-          <tr><td style="color:#666;padding:3px 0">Center</td><td style="text-align:right;font-size:11px;font-family:monospace">${p.center_lat?.toFixed(5)}, ${p.center_lng?.toFixed(5)}</td></tr>
+          <tr><td style="color:#666;padding:3px 0">Reports</td><td style="text-align:right;font-weight:600">${escapePopupText(p.report_count ?? 'N/A')}</td></tr>
+          <tr><td style="color:#666;padding:3px 0">Risk Score</td><td style="text-align:right;font-weight:600">${Number.isFinite(p.risk_score) && p.risk_score >= 0 && p.risk_score <= 1 ? (p.risk_score * 100).toFixed(0) + '%' : 'N/A'}</td></tr>
+          <tr><td style="color:#666;padding:3px 0">Top Issue</td><td style="text-align:right;font-weight:600;text-transform:capitalize">${escapePopupText(typeof p.top_issue_type === 'string' ? p.top_issue_type.replace(/_/g, ' ') : 'N/A')}</td></tr>
+          <tr><td style="color:#666;padding:3px 0">Center</td><td style="text-align:right;font-size:11px;font-family:monospace">${coordinateText(p.center_lat, 90)}, ${coordinateText(p.center_lng, 180)}</td></tr>
         </table>
 
         <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:4px">Issue Breakdown</div>
