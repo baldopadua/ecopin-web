@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { getTimeoutMinutes } from '@/lib/api/system'
 import { validateSession } from '@/lib/api/auth'
 import Dialog from '@/components/ui/Dialog'
+import { Clock } from 'lucide-react'
 
 const SessionContext = createContext(null)
 
@@ -296,19 +297,12 @@ export function SessionProvider({ children }) {
           <div className="card max-w-md w-full">
             <div className="text-center">
               <div className="mb-4">
-                <svg
-                  className="w-16 h-16 mx-auto text-warning"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
+                <Clock
+                  size={64}
+                  strokeWidth={1.5}
+                  className="mx-auto text-warning"
+                  aria-hidden="true"
+                />
               </div>
               <h2 id="session-expired-title" className="text-xl font-medium text-text-primary mb-2">Sign in to continue</h2>
               <p className="text-text-secondary mb-6">

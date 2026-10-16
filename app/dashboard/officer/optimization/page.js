@@ -13,7 +13,7 @@ import OptimizationSettings from '@/components/optimization/OptimizationSettings
 import TemplateSelector from '@/components/ui/TemplateSelector'
 import DisassembleModal from '@/components/optimization/DisassembleModal'
 import { useTask } from '@/components/context/TaskContext'
-import { Sun, CloudRain, CloudLightning, Circle, Globe, Map, Check, CheckCircle2, XCircle, Ruler, Timer, RotateCcw } from 'lucide-react'
+import { Sun, CloudRain, CloudLightning, Circle, Globe, Map, Check, CheckCircle2, XCircle, Ruler, Timer, RotateCcw, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { 
   WEATHER_OPTIONS, 
@@ -477,10 +477,7 @@ export default function OptimizationPage() {
             >
               {isOptimizing ? (
                 <span className="flex items-center gap-2">
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
+                  <Loader2 size={16} className="animate-spin" aria-hidden="true" />
                   Calculating Routes...
                 </span>
               ) : (

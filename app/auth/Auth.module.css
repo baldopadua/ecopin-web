@@ -1,14 +1,14 @@
-.page { min-height: 100svh; }
-.topBar { max-width: 1280px; width: 100%; margin: auto; padding: 24px 48px; display: flex; align-items: center; justify-content: space-between; }
+.page { min-height: 100svh; display: flex; flex-direction: column; }
+.topBar { max-width: 1280px; width: 100%; margin: 0 auto; padding: 24px 48px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
 .back { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: var(--landing-muted); font-size: 14px; }
 .theme { width: 44px; height: 44px; border-radius: 50%; color: var(--landing-muted); display: grid; place-items: center; background: var(--landing-soft); }
-.main { max-width: 1280px; margin: 0 auto; padding: 32px 48px 64px; display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: stretch; }
+.main { max-width: 1280px; width: 100%; margin: auto; padding: 24px 48px 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; }
 .story h2 { font-size: clamp(36px, 4vw, 56px); line-height: 1.08; font-weight: 500; letter-spacing: -.045em; margin: 0; }
 .story > p { font-size: 16px; line-height: 1.75; color: var(--landing-muted); max-width: 440px; margin: 24px 0; }
 .story figure { position: relative; height: 280px; margin: 32px 0 24px; border-radius: 16px; overflow: hidden; }
 .story figure img { object-fit: cover; }
 .story figcaption { position: absolute; bottom: 0; left: 0; right: 0; padding: 48px 24px 24px; display: flex; align-items: center; gap: 8px; color: white; background: linear-gradient(transparent, #101e2bd9); font-size: 13px; }
-.formSection { max-width: 420px; width: 100%; order: 2; }
+.formSection { max-width: 420px; width: 100%; margin: 0 auto; order: 2; }
 .story { order: 1; display: flex; flex-direction: column; gap: 16px; }
 .story .photoCycle { position: relative; flex: 1; min-height: 480px; height: auto; margin: 0; overflow: hidden; border-radius: 16px; }
 .photoCycle img { object-fit: cover; transition: opacity 1.6s ease, transform 8s ease; }

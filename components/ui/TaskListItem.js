@@ -1,4 +1,5 @@
 'use client'
+import { MapPin } from 'lucide-react'
 
 const TaskPriority = {
   high: { label: 'High', color: 'text-error', bgColor: 'bg-error/15' },
@@ -36,10 +37,7 @@ export default function TaskListItem({ task, onTap }) {
         </div>
       )}
       <div className="flex items-center gap-2 text-xs text-text-muted mb-2">
-        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
+        <MapPin size={14} aria-hidden="true" />
         <span className="flex-1">{task.location || 'Location not specified'}</span>
       </div>
       <div className="flex justify-between items-center mt-2">

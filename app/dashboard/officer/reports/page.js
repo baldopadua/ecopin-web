@@ -8,7 +8,7 @@ import DataTable from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { OfficerGuard } from '@/components/auth/RequireRole'
-import { Target, Wrench } from 'lucide-react'
+import { Target, Wrench, AlertTriangle, Clock } from 'lucide-react'
 
 export default function OfficerReportsPage() {
   const [reports, setReports] = useState([])
@@ -115,14 +115,42 @@ export default function OfficerReportsPage() {
     return new Date(dateString).toLocaleDateString()
   }
 
+  const isReportOverdue = (report) => {
+    if (!report) return false
+    const terminalStatuses = ['resolved', 'closed', 'completed', 'rejected']
+    const normalizedStatus = (report.status || '').toLowerCase()
+    if (terminalStatuses.includes(normalizedStatus)) return false
+
+    if (report.is_overdue) return true
+    if (report.deadline_at) {
+      return new Date() > new Date(report.deadline_at)
+    }
+    if (report.created_at) {
+      const diffHours = (new Date() - new Date(report.created_at)) / (1000 * 60 * 60)
+      return diffHours > 48
+    }
+    return false
+  }
+
   const tableColumns = [
     { 
       key: 'title', 
       label: 'Title', 
       width: '25%',
-      render: (value) => (
-        <span className="font-medium text-text-primary">{value}</span>
-      )
+      render: (value, row) => {
+        const overdue = isReportOverdue(row)
+        return (
+          <div className="flex flex-col gap-1 items-start">
+            <span className="font-medium text-text-primary">{value}</span>
+            {overdue && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-semibold tracking-wide uppercase bg-red-100 text-red-700 dark:bg-red-950/80 dark:text-red-300 dark:border dark:border-red-800/60">
+                <AlertTriangle className="w-3 h-3 text-red-600 dark:text-red-400" />
+                Overdue (SLA Risk)
+              </span>
+            )}
+          </div>
+        )
+      }
     },
     { 
       key: 'issue_type', 
@@ -135,10 +163,20 @@ export default function OfficerReportsPage() {
     { 
       key: 'status', 
       label: 'Status', 
-      width: '10%',
-      render: (value) => (
-        <StatusBadge status={value} type="report" />
-      )
+      width: '12%',
+      render: (value, row) => {
+        const overdue = isReportOverdue(row)
+        return (
+          <div className="flex flex-col gap-1 items-start">
+            <StatusBadge status={value} type="report" />
+            {overdue && (
+              <span className="inline-flex items-center gap-0.5 text-[11px] font-medium text-red-600 dark:text-red-400">
+                <Clock className="w-2.5 h-2.5" /> Overdue
+              </span>
+            )}
+          </div>
+        )
+      }
     },
     { 
       key: 'cluster_id', 
@@ -251,6 +289,7 @@ export default function OfficerReportsPage() {
              loading={loading}
              emptyMessage="No reports match your filters"
              onRowClick={handleRowClick}
+             rowClassName={(row) => isReportOverdue(row) ? 'border-l-4 border-l-red-500 bg-red-50/30 dark:bg-red-950/20' : ''}
            />
         </div>
 

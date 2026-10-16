@@ -4,7 +4,7 @@ import { publicReportSearchText, matchesGallerySearch } from '@/lib/public-galle
 import Link from 'next/link'
 import Image from 'next/image'
 import { createPinIcon } from '@/components/landing/pinIcon'
-import { fetchBatchReportEvidence } from '@/lib/api/reports'
+import { fetchBatchReportEvidence, getCachedEvidence, hasCachedEvidence } from '@/lib/api/reports'
 import { useSearchParams } from 'next/navigation'
 import styles from './Explore.module.css'
 import PhotoViewer from './PhotoViewer'
@@ -129,6 +129,11 @@ const CATEGORY_IMAGES = {
 const getReportImage = (report, evidenceMap = {}) => {
   if (report?.id && evidenceMap[report.id]?.length > 0) {
     const firstImg = evidenceMap[report.id].find(e => e.resource_type === 'image' || !e.resource_type)
+    if (firstImg?.url) return firstImg.url
+  }
+  const cached = report?.id ? getCachedEvidence(report.id) : null
+  if (cached?.length > 0) {
+    const firstImg = cached.find(e => e.resource_type === 'image' || !e.resource_type)
     if (firstImg?.url) return firstImg.url
   }
   if (report?.before_photo_url) return report.before_photo_url
@@ -1001,7 +1006,7 @@ export default function PublicMap({ theme = 'light' }) {
   // Fetch only the first visible page of exact public photos, in one request.
   useEffect(() => {
     const photoIds = evidenceReports.slice(0, 24)
-      .filter(report => report.location_precision === 'exact' && evidenceCache[report.id] === undefined)
+      .filter(report => report.location_precision === 'exact' && !hasCachedEvidence(report.id) && evidenceCache[report.id] === undefined)
       .map(report => report.id)
     if (!photoIds.length) return
     const controller = new AbortController()
@@ -1010,7 +1015,7 @@ export default function PublicMap({ theme = 'light' }) {
       setEvidenceCache(previous => ({ ...previous, ...Object.fromEntries(photoIds.map(id => [id, photos[id] || []])) }))
     }).catch(() => {})
     return () => controller.abort()
-  }, [evidenceReports, evidenceCache])
+  }, [evidenceReports])
   // Keyboard navigation for Lightbox and Details Drawer
   
 
@@ -1349,18 +1354,26 @@ export default function PublicMap({ theme = 'light' }) {
   const handleViewDetails = async (report) => {
     if (!report) return
     setDetailedReport(report)
-    setDetailedEvidence([])
-    setLoadingEvidence(true)
     if (mobileTab === 'map') {
       setMobileTab('list')
     }
     if (report.location_precision === 'approximate') {
+      setDetailedEvidence([])
       setLoadingEvidence(false)
       return
     }
+    const cached = evidenceCache[report.id] || getCachedEvidence(report.id)
+    if (cached) {
+      setDetailedEvidence(cached)
+      setLoadingEvidence(false)
+      return
+    }
+    setDetailedEvidence([])
+    setLoadingEvidence(true)
     try {
       const evidence = await fetchReportEvidence(report.id)
       setDetailedEvidence(evidence || [])
+      setEvidenceCache(prev => ({ ...prev, [report.id]: evidence || [] }))
     } catch (e) {
       console.error(e)
     } finally {
@@ -2738,7 +2751,16 @@ export default function PublicMap({ theme = 'light' }) {
       )}
 
 
-      {photoSelection?.report && <PhotoViewer report={photoSelection.report} evidence={photoSelection.report.id === detailedReport?.id && detailedEvidence.length ? detailedEvidence : evidenceCache[photoSelection.report.id]} fallback={getReportImage(photoSelection.report)} initialIndex={photoSelection.index} reports={galleryReports} onReport={report => setPhotoSelection({ report, index: 0 })} onClose={closePhotoViewer} onMap={report => { closePhotoViewer(); handleJumpToMap(report) }} />}
+      {photoSelection?.report && (
+        <PhotoViewer
+          report={photoSelection.report}
+          initialIndex={photoSelection.index}
+          evidenceCache={evidenceCache}
+          reports={activeNavTab === 'gallery' ? galleryReports : (sortedReports.length ? sortedReports : (galleryReports.length ? galleryReports : [photoSelection.report]))}
+          onClose={closePhotoViewer}
+          onMap={report => { closePhotoViewer(); handleJumpToMap(report) }}
+        />
+      )}
     </div>
   )
 }

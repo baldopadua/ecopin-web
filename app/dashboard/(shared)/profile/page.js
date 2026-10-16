@@ -1,14 +1,39 @@
 'use client'
-import {updateAuthToken} from '@/lib/auth-token.mjs'
+
 import { useState, useEffect, useRef } from 'react'
-import { Edit2, Check, X, LogOut } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import PageHeader from '@/components/layout/PageHeader'
-import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
-import { getSystemSettings } from '@/lib/api'
+import { updateAuthToken } from '@/lib/auth-token.mjs'
 import { logout } from '@/lib/api/auth'
+import { getSystemSettings } from '@/lib/api'
 import { useUser } from '@/components/auth/UserContext'
+import PageHeader from '@/components/layout/PageHeader'
+import StatusBadge from '@/components/ui/StatusBadge'
+import SecureImage from '@/components/ui/SecureImage'
+import Notification from '@/components/ui/Notification'
 import Dialog from '@/components/ui/Dialog'
+import { SkeletonCard } from '@/components/ui/Skeleton'
+import {
+  Camera,
+  Trash2,
+  KeyRound,
+  Shield,
+  Check,
+  X,
+  LogOut,
+  Eye,
+  EyeOff,
+  Monitor,
+  Sun,
+  Moon,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  Lock,
+  Mail,
+  User as UserIcon,
+  Building2
+} from 'lucide-react'
+import styles from './Profile.module.css'
 import logoutStyles from './LogoutDialog.module.css'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL + '/api'
@@ -18,10 +43,11 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
-  const [error, setError] = useState(null)
-  const [success, setSuccess] = useState(null)
+  const [removingAvatar, setRemovingAvatar] = useState(false)
+  const [notification, setNotification] = useState(null)
   const [loggingOut, setLoggingOut] = useState(false)
   const cancelLogoutRef = useRef(null)
+  const fileInputRef = useRef(null)
   const router = useRouter()
   const userCtx = useUser()
 
@@ -38,16 +64,21 @@ export default function ProfilePage() {
     avatar_url: '',
     email: ''
   })
+  const [originalName, setOriginalName] = useState('')
+
   const [showPasswordForm, setShowPasswordForm] = useState(false)
   const [passwordData, setPasswordData] = useState({
     current_password: '',
     new_password: '',
     confirm_password: ''
   })
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [changingPassword, setChangingPassword] = useState(false)
+
   const [theme, setTheme] = useState('system')
   const [showLogoutModal, setShowLogoutModal] = useState(false)
-  const [isEditingName, setIsEditingName] = useState(false)
 
   useEffect(() => {
     if (showLogoutModal) cancelLogoutRef.current?.focus()
@@ -96,13 +127,14 @@ export default function ProfilePage() {
     }
 
     try {
+      setLoading(true)
       const [response, settings] = await Promise.all([
         fetch(`${API_BASE_URL}/profile`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
         }),
-        getSystemSettings()
+        getSystemSettings().catch(() => null)
       ])
 
       if (!response.ok) {
@@ -110,18 +142,20 @@ export default function ProfilePage() {
       }
 
       const data = await response.json()
-      setUser(data.profile)
+      const profile = data.profile || {}
+      setUser(profile)
       setFormData({
-        full_name: data.profile.full_name || '',
-        avatar_url: data.profile.avatar_url || '',
-        email: data.profile.email || ''
+        full_name: profile.full_name || '',
+        avatar_url: profile.avatar_url || '',
+        email: profile.email || ''
       })
+      setOriginalName(profile.full_name || '')
       if (settings) {
         setPasswordSettings(settings)
       }
-    } catch (error) {
-      console.error('Failed to load profile:', error)
-      setError('Failed to load profile')
+    } catch (err) {
+      console.error('Failed to load profile:', err)
+      setNotification({ message: 'Unable to load profile data. Please refresh.', type: 'error' })
     } finally {
       setLoading(false)
     }
@@ -140,8 +174,9 @@ export default function ProfilePage() {
   const validatePassword = (password) => {
     const minLength = passwordSettings.password_min_length || 8
 
-    const requirements = []
-    requirements.push({ met: password.length >= minLength, text: `At least ${minLength} characters long` })
+    const requirements = [
+      { met: password.length >= minLength, text: `At least ${minLength} characters long` }
+    ]
 
     if (passwordSettings.password_require_uppercase) {
       requirements.push({ met: /[A-Z]/.test(password), text: 'At least one uppercase letter' })
@@ -163,8 +198,8 @@ export default function ProfilePage() {
   }
 
   const handleRemoveAvatar = async () => {
-    setUploadingAvatar(true)
-    setError(null)
+    setRemovingAvatar(true)
+    setNotification(null)
 
     const token = localStorage.getItem('authToken')
     try {
@@ -176,37 +211,37 @@ export default function ProfilePage() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to remove avatar')
+        throw new Error('Failed to remove avatar photo')
       }
 
       const data = await response.json()
       setUser(data.profile)
       setFormData(prev => ({ ...prev, avatar_url: '' }))
-      setSuccess('Avatar removed successfully')
-    } catch (error) {
-      console.error('Failed to remove avatar:', error)
-      setError('Failed to remove avatar')
+      setNotification({ message: 'Avatar photo removed successfully', type: 'success' })
+    } catch (err) {
+      console.error('Failed to remove avatar:', err)
+      setNotification({ message: err.message || 'Failed to remove avatar', type: 'error' })
     } finally {
-      setUploadingAvatar(false)
+      setRemovingAvatar(false)
     }
   }
 
-  const handlePasswordChange = async () => {
+  const handlePasswordChange = async (e) => {
+    e.preventDefault()
     const passwordValidation = validatePassword(passwordData.new_password)
-    
+
     if (!passwordValidation.allMet) {
-      setError('Password does not meet all requirements')
+      setNotification({ message: 'Password does not meet all security requirements', type: 'warning' })
       return
     }
 
     if (passwordData.new_password !== passwordData.confirm_password) {
-      setError('New passwords do not match')
+      setNotification({ message: 'New password and confirmation do not match', type: 'warning' })
       return
     }
 
     setChangingPassword(true)
-    setError(null)
-    setSuccess(null)
+    setNotification(null)
 
     const token = localStorage.getItem('authToken')
     try {
@@ -223,30 +258,34 @@ export default function ProfilePage() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        console.error('Password change error response:', errorData)
+        const errorData = await response.json().catch(() => ({}))
         throw new Error(errorData.message || errorData.error || 'Failed to change password')
       }
 
-      setSuccess('Password changed successfully')
+      setNotification({ message: 'Your password has been changed successfully.', type: 'success' })
       setPasswordData({
         current_password: '',
         new_password: '',
         confirm_password: ''
       })
       setShowPasswordForm(false)
-    } catch (error) {
-      console.error('Failed to change password:', error)
-      setError(error.message || 'Failed to change password')
+    } catch (err) {
+      console.error('Failed to change password:', err)
+      setNotification({ message: err.message || 'Failed to change password', type: 'error' })
     } finally {
       setChangingPassword(false)
     }
   }
 
-  const handleSave = async () => {
+  const handleSaveProfile = async (e) => {
+    if (e) e.preventDefault()
+    if (!formData.full_name.trim()) {
+      setNotification({ message: 'Please provide a valid full name.', type: 'warning' })
+      return
+    }
+
     setSaving(true)
-    setError(null)
-    setSuccess(null)
+    setNotification(null)
 
     const token = localStorage.getItem('authToken')
     try {
@@ -257,21 +296,22 @@ export default function ProfilePage() {
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          full_name: formData.full_name,
+          full_name: formData.full_name.trim(),
         }),
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
+        const errorData = await response.json().catch(() => ({}))
         throw new Error(errorData.message || errorData.error || 'Failed to update profile')
       }
 
       const data = await response.json()
       setUser(data.profile)
-      setSuccess('Profile updated successfully')
-    } catch (error) {
-      console.error('Failed to update profile:', error)
-      setError(error.message || 'Failed to update profile')
+      setOriginalName(data.profile.full_name || '')
+      setNotification({ message: 'Profile details updated successfully.', type: 'success' })
+    } catch (err) {
+      console.error('Failed to update profile:', err)
+      setNotification({ message: err.message || 'Failed to update profile', type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -283,17 +323,17 @@ export default function ProfilePage() {
 
     const validTypes = ['image/jpeg', 'image/png', 'image/webp']
     if (!validTypes.includes(file.type) || file.size > 5 * 1024 * 1024) {
-      setError('JPEG, JPG, PNG, WEBP (Max 5MB)')
+      setNotification({ message: 'Please select a JPEG, PNG, or WEBP image under 5MB.', type: 'warning' })
       e.target.value = ''
       return
     }
 
     setUploadingAvatar(true)
-    setError(null)
+    setNotification(null)
 
     const token = localStorage.getItem('authToken')
-    const formData = new FormData()
-    formData.append('avatar', file)
+    const uploadFormData = new FormData()
+    uploadFormData.append('avatar', file)
 
     try {
       const response = await fetch(`${API_BASE_URL}/profile/avatar`, {
@@ -301,32 +341,50 @@ export default function ProfilePage() {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
-        body: formData,
+        body: uploadFormData,
       })
 
       if (!response.ok) {
-        throw new Error('Failed to upload avatar')
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || errorData.error || 'Failed to upload photo')
       }
 
       const data = await response.json()
       setUser(data.profile)
       setFormData(prev => ({ ...prev, avatar_url: data.profile.avatar_url }))
-      setSuccess('Avatar uploaded successfully')
-    } catch (error) {
-      console.error('Failed to upload avatar:', error)
-      setError('Failed to upload avatar')
+      setNotification({ message: 'Profile photo uploaded successfully.', type: 'success' })
+    } catch (err) {
+      console.error('Failed to upload avatar:', err)
+      setNotification({ message: err.message || 'Failed to upload avatar photo', type: 'error' })
     } finally {
       setUploadingAvatar(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
     }
   }
 
+  const isNameChanged = formData.full_name.trim() !== originalName.trim()
+  const passwordValidation = validatePassword(passwordData.new_password)
+  const isPasswordValid =
+    passwordValidation.allMet &&
+    passwordData.current_password &&
+    passwordData.new_password === passwordData.confirm_password
+
   if (loading) {
     return (
-      <div className="p-8">
-        <div className="space-y-6 max-w-3xl mx-auto">
-          <SkeletonCard />
-          <SkeletonCard />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className={styles.page}>
+        <PageHeader
+          title="Profile"
+          subtitle="Loading your account settings…"
+          breadcrumbs={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Profile' }
+          ]}
+        />
+        <div className={styles.content}>
+          <div className="space-y-6">
+            <SkeletonCard />
             <SkeletonCard />
             <SkeletonCard />
           </div>
@@ -336,279 +394,529 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="p-8">
+    <div className={styles.page}>
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
+
       <PageHeader
-        title="Profile"
-        subtitle="Manage your account settings"
+        title="Profile & account"
+        subtitle="Manage your identity, security credentials, and workspace preferences."
         breadcrumbs={[
-          { label: 'Dashboard', href: userCtx?.role === 'officer' ? '/dashboard/officer' : userCtx?.role === 'field_crew' ? '/dashboard/field-crew' : '/dashboard' },
+          {
+            label: 'Dashboard',
+            href: userCtx?.role === 'officer'
+              ? '/dashboard/officer'
+              : userCtx?.role === 'field_crew'
+                ? '/dashboard/field-crew'
+                : '/dashboard'
+          },
           { label: 'Profile' }
         ]}
       />
 
-      <div className="space-y-6 max-w-3xl mx-auto">
-        {/* Profile Card - Avatar + Name + Email */}
-        <div className="bg-surface-elevated border border-border rounded-xl p-6 mt-8">
-          <div className="flex items-center gap-6 mb-6">
-            <div className="relative group flex-shrink-0">
-              <label htmlFor="avatar-upload" className="block relative cursor-pointer">
-                {formData.avatar_url ? (
-                  <img
-                    src={formData.avatar_url}
-                    alt="Avatar"
-                    className="w-20 h-20 rounded-xl object-cover"
-                  />
-                ) : (
-                  <div className="w-20 h-20 rounded-xl bg-[#1A1A1A] dark:bg-surface flex items-center justify-center text-white dark:text-text-primary font-bold text-2xl border border-border border-[#1A1A1A] ">
-                    {formData.full_name?.[0]?.toUpperCase() || 'U'}
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-xl">
-                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                  </svg>
-                </div>
-              </label>
-            </div>
-            <div className="flex-1 min-w-0">
-              <h2 className="text-xl font-bold text-text-primary truncate">{formData.full_name || 'User'}</h2>
-              <p className="text-sm text-text-muted truncate">{formData.email || 'No email provided'}</p>
-              <input
-                type="file"
-                accept="image/jpeg, image/png, image/webp"
-                onChange={handleAvatarUpload}
-                disabled={uploadingAvatar}
-                className="hidden"
-                id="avatar-upload"
+      <div className={styles.content}>
+        {/* 1. Hero Identity Card */}
+        <section className={styles.heroCard} aria-labelledby="identity-heading">
+          <div className={styles.avatarWrapper}>
+            {formData.avatar_url ? (
+              <SecureImage
+                src={formData.avatar_url}
+                alt={`Profile photo of ${formData.full_name || 'user'}`}
+                className={styles.avatarImg}
               />
-            </div>
-          </div>
-
-          <div className="border-t border-border pt-4">
-            <h3 className="font-mono text-xs uppercase tracking-widest text-text-muted mb-2">Profile Details</h3>
-            {!isEditingName ? (
-              <div className="flex items-center gap-4">
-                <span className="text-text-primary text-lg font-medium">{formData.full_name || 'N/A'}</span>
-                <button onClick={() => setIsEditingName(true)} className="p-1 hover:text-accent-green transition-colors text-text-muted">
-                  <Edit2 className="w-4 h-4" />
-                </button>
-              </div>
             ) : (
-              <div className="flex items-center gap-2 max-w-sm">
-                <input
-                  type="text"
-                  name="full_name"
-                  value={formData.full_name}
-                  onChange={handleInputChange}
-                  className="flex-1 bg-transparent border border-border border-[#1A1A1A]  rounded-xl px-3 py-1.5 focus:outline-none focus:border-[#ccff00] text-text-primary transition-colors"
-                  placeholder="Enter your full name"
-                />
-                <button
-                  onClick={async () => {
-                    await handleSave()
-                    setIsEditingName(false)
-                  }}
-                  disabled={saving}
-                  className="p-1.5 bg-accent-green text-white border border-border border-accent-green rounded-xl hover:bg-transparent hover:text-accent-green transition-colors disabled:opacity-50"
-                  title="Save"
-                >
-                  <Check className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => {
-                    setFormData(prev => ({ ...prev, full_name: user?.full_name || '' }))
-                    setIsEditingName(false)
-                  }}
-                  className="p-1.5 bg-surface-elevated text-text-primary border border-border border-[#1A1A1A]  rounded-xl hover:text-error transition-colors"
-                  title="Cancel"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+              <div className={styles.avatarFallback} aria-hidden="true">
+                {formData.full_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
               </div>
             )}
           </div>
 
-          {error && (
-            <div className="mt-4 p-3 bg-error/10 dark:bg-error/20 border border-border border-error/20 dark:border-error/30 rounded-xl">
-              <p className="text-sm text-error">{error}</p>
+          <div className={styles.heroDetails}>
+            <h1 id="identity-heading" className={styles.heroName}>
+              {formData.full_name || 'EcoPin User'}
+            </h1>
+            <p className={styles.heroEmail}>
+              <Mail size={16} aria-hidden="true" className="text-text-muted flex-shrink-0" />
+              <span>{formData.email || 'No email associated'}</span>
+            </p>
+            <div className={styles.heroBadges}>
+              <StatusBadge type="role" status={user?.role} size="medium" />
+              <span className={styles.agencyBadge}>
+                <Building2 size={14} aria-hidden="true" />
+                Pasig City · SWMO
+              </span>
             </div>
-          )}
 
-          {success && (
-            <div className="mt-4 p-3 bg-success/10 dark:bg-success/20 border border-border border-success/20 dark:border-success/30 rounded-xl">
-              <p className="text-sm text-success">{success}</p>
+            <div className={styles.avatarActions}>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg, image/png, image/webp"
+                onChange={handleAvatarUpload}
+                disabled={uploadingAvatar}
+                className="sr-only"
+                id="avatar-upload"
+              />
+              <label htmlFor="avatar-upload" className={styles.photoButton}>
+                {uploadingAvatar ? (
+                  <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+                ) : (
+                  <Camera size={16} aria-hidden="true" />
+                )}
+                <span>{uploadingAvatar ? 'Uploading…' : 'Change photo'}</span>
+              </label>
+
+              {formData.avatar_url && (
+                <button
+                  type="button"
+                  onClick={handleRemoveAvatar}
+                  disabled={removingAvatar || uploadingAvatar}
+                  className={styles.removePhotoButton}
+                >
+                  {removingAvatar ? (
+                    <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+                  ) : (
+                    <Trash2 size={16} aria-hidden="true" />
+                  )}
+                  <span>{removingAvatar ? 'Removing…' : 'Remove photo'}</span>
+                </button>
+              )}
             </div>
-          )}
-        </div>
+            <p className="text-xs text-text-muted mt-2">
+              Accepts JPG, PNG, or WEBP up to 5MB.
+            </p>
+          </div>
+        </section>
 
-        {/* Password Card */}
-        <div className="bg-surface-elevated border border-border rounded-xl p-6">
-          <div className="flex items-center justify-between mb-4 border-b border-border pb-2">
-            <h2 className="font-mono text-xs uppercase tracking-widest text-text-muted">Security</h2>
+        {/* 2. Personal Information Card */}
+        <section className={styles.card} aria-labelledby="personal-info-heading">
+          <div className={styles.cardHeader}>
+            <div>
+              <h2 id="personal-info-heading">Personal information</h2>
+              <p className={styles.cardDescription}>
+                Update your display name as it appears to team members across assignments and logs.
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={handleSaveProfile}>
+            <div className={styles.formGrid}>
+              <div className={styles.formGroup}>
+                <label htmlFor="full_name" className={styles.label}>
+                  Full name
+                </label>
+                <input
+                  id="full_name"
+                  type="text"
+                  name="full_name"
+                  value={formData.full_name}
+                  onChange={handleInputChange}
+                  placeholder="e.g. Maria Santos"
+                  className={styles.input}
+                  required
+                />
+                <p className={styles.helperText}>
+                  Shown on dispatch operations, notes, and activity records.
+                </p>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label htmlFor="email" className={styles.label}>
+                  Email address
+                </label>
+                <div className="relative flex items-center">
+                  <input
+                    id="email"
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    disabled
+                    className={styles.input}
+                    aria-describedby="email-note"
+                  />
+                  <Lock size={16} className="absolute right-3.5 text-text-muted pointer-events-none" aria-hidden="true" />
+                </div>
+                <p id="email-note" className={styles.helperText}>
+                  Managed by your system administrator. Cannot be changed here.
+                </p>
+              </div>
+
+              <div className={styles.formGroupFull}>
+                <label htmlFor="role-display" className={styles.label}>
+                  Assigned permissions role
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    id="role-display"
+                    type="text"
+                    value={user?.role ? user.role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Citizen'}
+                    disabled
+                    className={`${styles.input} max-w-xs`}
+                  />
+                  <span className="text-xs text-text-secondary">
+                    {user?.role === 'admin'
+                      ? 'Full platform administration and system configuration.'
+                      : user?.role === 'officer'
+                        ? 'Command center oversight, task planning, and operational reviews.'
+                        : user?.role === 'field_crew'
+                          ? 'Field cleanup execution and verification updates.'
+                          : 'Public exploration and reporting access.'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.actionBar}>
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, full_name: originalName }))}
+                disabled={!isNameChanged || saving}
+                className={styles.btnSecondary}
+              >
+                Reset
+              </button>
+              <button
+                type="submit"
+                disabled={!isNameChanged || saving}
+                className={styles.btnPrimary}
+              >
+                {saving ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+                    Saving changes…
+                  </>
+                ) : (
+                  'Save changes'
+                )}
+              </button>
+            </div>
+          </form>
+        </section>
+
+        {/* 3. Security & Password Card */}
+        <section className={styles.card} aria-labelledby="security-heading">
+          <div className={styles.cardHeader}>
+            <div>
+              <h2 id="security-heading">Security & password</h2>
+              <p className={styles.cardDescription}>
+                Keep your account protected with a strong, policy-compliant password.
+              </p>
+            </div>
             <button
-              onClick={() => setShowPasswordForm(!showPasswordForm)}
-              className="btn-secondary text-sm py-1.5 px-3"
+              type="button"
+              onClick={() => {
+                setShowPasswordForm(!showPasswordForm)
+                setPasswordData({ current_password: '', new_password: '', confirm_password: '' })
+              }}
+              className={styles.btnSecondary}
             >
-              {showPasswordForm ? 'Cancel' : 'Change Password'}
+              <KeyRound size={16} aria-hidden="true" />
+              <span>{showPasswordForm ? 'Cancel' : 'Change password'}</span>
             </button>
           </div>
 
-          {showPasswordForm && (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">
-                  Current Password
-                </label>
-                <input
-                  type="password"
-                  name="current_password"
-                  value={passwordData.current_password}
-                  onChange={handlePasswordInputChange}
-                  className="w-full bg-transparent border border-border border-[#1A1A1A]  rounded-xl px-3 py-2 focus:outline-none focus:border-[#ccff00] text-text-primary transition-colors"
-                  placeholder="Enter current password"
-                />
+          {!showPasswordForm ? (
+            <div className={styles.securitySummary}>
+              <div className={styles.securitySummaryLeft}>
+                <span className={styles.securityIcon}>
+                  <Shield size={20} aria-hidden="true" />
+                </span>
+                <div>
+                  <strong className="block text-sm font-semibold text-text-primary">
+                    Authentication password is active
+                  </strong>
+                  <p className="text-xs text-text-secondary mt-0.5">
+                    Meets SWMO security requirements. Change your password periodically to keep access secure.
+                  </p>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">
-                  New Password
+            </div>
+          ) : (
+            <form onSubmit={handlePasswordChange} className="space-y-5">
+              <div className={styles.formGroup}>
+                <label htmlFor="current_password" className={styles.label}>
+                  Current password
                 </label>
-                <input
-                  type="password"
-                  name="new_password"
-                  value={passwordData.new_password}
-                  onChange={handlePasswordInputChange}
-                  className="w-full bg-transparent border border-border border-[#1A1A1A]  rounded-xl px-3 py-2 focus:outline-none focus:border-[#ccff00] text-text-primary transition-colors"
-                  placeholder="Enter new password"
-                />
+                <div className={styles.passwordWrapper}>
+                  <input
+                    id="current_password"
+                    type={showCurrentPassword ? 'text' : 'password'}
+                    name="current_password"
+                    value={passwordData.current_password}
+                    onChange={handlePasswordInputChange}
+                    placeholder="Enter current password"
+                    className={styles.input}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    className={styles.passwordToggle}
+                    aria-label={showCurrentPassword ? 'Hide current password' : 'Show current password'}
+                  >
+                    {showCurrentPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label htmlFor="new_password" className={styles.label}>
+                  New password
+                </label>
+                <div className={styles.passwordWrapper}>
+                  <input
+                    id="new_password"
+                    type={showNewPassword ? 'text' : 'password'}
+                    name="new_password"
+                    value={passwordData.new_password}
+                    onChange={handlePasswordInputChange}
+                    placeholder="Enter new password"
+                    className={styles.input}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className={styles.passwordToggle}
+                    aria-label={showNewPassword ? 'Hide new password' : 'Show new password'}
+                  >
+                    {showNewPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+                  </button>
+                </div>
+
                 {passwordData.new_password && (
-                  <div className="mt-2">
-                    <div className="flex gap-1 mb-2">
-                      {Array.from({ length: validatePassword(passwordData.new_password).requirements.length }, (_, i) => i + 1).map((i) => (
+                  <div className={styles.meterContainer}>
+                    <div className={styles.meterTrack} aria-hidden="true">
+                      {Array.from({ length: passwordValidation.requirements.length }, (_, i) => i + 1).map((i) => (
                         <div
                           key={i}
-                          className={`h-1 flex-1 rounded ${
-                            i <= validatePassword(passwordData.new_password).metCount
-                              ? validatePassword(passwordData.new_password).allMet
-                                ? 'bg-success'
-                                : 'bg-warning'
-                              : 'bg-border'
-                          }`}
+                          className={styles.meterSegment}
+                          style={{
+                            backgroundColor:
+                              i <= passwordValidation.metCount
+                                ? passwordValidation.allMet
+                                  ? 'var(--success)'
+                                  : 'var(--warning)'
+                                : 'var(--border)'
+                          }}
                         />
                       ))}
                     </div>
-                    <ul className="space-y-1">
-                      {validatePassword(passwordData.new_password).requirements.map((req, idx) => (
-                        <li key={idx} className="text-xs flex items-center gap-2">
-                          <svg
-                            className={`w-4 h-4 ${req.met ? 'text-success' : 'text-text-muted'}`}
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            {req.met ? (
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            ) : (
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            )}
-                          </svg>
-                          <span className={req.met ? 'text-success' : 'text-text-muted'}>{req.text}</span>
+                    <ul className={styles.requirementsList} aria-label="Password requirements">
+                      {passwordValidation.requirements.map((req, idx) => (
+                        <li key={idx} className={`${styles.reqItem} ${req.met ? styles.reqItemMet : ''}`}>
+                          {req.met ? (
+                            <CheckCircle2 size={14} aria-hidden="true" className="text-success flex-shrink-0" />
+                          ) : (
+                            <span className="w-3.5 h-3.5 rounded-full border border-border flex-shrink-0" aria-hidden="true" />
+                          )}
+                          <span>{req.text}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
                 )}
               </div>
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-2">
-                  Confirm New Password
+
+              <div className={styles.formGroup}>
+                <label htmlFor="confirm_password" className={styles.label}>
+                  Confirm new password
                 </label>
-                <input
-                  type="password"
-                  name="confirm_password"
-                  value={passwordData.confirm_password}
-                  onChange={handlePasswordInputChange}
-                  className="w-full bg-transparent border border-border border-[#1A1A1A]  rounded-xl px-3 py-2 focus:outline-none focus:border-[#ccff00] text-text-primary transition-colors"
-                  placeholder="Confirm new password"
-                />
+                <div className={styles.passwordWrapper}>
+                  <input
+                    id="confirm_password"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    name="confirm_password"
+                    value={passwordData.confirm_password}
+                    onChange={handlePasswordInputChange}
+                    placeholder="Confirm new password"
+                    className={styles.input}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className={styles.passwordToggle}
+                    aria-label={showConfirmPassword ? 'Hide password confirmation' : 'Show password confirmation'}
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+                  </button>
+                </div>
                 {passwordData.confirm_password && (
-                  <p className={`text-xs mt-1 ${passwordData.new_password === passwordData.confirm_password ? 'text-success' : 'text-error'}`}>
-                    {passwordData.new_password === passwordData.confirm_password ? 'Passwords match' : 'Passwords do not match'}
+                  <p
+                    className="text-xs mt-1.5 flex items-center gap-1.5"
+                    style={{
+                      color: passwordData.new_password === passwordData.confirm_password
+                        ? 'var(--success)'
+                        : 'var(--error)'
+                    }}
+                  >
+                    {passwordData.new_password === passwordData.confirm_password ? (
+                      <>
+                        <CheckCircle2 size={14} aria-hidden="true" />
+                        <span>Passwords match</span>
+                      </>
+                    ) : (
+                      <>
+                        <AlertCircle size={14} aria-hidden="true" />
+                        <span>Passwords do not match</span>
+                      </>
+                    )}
                   </p>
                 )}
               </div>
-              <button
-                onClick={handlePasswordChange}
-                disabled={changingPassword || !validatePassword(passwordData.new_password).allMet || passwordData.new_password !== passwordData.confirm_password}
-                className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {changingPassword ? 'Changing...' : 'Change Password'}
-              </button>
-            </div>
-          )}
 
-          {!showPasswordForm && (
-            <p className="text-sm text-text-muted">Update your password to keep your account secure.</p>
-          )}
-        </div>
-
-        {/* Appearance + Logout Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-surface-elevated border border-border rounded-xl p-4">
-            <h2 className="font-mono text-xs uppercase tracking-widest text-text-muted border-b border-border pb-2 mb-4">Appearance</h2>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-text-muted mt-1">Switch theme preference</p>
-              </div>
-              <div className="flex border border-border border-[#1A1A1A]  rounded-xl overflow-hidden">
+              <div className={styles.actionBar}>
                 <button
-                  onClick={() => toggleTheme('system')}
-                  className={`px-3 py-1 text-xs font-mono uppercase tracking-wider transition-colors ${theme === 'system' ? 'bg-[#1A1A1A] dark:bg-surface text-white dark:text-text-primary' : 'bg-transparent text-text-muted hover:text-text-primary'}`}
+                  type="button"
+                  onClick={() => setShowPasswordForm(false)}
+                  className={styles.btnSecondary}
                 >
-                  Sys
+                  Cancel
                 </button>
                 <button
-                  onClick={() => toggleTheme('light')}
-                  className={`px-3 py-1 text-xs font-mono uppercase tracking-wider border-l border-[#1A1A1A]  transition-colors ${theme === 'light' ? 'bg-[#1A1A1A] dark:bg-surface text-white dark:text-text-primary' : 'bg-transparent text-text-muted hover:text-text-primary'}`}
+                  type="submit"
+                  disabled={changingPassword || !isPasswordValid}
+                  className={styles.btnPrimary}
                 >
-                  Lt
-                </button>
-                <button
-                  onClick={() => toggleTheme('dark')}
-                  className={`px-3 py-1 text-xs font-mono uppercase tracking-wider border-l border-[#1A1A1A]  transition-colors ${theme === 'dark' ? 'bg-[#1A1A1A] dark:bg-surface text-white dark:text-text-primary' : 'bg-transparent text-text-muted hover:text-text-primary'}`}
-                >
-                  Dk
+                  {changingPassword ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+                      Updating password…
+                    </>
+                  ) : (
+                    'Update password'
+                  )}
                 </button>
               </div>
+            </form>
+          )}
+        </section>
+
+        {/* 4. Appearance & Theme Card */}
+        <section className={styles.card} aria-labelledby="appearance-heading">
+          <div className={styles.cardHeader}>
+            <div>
+              <h2 id="appearance-heading">Appearance & theme</h2>
+              <p className={styles.cardDescription}>
+                Select how the EcoPin workspace appears on this device. Preference is saved automatically.
+              </p>
             </div>
           </div>
 
-          <div className="bg-surface-elevated border border-border rounded-xl p-4">
-            <h2 className="font-mono text-xs uppercase tracking-widest text-text-muted border-b border-border pb-2 mb-4 text-error">Danger Zone</h2>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-text-muted mt-1">End your current session securely</p>
-              </div>
-              <button
-                onClick={() => setShowLogoutModal(true)}
-                className="px-4 py-1.5 bg-error/10 text-error border border-border border-error/30 rounded-xl hover:bg-error/20 font-medium text-sm transition-colors cursor-pointer"
-              >
-                Log Out
-              </button>
-            </div>
+          <div className={styles.themeGrid} role="radiogroup" aria-label="Theme preference">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={theme === 'system'}
+              onClick={() => toggleTheme('system')}
+              className={`${styles.themeOption} ${theme === 'system' ? styles.themeOptionActive : ''}`}
+            >
+              <span className={styles.themeIconWrapper}>
+                <Monitor size={20} aria-hidden="true" />
+              </span>
+              <span className={styles.themeTitle}>
+                <span>System default</span>
+                {theme === 'system' && <Check size={16} aria-hidden="true" className="text-workspace-link" />}
+              </span>
+              <span className={styles.themeDesc}>
+                Automatically matches your operating system setting.
+              </span>
+            </button>
+
+            <button
+              type="button"
+              role="radio"
+              aria-checked={theme === 'light'}
+              onClick={() => toggleTheme('light')}
+              className={`${styles.themeOption} ${theme === 'light' ? styles.themeOptionActive : ''}`}
+            >
+              <span className={styles.themeIconWrapper}>
+                <Sun size={20} aria-hidden="true" />
+              </span>
+              <span className={styles.themeTitle}>
+                <span>Light mode</span>
+                {theme === 'light' && <Check size={16} aria-hidden="true" className="text-workspace-link" />}
+              </span>
+              <span className={styles.themeDesc}>
+                Clean daytime theme with crisp contrast and white surfaces.
+              </span>
+            </button>
+
+            <button
+              type="button"
+              role="radio"
+              aria-checked={theme === 'dark'}
+              onClick={() => toggleTheme('dark')}
+              className={`${styles.themeOption} ${theme === 'dark' ? styles.themeOptionActive : ''}`}
+            >
+              <span className={styles.themeIconWrapper}>
+                <Moon size={20} aria-hidden="true" />
+              </span>
+              <span className={styles.themeTitle}>
+                <span>Dark mode</span>
+                {theme === 'dark' && <Check size={16} aria-hidden="true" className="text-workspace-link" />}
+              </span>
+              <span className={styles.themeDesc}>
+                Neutral charcoal dark theme designed for low-light environments.
+              </span>
+            </button>
           </div>
-        </div>
+        </section>
+
+        {/* 5. Session Management (Danger Zone) */}
+        <section className={styles.dangerCard} aria-labelledby="session-heading">
+          <div className={styles.dangerHeader}>
+            <div>
+              <h2 id="session-heading" className="text-lg font-semibold text-error tracking-tight">
+                Session management
+              </h2>
+              <p className={styles.dangerNotice}>
+                Signing out will clear your authorization token on this device. You will need to sign in again to access the dashboard.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowLogoutModal(true)}
+              className={styles.logoutButton}
+            >
+              <LogOut size={16} aria-hidden="true" />
+              <span>Sign out</span>
+            </button>
+          </div>
+        </section>
       </div>
 
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (
-        <Dialog open={showLogoutModal} onClose={() => setShowLogoutModal(false)} dismissible={!loggingOut} labelledBy="logout-title">
+        <Dialog
+          open={showLogoutModal}
+          onClose={() => setShowLogoutModal(false)}
+          dismissible={!loggingOut}
+          labelledBy="logout-title"
+        >
           <div className={logoutStyles.panel}>
             <div className={logoutStyles.header}>
-              <span className={logoutStyles.icon}><LogOut size={24} aria-hidden="true" /></span>
-              <button type="button" aria-label="Close logout confirmation" onClick={() => setShowLogoutModal(false)} disabled={loggingOut} className={logoutStyles.close}><X size={20} aria-hidden="true" /></button>
+              <span className={logoutStyles.icon}>
+                <LogOut size={24} aria-hidden="true" />
+              </span>
+              <button
+                type="button"
+                aria-label="Close logout confirmation"
+                onClick={() => setShowLogoutModal(false)}
+                disabled={loggingOut}
+                className={logoutStyles.close}
+              >
+                <X size={20} aria-hidden="true" />
+              </button>
             </div>
-            <h2 id="logout-title">Log out of EcoPin?</h2>
-            <p>You’ll need to sign in again to access your account.</p>
+            <h2 id="logout-title">Sign out of EcoPin?</h2>
+            <p>You will need to enter your credentials again to access your account.</p>
             <div className={logoutStyles.actions}>
               <button
                 ref={cancelLogoutRef}
@@ -625,7 +933,7 @@ export default function ProfilePage() {
                 onClick={handleLogout}
                 className={logoutStyles.confirm}
               >
-                {loggingOut ? 'Logging out…' : 'Log out'}
+                {loggingOut ? 'Signing out…' : 'Sign out'}
               </button>
             </div>
           </div>

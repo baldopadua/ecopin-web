@@ -10,7 +10,8 @@
     "test:public-map": "node --test --test-isolation=none tests/public-report-page.test.mjs",
     "test:reports": "node --env-file=.env --test tests/reports-access.test.mjs",
     "test:analytics": "node --test --test-isolation=none tests/report-analytics.test.mjs tests/sweeper-analytics.test.mjs",
-    "test": "npm run test:public-map && node --test tests/private-media.test.mjs && node --test tests/optimization-response.test.mjs && npm run test:reports && npm run test:analytics"
+    "test:sweeper-settings": "node --test --test-isolation=none tests/sweeper-config.test.mjs",
+    "test": "npm run test:public-map && node --test tests/rate-limiter.test.mjs && node --test tests/private-media.test.mjs && node --test tests/optimization-response.test.mjs && node --env-file=.env --test tests/batch-evidence-cache.test.mjs && npm run test:reports && npm run test:analytics"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.4",

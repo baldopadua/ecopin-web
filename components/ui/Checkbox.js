@@ -1,4 +1,5 @@
 import React from 'react'
+import { Check } from 'lucide-react'
 
 export default function Checkbox({ className = '', labelClassName = 'text-sm text-text-primary', label, checked, onChange, id, ...props }) {
   return (
@@ -14,9 +15,7 @@ export default function Checkbox({ className = '', labelClassName = 'text-sm tex
         />
         <div className={`w-4 h-4 border border-border flex items-center justify-center transition-colors ${checked ? 'bg-primary border-primary' : 'border-border bg-surface-elevated'}`}>
           {checked && (
-            <svg className="w-3 h-3 text-white dark:text-text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-            </svg>
+            <Check size={12} strokeWidth={3} className="text-white dark:text-text-primary" aria-hidden="true" />
           )}
         </div>
         {label && <span className={labelClassName}>{label}</span>}

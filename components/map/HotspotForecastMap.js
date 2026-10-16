@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, GeoJSON, useMap, Marker } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { AlertCircle } from 'lucide-react';
 
 if (typeof window !== 'undefined') {
   window.L = L;
@@ -302,11 +303,9 @@ export default function HotspotForecastMap({ predictions, timeHorizon, viewModeO
     return (
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        height: '100%', gap: 12, color: '#6b7280',
+        height: '100%', gap: 12, color: 'var(--text-muted)',
       }}>
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-          <circle cx="12" cy="12" r="10" /><path d="M12 8v4m0 4h.01" />
-        </svg>
+        <AlertCircle size={40} strokeWidth={1.5} aria-hidden="true" />
         <p style={{ margin: 0, fontSize: 14 }}>
           {timeHorizon === 'historical' 
             ? 'No historical data available for this range. Try selecting different dates.' 
