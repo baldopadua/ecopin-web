@@ -8,7 +8,6 @@ import StatsCard from '@/components/ui/StatsCard'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { useUser } from '@/components/auth/UserContext'
 import { OfficerGuard } from '@/components/auth/RequireRole'
-import TacticalCanvas from '@/components/map/TacticalCanvas'
 import { Target, Users, AlertTriangle, CloudLightning, ChevronRight, CheckCircle2, Search, Map } from 'lucide-react'
 
 export default function OfficerHomepage() {
@@ -90,8 +89,8 @@ export default function OfficerHomepage() {
   // Critical hotzones: top 3 highest severity (now using priority_score)
   const criticalClusters = [...clusters].sort((a, b) => (b.priority_score || 0) - (a.priority_score || 0)).slice(0, 3)
   
-  // Action queue: work queue items minus active tasks, up to 5
-  const actionQueueItems = workQueue.slice(0, 5)
+  // Keep dashboard previews compact; full lists remain available on their pages.
+  const actionQueueItems = workQueue.slice(0, 3)
 
   const optimizationScore = latestRun?.metrics?.efficiency_score ? Math.round(latestRun.metrics.efficiency_score * 100) : 92
 
@@ -128,9 +127,9 @@ export default function OfficerHomepage() {
                <Link
                  href="/dashboard/officer/operations?status=in_progress"
                  onClick={(e) => e.stopPropagation()}
-                 className="text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1 text-text-secondary group-hover:text-text-primary group-hover:underline"
+                 className="text-xs font-medium flex items-center gap-1 text-text-secondary group-hover:text-text-primary group-hover:underline transition-colors"
                >
-                 View Operations
+                 View operations
                  <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
                </Link>
              </div>
@@ -138,9 +137,23 @@ export default function OfficerHomepage() {
            <StatsCard 
              title="Unresolved Reports" 
              value={reports.length} 
+             subtitle={!loading && reports.length > 0 ? `${reports.length} report${reports.length === 1 ? '' : 's'} awaiting action.` : 'No unresolved reports.'}
              icon={<Search className="w-6 h-6" />} 
              color="warning"
-           />
+             onClick={() => router.push('/dashboard/officer/reports')}
+             className="group transition-all hover:border-border dark:hover:border-white"
+           >
+             <div className="mt-3 pt-2.5 border-t border-border flex items-center justify-between">
+               <Link
+                 href="/dashboard/officer/reports"
+                 onClick={(e) => e.stopPropagation()}
+                 className="text-xs font-medium flex items-center gap-1 text-text-secondary group-hover:text-text-primary group-hover:underline transition-colors"
+               >
+                 View reports
+                 <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+               </Link>
+             </div>
+           </StatsCard>
            <StatsCard 
              title="SLA Risk" 
              value={slaRiskTasks.length} 
@@ -154,11 +167,11 @@ export default function OfficerHomepage() {
                <Link
                  href={slaRiskTasks.length > 0 ? '/dashboard/officer/reports?filter=overdue' : '/dashboard/officer/reports'}
                  onClick={(e) => e.stopPropagation()}
-                 className={`text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1 group-hover:underline ${
+                 className={`text-xs font-medium flex items-center gap-1 group-hover:underline transition-colors ${
                    slaRiskTasks.length > 0 ? 'text-error dark:text-red-400' : 'text-text-secondary group-hover:text-text-primary'
                  }`}
                >
-                 {slaRiskTasks.length > 0 ? 'View Overdue Reports' : 'View Reports'}
+                 {slaRiskTasks.length > 0 ? 'View overdue reports' : 'View reports'}
                  <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
                </Link>
              </div>
@@ -176,32 +189,32 @@ export default function OfficerHomepage() {
                <Link
                  href={manualReviewTasks.length > 0 ? '/dashboard/officer/reports?filter=manual_review' : '/dashboard/officer/reports'}
                  onClick={(e) => e.stopPropagation()}
-                 className={`text-xs font-mono font-bold uppercase tracking-wider flex items-center gap-1 group-hover:underline ${
+                 className={`text-xs font-medium flex items-center gap-1 group-hover:underline transition-colors ${
                    manualReviewTasks.length > 0 ? 'text-warning dark:text-yellow-400' : 'text-text-secondary group-hover:text-text-primary'
                  }`}
                >
-                 {manualReviewTasks.length > 0 ? 'Review Reports' : 'View Reports'}
+                 {manualReviewTasks.length > 0 ? 'Review reports' : 'View reports'}
                  <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
                </Link>
              </div>
            </StatsCard>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
            {/* Left Column: Action Queue & Active Targets */}
-           <div className="lg:col-span-2 space-y-8">
+           <div className="min-w-0 xl:col-span-2 space-y-6">
               {/* Active Targets - In-Progress Cleanup Tasks */}
-              <div className="card border border-border dark:border-[#333333] rounded-xl p-6">
-                 <div className="flex justify-between items-center mb-6 border-b border-border pb-3">
-                    <h2 className="text-xl font-bold tracking-tight uppercase flex items-center gap-2">
+              <div className="card border border-border dark:border-[#333333] rounded-xl p-4 sm:p-6">
+                 <div className="flex flex-wrap justify-between items-center gap-3 mb-4 border-b border-border pb-3">
+                    <h2 className="text-lg md:text-xl font-semibold tracking-tight text-text-primary flex flex-wrap items-center gap-2">
                        Active Targets
                        {!loading && (
-                          <span className="text-xs font-mono font-bold bg-warning/10 text-warning border border-warning/30 px-2 py-0.5 rounded-full">
+                          <span className="text-xs font-medium bg-warning/10 text-warning border border-warning/30 px-2.5 py-0.5 rounded-full">
                              {activeTasks.length} in progress
                           </span>
                        )}
                     </h2>
-                    <Link href="/dashboard/officer/operations?status=in_progress" className="text-sm font-bold text-text-secondary hover:text-accent-green transition-colors flex items-center">
+                    <Link href="/dashboard/officer/operations?status=in_progress" className="text-sm font-medium text-text-secondary hover:text-accent-green transition-colors flex items-center gap-0.5">
                        View All <ChevronRight className="w-4 h-4 ml-1" />
                     </Link>
                  </div>
@@ -217,7 +230,7 @@ export default function OfficerHomepage() {
                    </div>
                  ) : (
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     {activeTasks.slice(0, 6).map(task => {
+                     {activeTasks.slice(0, 2).map(task => {
                         const crewCount = task.assigned_crew_ids?.length || (task.assigned_to ? 1 : 0);
                         const reportCount = task.reports?.length || task.report_ids?.length || 0;
                         return (
@@ -227,24 +240,24 @@ export default function OfficerHomepage() {
                               onClick={() => router.push(`/dashboard/officer/operations/${task.id}`)}
                            >
                               <div>
-                                 <div className="flex justify-between items-start gap-2 mb-2">
-                                    <h3 className="font-bold text-text-primary line-clamp-1 flex-1 group-hover:text-accent-green transition-colors">
+                                 <div className="flex flex-wrap justify-between items-start gap-2 mb-2">
+                                    <h3 className="text-base font-semibold text-text-primary line-clamp-1 min-w-0 flex-1 group-hover:text-accent-green transition-colors leading-snug">
                                        {task.title || `Task #${task.id?.slice(0, 8)}`}
                                     </h3>
                                     <StatusBadge status={task.status || 'in_progress'} type="task" />
                                  </div>
-                                 <p className="text-sm text-text-secondary line-clamp-2 mb-3 min-h-[2.5rem]">
+                                 <p className="text-sm text-text-secondary line-clamp-2 mb-3 min-h-[2.5rem] leading-relaxed [overflow-wrap:anywhere]">
                                     {task.description || 'No description provided.'}
                                  </p>
                               </div>
-                              <div className="pt-2 border-t border-border/50 flex justify-between items-center text-xs">
+                              <div className="pt-2 border-t border-border/50 flex flex-wrap gap-2 justify-between items-center text-xs">
                                  <span className="text-text-muted">
-                                    Assigned: <strong className={crewCount > 0 ? "text-accent-green" : "text-text-muted"}>
+                                    Assigned: <span className={crewCount > 0 ? "font-medium text-accent-green" : "font-medium text-text-muted"}>
                                        {crewCount > 0 ? `${crewCount} Crew Dispatched` : 'Unassigned'}
-                                    </strong>
+                                    </span>
                                  </span>
                                  {reportCount > 0 && (
-                                    <span className="font-mono text-text-secondary font-medium">
+                                    <span className="text-xs font-medium text-text-secondary">
                                        {reportCount} report{reportCount > 1 ? 's' : ''}
                                     </span>
                                  )}
@@ -257,12 +270,12 @@ export default function OfficerHomepage() {
               </div>
 
               {/* Action Queue */}
-              <div className="card border border-border dark:border-[#333333] rounded-xl p-6">
-                 <div className="flex justify-between items-center mb-6 border-b border-border pb-3">
-                    <h2 className="text-xl font-bold tracking-tight uppercase">Action Queue</h2>
+              <div className="card border border-border dark:border-[#333333] rounded-xl p-4 sm:p-6">
+                 <div className="flex flex-wrap justify-between items-center gap-3 mb-4 border-b border-border pb-3">
+                    <h2 className="text-lg md:text-xl font-semibold tracking-tight text-text-primary">Action Queue</h2>
                     <button 
                       onClick={() => router.push('/dashboard/officer/optimization')}
-                      className="btn-primary text-sm px-4 py-2 flex items-center gap-2"
+                      className="btn-primary text-sm font-medium px-4 py-2 flex items-center gap-2"
                     >
                       <CloudLightning className="w-4 h-4" /> Run Optimization
                     </button>
@@ -275,46 +288,49 @@ export default function OfficerHomepage() {
                  ) : actionQueueItems.length === 0 ? (
                    <div className="text-center py-8 text-text-muted">
                       <CheckCircle2 className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                      <p className="font-medium">Queue is empty</p>
-                      <p className="text-sm">All pending actions have been dispatched.</p>
+                      <p className="text-base font-semibold text-text-primary">Queue is empty</p>
+                      <p className="text-sm text-text-muted mt-1">All pending actions have been dispatched.</p>
                    </div>
                  ) : (
                    <div className="space-y-4">
                      {actionQueueItems.map(item => (
-                       <div key={item.id} className="border border-border p-4 hover:border-accent-green transition-colors bg-surface-elevated">
-                          <div className="flex justify-between items-start mb-2">
-                             <div className="flex items-center gap-3">
-                                <span className="bg-warning text-text-primary text-xs font-bold px-2 py-1 uppercase tracking-widest">Pending</span>
-                                <h3 className="font-bold text-text-primary text-lg">{item.title || `Cluster ${item.id.slice(0,8)}`}</h3>
+                       <div key={item.id} className="border border-border p-4 hover:border-accent-green transition-colors bg-surface-elevated rounded-lg">
+                          <div className="flex flex-wrap justify-between items-start gap-3 mb-2">
+                             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                                <span className="bg-warning/15 text-warning border border-warning/30 text-xs font-medium px-2.5 py-0.5 rounded-full">Pending</span>
+                                <h3 className="text-base font-semibold text-text-primary leading-snug line-clamp-2 [overflow-wrap:anywhere]">{item.title || `Cluster ${item.id.slice(0,8)}`}</h3>
                              </div>
                              <div className="text-right">
-                                <span className="text-xs text-text-muted block">Priority Score</span>
-                                <span className="font-bold text-error">{(item.priority_score || 0).toFixed(1)}/100</span>
+                                <span className="text-xs font-medium text-text-muted block">Priority score</span>
+                                <span className="text-sm font-semibold text-error">{(item.priority_score || 0).toFixed(1)}/100</span>
                              </div>
                           </div>
-                          <div className="flex justify-between items-end mt-4">
-                             <div className="text-sm text-text-secondary flex gap-4">
-                                <span>Reports: <strong className="text-text-primary">{item.report_count || item.report_ids?.length || 0}</strong></span>
-                                <span>Radius: <strong className="text-text-primary">{Math.round(item.radius_meters || 50)}m</strong></span>
+                          <div className="flex flex-wrap gap-3 justify-between items-end mt-3">
+                             <div className="text-sm text-text-secondary flex flex-wrap gap-x-4 gap-y-1">
+                                <span>Reports: <span className="font-semibold text-text-primary">{item.report_count || item.report_ids?.length || 0}</span></span>
+                                <span>Radius: <span className="font-semibold text-text-primary">{Math.round(item.radius_meters || 50)}m</span></span>
                              </div>
                              <button 
                                onClick={() => router.push(`/dashboard/officer/operations/create?preselect=${item.id}`)}
-                               className="text-sm font-bold text-accent-green hover:underline flex items-center gap-1"
+                               className="text-sm font-medium text-accent-green hover:underline flex items-center gap-1 transition-colors"
                              >
                                Dispatch <ChevronRight className="w-4 h-4" />
                              </button>
                           </div>
                        </div>
                      ))}
+                     <Link href="/dashboard/officer/optimization" className="text-sm font-medium text-accent-green hover:underline flex items-center gap-1">
+                        View full action queue <ChevronRight className="w-4 h-4" />
+                     </Link>
                    </div>
                  )}
               </div>
            </div>
 
-            <div className="space-y-8">
-              <div className="card border border-border rounded-xl p-6 bg-surface-elevated text-text-primary h-full min-h-[500px]">
-                 <div className="flex justify-between items-center mb-6 border-b border-border pb-3">
-                    <h2 className="text-xl font-bold tracking-tight uppercase flex items-center gap-2">
+            <div className="min-w-0">
+              <div className="card border border-border rounded-xl p-4 sm:p-6 bg-surface-elevated text-text-primary">
+                 <div className="flex flex-wrap justify-between items-center gap-3 mb-4 border-b border-border pb-3">
+                    <h2 className="text-lg md:text-xl font-semibold tracking-tight text-text-primary flex flex-wrap items-center gap-2">
                        <Target className="w-5 h-5 text-error" /> Critical Hotzones
                     </h2>
                  </div>
@@ -324,39 +340,39 @@ export default function OfficerHomepage() {
                      {[1,2,3].map(i => <div key={i} className="h-32 bg-surface border border-border" />)}
                    </div>
                  ) : criticalClusters.length === 0 ? (
-                   <div className="text-center py-12 text-text-muted border border-dashed border-border">
+                   <div className="text-center py-12 text-text-muted border border-dashed border-border rounded-lg">
                       <Map className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                      <p className="font-medium">No hotzones detected</p>
+                      <p className="text-base font-semibold text-text-primary">No hotzones detected</p>
                    </div>
                  ) : (
-                   <div className="space-y-6">
+                   <div className="space-y-4">
                      {criticalClusters.map((cluster, idx) => (
-                         <div key={cluster.id} className="bg-surface-elevated border border-border p-4 rounded-xl cursor-pointer hover:border-error transition-colors hover:shadow-sm" onClick={() => router.push(`/dashboard/officer/hotzone-intel/${cluster.id}`)}>
-                              <div className="flex justify-between items-start mb-3">
-                                 <div>
-                                    <span className="text-[10px] font-mono text-error uppercase tracking-widest block mb-1">{getPriorityLabel(cluster)} PRIORITY (RANK {idx + 1})</span>
-                                    <h3 className="font-bold text-lg leading-none truncate max-w-[180px]">{cluster.label || `Cluster ${cluster.id.slice(0,6)}`}</h3>
+                         <div key={cluster.id} className="bg-surface border border-border p-4 rounded-xl cursor-pointer hover:border-error transition-colors hover:shadow-sm" onClick={() => router.push(`/dashboard/officer/hotzone-intel/${cluster.id}`)}>
+                              <div className="flex justify-between items-start gap-3 mb-3">
+                                 <div className="min-w-0 flex-1">
+                                    <span className="text-xs font-semibold uppercase tracking-wider text-error block mb-1">{getPriorityLabel(cluster)} Priority (Rank {idx + 1})</span>
+                                    <h3 className="text-base font-semibold text-text-primary leading-snug truncate">{cluster.label || `Cluster ${cluster.id.slice(0,6)}`}</h3>
                                  </div>
                                  <div className="text-right">
-                                    <span className="block text-[10px] font-mono uppercase text-text-muted mb-1">Score</span>
-                                    <span className="text-3xl font-bold text-text-primary leading-none">{Math.round(cluster.priority_score || 0)}</span>
+                                    <span className="block text-xs font-medium uppercase tracking-wider text-text-muted mb-1">Score</span>
+                                    <span className="text-2xl md:text-3xl font-bold text-text-primary leading-none">{Math.round(cluster.priority_score || 0)}</span>
                                  </div>
                               </div>
                               <div className="grid grid-cols-2 gap-2 text-sm text-text-secondary">
                                  <div>
-                                    <span className="block text-[10px] font-mono uppercase text-text-muted">Reports</span>
-                                    <span className="font-medium text-text-primary">{cluster.report_count || cluster.report_ids?.length || 0}</span>
+                                    <span className="block text-xs font-medium text-text-muted">Reports</span>
+                                    <span className="text-sm font-semibold text-text-primary">{cluster.report_count || cluster.report_ids?.length || 0}</span>
                                  </div>
                                  <div>
-                                    <span className="block text-[10px] font-mono uppercase text-text-muted">Radius</span>
-                                    <span className="font-medium text-text-primary">{Math.round(cluster.radius_meters || 50)}m</span>
+                                    <span className="block text-xs font-medium text-text-muted">Radius</span>
+                                    <span className="text-sm font-semibold text-text-primary">{Math.round(cluster.radius_meters || 50)}m</span>
                                  </div>
                               </div>
                            </div>
                      ))}
                      
-                     <div className="pt-6 mt-6 border-t border-border">
-                        <Link href="/dashboard/officer/hotzone-intel" className="btn-secondary w-full text-center flex items-center justify-center gap-2">
+                     <div className="pt-4 mt-4 border-t border-border">
+                        <Link href="/dashboard/officer/hotzone-intel" className="btn-secondary w-full text-center flex items-center justify-center gap-2 text-sm font-medium">
                            View All Intelligence <ChevronRight className="w-4 h-4" />
                         </Link>
                      </div>

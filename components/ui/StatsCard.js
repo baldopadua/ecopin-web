@@ -34,13 +34,13 @@ export default function StatsCard({
       <div className="flex items-start justify-between">
         <div className="flex-1">
           {title && (
-            <span className="text-xs font-mono tracking-widest uppercase text-text-muted block mb-2">{title}</span>
+            <span className="text-xs font-medium tracking-wider uppercase text-text-secondary dark:text-text-muted block mb-2">{title}</span>
           )}
-          <p className="text-4xl font-bold text-text-primary">
+          <p className="text-4xl font-bold text-text-primary tracking-tight">
             {value}
           </p>
           {subtitle && (
-            <div className="text-sm text-text-secondary mt-2">{subtitle}</div>
+            <div className="text-sm text-text-secondary mt-1.5 leading-normal">{subtitle}</div>
           )}
           {trend && (
             <div className="flex items-center gap-2 mt-3">
