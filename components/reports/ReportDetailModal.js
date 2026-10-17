@@ -151,6 +151,13 @@ export default function ReportDetailModal({ report, evidence = [], agencyRespons
                   {report.validation_status && (
                     <StatusBadge status={report.validation_status} type="validation" />
                   )}
+                  {report.location_verification_status && (
+                    <StatusBadge 
+                      status={report.location_verification_status} 
+                      type="location_verification" 
+                      distanceMeters={report.photo_distance_meters} 
+                    />
+                  )}
                 </div>
               </div>
               <button 

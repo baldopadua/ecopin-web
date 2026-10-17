@@ -10,6 +10,8 @@ import {
   getResponseActionColor,
   getRoleBadgeColor,
   getConsentStatusColor,
+  getLocationVerificationColor,
+  formatLocationVerificationLabel,
   formatStatusLabel,
   formatActionLabel
 } from '@/lib/helpers/statusHelpers'
@@ -19,8 +21,9 @@ import {
  */
 export default function StatusBadge({
   status,
-  type = 'report', // report, validation, lifecycle, task, severity, cluster, auditAction, responseAction, role, consent
+  type = 'report', // report, validation, lifecycle, task, severity, cluster, auditAction, responseAction, role, consent, location_verification
   label,
+  distanceMeters,
   size = 'small', // small, medium, large
   className = ''
 }) {
@@ -67,6 +70,10 @@ export default function StatusBadge({
     case 'consent':
       colorClass = getConsentStatusColor(status)
       displayLabel = label || formatStatusLabel(status)
+      break
+    case 'location_verification':
+      colorClass = getLocationVerificationColor(status)
+      displayLabel = label || formatLocationVerificationLabel(status, distanceMeters)
       break
     default:
       colorClass = 'bg-surface-elevated text-text-muted border-border'
