@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { fetchFilteredReports, fetchAvailableCrew } from '@/lib/api'
+import { fetchFilteredReports, fetchAvailableCrew, fetchReportsByClusterId } from '@/lib/api'
 import { createCustomCleanupTask } from '@/lib/api'
 import { readAuthToken, triggerSessionExpired } from '@/lib/auth-token.mjs'
 import PageHeader from '@/components/layout/PageHeader'
@@ -107,12 +107,35 @@ export default function CreateCleanupTaskPage() {
   }, [])
 
   useEffect(() => {
-    // Preselect report if provided in URL
+    // Preselect report or cluster if provided in URL
     const preselectId = searchParams.get('preselect')
     if (preselectId) {
-      setSelectedReports(new Set([preselectId]))
+      // First check if it matches an individual report in loaded reports
+      const matchingReport = reports.find(r => r.id === preselectId)
+      if (matchingReport) {
+        setSelectedReports(new Set([preselectId]))
+      } else {
+        // Check if preselectId is a cluster_id in the loaded reports
+        const clusterReports = reports.filter(r => String(r.cluster_id) === String(preselectId))
+        if (clusterReports.length > 0) {
+          setSelectedReports(new Set(clusterReports.map(r => r.id)))
+        } else {
+          // Attempt to fetch reports belonging to the cluster via backend
+          fetchReportsByClusterId(preselectId)
+            .then(clusterData => {
+              if (Array.isArray(clusterData) && clusterData.length > 0) {
+                setSelectedReports(new Set(clusterData.map(r => r.id)))
+              } else {
+                setSelectedReports(new Set([preselectId]))
+              }
+            })
+            .catch(() => {
+              setSelectedReports(new Set([preselectId]))
+            })
+        }
+      }
     }
-  }, [searchParams])
+  }, [searchParams, reports])
 
   const loadReports = async () => {
     setLoading(true)
@@ -165,6 +188,18 @@ export default function CreateCleanupTaskPage() {
       return
     }
 
+    // Resolve selected crew team IDs to individual member profile IDs
+    const memberProfileIds = []
+    selectedCrewIds.forEach(crewId => {
+      const crewTeam = availableCrew.find(c => c.id === crewId)
+      if (crewTeam?.members?.length > 0) {
+        crewTeam.members.forEach(m => memberProfileIds.push(m.id))
+      } else {
+        memberProfileIds.push(crewId)
+      }
+    })
+    const uniqueMemberIds = [...new Set(memberProfileIds)]
+
     setCreating(true)
     try {
       await createCustomCleanupTask({
@@ -172,7 +207,8 @@ export default function CreateCleanupTaskPage() {
         title: taskTitle,
         description: taskDescription,
         priority: taskPriority,
-        assigned_crew_ids: selectedCrewIds
+        field_crew_id: selectedCrewIds[0] || null,
+        assigned_crew_ids: uniqueMemberIds
       })
       setNotification({ message: 'Cleanup task created successfully', type: 'success' })
       setTimeout(() => {
@@ -252,14 +288,45 @@ export default function CreateCleanupTaskPage() {
         const pScore = task.primary_priority;
         const priorityStr = pScore >= 15 ? 'high' : pScore >= 8 ? 'medium' : 'low';
         
-        const reportIds = [task.primary_target_id, ...task.included_reports.map(r => r.report_id)];
+        let primaryReportIds = []
+        if (task.primary_target_is_cluster) {
+          // If primary target is a cluster, resolve it to its constituent reports
+          try {
+            const clusterReports = await fetchReportsByClusterId(task.primary_target_id)
+            if (Array.isArray(clusterReports) && clusterReports.length > 0) {
+              primaryReportIds = clusterReports.map(r => r.id)
+            } else {
+              primaryReportIds = [task.primary_target_id]
+            }
+          } catch {
+            primaryReportIds = [task.primary_target_id]
+          }
+        } else {
+          primaryReportIds = [task.primary_target_id]
+        }
+
+        const detourReportIds = (task.included_reports || []).map(r => r.report_id)
+        const combinedReportIds = [...new Set([...primaryReportIds, ...detourReportIds])]
+
+        // Resolve crew team IDs to individual member profile IDs
+        const taskMemberIds = []
+        task.assigned_crew_ids.forEach(crewId => {
+          const crewTeam = availableCrew.find(c => c.id === crewId)
+          if (crewTeam?.members?.length > 0) {
+            crewTeam.members.forEach(m => taskMemberIds.push(m.id))
+          } else {
+            taskMemberIds.push(crewId)
+          }
+        })
+        const uniqueCrewMemberIds = [...new Set(taskMemberIds)]
         
         await createCustomCleanupTask({
-          report_ids: reportIds,
+          report_ids: combinedReportIds,
           title: task.title,
           description: `Auto-generated route (Detour: ${task.cumulative_detour_minutes.toFixed(1)} mins). Includes primary ${task.primary_target_is_cluster ? 'cluster' : 'report'}.`,
           priority: priorityStr,
-          assigned_crew_ids: task.assigned_crew_ids
+          field_crew_id: task.assigned_crew_ids[0] || null,
+          assigned_crew_ids: uniqueCrewMemberIds
         })
       }
       
