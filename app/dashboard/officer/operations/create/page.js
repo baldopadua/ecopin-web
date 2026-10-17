@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { fetchFilteredReports, fetchAvailableCrew, fetchReportsByClusterId } from '@/lib/api'
+import { fetchFilteredReports, fetchAvailableCrew, fetchReportsByClusterId, fetchCleanupTasks, fetchDispatchBlocks } from '@/lib/api'
 import { createCustomCleanupTask } from '@/lib/api'
 import { readAuthToken, triggerSessionExpired } from '@/lib/auth-token.mjs'
 import PageHeader from '@/components/layout/PageHeader'
@@ -20,7 +20,7 @@ const EcoPinMap = dynamic(() => import('@/components/map/EcoPinMap'), {
 })
 
 // CustomMap component defined outside to prevent re-creation
-function CustomMap({ selectedReports, onReportSelect, onClusterSelect }) {
+function CustomMap({ selectedReports, allowedReportIds, onReportSelect, onClusterSelect }) {
   const [mounted, setMounted] = useState(false)
   
   useEffect(() => {
@@ -35,6 +35,7 @@ function CustomMap({ selectedReports, onReportSelect, onClusterSelect }) {
         initialStatus="unresolved"
         initialValidationStatus="all"
         selectionMode={true}
+        allowedReportIds={allowedReportIds}
         selectedReports={Array.from(selectedReports).sort()}
         onReportSelect={onReportSelect}
         onClusterSelect={onClusterSelect}
@@ -45,9 +46,9 @@ function CustomMap({ selectedReports, onReportSelect, onClusterSelect }) {
 }
 
 const STRATEGIES = [
-  { id: 'standard', name: 'Standard Dispatch', config: { aging_factor: 1.5, max_escalation_cap: 10.0, max_detour_minutes: 5.0, max_detour_time_per_task: 15.0 } },
-  { id: 'thorough', name: 'Thorough Cleanup', config: { aging_factor: 1.5, max_escalation_cap: 10.0, max_detour_minutes: 10.0, max_detour_time_per_task: 30.0 } },
-  { id: 'backlog', name: 'Backlog Crusher', config: { aging_factor: 3.0, max_escalation_cap: 20.0, max_detour_minutes: 5.0, max_detour_time_per_task: 15.0 } }
+  { id: 'standard', name: 'Standard Dispatch', config: { aging_factor: 1.5, max_escalation_cap: 10.0, max_detour_minutes: 5.0, max_detour_time_per_task: 15.0, max_route_distance_km: 40.0 } },
+  { id: 'thorough', name: 'Thorough Cleanup', config: { aging_factor: 1.5, max_escalation_cap: 10.0, max_detour_minutes: 10.0, max_detour_time_per_task: 30.0, max_route_distance_km: 60.0 } },
+  { id: 'backlog', name: 'Backlog Crusher', config: { aging_factor: 3.0, max_escalation_cap: 20.0, max_detour_minutes: 5.0, max_detour_time_per_task: 15.0, max_route_distance_km: 35.0 } }
 ]
 
 export default function CreateCleanupTaskPage() {
@@ -77,7 +78,8 @@ export default function CreateCleanupTaskPage() {
     aging_factor: STRATEGIES[0].config.aging_factor,
     max_escalation_cap: STRATEGIES[0].config.max_escalation_cap,
     max_detour_minutes: STRATEGIES[0].config.max_detour_minutes,
-    max_detour_time_per_task: STRATEGIES[0].config.max_detour_time_per_task
+    max_detour_time_per_task: STRATEGIES[0].config.max_detour_time_per_task,
+    max_route_distance_km: STRATEGIES[0].config.max_route_distance_km
   })
   const [generatedTasks, setGeneratedTasks] = useState(null)
   const [generationError, setGenerationError] = useState(null)
@@ -95,6 +97,8 @@ export default function CreateCleanupTaskPage() {
     )
   }, [reports, reportSearch])
 
+  const allowedReportIds = useMemo(() => reports.map(r => r.id), [reports])
+
   const totalPages = Math.ceil(filteredReports.length / itemsPerPage)
   const paginatedReports = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage
@@ -107,31 +111,18 @@ export default function CreateCleanupTaskPage() {
   }, [])
 
   useEffect(() => {
-    // Preselect report or cluster if provided in URL
+    // Preselect report or cluster if provided in URL (only if eligible)
     const preselectId = searchParams.get('preselect')
-    if (preselectId) {
-      // First check if it matches an individual report in loaded reports
+    if (preselectId && reports.length > 0) {
+      // First check if it matches an individual report in eligible reports
       const matchingReport = reports.find(r => r.id === preselectId)
       if (matchingReport) {
         setSelectedReports(new Set([preselectId]))
       } else {
-        // Check if preselectId is a cluster_id in the loaded reports
+        // Check if preselectId is a cluster_id in the eligible reports
         const clusterReports = reports.filter(r => String(r.cluster_id) === String(preselectId))
         if (clusterReports.length > 0) {
           setSelectedReports(new Set(clusterReports.map(r => r.id)))
-        } else {
-          // Attempt to fetch reports belonging to the cluster via backend
-          fetchReportsByClusterId(preselectId)
-            .then(clusterData => {
-              if (Array.isArray(clusterData) && clusterData.length > 0) {
-                setSelectedReports(new Set(clusterData.map(r => r.id)))
-              } else {
-                setSelectedReports(new Set([preselectId]))
-              }
-            })
-            .catch(() => {
-              setSelectedReports(new Set([preselectId]))
-            })
         }
       }
     }
@@ -140,9 +131,24 @@ export default function CreateCleanupTaskPage() {
   const loadReports = async () => {
     setLoading(true)
     try {
-      const data = await fetchFilteredReports()
-      const eligibleReports = data.filter(r =>
-        r.status === 'unresolved' && r.validation_status === 'approved'
+      const [reportsData, tasksData, blocksData] = await Promise.all([
+        fetchFilteredReports(),
+        fetchCleanupTasks().catch(() => []),
+        fetchDispatchBlocks().catch(() => [])
+      ])
+
+      const activeTasks = Array.isArray(tasksData) ? tasksData.filter(t => !['completed', 'cancelled'].includes(t.status)) : []
+      const claimedReportIds = new Set(activeTasks.flatMap(t => t.report_ids || []))
+
+      const blockedReportIds = new Set(Array.isArray(blocksData) ? blocksData.map(b => b.report_id).filter(Boolean) : [])
+      const blockedClusterIds = new Set(Array.isArray(blocksData) ? blocksData.map(b => b.cluster_id).filter(Boolean) : [])
+
+      const eligibleReports = reportsData.filter(r =>
+        r.status === 'unresolved' &&
+        r.validation_status === 'approved' &&
+        !claimedReportIds.has(r.id) &&
+        !blockedReportIds.has(r.id) &&
+        !(r.cluster_id && blockedClusterIds.has(r.cluster_id))
       )
       setReports(eligibleReports)
     } catch (error) {
@@ -216,7 +222,8 @@ export default function CreateCleanupTaskPage() {
       }, 1500)
     } catch (error) {
       console.error('Failed to create task:', error)
-      setNotification({ message: 'Failed to create task. Please try again.', type: 'error' })
+      const message = error.message || 'Failed to create task. Please try again.'
+      setNotification({ message, type: 'error' })
     } finally {
       setCreating(false)
     }
@@ -335,8 +342,9 @@ export default function CreateCleanupTaskPage() {
         router.push('/dashboard/officer/operations')
       }, 1500)
     } catch (error) {
-      console.error(error)
-      setNotification({ message: 'Error dispatching tasks', type: 'error' })
+      console.error('Dispatch error:', error)
+      const message = error.message || 'Error dispatching tasks'
+      setNotification({ message, type: 'error' })
     } finally {
       setCreating(false)
     }
@@ -392,11 +400,16 @@ export default function CreateCleanupTaskPage() {
               ) : (
                 <CustomMap 
                   selectedReports={Array.from(selectedReports).sort()}
+                  allowedReportIds={allowedReportIds}
                   onReportSelect={toggleReportSelection}
                   onClusterSelect={(clusterReportIds) => {
                     setSelectedReports(prev => {
                       const next = new Set(prev)
-                      clusterReportIds.forEach(id => next.add(id))
+                      // Only add cluster reports that are actually eligible/in reports
+                      const eligibleIds = new Set(reports.map(r => r.id))
+                      clusterReportIds.forEach(id => {
+                        if (eligibleIds.has(id)) next.add(id)
+                      })
                       return next
                     })
                   }}
@@ -431,8 +444,15 @@ export default function CreateCleanupTaskPage() {
 
               {loading ? (
                 <p className="text-text-muted shrink-0">Loading reports...</p>
+              ) : reports.length === 0 ? (
+                <div className="card bg-surface/50 border border-border p-4 text-center my-auto">
+                  <p className="font-semibold text-text-primary mb-1">No unassigned reports available</p>
+                  <p className="text-sm text-text-muted">
+                    All unresolved reports are currently assigned to active cleanup routes or are temporarily restricted by dispatch access blocks.
+                  </p>
+                </div>
               ) : filteredReports.length === 0 ? (
-                <p className="text-text-muted shrink-0">No reports found.</p>
+                <p className="text-text-muted shrink-0">No matching reports found for your search.</p>
               ) : (
                 <div className="flex-1 overflow-y-auto min-h-0 ecopin-table-container !rounded-lg !border">
                   <table className="ecopin-table">
@@ -690,6 +710,16 @@ export default function CreateCleanupTaskPage() {
                           setAutoSettings({...autoSettings, max_detour_time_per_task: parseFloat(e.target.value)})
                         }}
                       />
+                      <Input
+                        label="Max Route Distance (km)"
+                        type="number"
+                        step="1.0"
+                        value={autoSettings.max_route_distance_km || 40}
+                        onChange={(e) => {
+                          setStrategy('custom')
+                          setAutoSettings({...autoSettings, max_route_distance_km: parseFloat(e.target.value)})
+                        }}
+                      />
                     </div>
                   )}
                 </div>
@@ -769,11 +799,24 @@ export default function CreateCleanupTaskPage() {
                           <span className="font-mono text-accent-blue font-bold">{task.primary_priority.toFixed(1)}</span>
                         </div>
                       </div>
-                      <p className="text-sm text-text-secondary mb-3">
-                        Includes primary {task.primary_target_is_cluster ? 'cluster' : 'report'} ({task.primary_target_id.substring(0,6)}) 
-                        and {task.included_reports.length} detour reports.
-                        (Total Detour: {task.cumulative_detour_minutes.toFixed(1)} mins)
-                      </p>
+                      <div className="flex flex-wrap items-center gap-2 mb-3">
+                        <span className="text-xs bg-surface px-2.5 py-1 rounded border border-border text-text-secondary font-medium">
+                          📍 {task.primary_target_is_cluster ? 'Cluster' : 'Report'} ({task.primary_target_id.substring(0,6)}) + {task.included_reports.length} detour stops
+                        </span>
+                        <span className="text-xs bg-surface px-2.5 py-1 rounded border border-border text-text-secondary font-medium">
+                          ⏱️ Detour: {task.cumulative_detour_minutes.toFixed(1)} mins
+                        </span>
+                        {task.estimated_distance_km != null && (
+                          <span className={`text-xs px-2.5 py-1 rounded border font-semibold ${
+                            autoSettings.max_route_distance_km && task.estimated_distance_km > autoSettings.max_route_distance_km
+                              ? 'bg-error/10 border-error/40 text-error'
+                              : 'bg-primary/10 border-primary/30 text-primary'
+                          }`}>
+                            🚗 {task.estimated_distance_km.toFixed(1)} km {autoSettings.max_route_distance_km ? `/ ${autoSettings.max_route_distance_km} km max` : ''}
+                            {autoSettings.max_route_distance_km && task.estimated_distance_km > autoSettings.max_route_distance_km && ' (Exceeds Limit)'}
+                          </span>
+                        )}
+                      </div>
 
                       <div className="mt-3">
                         <label className="block text-sm font-medium text-text-primary mb-2">Assign Crew:</label>

@@ -93,6 +93,7 @@ function generateTasksNative(payload) {
     max_escalation_cap = 10.0,
     max_detour_minutes = 5.0,
     max_detour_time_per_task = 15.0,
+    max_route_distance_km = 40.0,
     start_location = { lat: 14.561433, lon: 121.075636 },
     clusters = [],
     individual_reports = []
@@ -128,6 +129,9 @@ function generateTasksNative(payload) {
   for (const target of allTargets) {
     if (!target.is_cluster && target.assigned) continue
 
+    // Base roundtrip distance from depot to primary target and back
+    const baseRoundtripKm = haversineDistance(start_location.lat, start_location.lon, target.lat, target.lon) * 2
+
     const task = {
       primary_target_id: target.id,
       primary_target_is_cluster: target.is_cluster,
@@ -135,7 +139,8 @@ function generateTasksNative(payload) {
       target_lat: target.lat,
       target_lon: target.lon,
       included_reports: [],
-      cumulative_detour_minutes: 0.0
+      cumulative_detour_minutes: 0.0,
+      estimated_distance_km: Math.round(baseRoundtripKm * 10) / 10
     }
 
     if (!target.is_cluster) {
@@ -151,16 +156,23 @@ function generateTasksNative(payload) {
           { lat: report.lat, lon: report.lon }
         )
 
-        if (detourMins <= max_detour_minutes) {
-          if (task.cumulative_detour_minutes + detourMins <= max_detour_time_per_task) {
-            task.included_reports.push({
-              report_id: report.id,
-              detour_time_minutes: detourMins,
-              priority_score: report.priority_score
-            })
-            task.cumulative_detour_minutes += detourMins
-            report.assigned = true
-          }
+        const distVia = haversineDistance(start_location.lat, start_location.lon, report.lat, report.lon) +
+          haversineDistance(report.lat, report.lon, target.lat, target.lon)
+        const distDirect = haversineDistance(start_location.lat, start_location.lon, target.lat, target.lon)
+        const extraKm = Math.max(0, distVia - distDirect)
+
+        const withinDetourTime = detourMins <= max_detour_minutes && (task.cumulative_detour_minutes + detourMins <= max_detour_time_per_task)
+        const withinDistanceLimit = max_route_distance_km == null || (task.estimated_distance_km + extraKm <= max_route_distance_km)
+
+        if (withinDetourTime && withinDistanceLimit) {
+          task.included_reports.push({
+            report_id: report.id,
+            detour_time_minutes: detourMins,
+            priority_score: report.priority_score
+          })
+          task.cumulative_detour_minutes += detourMins
+          task.estimated_distance_km = Math.round((task.estimated_distance_km + extraKm) * 10) / 10
+          report.assigned = true
         }
       }
     }
@@ -193,6 +205,25 @@ export async function POST(req) {
     }
 
     // 1. Fetch unresolved/approved reports from Supabase
+    const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_API_URL || '').replace(/\/$/, '')
+    const authHeader = req.headers.get('authorization') || ''
+
+    const [tasksRes, blocksRes] = await Promise.all([
+      fetch(`${backendUrl}/api/cleanup-tasks`, {
+        headers: { Authorization: authHeader },
+        cache: 'no-store'
+      }).then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch(`${backendUrl}/api/optimization/blocks`, {
+        headers: { Authorization: authHeader },
+        cache: 'no-store'
+      }).then(r => r.ok ? r.json() : []).catch(() => [])
+    ])
+
+    const activeTasks = Array.isArray(tasksRes) ? tasksRes.filter(t => !['completed', 'cancelled'].includes(t.status)) : []
+    const claimedReportIds = new Set(activeTasks.flatMap(t => t.report_ids || []))
+    const blockedClusterIds = new Set(Array.isArray(blocksRes) ? blocksRes.map(b => b.cluster_id).filter(Boolean) : [])
+    const blockedReportIds = new Set(Array.isArray(blocksRes) ? blocksRes.map(b => b.report_id).filter(Boolean) : [])
+
     let allData = []
     let page = 0
     const pageSize = 1000
@@ -216,6 +247,9 @@ export async function POST(req) {
     const eligibleReports = allData.filter(r => 
       r.status === 'unresolved' && 
       r.validation_status === 'approved' &&
+      !claimedReportIds.has(r.id) &&
+      !blockedReportIds.has(r.id) &&
+      !(r.cluster_id && blockedClusterIds.has(r.cluster_id)) &&
       !(r.on_private_property && r.property_owner_consent_status === 'denied')
     )
 
@@ -227,6 +261,7 @@ export async function POST(req) {
       max_escalation_cap: Number(config.max_escalation_cap ?? 10.0),
       max_detour_minutes: Number(config.max_detour_minutes ?? 5.0),
       max_detour_time_per_task: Number(config.max_detour_time_per_task ?? 15.0),
+      max_route_distance_km: config.max_route_distance_km != null ? Number(config.max_route_distance_km) : 40.0,
       start_location: {
         lat: depotLat,
         lon: depotLon
