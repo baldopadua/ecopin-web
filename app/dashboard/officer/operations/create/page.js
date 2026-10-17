@@ -3,7 +3,8 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { fetchFilteredReports, fetchAvailableCrew, fetchReportsByClusterId, fetchCleanupTasks, fetchDispatchBlocks } from '@/lib/api'
 import { createCustomCleanupTask } from '@/lib/api'
-import { readAuthToken, triggerSessionExpired } from '@/lib/auth-token.mjs'
+import { readSessionKey, triggerSessionExpired } from '@/lib/auth-token.mjs'
+import { backendFetch as fetch } from '../../../../../lib/backend-fetch.mjs'
 import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
 import Button from '@/components/ui/Button'
@@ -12,6 +13,7 @@ import Checkbox from '@/components/ui/Checkbox'
 import Pagination from '@/components/ui/Pagination'
 import { OfficerGuard } from '@/components/auth/RequireRole'
 import dynamic from 'next/dynamic'
+import { reportDiagnostic } from '../../../../../lib/diagnostics.mjs';
 
 // Dynamically import EcoPinMap to avoid SSR issues
 const EcoPinMap = dynamic(() => import('@/components/map/EcoPinMap'), {
@@ -46,9 +48,15 @@ function CustomMap({ selectedReports, allowedReportIds, onReportSelect, onCluste
 }
 
 const STRATEGIES = [
+<<<<<<< Updated upstream
   { id: 'standard', name: 'Standard Dispatch', config: { aging_factor: 1.5, max_escalation_cap: 10.0, max_detour_minutes: 5.0, max_detour_time_per_task: 15.0, max_route_distance_km: 40.0 } },
   { id: 'thorough', name: 'Thorough Cleanup', config: { aging_factor: 1.5, max_escalation_cap: 10.0, max_detour_minutes: 10.0, max_detour_time_per_task: 30.0, max_route_distance_km: 60.0 } },
   { id: 'backlog', name: 'Backlog Crusher', config: { aging_factor: 3.0, max_escalation_cap: 20.0, max_detour_minutes: 5.0, max_detour_time_per_task: 15.0, max_route_distance_km: 35.0 } }
+=======
+  { id: 'standard', name: 'Standard Dispatch', config: { aging_factor: 1.5, max_escalation_cap: 10.0, max_detour_minutes: 5.0, max_detour_time_per_task: 15.0, max_route_distance_km: 50.0, max_route_duration_minutes: 480.0 } },
+  { id: 'thorough', name: 'Thorough Cleanup', config: { aging_factor: 1.5, max_escalation_cap: 10.0, max_detour_minutes: 10.0, max_detour_time_per_task: 30.0, max_route_distance_km: 75.0, max_route_duration_minutes: 600.0 } },
+  { id: 'backlog', name: 'Backlog Crusher', config: { aging_factor: 3.0, max_escalation_cap: 20.0, max_detour_minutes: 5.0, max_detour_time_per_task: 15.0, max_route_distance_km: 40.0, max_route_duration_minutes: 360.0 } }
+>>>>>>> Stashed changes
 ]
 
 export default function CreateCleanupTaskPage() {
@@ -79,7 +87,12 @@ export default function CreateCleanupTaskPage() {
     max_escalation_cap: STRATEGIES[0].config.max_escalation_cap,
     max_detour_minutes: STRATEGIES[0].config.max_detour_minutes,
     max_detour_time_per_task: STRATEGIES[0].config.max_detour_time_per_task,
+<<<<<<< Updated upstream
     max_route_distance_km: STRATEGIES[0].config.max_route_distance_km
+=======
+    max_route_distance_km: STRATEGIES[0].config.max_route_distance_km,
+    max_route_duration_minutes: STRATEGIES[0].config.max_route_duration_minutes
+>>>>>>> Stashed changes
   })
   const [generatedTasks, setGeneratedTasks] = useState(null)
   const [generationError, setGenerationError] = useState(null)
@@ -152,7 +165,7 @@ export default function CreateCleanupTaskPage() {
       )
       setReports(eligibleReports)
     } catch (error) {
-      console.error('Failed to load reports:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to load reports:', error)
       setNotification({ message: 'Failed to load reports', type: 'error' })
     } finally {
       setLoading(false)
@@ -164,7 +177,7 @@ export default function CreateCleanupTaskPage() {
       const data = await fetchAvailableCrew()
       setAvailableCrew(data)
     } catch (error) {
-      console.error('Failed to load available crew:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to load available crew:', error)
     }
   }
 
@@ -220,11 +233,9 @@ export default function CreateCleanupTaskPage() {
       setTimeout(() => {
         router.push('/dashboard/officer/operations')
       }, 1500)
-    } catch (error) {
-      console.error('Failed to create task:', error)
-      const message = error.message || 'Failed to create task. Please try again.'
+      reportDiagnostic('error', 'dispatch', 'Failed to create task:', error)
+      const message = error?.message || 'Failed to create task. Please try again.'
       setNotification({ message, type: 'error' })
-    } finally {
       setCreating(false)
     }
   }
@@ -235,14 +246,13 @@ export default function CreateCleanupTaskPage() {
     setGenerationError(null)
     
     try {
-      const token = readAuthToken()
-      if (!token) {
+      if (!readSessionKey()) {
         triggerSessionExpired()
         throw new Error('Please sign in again to preview routes')
       }
       const res = await fetch('/api/tasks/auto-generate/preview', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           config: autoSettings
         })
@@ -271,7 +281,7 @@ export default function CreateCleanupTaskPage() {
       setGeneratedTasks(preparedTasks)
       setNotification({ message: `Generated ${preparedTasks.length} optimized route(s)!`, type: 'success' })
     } catch (error) {
-      console.error('Route generation failed:', error)
+      reportDiagnostic('error', 'dispatch', 'Route generation failed:', error)
       const message = error.message || 'Error generating routes'
       setGenerationError(message)
       setNotification({ message, type: 'error' })
@@ -302,11 +312,15 @@ export default function CreateCleanupTaskPage() {
             const clusterReports = await fetchReportsByClusterId(task.primary_target_id)
             if (Array.isArray(clusterReports) && clusterReports.length > 0) {
               primaryReportIds = clusterReports.map(r => r.id)
+            } else if (Array.isArray(task.included_reports) && task.included_reports.length > 0) {
+              primaryReportIds = task.included_reports.map(r => r.report_id)
             } else {
               primaryReportIds = [task.primary_target_id]
             }
           } catch {
-            primaryReportIds = [task.primary_target_id]
+            primaryReportIds = Array.isArray(task.included_reports) && task.included_reports.length > 0
+              ? task.included_reports.map(r => r.report_id)
+              : [task.primary_target_id]
           }
         } else {
           primaryReportIds = [task.primary_target_id]
@@ -330,7 +344,7 @@ export default function CreateCleanupTaskPage() {
         await createCustomCleanupTask({
           report_ids: combinedReportIds,
           title: task.title,
-          description: `Auto-generated route (Detour: ${task.cumulative_detour_minutes.toFixed(1)} mins). Includes primary ${task.primary_target_is_cluster ? 'cluster' : 'report'}.`,
+          description: `Auto-generated route (Detour: ${(task.cumulative_detour_minutes ?? 0).toFixed(1)} mins). Includes primary ${task.primary_target_is_cluster ? 'cluster' : 'report'}.`,
           priority: priorityStr,
           field_crew_id: task.assigned_crew_ids[0] || null,
           assigned_crew_ids: uniqueCrewMemberIds
@@ -342,8 +356,8 @@ export default function CreateCleanupTaskPage() {
         router.push('/dashboard/officer/operations')
       }, 1500)
     } catch (error) {
-      console.error('Dispatch error:', error)
-      const message = error.message || 'Error dispatching tasks'
+      reportDiagnostic('error', 'dispatch', error)
+      const message = error?.message || 'Error dispatching tasks'
       setNotification({ message, type: 'error' })
     } finally {
       setCreating(false)
@@ -711,13 +725,23 @@ export default function CreateCleanupTaskPage() {
                         }}
                       />
                       <Input
-                        label="Max Route Distance (km)"
+                        label="Max Route Distance Limit (km)"
                         type="number"
-                        step="1.0"
-                        value={autoSettings.max_route_distance_km || 40}
+                        step="5.0"
+                        value={autoSettings.max_route_distance_km ?? 50}
                         onChange={(e) => {
                           setStrategy('custom')
                           setAutoSettings({...autoSettings, max_route_distance_km: parseFloat(e.target.value)})
+                        }}
+                      />
+                      <Input
+                        label="Max Total Route Duration (mins)"
+                        type="number"
+                        step="15.0"
+                        value={autoSettings.max_route_duration_minutes ?? 480}
+                        onChange={(e) => {
+                          setStrategy('custom')
+                          setAutoSettings({...autoSettings, max_route_duration_minutes: parseFloat(e.target.value)})
                         }}
                       />
                     </div>
@@ -801,10 +825,10 @@ export default function CreateCleanupTaskPage() {
                       </div>
                       <div className="flex flex-wrap items-center gap-2 mb-3">
                         <span className="text-xs bg-surface px-2.5 py-1 rounded border border-border text-text-secondary font-medium">
-                          📍 {task.primary_target_is_cluster ? 'Cluster' : 'Report'} ({task.primary_target_id.substring(0,6)}) + {task.included_reports.length} detour stops
+                          📍 {task.primary_target_is_cluster ? 'Cluster' : 'Report'} ({task.primary_target_id?.substring(0,6) || ''}) + {(task.included_reports || []).length} detour stops
                         </span>
                         <span className="text-xs bg-surface px-2.5 py-1 rounded border border-border text-text-secondary font-medium">
-                          ⏱️ Detour: {task.cumulative_detour_minutes.toFixed(1)} mins
+                          ⏱️ Detour: {(task.cumulative_detour_minutes ?? 0).toFixed(1)} mins
                         </span>
                         {task.estimated_distance_km != null && (
                           <span className={`text-xs px-2.5 py-1 rounded border font-semibold ${
@@ -816,6 +840,9 @@ export default function CreateCleanupTaskPage() {
                             {autoSettings.max_route_distance_km && task.estimated_distance_km > autoSettings.max_route_distance_km && ' (Exceeds Limit)'}
                           </span>
                         )}
+                        <span className="text-xs px-2.5 py-1 bg-surface rounded border border-border text-text-primary font-mono font-medium">
+                          ⏱️ Max Duration: {autoSettings.max_route_duration_minutes ?? 480} min
+                        </span>
                       </div>
 
                       <div className="mt-3">

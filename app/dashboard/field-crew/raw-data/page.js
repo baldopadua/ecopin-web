@@ -8,6 +8,7 @@ import DataTable from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { FieldCrewGuard } from '@/components/auth/RequireRole'
+import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
 
 export default function FieldCrewReportsPage() {
   const router = useRouter()
@@ -79,7 +80,7 @@ export default function FieldCrewReportsPage() {
       setIssueTypes(typesData)
       setLoading(false)
     }).catch(error => {
-      console.error("Failed to load field crew raw data:", error)
+      reportDiagnostic('error', 'media', "Failed to load field crew raw data:", error)
       setLoading(false)
     })
   }, [])
@@ -136,7 +137,7 @@ export default function FieldCrewReportsPage() {
     if (taskId) {
       router.push(`/dashboard/field-crew/operations/${taskId}`)
     } else {
-      console.warn("No assigned task found for report", report.id)
+      reportDiagnostic('warn', 'media', "No assigned task found for report", report.id)
     }
   }
 

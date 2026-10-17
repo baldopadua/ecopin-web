@@ -19,6 +19,7 @@ import { Buffer } from 'buffer'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { Download } from 'lucide-react'
+import { reportDiagnostic } from '../../../../../lib/diagnostics.mjs';
 
 const normalizeString = (str) => {
   if (!str) return '';
@@ -61,7 +62,7 @@ const parseLocation = (location, latitude, longitude) => {
       }
     }
   } catch (error) {
-    console.error('Error parsing location:', error)
+    reportDiagnostic('error', 'other', 'Error parsing location:', error)
   }
   return { latitude: null, longitude: null }
 }
@@ -102,7 +103,7 @@ export default function ClusterDetailPage() {
       setLoadingTasks(false)
       setLoading(false)
     }).catch(error => {
-      console.error('Error fetching data:', error)
+      reportDiagnostic('error', 'other', 'Error fetching data:', error)
       setLoading(false)
       setLoadingTasks(false)
     })
@@ -117,7 +118,7 @@ export default function ClusterDetailPage() {
           setReportEvidenceMap(prev => ({ ...prev, [report.id]: ev }))
         }
       } catch (err) {
-        console.error('Failed to load evidence for report:', err)
+        reportDiagnostic('error', 'other', 'Failed to load evidence for report:', err)
       }
     }
   }
@@ -137,7 +138,7 @@ export default function ClusterDetailPage() {
       setCluster(prev => ({ ...prev, label: editingTitle.trim() }))
       setIsEditingTitle(false)
     } catch (error) {
-      console.error('Failed to update label:', error)
+      reportDiagnostic('error', 'other', 'Failed to update label:', error)
       setError('Failed to update title. Please try again.')
     } finally {
       setSavingTitle(false)
@@ -223,7 +224,7 @@ export default function ClusterDetailPage() {
         
         doc.save(`EcoPin-Cluster-${cluster?.id?.slice(0,8)}.pdf`)
       } catch (err) {
-        console.error('PDF generation failed', err)
+        reportDiagnostic('error', 'other', 'PDF generation failed', err)
         setNotification({ type: 'error', message: 'The PDF could not generate. Please try again.' })
       } finally {
         setExporting(false)

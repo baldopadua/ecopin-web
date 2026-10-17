@@ -71,6 +71,7 @@ import {
   TreePine,
   CheckCircle
 } from 'lucide-react'
+import { reportDiagnostic } from '../../lib/diagnostics.mjs';
 
 if (typeof window !== 'undefined' && !window.Buffer) {
   window.Buffer = Buffer
@@ -316,7 +317,7 @@ function HeatmapLayer({ heatPoints, showHeatmap }) {
           map.removeLayer(heatLayerRef.current)
         }
       } catch (e) {
-        console.error(e)
+        reportDiagnostic('error', 'map', e)
       }
       heatLayerRef.current = null
     }
@@ -591,7 +592,7 @@ export default function PublicMap({ theme = 'light' }) {
         try {
           require('leaflet.heat')
         } catch (e) {
-          console.error('Failed to load leaflet.heat', e)
+          reportDiagnostic('error', 'map', 'Failed to load leaflet.heat', e)
         }
       }
       if (active) setMounted(true) 
@@ -619,7 +620,7 @@ export default function PublicMap({ theme = 'light' }) {
         }
       } catch (err) {
         if (active) setGalleryLoadError(true)
-        console.error('Failed to load all reports for gallery/city-wide:', err)
+        reportDiagnostic('error', 'map', 'Failed to load all reports for gallery/city-wide:', err)
       } finally {
         if (active) setLoadingAllReports(false)
       }
@@ -675,7 +676,7 @@ export default function PublicMap({ theme = 'light' }) {
           setClusters(data)
         }
       } catch (err) {
-        console.error('Failed to load clusters for points of interest:', err)
+        reportDiagnostic('error', 'map', 'Failed to load clusters for points of interest:', err)
       } finally {
         if (active) setLoadingClusters(false)
       }
@@ -1375,7 +1376,7 @@ export default function PublicMap({ theme = 'light' }) {
       setDetailedEvidence(evidence || [])
       setEvidenceCache(prev => ({ ...prev, [report.id]: evidence || [] }))
     } catch (e) {
-      console.error(e)
+      reportDiagnostic('error', 'map', e)
     } finally {
       setLoadingEvidence(false)
     }

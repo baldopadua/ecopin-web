@@ -4,6 +4,7 @@ import { Polyline, Marker, Popup } from 'react-leaflet'
 import L from 'leaflet'
 import { Buffer } from 'buffer'
 import wkx from 'wkx'
+import { reportDiagnostic } from '../../lib/diagnostics.mjs';
 
 // Parse WKB geometry
 const parseGeometry = (geometry) => {
@@ -20,7 +21,7 @@ const parseGeometry = (geometry) => {
       return [lat, lng]
     }
   } catch (error) {
-    console.error('Error parsing geometry:', error)
+    reportDiagnostic('error', 'map', 'Error parsing geometry:', error)
   }
   return null
 }

@@ -47,6 +47,10 @@ const DEFAULT_TRAVEL_MODES = [
 
 const DEFAULT_BREAK_DURATIONS = [0, 15, 30, 60, 90]
 
+import { normalizeCapacitySettings } from '@/lib/optimization-settings.mjs'
+
+export { normalizeCapacitySettings }
+
 /**
  * OptimizationSettings panel.
  * Streamlined 2-parameter municipal dispatch settings with collapsible advanced controls.
@@ -80,7 +84,10 @@ export default function OptimizationSettings({
     const templateId = e.target.value
     if (!templateId) return
     const tpl = templates.find((t) => t.id === templateId)
-    if (tpl) onChange({ ...settings, ...tpl.settings, _templateId: tpl.id })
+    if (tpl) {
+      const normalizedSettings = normalizeCapacitySettings(tpl.settings || {})
+      onChange({ ...settings, ...normalizedSettings, _templateId: tpl.id })
+    }
   }
 
   const handleSave = async () => {
@@ -315,8 +322,16 @@ export default function OptimizationSettings({
                   max="100"
                   step="5"
                   disabled={disabled}
-                  value={Math.round((settings.capacity_utilization ?? 1) * 100)}
-                  onChange={e => update('capacity_utilization', Number(e.target.value) / 100)}
+                  value={Math.round((settings.capacity_utilization ?? (settings.shift_capacity_target != null ? (settings.shift_capacity_target > 1 ? settings.shift_capacity_target / 100 : settings.shift_capacity_target) : 1)) * 100)}
+                  onChange={e => {
+                    const rawVal = Number(e.target.value)
+                    const val = Number.isFinite(rawVal) ? Math.min(100, Math.max(10, rawVal)) : 100
+                    onChange({
+                      ...settings,
+                      capacity_utilization: val / 100,
+                      shift_capacity_target: val
+                    })
+                  }}
                   className="w-full border border-border p-2 bg-surface text-text-primary text-xs font-semibold font-sans focus:outline-none focus:border-primary"
                 />
                 <p className="text-xs font-sans text-text-muted mt-1">Target utilization percentage of available crew minutes.</p>
@@ -337,6 +352,45 @@ export default function OptimizationSettings({
                   className="w-full border border-border p-2 bg-surface text-text-primary text-xs font-semibold font-sans focus:outline-none focus:border-primary"
                 />
                 <p className="text-xs font-sans text-text-muted mt-1">Upper limit per crew to prevent fatigue.</p>
+              </div>
+            </div>
+
+            {/* Travel Route Limits (WT-01) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold normal-case tracking-normal text-text-muted mb-2">
+                  Max route distance limit (km)
+                </label>
+                <input
+                  aria-label="Max route distance limit (km)"
+                  type="number"
+                  min="5"
+                  max="500"
+                  step="5"
+                  disabled={disabled}
+                  value={settings.max_route_distance_km ?? 50}
+                  onChange={e => update('max_route_distance_km', Math.max(5, Number(e.target.value) || 50))}
+                  className="w-full border border-border p-2 bg-surface text-text-primary text-xs font-semibold font-sans focus:outline-none focus:border-primary"
+                />
+                <p className="text-xs font-sans text-text-muted mt-1">Upper bound on total crew travel distance per shift.</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold normal-case tracking-normal text-text-muted mb-2">
+                  Max route travel duration (mins)
+                </label>
+                <input
+                  aria-label="Max route travel duration (mins)"
+                  type="number"
+                  min="30"
+                  max="1440"
+                  step="15"
+                  disabled={disabled}
+                  value={settings.max_route_duration_minutes ?? 480}
+                  onChange={e => update('max_route_duration_minutes', Math.max(30, Number(e.target.value) || 480))}
+                  className="w-full border border-border p-2 bg-surface text-text-primary text-xs font-semibold font-sans focus:outline-none focus:border-primary"
+                />
+                <p className="text-xs font-sans text-text-muted mt-1">Upper bound on total transit time to prevent excessive detours.</p>
               </div>
             </div>
 

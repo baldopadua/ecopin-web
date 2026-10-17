@@ -8,8 +8,9 @@ import DataTable from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { AdminGuard } from '@/components/auth/RequireRole'
+import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
 
-export default function SystemLogs() {
+function SystemLogsContent() {
   const router = useRouter()
   const [allLogs, setAllLogs] = useState([])
   const [loading, setLoading] = useState(true)
@@ -24,7 +25,7 @@ export default function SystemLogs() {
       setAllLogs(data.logs || [])
       setError(null)
     } catch (err) {
-      console.error('Failed to load system logs:', err)
+      reportDiagnostic('error', 'admin', 'Failed to load system logs:', err)
       setError(err.message || 'Failed to load system logs')
     } finally {
       setLoading(false)
@@ -140,8 +141,7 @@ export default function SystemLogs() {
   ]
 
   return (
-    <AdminGuard>
-      <div className="p-8">
+    <div className="p-8">
         <PageHeader
           title="System Logs"
           subtitle="View system activity and actions"
@@ -220,6 +220,12 @@ export default function SystemLogs() {
           />
         )}
       </div>
+  )
+}
+export default function SystemLogs() {
+  return (
+    <AdminGuard>
+      <SystemLogsContent />
     </AdminGuard>
   )
 }

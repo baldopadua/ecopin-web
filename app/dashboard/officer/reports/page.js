@@ -248,11 +248,11 @@ export default function OfficerReportsPage() {
               ]
             },
             {
-              label: 'Status',
+              label: 'Report Status',
               value: statusFilter,
               onChange: setStatusFilter,
               options: [
-                { value: 'all', label: 'All Status' },
+                { value: 'all', label: 'All Report Status' },
                 { value: 'overdue', label: 'Overdue (SLA Risk)' },
                 { value: 'unresolved', label: 'Unresolved' },
                 { value: 'in_progress', label: 'In Progress' },
@@ -263,11 +263,11 @@ export default function OfficerReportsPage() {
               ]
             },
             {
-              label: 'All Validation',
+              label: 'Review Status',
               value: validationFilter,
               onChange: setValidationFilter,
               options: [
-                { value: 'all', label: 'All Validation' },
+                { value: 'all', label: 'All Review Status' },
                 { value: 'pending', label: 'Pending' },
                 { value: 'pending_ai_validation', label: 'Pending AI Validation' },
                 { value: 'manual_review', label: 'Manual Review' },

@@ -15,6 +15,7 @@ import OutlierClusterLayer from './OutlierClusterLayer'
 import EcoPinMarker from './EcoPinMarker'
 import useMapPhotoEvidence from './useMapPhotoEvidence'
 import { Filter, Check } from 'lucide-react'
+import { reportDiagnostic } from '../../lib/diagnostics.mjs';
 
 // Polyfill Buffer for browser environment
 if (typeof window !== 'undefined' && !window.Buffer) {
@@ -64,7 +65,7 @@ const parseGeometry = (geometry) => {
       return [lat, lng]
     }
   } catch (error) {
-    console.error('Error parsing geometry:', error)
+    reportDiagnostic('error', 'map', 'Error parsing geometry:', error)
   }
 
   return null
@@ -143,7 +144,7 @@ function HeatmapLayer({ heatPoints, showHeatmap }) {
           map.removeLayer(heatLayerRef.current)
         }
       } catch (e) {
-        console.error(e)
+        reportDiagnostic('error', 'map', e)
       }
 
       heatLayerRef.current = null
@@ -160,7 +161,6 @@ function MapCenter({ centerLat, centerLng }) {
   useEffect(() => {
     let timeoutId
     if (centerLat && centerLng && !hasCentered.current) {
-      console.log('Centering map on:', centerLat, centerLng)
       hasCentered.current = true
       timeoutId = setTimeout(() => {
         if (map && map.getContainer && map.getContainer()) {
@@ -179,7 +179,6 @@ function MapCenter({ centerLat, centerLng }) {
 }
 
 export default function EcoPinMap({ centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode = false, selectedReports = [], onReportSelect, hideFilterPanel = false, hidePins = false, hideClusters = false, onReportClick, onClusterSelect, children, allowedClusterIds, allowedReportIds, externalStatusFilter, externalIssueTypeFilter, externalShowPins, externalShowClusters, externalShowHeatmap, externalMaxBounds, externalMinZoom, selectedTemplate = 'standard', photoPins = false }) {
-  console.log('EcoPinMap props:', { centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode, hideFilterPanel, hidePins, hideClusters, allowedClusterIds, allowedReportIds, externalMaxBounds, externalMinZoom, selectedTemplate })
 
   const [mounted, setMounted] = useState(false)
   const [reports, setReports] = useState([])
@@ -269,17 +268,11 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
     setMounted(true)
 
     // Fetch data when component mounts
-    console.log(`[EcoPinMap Initial Fetch] Triggering fetch with initialValidationStatusFilter: ${validationStatusFilter}`)
     Promise.all([
       fetchValidatedReports({ validationStatus: validationStatusFilter }),
       fetchIssueTypes(),
       fetchClusters()
     ]).then(([reportsData, typesData, clustersData]) => {
-      console.log(`[EcoPinMap Initial Fetch] Successfully fetched ${reportsData?.length || 0} reports`)
-      console.log('[EcoPinMap Initial Fetch] Validation statuses in fetched reports:', reportsData.map(r => ({ id: r.id, validation_status: r.validation_status })))
-      console.log('Clusters fetched:', clustersData)
-      console.log('Reports fetched:', reportsData)
-      console.log('Reports with cluster_id:', reportsData.filter(r => r.cluster_id))
       setReports(reportsData)
       setFilteredReports(reportsData)
       setIssueTypes(typesData)
@@ -295,7 +288,6 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
           reportsByCluster[report.cluster_id].push(report)
         }
       })
-      console.log('Reports by cluster:', reportsByCluster)
       setClusterReports(reportsByCluster)
 
       setLoading(false)
@@ -312,15 +304,11 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
           table: 'reports'
         },
         (payload) => {
-          console.log('Real-time update received:', payload)
-          console.log('[EcoPinMap Real-time Fetch] Triggering fetch due to real-time update. Current filter:', validationStatusFilter)
           // Refetch reports when changes occur
           Promise.all([
             fetchValidatedReports({ validationStatus: validationStatusFilter }),
             fetchClusters()
           ]).then(([reportsData, clustersData]) => {
-            console.log(`[EcoPinMap Real-time Fetch] Successfully fetched ${reportsData?.length || 0} reports`)
-            console.log('[EcoPinMap Real-time Fetch] Validation statuses in fetched reports:', reportsData.map(r => ({ id: r.id, validation_status: r.validation_status })))
             setReports(reportsData)
             setClusters(clustersData)
 
@@ -398,10 +386,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
   // Refetch reports when validation status filter changes
   useEffect(() => {
     if (mounted) {
-      console.log(`[EcoPinMap Filter Change] validationStatusFilter changed to: ${validationStatusFilter}. Triggering fetch.`)
       fetchValidatedReports({ validationStatus: validationStatusFilter }).then(reportsData => {
-        console.log(`[EcoPinMap Filter Change] Successfully fetched ${reportsData?.length || 0} reports`)
-        console.log('[EcoPinMap Filter Change] Validation statuses in fetched reports:', reportsData.map(r => ({ id: r.id, validation_status: r.validation_status })))
         setReports(reportsData)
         setFilteredReports(reportsData)
 
@@ -451,7 +436,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
             }
           }
         } catch (error) {
-          console.error('Error parsing location for report', report.id, ':', error)
+          reportDiagnostic('error', 'map', 'Error parsing location for report', report.id, ':', error)
         }
       }
 
@@ -632,7 +617,6 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
           {/* Cluster Polygons (shown when zoomed in - connects actual report pins) */}
           {!hideClusters && showClusters && zoom > 15 && filteredClusters.map((cluster) => {
             const memberReports = filteredClusterReports[cluster.id]
-            console.log('Cluster polygon check:', cluster.id, 'memberReports:', memberReports, 'zoom:', zoom)
             if (!memberReports || memberReports.length < 2) return null
 
             // Get coordinates of all member reports
@@ -665,7 +649,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                     }
                   }
                 } catch (error) {
-                  console.error('Error parsing location for report', report.id, ':', error)
+                  reportDiagnostic('error', 'map', 'Error parsing location for report', report.id, ':', error)
                 }
               }
 
@@ -675,7 +659,6 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
               return null
             }).filter(point => point !== null)
 
-            console.log('Cluster', cluster.id, 'polygon points:', polygonPoints.length)
             if (polygonPoints.length < 3) return null
 
             // Calculate center of points

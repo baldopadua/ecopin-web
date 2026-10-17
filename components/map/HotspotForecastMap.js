@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, GeoJSON, useMap, Marker } from 'react-leaflet'
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { AlertCircle } from 'lucide-react';
+import { reportDiagnostic } from '../../lib/diagnostics.mjs';
 
 // These templates interpolate data only into HTML text, never attributes or styles.
 const escapePopupText = (value) => {
@@ -148,7 +149,7 @@ function MapBoundsFitter({ geojsonData, heatmapData }) {
         fitted.current = true;
       }
     } catch (e) {
-      console.error('fitBounds error', e);
+      reportDiagnostic('error', 'forecast', 'fitBounds error', e);
     }
   }, [geojsonData, heatmapData, map]);
 

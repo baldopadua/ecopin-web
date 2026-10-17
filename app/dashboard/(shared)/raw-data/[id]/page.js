@@ -20,6 +20,11 @@ import { useUser } from '@/components/auth/UserContext'
 import { RefreshCw, Upload, Image as ImageIcon } from 'lucide-react'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
+import { reportDiagnostic } from '../../../../../lib/diagnostics.mjs';
+
+import { backendFetch as fetch } from '../../../../../lib/backend-fetch.mjs';
+
+
 
 // Polyfill Buffer for browser environment
 if (typeof window !== 'undefined' && !window.Buffer) {
@@ -61,17 +66,13 @@ export default function ReportDetailPage() {
         fetchReportById(reportId),
         fetchReportEvidence(reportId)
       ])
-      console.log('Report data:', reportData)
-      console.log('Profiles data:', reportData?.profiles)
-      console.log('Data consent value:', reportData?.profiles?.data_consent)
-      console.log('Evidence data:', evidenceData)
       if (reportData) {
         // Access Control: Field crew cannot view incomplete raw reports
         if (user?.role === 'field_crew' && reportData.lifecycle_stage !== 'completed') {
           setError('Access Denied: Field crews can only view raw report details after the operation is complete. Please use the Operations workspace.')
           return
         }
-        
+
         setReport(reportData)
         setEvidence(evidenceData)
         setAgencyResponses([])
@@ -79,7 +80,7 @@ export default function ReportDetailPage() {
         setError('Report not found')
       }
     } catch (err) {
-      console.error('Error loading report:', err)
+      reportDiagnostic('error', 'media', 'Error loading report:', err)
       setError('Failed to load report')
     } finally {
       setLoading(false)
@@ -159,7 +160,7 @@ export default function ReportDetailPage() {
         }
       }
     } catch (error) {
-      console.error('Error parsing location:', error)
+      reportDiagnostic('error', 'media', 'Error parsing location:', error)
     }
 
     return { latitude: null, longitude: null }
@@ -215,7 +216,7 @@ export default function ReportDetailPage() {
       setShowStatusDropdown(false)
       setNotification({ message: 'Status updated successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to update status:', error)
+      reportDiagnostic('error', 'media', 'Failed to update status:', error)
       setNotification({ message: 'Failed to update status. Please try again.', type: 'error' })
     } finally {
       setUpdatingStatus(false)
@@ -229,7 +230,7 @@ export default function ReportDetailPage() {
       setReport({ ...report, validation_status: 'rejected' })
       setNotification({ message: 'Report rejected successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to reject report:', error)
+      reportDiagnostic('error', 'media', 'Failed to reject report:', error)
       setNotification({ message: 'Failed to reject report. Please try again.', type: 'error' })
     } finally {
       setValidatingReport(null)
@@ -243,7 +244,7 @@ export default function ReportDetailPage() {
       setReport({ ...report, validation_status: 'approved' })
       setNotification({ message: 'Report approved successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to approve report:', error)
+      reportDiagnostic('error', 'media', 'Failed to approve report:', error)
       setNotification({ message: 'Failed to approve report. Please try again.', type: 'error' })
     } finally {
       setValidatingReport(null)
@@ -263,7 +264,7 @@ export default function ReportDetailPage() {
       setReport(updatedReport)
       setNotification({ message: 'Report resolved successfully. Waiting for reporter feedback.', type: 'success' })
     } catch (error) {
-      console.error('Failed to resolve report:', error)
+      reportDiagnostic('error', 'media', 'Failed to resolve report:', error)
       setNotification({ message: 'Failed to resolve report. Please try again.', type: 'error' })
     } finally {
       setResolvingReport(false)
@@ -290,8 +291,7 @@ export default function ReportDetailPage() {
     const setUploading = photoType === 'before' ? setUploadingBefore : setUploadingAfter
     setUploading(true)
 
-    const token = localStorage.getItem('authToken')
-    console.log('Uploading photo:', { token: token ? token.substring(0, 20) + '...' : null, photoType })
+
     const formData = new FormData()
     formData.append('image', file)
     formData.append('photo_type', photoType)
@@ -300,7 +300,6 @@ export default function ReportDetailPage() {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/reports/${reportId}/photo`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
         },
         body: formData,
       })
@@ -311,11 +310,10 @@ export default function ReportDetailPage() {
       }
 
       const data = await response.json()
-      console.log('Upload response:', data)
       setReport(data.report)
       setNotification({ message: 'Photo uploaded successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to upload photo:', error)
+      reportDiagnostic('error', 'media', 'Failed to upload photo:', error)
       setNotification({ message: error.message || 'Failed to upload photo. Please try again.', type: 'error' })
     } finally {
       setUploading(false)
@@ -327,13 +325,12 @@ export default function ReportDetailPage() {
       return
     }
 
-    const token = localStorage.getItem('authToken')
+
 
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/reports/${reportId}/photo`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ photo_type: photoType }),
@@ -348,7 +345,7 @@ export default function ReportDetailPage() {
       setReport(data.report)
       setNotification({ message: 'Photo deleted successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to delete photo:', error)
+      reportDiagnostic('error', 'media', 'Failed to delete photo:', error)
       setNotification({ message: error.message || 'Failed to delete photo. Please try again.', type: 'error' })
     }
   }
@@ -360,7 +357,7 @@ export default function ReportDetailPage() {
       await loadReportData()
       setNotification({ message: 'Property owner consent status updated', type: 'success' })
     } catch (error) {
-      console.error('Failed to update consent status:', error)
+      reportDiagnostic('error', 'media', 'Failed to update consent status:', error)
       setNotification({ message: 'Failed to update consent status', type: 'error' })
     } finally {
       setUpdatingConsent(false)
@@ -461,17 +458,17 @@ export default function ReportDetailPage() {
         title="Report Details"
         subtitle="View detailed report information"
         breadcrumbs={[
-          { 
-            label: 'Dashboard', 
-            href: user?.role === 'officer' ? '/dashboard/officer' : 
-                  user?.role === 'field_crew' ? '/dashboard/field-crew' : 
-                  '/dashboard' 
+          {
+            label: 'Dashboard',
+            href: user?.role === 'officer' ? '/dashboard/officer' :
+                  user?.role === 'field_crew' ? '/dashboard/field-crew' :
+                  '/dashboard'
           },
-          { 
-            label: 'Reports', 
-            href: user?.role === 'officer' ? '/dashboard/officer/reports' : 
-                  user?.role === 'field_crew' ? '/dashboard/field-crew/raw-data' : 
-                  '/dashboard/raw-data' 
+          {
+            label: 'Reports',
+            href: user?.role === 'officer' ? '/dashboard/officer/reports' :
+                  user?.role === 'field_crew' ? '/dashboard/field-crew/raw-data' :
+                  '/dashboard/raw-data'
           },
           { label: 'Details' }
         ]}
@@ -492,30 +489,47 @@ export default function ReportDetailPage() {
               {/* Lifecycle Timeline - Read-only display */}
               <div className="card border border-border border-primary">
                 <div className="text-center mb-6">
-                  <h2 className="text-2xl font-bold text-text-primary mb-2">Report Lifecycle</h2>
-                  <div className="flex justify-center gap-3 flex-wrap">
+                  <h2 className="text-2xl font-bold text-text-primary mb-1">Operational Lifecycle</h2>
+                  <p className="text-xs text-text-muted mb-4">Track progress from citizen submission through field resolution</p>
+                  <div className="flex justify-center gap-3 flex-wrap items-center">
                     {report.validation_status === 'rejected' || (report.on_private_property && report.property_owner_consent_status === 'denied') ? (
                       <>
-                        {report.validation_status === 'rejected' && (
-                          <StatusBadge status={report.validation_status} type="validation" size="large" />
-                        )}
+                        <div className="flex items-center gap-1.5 px-3 py-1 bg-surface-elevated rounded-lg border border-border">
+                          <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">Review:</span>
+                          <StatusBadge status={report.validation_status} type="validation" size="small" />
+                        </div>
                         {report.on_private_property && report.property_owner_consent_status === 'denied' && (
-                          <StatusBadge status={report.property_owner_consent_status} type="consent" size="large" />
+                          <div className="flex items-center gap-1.5 px-3 py-1 bg-surface-elevated rounded-lg border border-border">
+                            <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">Consent:</span>
+                            <StatusBadge status={report.property_owner_consent_status} type="consent" size="small" />
+                          </div>
                         )}
                       </>
                     ) : (
                       <>
-                        <StatusBadge status={report.status} type="report" size="large" />
-                        <StatusBadge status={report.validation_status} type="validation" size="large" />
+                        <div className="flex items-center gap-1.5 px-3 py-1 bg-surface-elevated rounded-lg border border-border">
+                          <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">Report Status:</span>
+                          <StatusBadge status={report.status} type="report" size="small" />
+                        </div>
+                        <div className="flex items-center gap-1.5 px-3 py-1 bg-surface-elevated rounded-lg border border-border">
+                          <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">Citizen Review:</span>
+                          <StatusBadge status={report.validation_status} type="validation" size="small" />
+                        </div>
                         {report.on_private_property && (
-                          <StatusBadge
-                            status={report.property_owner_consent_status}
-                            type="consent"
-                            size="large"
-                          />
+                          <div className="flex items-center gap-1.5 px-3 py-1 bg-surface-elevated rounded-lg border border-border">
+                            <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">Consent:</span>
+                            <StatusBadge
+                              status={report.property_owner_consent_status}
+                              type="consent"
+                              size="small"
+                            />
+                          </div>
                         )}
                         {(report.stage || report.lifecycle_stage) && (
-                          <StatusBadge status={report.stage || report.lifecycle_stage} type="lifecycle" size="large" />
+                          <div className="flex items-center gap-1.5 px-3 py-1 bg-surface-elevated rounded-lg border border-border">
+                            <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">Lifecycle Stage:</span>
+                            <StatusBadge status={report.stage || report.lifecycle_stage} type="lifecycle" size="small" />
+                          </div>
                         )}
                       </>
                     )}
@@ -617,10 +631,10 @@ export default function ReportDetailPage() {
                       )}
                     </div>
                     {report.before_photo_url ? (
-                      <SecureImage 
-                        src={report.before_photo_url} 
-                        alt="Before" 
-                        className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity" 
+                      <SecureImage
+                        src={report.before_photo_url}
+                        alt="Before"
+                        className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
                         onClick={() => openLightboxAtUrl(report.before_photo_url)}
                       />
                     ) : user?.role === 'field_crew' ? (
@@ -680,10 +694,10 @@ export default function ReportDetailPage() {
                       )}
                     </div>
                     {report.after_photo_url ? (
-                      <SecureImage 
-                        src={report.after_photo_url} 
-                        alt="After" 
-                        className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity" 
+                      <SecureImage
+                        src={report.after_photo_url}
+                        alt="After"
+                        className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
                         onClick={() => openLightboxAtUrl(report.after_photo_url)}
                       />
                     ) : user?.role === 'field_crew' ? (

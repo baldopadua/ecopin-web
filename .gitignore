@@ -20,9 +20,12 @@
 # production
 /build
 
-# misc
+# misc & certificates/keys
 .DS_Store
 *.pem
+*.key
+*.cert
+*.id_rsa
 
 # debug
 npm-debug.log*
@@ -52,3 +55,7 @@ scripts/
 # Security audit logs and sensitive security notes
 QA_SECURITY_AUDIT_LOG.md
 docs/*security*.md
+
+# Graphify knowledge graph outputs
+graphify-out/
+

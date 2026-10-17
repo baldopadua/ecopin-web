@@ -18,6 +18,7 @@ import {
   RouteMapView 
 } from '@/components/optimization/RouteComponents'
 import { Sun, Circle, Map, CheckCircle2, XCircle, ArrowLeft, RotateCcw } from 'lucide-react'
+import { reportDiagnostic } from '../../../../../lib/diagnostics.mjs';
 
 export default function OptimizationRunPage() {
   const { id } = useParams()
@@ -52,7 +53,7 @@ export default function OptimizationRunPage() {
         setProposalReports(reportsData)
       }
     } catch (error) {
-      console.error('Failed to load run:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to load run:', error)
     } finally {
       setLoading(false)
     }
@@ -73,7 +74,7 @@ export default function OptimizationRunPage() {
       setNotification({ message: 'Dispatched! Routes and tasks published to field crews.', type: 'success' })
       loadRun()
     } catch (err) {
-      console.error(err)
+      reportDiagnostic('error', 'dispatch', err)
       setNotification({ message: 'Failed to dispatch optimization', type: 'error' })
     } finally {
       setActionLoading(null)
@@ -87,7 +88,7 @@ export default function OptimizationRunPage() {
       setNotification({ message: 'Optimization proposal discarded', type: 'info' })
       loadRun()
     } catch (err) {
-      console.error(err)
+      reportDiagnostic('error', 'dispatch', err)
       setNotification({ message: 'Failed to discard optimization proposal', type: 'error' })
     } finally {
       setActionLoading(null)

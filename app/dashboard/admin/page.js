@@ -2,13 +2,15 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
+import { AdminGuard } from '@/components/auth/RequireRole'
 import { getSystemStats, getSystemLogs } from '@/lib/api'
 import StatsCard from '@/components/ui/StatsCard'
 import DataTable from '@/components/ui/DataTable'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { Users, Settings, FileText } from 'lucide-react'
+import { reportDiagnostic } from '../../../lib/diagnostics.mjs';
 
-export default function AdminHomepage() {
+function AdminHomepageContent() {
   const router = useRouter()
   const [stats, setStats] = useState(null)
   const [recentLogs, setRecentLogs] = useState([])
@@ -25,7 +27,7 @@ export default function AdminHomepage() {
       const data = await getSystemStats()
       setStats(data)
     } catch (err) {
-      console.error('Failed to load stats:', err)
+      reportDiagnostic('error', 'admin', 'Failed to load stats:', err)
       setError('Failed to load system statistics')
     } finally {
       setLoading(false)
@@ -37,7 +39,7 @@ export default function AdminHomepage() {
       const data = await getSystemLogs({ limit: 4 })
       setRecentLogs(data.logs || [])
     } catch (err) {
-      console.error('Failed to load recent logs:', err)
+      reportDiagnostic('error', 'admin', 'Failed to load recent logs:', err)
     }
   }
 
@@ -259,5 +261,12 @@ export default function AdminHomepage() {
         />
       </div>
     </div>
+  )
+}
+export default function AdminHomepage() {
+  return (
+    <AdminGuard>
+      <AdminHomepageContent />
+    </AdminGuard>
   )
 }

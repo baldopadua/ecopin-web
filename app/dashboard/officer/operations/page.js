@@ -8,6 +8,7 @@ import DataTable from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { OfficerGuard } from '@/components/auth/RequireRole'
+import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
 
 export default function CleanupTasksPage() {
   const [tasks, setTasks] = useState([])
@@ -41,7 +42,7 @@ export default function CleanupTasksPage() {
         setTasks(taskList)
         setFilteredTasks(taskList)
       } catch (error) {
-        console.error('Failed to load cleanup tasks:', error)
+        reportDiagnostic('error', 'dispatch', 'Failed to load cleanup tasks:', error)
       } finally {
         setLoading(false)
       }

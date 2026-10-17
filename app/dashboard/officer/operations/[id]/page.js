@@ -15,6 +15,7 @@ import { OfficerGuard } from '@/components/auth/RequireRole'
 import ReportDetailModal from '@/components/reports/ReportDetailModal'
 import Dialog from '@/components/ui/Dialog'
 import styles from './OperationDetails.module.css'
+import { reportDiagnostic } from '../../../../../lib/diagnostics.mjs';
 
 const OperationsMap = dynamic(() => import('@/components/map/OperationsMap'), { 
   ssr: false,
@@ -62,7 +63,7 @@ const parseLocation = (location, latitude, longitude) => {
       }
     }
   } catch (error) {
-    console.error('Error parsing location:', error)
+    reportDiagnostic('error', 'dispatch', 'Error parsing location:', error)
   }
 
   return { latitude: null, longitude: null }
@@ -129,9 +130,8 @@ function CleanupTaskDetailContent() {
         }
 
         // Don't fetch evidence on load - lazy load when expanded
-        console.log('Loaded', reportsData.length, 'reports')
       } catch (error) {
-        console.error('Failed to load cleanup task:', error)
+        reportDiagnostic('error', 'dispatch', 'Failed to load cleanup task:', error)
       } finally {
         setLoading(false)
       }
@@ -145,7 +145,7 @@ function CleanupTaskDetailContent() {
         const data = await fetchAvailableCrew()
         setAvailableCrew(data)
       } catch (error) {
-        console.error('Failed to load available crew:', error)
+        reportDiagnostic('error', 'dispatch', 'Failed to load available crew:', error)
       }
     }
     loadAvailableCrew()
@@ -175,7 +175,7 @@ function CleanupTaskDetailContent() {
       setShowAssignmentModal(false)
       setNotification({ message: 'Crew deployed successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to assign task:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to assign task:', error)
       setAssignmentError(error.message || 'The crew could not be assigned. Please try again.')
       setNotification({ message: error.message || 'Failed to assign crew. Please try again.', type: 'error' })
     } finally {
@@ -197,7 +197,7 @@ function CleanupTaskDetailContent() {
       setIsEditingTitle(false)
       setNotification({ message: 'Title updated successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to update title:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to update title:', error)
       setNotification({ message: 'Failed to update title. Please try again.', type: 'error' })
     } finally {
       setSavingTitle(false)
@@ -239,7 +239,7 @@ function CleanupTaskDetailContent() {
       setShowLifecycleDropdown(false)
       setNotification({ message: 'Lifecycle stage updated successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to update lifecycle stage:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to update lifecycle stage:', error)
       setNotification({ message: 'Failed to update lifecycle stage. Please try again.', type: 'error' })
     } finally {
       setUpdatingLifecycle(false)
@@ -285,7 +285,7 @@ function CleanupTaskDetailContent() {
       
       setNotification({ message: 'Report marked as complete!', type: 'success' })
     } catch (error) {
-      console.error('Failed to mark report complete:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to mark report complete:', error)
       setNotification({ message: 'Failed to mark report complete. Please try again.', type: 'error' })
     } finally {
       setCompletingReportId(null)
@@ -315,7 +315,7 @@ function CleanupTaskDetailContent() {
 
       setNotification({ message: 'Report validated successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to validate report:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to validate report:', error)
       setNotification({ message: 'Failed to validate report. Please try again.', type: 'error' })
     } finally {
       setValidatingReport(null)
@@ -337,7 +337,7 @@ function CleanupTaskDetailContent() {
 
       setNotification({ message: 'Report rejected successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to reject report:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to reject report:', error)
       setNotification({ message: 'Failed to reject report. Please try again.', type: 'error' })
     } finally {
       setValidatingReport(null)
@@ -362,7 +362,7 @@ function CleanupTaskDetailContent() {
       setShowNoteInput(false)
       setNotification({ message: 'Note added successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to add note:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to add note:', error)
       setNotification({ message: 'Failed to add note. Please try again.', type: 'error' })
     } finally {
       setAddingNote(false)
@@ -378,7 +378,7 @@ function CleanupTaskDetailContent() {
       const responses = await fetchAgencyResponses(reportId)
       setAgencyResponses(responses)
     } catch (error) {
-      console.error('Failed to load agency responses:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to load agency responses:', error)
       setAgencyResponses([])
     }
     
@@ -404,7 +404,7 @@ function CleanupTaskDetailContent() {
         })
         .catch(error => {
           if (error.name !== 'AbortError') {
-            console.error('Failed to fetch evidence for report:', reportId, error)
+            reportDiagnostic('error', 'dispatch', 'Failed to fetch evidence for report:', reportId, error)
             setEvidenceErrors(prev => ({ ...prev, [reportId]: error.message }))
           }
         })
@@ -443,7 +443,7 @@ function CleanupTaskDetailContent() {
           })
           .catch(error => {
             if (error.name !== 'AbortError') {
-              console.error('Failed to fetch evidence for report:', nextReportId, error)
+              reportDiagnostic('error', 'dispatch', 'Failed to fetch evidence for report:', nextReportId, error)
               setEvidenceErrors(prev => ({ ...prev, [nextReportId]: error.message }))
             }
           })
@@ -478,7 +478,7 @@ function CleanupTaskDetailContent() {
           })
           .catch(error => {
             if (error.name !== 'AbortError') {
-              console.error('Failed to fetch evidence for report:', prevReportId, error)
+              reportDiagnostic('error', 'dispatch', 'Failed to fetch evidence for report:', prevReportId, error)
               setEvidenceErrors(prev => ({ ...prev, [prevReportId]: error.message }))
             }
           })
@@ -513,16 +513,14 @@ function CleanupTaskDetailContent() {
       abortControllersRef.current[reportId] = controller
       
       try {
-        console.log('Fetching evidence for report:', reportId)
         const evidence = await fetchReportEvidence(reportId, controller.signal)
         setReportsEvidence(prev => ({
           ...prev,
           [reportId]: evidence || []
         }))
-        console.log('Fetched evidence:', evidence?.length || 0, 'items')
       } catch (error) {
         if (error.name !== 'AbortError') {
-          console.error('Failed to fetch evidence for report:', reportId, error)
+          reportDiagnostic('error', 'dispatch', 'Failed to fetch evidence for report:', reportId, error)
           setEvidenceErrors(prev => ({ ...prev, [reportId]: error.message }))
           setNotification({ message: 'Failed to load evidence. Please try again.', type: 'error' })
         }

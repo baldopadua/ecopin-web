@@ -121,7 +121,7 @@ export default function ReportsPage() {
     },
     { 
       key: 'status', 
-      label: 'Status', 
+      label: 'Report Status', 
       width: '15%',
       render: (value) => (
         <StatusBadge status={value} type="report" />
@@ -129,7 +129,7 @@ export default function ReportsPage() {
     },
     { 
       key: 'validation_status', 
-      label: 'Validation', 
+      label: 'Review Status', 
       width: '15%',
       render: (value) => (
         <StatusBadge status={value} type="validation" />
@@ -145,8 +145,8 @@ export default function ReportsPage() {
     },
     { 
       key: 'stage', 
-      label: 'Stage', 
-      width: '10%',
+      label: 'Operational Stage', 
+      width: '12%',
       render: (value) => (
         <StatusBadge status={value} type="lifecycle" />
       )
@@ -185,11 +185,11 @@ export default function ReportsPage() {
             ]
           },
           {
-            label: 'All Status',
+            label: 'Report Status',
             value: statusFilter,
             onChange: setStatusFilter,
             options: [
-              { value: 'all', label: 'All Status' },
+              { value: 'all', label: 'All Report Status' },
               { value: 'unresolved', label: 'Unresolved' },
               { value: 'in_progress', label: 'In Progress' },
               { value: 'resolved', label: 'Resolved' },
@@ -199,11 +199,11 @@ export default function ReportsPage() {
             ]
           },
           {
-            label: 'All Validation',
+            label: 'Review Status',
             value: validationFilter,
             onChange: setValidationFilter,
             options: [
-              { value: 'all', label: 'All Validation' },
+              { value: 'all', label: 'All Review Status' },
               { value: 'automatically_valid', label: 'Automatically Valid' },
               { value: 'manual_review', label: 'Manual Review' },
               { value: 'validated', label: 'Validated' },

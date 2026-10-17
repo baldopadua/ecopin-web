@@ -7,6 +7,7 @@ import wkx from 'wkx'
 import EcoPinMarker from './EcoPinMarker'
 import { useUser } from '@/components/auth/UserContext'
 import useMapPhotoEvidence from './useMapPhotoEvidence'
+import { reportDiagnostic } from '../../lib/diagnostics.mjs';
 
 // Parse WKB geometry
 const parseGeometry = (geometry) => {
@@ -23,7 +24,7 @@ const parseGeometry = (geometry) => {
       return [lat, lng]
     }
   } catch (error) {
-    console.error('Error parsing geometry:', error)
+    reportDiagnostic('error', 'map', 'Error parsing geometry:', error)
   }
   return null
 }

@@ -16,6 +16,11 @@ import EcoPinMap from '@/components/map/EcoPinMap'
 import MicroRouteLayer from '@/components/map/MicroRouteLayer'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
+import { reportDiagnostic } from '../../../../../lib/diagnostics.mjs';
+
+import { backendFetch as fetch } from '../../../../../lib/backend-fetch.mjs';
+
+
 
 // Polyfill Buffer for browser environment
 if (typeof window !== 'undefined' && !window.Buffer) {
@@ -54,7 +59,7 @@ const parseLocation = (location, latitude, longitude) => {
       }
     }
   } catch (error) {
-    console.error('Error parsing location:', error)
+    reportDiagnostic('error', 'dispatch', 'Error parsing location:', error)
   }
 
   return { latitude: null, longitude: null }
@@ -86,12 +91,12 @@ export default function FieldCrewCleanupTaskDetailPage() {
   const [agencyResponses, setAgencyResponses] = useState([])
   const [availableCrew, setAvailableCrew] = useState([])
   const [isAssigned, setIsAssigned] = useState(false)
-  
+
   // Edit Report Details State
   const [isEditingDetails, setIsEditingDetails] = useState(false)
   const [updatingDetails, setUpdatingDetails] = useState(false)
   const [editFormData, setEditFormData] = useState({})
-  
+
   const router = useRouter()
   const { confirm: confirmAction, confirmation } = useConfirmation()
   const params = useParams()
@@ -102,11 +107,11 @@ export default function FieldCrewCleanupTaskDetailPage() {
     const loadTask = async () => {
       try {
         const data = await fetchCleanupTaskById(taskId)
-        
+
         // Check if current user is assigned to this task
         const assigned = data.assigned_crew_ids && data.assigned_crew_ids.length > 0 && user?.id && data.assigned_crew_ids.includes(user.id)
         setIsAssigned(assigned)
-        
+
         setTask(data)
 
         // Fetch reports based on task type
@@ -122,9 +127,8 @@ export default function FieldCrewCleanupTaskDetailPage() {
         }
 
         // Don't fetch evidence on load - lazy load when expanded
-        console.log('Loaded', reportsData.length, 'reports')
       } catch (error) {
-        console.error('Failed to load cleanup task:', error)
+        reportDiagnostic('error', 'dispatch', 'Failed to load cleanup task:', error)
       } finally {
         setLoading(false)
       }
@@ -148,7 +152,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
         const data = await fetchAvailableCrew()
         setAvailableCrew(data)
       } catch (error) {
-        console.error('Failed to load available crew:', error)
+        reportDiagnostic('error', 'dispatch', 'Failed to load available crew:', error)
       }
     }
     loadAvailableCrew()
@@ -163,7 +167,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
     setUpdatingDetails(true)
     try {
       await updateReportDetails(reportId, editFormData)
-      
+
       // Refresh reports
       let reportsData = []
       if (task.is_custom && task.report_ids) {
@@ -175,7 +179,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
       setIsEditingDetails(false)
       setNotification({ message: 'Report details updated successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to update details:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to update details:', error)
       setNotification({ message: 'Failed to update report details. Please try again.', type: 'error' })
     } finally {
       setUpdatingDetails(false)
@@ -221,7 +225,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
 
       setNotification({ message: 'Cleanup task marked as complete successfully!', type: 'success' })
     } catch (error) {
-      console.error('Failed to mark task complete:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to mark task complete:', error)
       setNotification({ message: 'Failed to mark task complete. Please try again.', type: 'error' })
     } finally {
       setMarkingComplete(false)
@@ -238,7 +242,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
     }
 
     const report = reports.find(r => r.id === reportId)
-    
+
     // Check if trying to mark as resolved without photos
     if (newStage === 'resolved' && (!report.before_photo_url || !report.after_photo_url)) {
       setNotification({ message: 'Please upload both before and after photos before marking the report as resolved.', type: 'warning' })
@@ -248,7 +252,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
     setUpdatingLifecycle(true)
     try {
       await updateLifecycleStage(reportId, newStage)
-      
+
       // Refresh reports to show updated lifecycle stage
       let reportsData = []
       if (task.is_custom && task.report_ids) {
@@ -257,7 +261,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
         reportsData = await fetchReportsByClusterId(task.cluster_id)
       }
       setReports(reportsData)
-      
+
       // If we're in detail view, ensure the selected report still exists
       if (viewMode === 'detail' && selectedReportId) {
         const reportStillExists = reportsData.find(r => r.id === selectedReportId)
@@ -267,11 +271,11 @@ export default function FieldCrewCleanupTaskDetailPage() {
           setSelectedReportId(null)
         }
       }
-      
+
       setShowLifecycleDropdown(false)
       setNotification({ message: 'Lifecycle stage updated successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to update lifecycle stage:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to update lifecycle stage:', error)
       setNotification({ message: 'Failed to update lifecycle stage. Please try again.', type: 'error' })
     } finally {
       setUpdatingLifecycle(false)
@@ -280,7 +284,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
 
   const handleMarkReportComplete = async (reportId) => {
     const report = reports.find(r => r.id === reportId)
-    
+
     // Check if the report has both before and after photos
     if (!report.before_photo_url || !report.after_photo_url) {
       setNotification({ message: 'Please upload both before and after photos for this report before marking it as complete.', type: 'warning' })
@@ -298,7 +302,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
         reportsData = await fetchReportsByClusterId(task.cluster_id)
       }
       setReports(reportsData)
-      
+
       // If we're in detail view, ensure the selected report still exists
       if (viewMode === 'detail' && selectedReportId) {
         const reportStillExists = reportsData.find(r => r.id === selectedReportId)
@@ -307,10 +311,10 @@ export default function FieldCrewCleanupTaskDetailPage() {
           setSelectedReportId(null)
         }
       }
-      
+
       setNotification({ message: 'Cleanup completed successfully! Waiting for citizen to close.', type: 'success' })
     } catch (error) {
-      console.error('Failed to mark report complete:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to mark report complete:', error)
       setNotification({ message: 'Failed to mark report complete. Please try again.', type: 'error' })
     } finally {
       setCompletingReportId(null)
@@ -331,7 +335,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
       setReports(reportsData)
       setNotification({ message: `Report marked as ${newStatus}!`, type: 'success' })
     } catch (error) {
-      console.error('Failed to update status:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to update status:', error)
       setNotification({ message: 'Failed to update status. Please try again.', type: 'error' })
     } finally {
       setCompletingReportId(null)
@@ -353,7 +357,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
 
       setNotification({ message: 'Report validated successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to validate report:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to validate report:', error)
       setNotification({ message: 'Failed to validate report. Please try again.', type: 'error' })
     } finally {
       setValidatingReport(null)
@@ -375,7 +379,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
 
       setNotification({ message: 'Report rejected successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to reject report:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to reject report:', error)
       setNotification({ message: 'Failed to reject report. Please try again.', type: 'error' })
     } finally {
       setValidatingReport(null)
@@ -389,23 +393,23 @@ export default function FieldCrewCleanupTaskDetailPage() {
     }
 
     if (!noteText.trim()) return
-    
+
     setAddingNote(true)
     try {
       await logAgencyResponse(selectedReportId, {
         action_type: 'manual_note',
         action_details: noteText
       })
-      
+
       // Refresh agency responses
       const responses = await fetchAgencyResponses(selectedReportId)
       setAgencyResponses(responses)
-      
+
       setNoteText('')
       setShowNoteInput(false)
       setNotification({ message: 'Note added successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to add note:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to add note:', error)
       setNotification({ message: 'Failed to add note. Please try again.', type: 'error' })
     } finally {
       setAddingNote(false)
@@ -426,15 +430,15 @@ export default function FieldCrewCleanupTaskDetailPage() {
     if (currentIndex < reports.length - 1) {
       const nextReportId = reports[currentIndex + 1].id
       setSelectedReportId(nextReportId)
-      
+
       // Load evidence for the next report if not already loaded
       if (!reportsEvidence[nextReportId] && !evidenceErrors[nextReportId]) {
         setLoadingEvidence(prev => ({ ...prev, [nextReportId]: true }))
         setEvidenceErrors(prev => ({ ...prev, [nextReportId]: null }))
-        
+
         const controller = new AbortController()
         abortControllersRef.current[nextReportId] = controller
-        
+
         fetchReportEvidence(nextReportId, controller.signal)
           .then(evidence => {
             setReportsEvidence(prev => ({
@@ -444,7 +448,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
           })
           .catch(error => {
             if (error.name !== 'AbortError') {
-              console.error('Failed to fetch evidence for report:', nextReportId, error)
+              reportDiagnostic('error', 'dispatch', 'Failed to fetch evidence for report:', nextReportId, error)
               setEvidenceErrors(prev => ({ ...prev, [nextReportId]: error.message }))
             }
           })
@@ -461,15 +465,15 @@ export default function FieldCrewCleanupTaskDetailPage() {
     if (currentIndex > 0) {
       const prevReportId = reports[currentIndex - 1].id
       setSelectedReportId(prevReportId)
-      
+
       // Load evidence for the previous report if not already loaded
       if (!reportsEvidence[prevReportId] && !evidenceErrors[prevReportId]) {
         setLoadingEvidence(prev => ({ ...prev, [prevReportId]: true }))
         setEvidenceErrors(prev => ({ ...prev, [prevReportId]: null }))
-        
+
         const controller = new AbortController()
         abortControllersRef.current[prevReportId] = controller
-        
+
         fetchReportEvidence(prevReportId, controller.signal)
           .then(evidence => {
             setReportsEvidence(prev => ({
@@ -479,7 +483,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
           })
           .catch(error => {
             if (error.name !== 'AbortError') {
-              console.error('Failed to fetch evidence for report:', prevReportId, error)
+              reportDiagnostic('error', 'dispatch', 'Failed to fetch evidence for report:', prevReportId, error)
               setEvidenceErrors(prev => ({ ...prev, [prevReportId]: error.message }))
             }
           })
@@ -493,7 +497,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
 
   const toggleReportExpansion = async (reportId) => {
     const isExpanding = !expandedReports[reportId]
-    
+
     setExpandedReports(prev => ({
       ...prev,
       [reportId]: !prev[reportId]
@@ -505,25 +509,23 @@ export default function FieldCrewCleanupTaskDetailPage() {
       if (abortControllersRef.current[reportId]) {
         abortControllersRef.current[reportId].abort()
       }
-      
+
       setLoadingEvidence(prev => ({ ...prev, [reportId]: true }))
       setEvidenceErrors(prev => ({ ...prev, [reportId]: null }))
-      
+
       // Create new AbortController for this request
       const controller = new AbortController()
       abortControllersRef.current[reportId] = controller
-      
+
       try {
-        console.log('Fetching evidence for report:', reportId)
         const evidence = await fetchReportEvidence(reportId, controller.signal)
         setReportsEvidence(prev => ({
           ...prev,
           [reportId]: evidence || []
         }))
-        console.log('Fetched evidence:', evidence?.length || 0, 'items')
       } catch (error) {
         if (error.name !== 'AbortError') {
-          console.error('Failed to fetch evidence for report:', reportId, error)
+          reportDiagnostic('error', 'dispatch', 'Failed to fetch evidence for report:', reportId, error)
           setEvidenceErrors(prev => ({ ...prev, [reportId]: error.message }))
           setNotification({ message: 'Failed to load evidence. Please try again.', type: 'error' })
         }
@@ -561,7 +563,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
       [`${reportId}-${photoType}`]: true
     }))
 
-    const token = localStorage.getItem('authToken')
+
     const formData = new FormData()
     formData.append('image', file)
     formData.append('photo_type', photoType)
@@ -570,7 +572,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/reports/${reportId}/photo`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+
         },
         body: formData,
       })
@@ -591,7 +593,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
       }
       setNotification({ message: 'Photo uploaded successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to upload photo:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to upload photo:', error)
       setNotification({ message: error.message || 'Failed to upload photo. Please try again.', type: 'error' })
     } finally {
       setUploadingReportPhotos(prev => ({
@@ -611,13 +613,13 @@ export default function FieldCrewCleanupTaskDetailPage() {
       return
     }
 
-    const token = localStorage.getItem('authToken')
+
 
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/reports/${reportId}/photo`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`,
+
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ photo_type: photoType }),
@@ -639,7 +641,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
       }
       setNotification({ message: 'Photo deleted successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to delete photo:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to delete photo:', error)
       setNotification({ message: error.message || 'Failed to delete photo. Please try again.', type: 'error' })
     }
   }
@@ -806,7 +808,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
 
             {/* Sidebar - Task Info */}
             <div className="lg:col-span-1 space-y-6">
-              
+
               {/* Mini Map */}
               <div className="card p-0 overflow-hidden border border-border h-[300px] relative z-0 isolate">
                 <EcoPinMap

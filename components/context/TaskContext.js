@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useCallback } from 'react'
 import { generatePlan, getPlanJob, getDispatchPlan, commitPlan, disassemblePlan } from '@/lib/api/optimization'
 import { useRouter } from 'next/navigation'
 import Notification from '@/components/ui/Notification'
+import { reportDiagnostic } from '../../lib/diagnostics.mjs';
 
 const TaskContext = createContext()
 
@@ -76,7 +77,7 @@ export function TaskProvider({ children }) {
       if (onSuccess) onSuccess({ ...result, plan: generatedDraft,
         selectedCount, omittedLoggedCount: generatedDraft.omittedCount })
     } catch (error) {
-      console.error('Optimization error:', error)
+      reportDiagnostic('error', 'ui', 'Optimization error:', error)
       setGlobalNotification({ message: error.message || 'Failed to generate optimization', type: 'error' })
       if (onError) onError(error)
     } finally {
@@ -168,7 +169,7 @@ export function TaskProvider({ children }) {
       if (onSuccess) onSuccess(result)
       return result
     } catch (error) {
-      console.error('Failed to disassemble plan:', error)
+      reportDiagnostic('error', 'ui', 'Failed to disassemble plan:', error)
       setGlobalNotification({
         message: error.message || 'Failed to disassemble plan',
         type: 'error'

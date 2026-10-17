@@ -6,6 +6,15 @@ const CATEGORY_IMAGES = { others: 'https://images.unsplash.com/photo-14734489122
 const getReportImage = report => report?.image || CATEGORY_IMAGES.others
 const pinIconCache = new Map()
 
+class PhotoPinIcon extends L.DivIcon {
+  createIcon(oldIcon) {
+    const element = super.createIcon(oldIcon)
+    const image = element.querySelector('img')
+    image?.addEventListener('error', () => { image.src = CATEGORY_IMAGES.others }, { once: true })
+    return element
+  }
+}
+
 // Custom Pin Icon: high-visibility photo pin with pointer and status pip, no numbers
 export const createPinIcon = (imageOrUrl, isSelected = false, isDark = false, status = null, isCluster = false) => {
   let imageUrl = imageOrUrl
@@ -68,7 +77,7 @@ export const createPinIcon = (imageOrUrl, isSelected = false, isDark = false, st
     "></div>
   ` : ''
 
-  const icon = L.divIcon({
+  const icon = new PhotoPinIcon({
     className: 'custom-pin-marker',
     html: `
       <div class="ecopin-pin-wrapper" style="
@@ -103,7 +112,6 @@ export const createPinIcon = (imageOrUrl, isSelected = false, isDark = false, st
               display: block;
               border-radius: 50%;
             "
-            onerror="this.onerror=null;this.src='${fallbackImage}';"
           />
         </div>
         <div style="

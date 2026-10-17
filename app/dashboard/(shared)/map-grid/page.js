@@ -6,6 +6,7 @@ import PageHeader from '@/components/layout/PageHeader'
 import { fetchCleanupTasks } from '@/lib/api'
 
 import { useUser } from '@/components/auth/UserContext'
+import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
 
 const EcoPinMap = dynamic(
   () => import('@/components/map/EcoPinMap'),
@@ -35,7 +36,7 @@ function MapContent() {
           setAllTasks(tasks)
         })
         .catch(error => {
-          console.error("Failed to fetch tasks for field_crew map grid:", error)
+          reportDiagnostic('error', 'map', "Failed to fetch tasks for field_crew map grid:", error)
         })
     }
   }, [user?.role])

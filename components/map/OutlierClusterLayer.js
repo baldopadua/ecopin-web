@@ -32,7 +32,7 @@ const parseGeometry = (geometry) => {
       }
     }
   } catch (error) {
-    console.error('Error parsing geometry:', error)
+    reportDiagnostic('error', 'map', 'Error parsing geometry:', error)
   }
   return null
 }
@@ -43,6 +43,7 @@ const normalizeString = (str) => {
 };
 
 import { useRouter } from 'next/navigation';
+import { reportDiagnostic } from '../../lib/diagnostics.mjs';
 
 export default function OutlierClusterLayer({ clusters, selectedTemplate, onClusterClick, selectionMode, onClusterSelect, clusterReportsMap }) {
   const router = useRouter();

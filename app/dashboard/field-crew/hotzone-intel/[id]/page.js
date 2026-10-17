@@ -8,6 +8,7 @@ import TaskListItem from '@/components/ui/TaskListItem'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { FieldCrewGuard } from '@/components/auth/RequireRole'
 import { MapPin, AlertTriangle, Map } from 'lucide-react'
+import { reportDiagnostic } from '../../../../../lib/diagnostics.mjs';
 
 export default function FieldCrewClusterDetailPage() {
   const router = useRouter()
@@ -33,7 +34,7 @@ export default function FieldCrewClusterDetailPage() {
         )
         setReports(clusterReports)
       } catch (error) {
-        console.error('Failed to load cluster data:', error)
+        reportDiagnostic('error', 'other', 'Failed to load cluster data:', error)
       } finally {
         setLoading(false)
       }
@@ -47,12 +48,10 @@ export default function FieldCrewClusterDetailPage() {
 
   const handleTrackAll = () => {
     // TODO: Navigate to map with all tasks
-    console.log('Track all tasks on map')
   }
 
   const handleTrackSingle = (reportId) => {
     // TODO: Navigate to map with single task
-    console.log('Track single task:', reportId)
   }
 
   return (

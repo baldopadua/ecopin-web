@@ -1,15 +1,15 @@
 'use client'
-import { updateAuthToken } from '@/lib/auth-token.mjs'
+import { loadSessionMetadata } from '@/lib/auth-token.mjs'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Eye, EyeOff, Moon, Sun, ShieldCheck, Check, AlertCircle } from 'lucide-react'
-import { forceChangePassword } from '@/lib/api/auth'
-import { getSystemSettings } from '@/lib/api'
+import { forceChangePassword, logout } from '@/lib/api/auth'
 import usePublicTheme from '@/components/landing/usePublicTheme'
 import PublicLoadingState from '@/components/ui/PublicLoadingState'
 import publicStyles from '@/components/landing/LandingPage.module.css'
 import authStyles from '../auth/Auth.module.css'
 import styles from './Password.module.css'
+import { reportDiagnostic } from '../../lib/diagnostics.mjs';
 
 export default function ForceChangePasswordPage() {
   const [newPassword, setNewPassword] = useState('')
@@ -30,10 +30,16 @@ export default function ForceChangePasswordPage() {
   })
 
   useEffect(() => {
-    if (!localStorage.getItem('tempAuthToken')) { router.replace('/auth'); return }
     let active = true
-    getSystemSettings().then(settings => { if (active && settings) setPasswordSettings(settings) })
-      .catch(err => console.error('Failed to load system settings:', err))
+    loadSessionMetadata().then(async session => {
+      if (!active) return
+      if (session?.state !== 'temporary') { router.replace('/auth'); return }
+      const response = await fetch('/api/session/password-policy', { credentials: 'same-origin', cache: 'no-store' })
+      if (!response.ok) throw new Error('Password policy unavailable')
+      const settings = await response.json()
+      if (active) setPasswordSettings(current => ({ ...current, ...settings }))
+    })
+      .catch(err => reportDiagnostic('error', 'other', 'Failed to load system settings:', err))
       .finally(() => { if (active) setIsChecking(false) })
     return () => { active = false }
   }, [router])
@@ -88,12 +94,7 @@ export default function ForceChangePasswordPage() {
       setLoading(true)
       await forceChangePassword(newPassword)
       
-      const token = localStorage.getItem('tempAuthToken')
-      updateAuthToken(token)
-      localStorage.removeItem('tempAuthToken')
-      localStorage.setItem('lastActivity', Date.now().toString())
-
-      router.push('/dashboard')
+      router.replace('/auth')
     } catch (err) {
       setError(err.message || 'Failed to change password. Please try again.')
     } finally {
@@ -101,9 +102,8 @@ export default function ForceChangePasswordPage() {
     }
   }
 
-  function handleBack() {
-    localStorage.removeItem('tempAuthToken')
-    router.push('/auth')
+  async function handleBack() {
+    try { await logout() } finally { router.push('/auth') }
   }
   const validation = validatePassword(newPassword)
   const mismatch = Boolean(confirmPassword && confirmPassword !== newPassword)
@@ -119,7 +119,7 @@ export default function ForceChangePasswordPage() {
       {isChecking ? <PublicLoadingState label="Checking your password requirements…" /> : <section className={styles.content} aria-labelledby="password-heading">
         <span className={styles.icon}><ShieldCheck size={28} aria-hidden="true" /></span>
         <h1 id="password-heading">Choose a new password</h1>
-        <p className={authStyles.description}>Update your temporary password to continue to your EcoPin workspace.</p>
+        <p className={authStyles.description}>Update your temporary password, then sign in again to open your EcoPin workspace.</p>
         <form className={authStyles.form} onSubmit={event => { event.preventDefault(); handleSubmit() }} aria-busy={loading}>
           <div>
             <label htmlFor="new-password">New password</label>

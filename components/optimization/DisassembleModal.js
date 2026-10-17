@@ -4,6 +4,7 @@ import { AlertTriangle, RotateCcw, XCircle, Loader2, ShieldAlert, ListFilter, X 
 import { previewPlanDisassembly, disassemblePlan } from '@/lib/api/optimization'
 import Dialog from '@/components/ui/Dialog'
 import styles from './OptimizationFeedback.module.css'
+import { reportDiagnostic } from '../../lib/diagnostics.mjs';
 
 export default function DisassembleModal({ isOpen, targetId, onClose, onDisassembled }) {
   const [loading, setLoading] = useState(true)
@@ -36,7 +37,7 @@ export default function DisassembleModal({ isOpen, targetId, onClose, onDisassem
       })
       .catch((err) => {
         if (!isCancelled) {
-          console.error('Disassembly preview error:', err)
+          reportDiagnostic('error', 'dispatch', 'Disassembly preview error:', err)
           setError(err.message || 'Failed to fetch disassembly preview')
           setLoading(false)
         }
@@ -61,7 +62,7 @@ export default function DisassembleModal({ isOpen, targetId, onClose, onDisassem
       }
       onClose()
     } catch (err) {
-      console.error('Failed to disassemble plan:', err)
+      reportDiagnostic('error', 'dispatch', 'Failed to disassemble plan:', err)
       setError(err.message || 'Failed to disassemble plan')
     } finally {
       setSubmitting(false)

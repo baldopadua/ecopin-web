@@ -1,8 +1,7 @@
 'use client'
 import {useEffect,useState,useSyncExternalStore} from 'react'
 import {resolvePrivateMedia,fetchPrivateMedia} from '@/lib/api/private-media.mjs'
-import {refreshAuthToken} from '@/lib/api/auth'
-import {readAuthToken,subscribeAuthToken} from '@/lib/auth-token.mjs'
+import {readSessionKey,subscribeSession} from '@/lib/auth-token.mjs'
 
 // In-memory persistent cache for resolved object URLs to prevent thrashing and refetches
 const blobUrlCache = new Map() // target -> { url, token }
@@ -10,7 +9,7 @@ const inflightFetches = new Map() // target -> Promise<object>
 
 export default function SecureImage({src,alt='',loading='lazy',decoding='async',...props}){
  const target=resolvePrivateMedia(src,process.env.NEXT_PUBLIC_SUPABASE_URL,process.env.NEXT_PUBLIC_BACKEND_API_URL)
- const token=useSyncExternalStore(subscribeAuthToken,readAuthToken,()=>null)
+ const token=useSyncExternalStore(subscribeSession,readSessionKey,()=>null)
 
  const [resource,setResource]=useState(()=>{
   if(target && blobUrlCache.has(target)){
@@ -20,6 +19,9 @@ export default function SecureImage({src,alt='',loading='lazy',decoding='async',
  })
 
  useEffect(()=>{
+  for(const [key,cached] of blobUrlCache){
+   if(cached.token!==token){URL.revokeObjectURL(cached.url);blobUrlCache.delete(key)}
+  }
   if(target===undefined)return
   if(!token)return
 
@@ -36,21 +38,23 @@ export default function SecureImage({src,alt='',loading='lazy',decoding='async',
   const controller = new AbortController()
 
   // Deduplicate in-flight requests for the same target
-  let fetchPromise = inflightFetches.get(target)
+  const requestKey = `${token}:${target}`
+  let fetchPromise = inflightFetches.get(requestKey)
   if(!fetchPromise){
-   fetchPromise = fetchPrivateMedia(target,{getToken:()=>token,refreshToken:refreshAuthToken,signal:controller.signal})
+   fetchPromise = fetchPrivateMedia(target,{getSessionKey:()=>token,signal:controller.signal})
     .then(blob=>{
+     if(readSessionKey()!==token)throw new Error('Session changed')
      const objectUrl = URL.createObjectURL(blob)
      const resObj = {url:objectUrl,target,token}
      blobUrlCache.set(target, resObj)
-     inflightFetches.delete(target)
+     inflightFetches.delete(requestKey)
      return resObj
     })
     .catch(err=>{
-     inflightFetches.delete(target)
+     inflightFetches.delete(requestKey)
      throw err
     })
-   inflightFetches.set(target, fetchPromise)
+   inflightFetches.set(requestKey, fetchPromise)
   }
 
   fetchPromise

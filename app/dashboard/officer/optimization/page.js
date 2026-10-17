@@ -9,7 +9,7 @@ import RouteInfoHeader from '@/components/ui/RouteInfoHeader'
 import { SkeletonForm } from '@/components/ui/Skeleton'
 import EvidenceGallery from '@/components/ui/EvidenceGallery'
 import Pagination from '@/components/ui/Pagination'
-import OptimizationSettings from '@/components/optimization/OptimizationSettings'
+import OptimizationSettings, { normalizeCapacitySettings } from '@/components/optimization/OptimizationSettings'
 import TemplateSelector from '@/components/ui/TemplateSelector'
 import DisassembleModal from '@/components/optimization/DisassembleModal'
 import { useTask } from '@/components/context/TaskContext'
@@ -36,6 +36,7 @@ import {
   createOptimizationTemplate,
   deleteOptimizationTemplate,
 } from '@/lib/api/optimization'
+import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
 
 // Default settings applied when no template is selected
 const DEFAULT_SETTINGS = {
@@ -49,6 +50,8 @@ const DEFAULT_SETTINGS = {
   density_focus: false,
   zone_ids: [],
   max_tasks_per_shift: 15,
+  capacity_utilization: 1.0,
+  shift_capacity_target: 100,
   _templateId: undefined,
 }
 
@@ -120,7 +123,7 @@ export default function OptimizationPage() {
       const swpQueue = Array.isArray(swpData) ? swpData : (swpData.queue || [])
       setOutlierCount(swpQueue.length)
     } catch (err) {
-      console.error('Failed to load pending clusters', err)
+      reportDiagnostic('error', 'dispatch', 'Failed to load pending clusters', err)
     }
   }, [])
 
@@ -131,10 +134,11 @@ export default function OptimizationPage() {
       // Auto-select the first default template on first load
       const defaultTpl = (data || []).find(t => t.is_default)
       if (defaultTpl) {
-        setSettings(prev => ({ ...DEFAULT_SETTINGS, ...defaultTpl.settings, _templateId: defaultTpl.id }))
+        const normalized = normalizeCapacitySettings(defaultTpl.settings || {})
+        setSettings(prev => ({ ...DEFAULT_SETTINGS, ...normalized, _templateId: defaultTpl.id }))
       }
     } catch (err) {
-      console.error('Failed to load templates', err)
+      reportDiagnostic('error', 'dispatch', 'Failed to load templates', err)
     }
   }, [])
 
@@ -143,7 +147,7 @@ export default function OptimizationPage() {
       const data = await getOptimizationOptions()
       setOptions(data)
     } catch (err) {
-      console.warn('Failed to load optimization options from backend, using defaults', err)
+      reportDiagnostic('warn', 'dispatch', 'Failed to load optimization options from backend, using defaults', err)
     }
   }, [])
 
@@ -156,7 +160,7 @@ export default function OptimizationPage() {
       else if (code >= 51) setLiveWeather('rainy')
       else setLiveWeather('normal')
     } catch (err) {
-      console.error('Failed to fetch live weather', err)
+      reportDiagnostic('error', 'dispatch', 'Failed to fetch live weather', err)
     }
   }, [])
 
@@ -165,7 +169,7 @@ export default function OptimizationPage() {
       const data = await getOptimizationRuns()
       setPreviousRuns(data)
     } catch (err) {
-      console.error('Failed to load runs:', err)
+      reportDiagnostic('error', 'dispatch', 'Failed to load runs:', err)
     } finally {
       setRunsLoading(false)
     }
@@ -198,8 +202,9 @@ export default function OptimizationPage() {
     setCurrentProposalRoutes([])
     setNotification(null)
 
+    const normalized = normalizeCapacitySettings(settings)
     const activeSettings = {
-      ...settings,
+      ...normalized,
       mode: selectedTemplate
     }
 
@@ -218,13 +223,14 @@ export default function OptimizationPage() {
 
   const handleSaveTemplate = async (name) => {
     try {
+      const normalized = normalizeCapacitySettings(settings)
       const { travel_mode, break_duration_min, break_window_start, break_window_end,
         overtime_tolerance_min, priority_age_weight, included_task_types,
-        density_focus, zone_ids, max_tasks_per_shift, capacity_utilization } = settings
+        density_focus, zone_ids, max_tasks_per_shift, capacity_utilization, shift_capacity_target } = normalized
       await createOptimizationTemplate(name, '', {
         travel_mode, break_duration_min, break_window_start, break_window_end,
         overtime_tolerance_min, priority_age_weight, included_task_types,
-        density_focus, zone_ids, max_tasks_per_shift, capacity_utilization,
+        density_focus, zone_ids, max_tasks_per_shift, capacity_utilization, shift_capacity_target,
       })
       await loadTemplates()
       setNotification({ message: `Template "${name}" saved!`, type: 'success' })

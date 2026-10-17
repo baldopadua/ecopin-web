@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
+import { AdminGuard } from '@/components/auth/RequireRole'
 import Notification from '@/components/ui/Notification'
 import FilterBar from '@/components/ui/FilterBar'
 import DataTable from '@/components/ui/DataTable'
@@ -9,8 +10,9 @@ import Pagination from '@/components/ui/Pagination'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { getAllUsers, updateUserRole, deleteUser, createUser, getSystemSettings, changeUserPassword } from '@/lib/api'
 import { Eye, EyeOff } from 'lucide-react'
+import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
 
-export default function UserManagement() {
+function UserManagementContent() {
   const router = useRouter()
   const [allUsers, setAllUsers] = useState([])
   const [filteredUsers, setFilteredUsers] = useState([])
@@ -53,7 +55,7 @@ export default function UserManagement() {
         const settings = await getSystemSettings()
         if (settings) setPasswordSettings(settings)
       } catch (err) {
-        console.error('Failed to load system settings:', err)
+        reportDiagnostic('error', 'admin', 'Failed to load system settings:', err)
       }
     }
     loadSettings()
@@ -77,7 +79,7 @@ export default function UserManagement() {
       setAllUsers(fetchedUsers)
       setFilteredUsers(fetchedUsers)
     } catch (err) {
-      console.error('Failed to load users:', err)
+      reportDiagnostic('error', 'admin', 'Failed to load users:', err)
       setError('Failed to load users')
     } finally {
       setLoading(false)
@@ -119,7 +121,7 @@ export default function UserManagement() {
       setNotification({ message: 'User role updated successfully', type: 'success' })
       loadUsers()
     } catch (err) {
-      console.error('Failed to update role:', err)
+      reportDiagnostic('error', 'admin', 'Failed to update role:', err)
       setNotification({ message: 'Failed to update user role', type: 'error' })
     } finally {
       setUpdatingRole(null)
@@ -140,7 +142,7 @@ export default function UserManagement() {
       setNotification({ message: 'User deleted successfully', type: 'success' })
       loadUsers()
     } catch (err) {
-      console.error('Failed to delete user:', err)
+      reportDiagnostic('error', 'admin', 'Failed to delete user:', err)
       setNotification({ message: err.message || 'Failed to delete user', type: 'error' })
     } finally {
       setDeletingUser(null)
@@ -173,7 +175,7 @@ export default function UserManagement() {
       setShowCreateForm(false)
       loadUsers()
     } catch (err) {
-      console.error('Failed to create user:', err)
+      reportDiagnostic('error', 'admin', 'Failed to create user:', err)
       setNotification({ message: err.message || 'Failed to create user', type: 'error' })
     } finally {
       setCreatingUser(false)
@@ -200,7 +202,7 @@ export default function UserManagement() {
       setUserToChangePassword(null)
       setNewPassword('')
     } catch (err) {
-      console.error('Failed to change password:', err)
+      reportDiagnostic('error', 'admin', 'Failed to change password:', err)
       setNotification({ message: err.message || 'Failed to change password', type: 'error' })
     } finally {
       setChangingPassword(false)
@@ -590,5 +592,12 @@ export default function UserManagement() {
         />
       )}
     </div>
+  )
+}
+export default function UserManagement() {
+  return (
+    <AdminGuard>
+      <UserManagementContent />
+    </AdminGuard>
   )
 }

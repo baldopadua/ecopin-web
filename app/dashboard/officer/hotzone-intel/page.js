@@ -8,6 +8,7 @@ import { Target, Map as MapIcon, List } from 'lucide-react'
 import FilterBar from '@/components/ui/FilterBar'
 import DataTable from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
+import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
 export default function ClustersPage() {
   const [clusters, setClusters] = useState([])
   const [filteredClusters, setFilteredClusters] = useState([])
@@ -39,7 +40,7 @@ export default function ClustersPage() {
         setClusters(sorted)
         setFilteredClusters(sorted)
       } catch (error) {
-        console.error('Error fetching clusters:', error)
+        reportDiagnostic('error', 'other', 'Error fetching clusters:', error)
       } finally {
         setLoading(false)
       }

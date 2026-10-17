@@ -11,6 +11,7 @@ import CommandHUD from '../../../components/ui/CommandHUD';
 import DynamicFeed from '../../../components/ui/DynamicFeed';
 import TimePlayer from '../../../components/ui/TimePlayer';
 import { RequireRole } from '../../../components/auth/RequireRole';
+import { reportDiagnostic } from '../../../lib/diagnostics.mjs';
 
 function TacticalScanContent() {
   const [activeTab, setActiveTab] = useState('current'); // 'current' | 'historical'
@@ -57,7 +58,7 @@ function TacticalScanContent() {
         }));
       setReportsHeatmap({ type: 'FeatureCollection', features: heatFeatures });
     } catch (err) {
-      console.error('Failed to load raw reports for heatmap:', err);
+      reportDiagnostic('error', 'forecast', 'Failed to load raw reports for heatmap:', err);
     }
   };
 
@@ -67,7 +68,7 @@ function TacticalScanContent() {
       setAccuracy(data.data);
       setLastUpdated(new Date().toLocaleTimeString());
     } catch (err) {
-      console.error('Failed to load accuracy metrics:', err);
+      reportDiagnostic('error', 'forecast', 'Failed to load accuracy metrics:', err);
     }
   };
 
@@ -78,7 +79,7 @@ function TacticalScanContent() {
       const data = await getCurrentPredictions('monthly');
       setCurrentPredictions(data.data);
     } catch (err) {
-      console.error('Failed to load current predictions:', err);
+      reportDiagnostic('error', 'forecast', 'Failed to load current predictions:', err);
       setCurrentError('The latest forecast could not load.');
     } finally {
       setCurrentLoading(false);
@@ -98,7 +99,7 @@ function TacticalScanContent() {
         loadHistoricalForDate(dates[dates.length - 1]);
       }
     } catch (err) {
-      console.error('Failed to load available dates:', err);
+      reportDiagnostic('error', 'forecast', 'Failed to load available dates:', err);
       setDatesError('Historical dates could not load.');
     }
   };
@@ -159,7 +160,7 @@ function TacticalScanContent() {
         geojson: { type: 'FeatureCollection', features }
       });
     } catch (err) {
-      console.error('Failed to load historical data:', err);
+      reportDiagnostic('error', 'forecast', 'Failed to load historical data:', err);
       if (request === historyRequest.current) setHistoryError('The forecast for this date could not load.');
     } finally {
       if (request === historyRequest.current) setHistoryLoading(false);

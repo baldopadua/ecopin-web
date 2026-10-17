@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { updateAuthToken } from '@/lib/auth-token.mjs'
+import { clearSessionMetadata, readSessionKey } from '@/lib/auth-token.mjs'
 import { logout } from '@/lib/api/auth'
 import { getSystemSettings } from '@/lib/api'
 import { useUser } from '@/components/auth/UserContext'
@@ -35,6 +35,9 @@ import {
 } from 'lucide-react'
 import styles from './Profile.module.css'
 import logoutStyles from './LogoutDialog.module.css'
+import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
+import { backendFetch as fetch } from '../../../../lib/backend-fetch.mjs';
+
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL + '/api'
 
@@ -110,7 +113,7 @@ export default function ProfilePage() {
     try {
       await logout()
     } finally {
-      updateAuthToken(null)
+      clearSessionMetadata()
       router.push('/auth')
     }
   }
@@ -120,7 +123,7 @@ export default function ProfilePage() {
   }, [])
 
   const loadProfile = async () => {
-    const token = localStorage.getItem('authToken')
+    const token = readSessionKey()
     if (!token) {
       router.push('/auth')
       return
@@ -131,7 +134,6 @@ export default function ProfilePage() {
       const [response, settings] = await Promise.all([
         fetch(`${API_BASE_URL}/profile`, {
           headers: {
-            'Authorization': `Bearer ${token}`,
           },
         }),
         getSystemSettings().catch(() => null)
@@ -154,7 +156,7 @@ export default function ProfilePage() {
         setPasswordSettings(settings)
       }
     } catch (err) {
-      console.error('Failed to load profile:', err)
+      reportDiagnostic('error', 'other', 'Failed to load profile:', err)
       setNotification({ message: 'Unable to load profile data. Please refresh.', type: 'error' })
     } finally {
       setLoading(false)
@@ -201,12 +203,11 @@ export default function ProfilePage() {
     setRemovingAvatar(true)
     setNotification(null)
 
-    const token = localStorage.getItem('authToken')
+
     try {
       const response = await fetch(`${API_BASE_URL}/profile/avatar`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`,
         },
       })
 
@@ -219,7 +220,7 @@ export default function ProfilePage() {
       setFormData(prev => ({ ...prev, avatar_url: '' }))
       setNotification({ message: 'Avatar photo removed successfully', type: 'success' })
     } catch (err) {
-      console.error('Failed to remove avatar:', err)
+      reportDiagnostic('error', 'other', 'Failed to remove avatar:', err)
       setNotification({ message: err.message || 'Failed to remove avatar', type: 'error' })
     } finally {
       setRemovingAvatar(false)
@@ -243,13 +244,12 @@ export default function ProfilePage() {
     setChangingPassword(true)
     setNotification(null)
 
-    const token = localStorage.getItem('authToken')
+
     try {
       const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           current_password: passwordData.current_password,
@@ -270,7 +270,7 @@ export default function ProfilePage() {
       })
       setShowPasswordForm(false)
     } catch (err) {
-      console.error('Failed to change password:', err)
+      reportDiagnostic('error', 'other', 'Failed to change password:', err)
       setNotification({ message: err.message || 'Failed to change password', type: 'error' })
     } finally {
       setChangingPassword(false)
@@ -287,13 +287,12 @@ export default function ProfilePage() {
     setSaving(true)
     setNotification(null)
 
-    const token = localStorage.getItem('authToken')
+
     try {
       const response = await fetch(`${API_BASE_URL}/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           full_name: formData.full_name.trim(),
@@ -310,7 +309,7 @@ export default function ProfilePage() {
       setOriginalName(data.profile.full_name || '')
       setNotification({ message: 'Profile details updated successfully.', type: 'success' })
     } catch (err) {
-      console.error('Failed to update profile:', err)
+      reportDiagnostic('error', 'other', 'Failed to update profile:', err)
       setNotification({ message: err.message || 'Failed to update profile', type: 'error' })
     } finally {
       setSaving(false)
@@ -331,7 +330,7 @@ export default function ProfilePage() {
     setUploadingAvatar(true)
     setNotification(null)
 
-    const token = localStorage.getItem('authToken')
+
     const uploadFormData = new FormData()
     uploadFormData.append('avatar', file)
 
@@ -339,7 +338,6 @@ export default function ProfilePage() {
       const response = await fetch(`${API_BASE_URL}/profile/avatar`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
         },
         body: uploadFormData,
       })
@@ -354,7 +352,7 @@ export default function ProfilePage() {
       setFormData(prev => ({ ...prev, avatar_url: data.profile.avatar_url }))
       setNotification({ message: 'Profile photo uploaded successfully.', type: 'success' })
     } catch (err) {
-      console.error('Failed to upload avatar:', err)
+      reportDiagnostic('error', 'other', 'Failed to upload avatar:', err)
       setNotification({ message: err.message || 'Failed to upload avatar photo', type: 'error' })
     } finally {
       setUploadingAvatar(false)

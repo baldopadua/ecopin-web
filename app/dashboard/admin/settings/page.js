@@ -2,11 +2,13 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
+import { AdminGuard } from '@/components/auth/RequireRole'
 import Notification from '@/components/ui/Notification'
 import { getSystemSettings, updateSystemSettings } from '@/lib/api'
 import { SkeletonForm } from '@/components/ui/Skeleton'
+import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
 
-export default function SystemSettings() {
+function SystemSettingsContent() {
   const router = useRouter()
   const [settings, setSettings] = useState({
     password_min_length: 8,
@@ -30,7 +32,7 @@ export default function SystemSettings() {
       const data = await getSystemSettings()
       setSettings(data)
     } catch (err) {
-      console.error('Failed to load settings:', err)
+      reportDiagnostic('error', 'settings', 'Failed to load settings:', err)
       setNotification({ message: 'Failed to load system settings', type: 'error' })
     } finally {
       setLoading(false)
@@ -60,7 +62,7 @@ export default function SystemSettings() {
       // Notify SessionProvider to re-fetch the session timeout
       window.dispatchEvent(new CustomEvent('system-settings-updated'))
     } catch (err) {
-      console.error('Failed to save settings:', err)
+      reportDiagnostic('error', 'settings', 'Failed to save settings:', err)
       setNotification({ message: 'Failed to save settings', type: 'error' })
     } finally {
       setSaving(false)
@@ -226,5 +228,13 @@ export default function SystemSettings() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function SystemSettings() {
+  return (
+    <AdminGuard>
+      <SystemSettingsContent />
+    </AdminGuard>
   )
 }

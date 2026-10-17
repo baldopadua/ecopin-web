@@ -37,11 +37,11 @@ export default function StatusBadge({
       break
     case 'validation':
       colorClass = getValidationStatusColor(status)
-      displayLabel = label || formatStatusLabel(status)
+      displayLabel = label || formatValidationStatusLabel(status)
       break
     case 'lifecycle':
       colorClass = getLifecycleStageColor(status)
-      displayLabel = label || formatStatusLabel(status)
+      displayLabel = label || formatLifecycleStageLabel(status)
       break
     case 'task':
       colorClass = getTaskStatusColor(status)

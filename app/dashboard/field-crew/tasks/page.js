@@ -9,6 +9,7 @@ import Pagination from '@/components/ui/Pagination'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { FieldCrewGuard } from '@/components/auth/RequireRole'
 import { useUser } from '@/components/auth/UserContext'
+import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
 
 export default function FieldCrewTasksPage() {
   const [tasks, setTasks] = useState([])
@@ -37,7 +38,7 @@ export default function FieldCrewTasksPage() {
         setTasks(data)
         setFilteredTasks(data)
       } catch (error) {
-        console.error('Failed to load cleanup tasks:', error)
+        reportDiagnostic('error', 'dispatch', 'Failed to load cleanup tasks:', error)
       } finally {
         setLoading(false)
       }

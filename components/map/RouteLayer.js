@@ -2,6 +2,7 @@
 import React, { useMemo, useEffect, useState } from 'react'
 import { Polyline, Marker, Popup, CircleMarker, useMap } from 'react-leaflet'
 import L from 'leaflet'
+import { reportDiagnostic } from '../../lib/diagnostics.mjs';
 
 /**
  * RouteLayer — Renders route polylines and numbered waypoint markers
@@ -151,7 +152,7 @@ async function fetchStreetLevelRoute(coords, mode = 'DRIVING') {
     }
     return allPoints.length > 0 ? allPoints : null
   } catch (err) {
-    console.warn('[RouteLayer] OSRM street route fetch error:', err.message)
+    reportDiagnostic('warn', 'map', '[RouteLayer] OSRM street route fetch error:', err.message)
     return null
   }
 }
@@ -228,7 +229,7 @@ export default function RouteLayer({ routes = [], travelMode = 'DRIVING' }) {
           map.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 })
         }
       } catch (err) {
-        console.warn('fitBounds warning:', err)
+        reportDiagnostic('warn', 'map', 'fitBounds warning:', err)
       }
     }
   }, [map, routes, streetRoutes, travelMode])

@@ -18,6 +18,7 @@ import {
 } from 'chart.js'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
+import { reportDiagnostic } from '../../lib/diagnostics.mjs';
 
 // Polyfill Buffer for browser environment
 if (typeof window !== 'undefined' && !window.Buffer) {
@@ -67,7 +68,7 @@ const parseLocation = (location, latitude, longitude) => {
       }
     }
   } catch (error) {
-    console.error('Error parsing location:', error)
+    reportDiagnostic('error', 'other', 'Error parsing location:', error)
   }
 
   return { latitude: null, longitude: null }
@@ -158,7 +159,7 @@ export default function DashboardPage() {
           })
           setCompletedTasksWithReports(completedTasksWithReportsData)
         } catch (taskError) {
-          console.error('Failed to load cleanup tasks:', taskError)
+          reportDiagnostic('error', 'other', 'Failed to load cleanup tasks:', taskError)
         } finally {
           setLoadingTasks(false)
         }
@@ -228,7 +229,7 @@ export default function DashboardPage() {
           satisfactionTotal: satisfactionDataResult ? satisfactionDataResult.total : 0
         })
       } catch (error) {
-        console.error('Failed to load dashboard stats:', error)
+        reportDiagnostic('error', 'other', 'Failed to load dashboard stats:', error)
         setError('Failed to load dashboard data. Please try again.')
       } finally {
         setLoading(false)
@@ -326,11 +327,6 @@ export default function DashboardPage() {
     ]
   } : null
 
-  console.log('Dashboard chart data:', { chartData, resolutionRateData, pieData })
-  console.log('Loading state:', loading)
-  console.log('Chart data length:', chartData.length)
-  console.log('Reports length:', reports.length)
-  console.log('Chart data values:', JSON.stringify(chartData))
 
   // Prepare Chart.js data formats
   const barChartData = {

@@ -6,6 +6,7 @@ import OutlierClusterLayer from './OutlierClusterLayer'
 import L from 'leaflet'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
+import { reportDiagnostic } from '../../lib/diagnostics.mjs';
 
 // PASIG BOUNDS
 const PASIG_BOUNDS = [
@@ -31,7 +32,7 @@ const parseGeometry = (geometry) => {
       return [lat, lng]
     }
   } catch (error) {
-    console.error('Error parsing geometry:', error)
+    reportDiagnostic('error', 'map', 'Error parsing geometry:', error)
   }
   return null
 }

@@ -4,7 +4,8 @@ import { useEffect, useState, useSyncExternalStore } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowRight, ArrowLeft, Eye, EyeOff, Moon, Sun, ShieldCheck, Smartphone, AlertCircle } from 'lucide-react'
-import { updateAuthToken, readAuthToken, subscribeAuthToken } from '@/lib/auth-token.mjs'
+import { readSessionKey, subscribeSession, loadSessionMetadata } from '@/lib/auth-token.mjs'
+import { login } from '@/lib/api/auth'
 import AuthPhotos from './AuthPhotos'
 import motion from '@/components/ui/PublicMotion.module.css'
 import usePublicTheme from '@/components/landing/usePublicTheme'
@@ -13,7 +14,7 @@ import styles from './Auth.module.css'
 
 export default function AuthPage() {
   const router = useRouter()
-  const token = useSyncExternalStore(subscribeAuthToken, readAuthToken, () => null)
+  const token = useSyncExternalStore(subscribeSession, readSessionKey, () => null)
   const { isDark, toggleTheme } = usePublicTheme()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -22,6 +23,7 @@ export default function AuthPage() {
   const [error, setError] = useState(null)
 
   useEffect(() => { if (token) router.replace('/dashboard') }, [token, router])
+  useEffect(() => { void loadSessionMetadata() }, [])
 
   async function handleSubmit(event) {
     event.preventDefault()
@@ -29,24 +31,14 @@ export default function AuthPage() {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL || ''}/api/auth/login`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), password }),
-      })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || data.message || 'We couldn’t sign you in. Please try again.')
-      if (!data.token) throw new Error('We couldn’t open your session. Please try again.')
-      if (data.requirePasswordChange) {
-        localStorage.setItem('tempAuthToken', data.token)
-        updateAuthToken(null)
+      const data = await login(email.trim(), password)
+      if (data.state === 'temporary') {
         router.push('/force-change-password')
         return
       }
       const role = data.user?.role || 'citizen'
       if (role === 'citizen') throw new Error('This sign-in is for authorized personnel. Citizens can report through the EcoPin Android app.')
       if (role === 'field_crew') throw new Error('Field crews sign in through the EcoPin mobile app. Web access is restricted.')
-      localStorage.setItem('lastActivity', Date.now().toString())
-      updateAuthToken(data.token)
       router.replace('/dashboard')
     } catch (err) {
       setError(err.message || 'We couldn’t sign you in. Please try again.')

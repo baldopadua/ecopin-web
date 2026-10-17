@@ -23,6 +23,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js'
+import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
 
 ChartJS.register(
   CategoryScale,
@@ -153,7 +154,7 @@ export default function AnalyticsPage() {
           overdue
         })
       } catch (error) {
-        console.error('Failed to load analytics data:', error)
+        reportDiagnostic('error', 'analytics', 'Failed to load analytics data:', error)
         if (current) setError('Report analytics could not load')
       } finally {
         if (current) {

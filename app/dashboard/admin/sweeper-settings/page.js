@@ -11,7 +11,7 @@ import styles from './SweeperSettings.module.css'
 
 const issueLabel = type => type.replace(/_/g, ' ').replace(/^\w/, letter => letter.toUpperCase())
 
-export default function SweeperSettingsPage() {
+function SweeperSettingsPageContent() {
   const [config, setConfig] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -87,8 +87,7 @@ export default function SweeperSettingsPage() {
   }
 
   return (
-    <AdminGuard>
-      <div className={styles.page}>
+    <div className={styles.page}>
         <PageHeader title="Sweeper settings" subtitle="Set report deadlines and the cleanup time used in dispatch planning."
           breadcrumbs={[{ label: 'Admin', href: '/dashboard/admin' }, { label: 'Sweeper settings' }]} />
         {notification && <Notification {...notification} onClose={() => setNotification(null)} />}
@@ -159,6 +158,13 @@ export default function SweeperSettingsPage() {
           </section>
         </Dialog>
       </div>
+  )
+}
+
+export default function SweeperSettingsPage() {
+  return (
+    <AdminGuard>
+      <SweeperSettingsPageContent />
     </AdminGuard>
   )
 }

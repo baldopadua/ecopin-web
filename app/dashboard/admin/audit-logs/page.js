@@ -2,13 +2,15 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
-import { getAuditLogs } from '@/lib/api/admin'
+import { getAuditLogs, getAuditArchiveStatus, executeAuditArchive } from '@/lib/api/admin'
 import FilterBar from '@/components/ui/FilterBar'
 import DataTable from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { AdminGuard } from '@/components/auth/RequireRole'
 import ExportButton from '@/components/ui/ExportButton'
+import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
+import { ShieldCheck, Lock, Archive, CheckCircle2 } from 'lucide-react';
 
 function formatEventDetails(data) {
   if (!data || typeof data !== 'object') return '—'
@@ -25,7 +27,7 @@ function formatEventDetails(data) {
     .join(' | ')
 }
 
-export default function AuditLogs() {
+function AuditLogsContent() {
   const router = useRouter()
   const [allLogs, setAllLogs] = useState([])
   const [logs, setLogs] = useState([])
@@ -39,11 +41,45 @@ export default function AuditLogs() {
     end_date: '' 
   })
   const [currentPage, setCurrentPage] = useState(1)
+  const [archiveStatus, setArchiveStatus] = useState(null)
+  const [archiving, setArchiving] = useState(false)
+  const [archiveResult, setArchiveResult] = useState(null)
   const itemsPerPage = 8
 
   useEffect(() => {
     loadLogs()
+    loadArchiveStatus()
   }, [])
+
+  const loadArchiveStatus = async () => {
+    try {
+      const status = await getAuditArchiveStatus()
+      setArchiveStatus(status)
+    } catch {
+      setArchiveStatus({
+        total_records: null,
+        eligible_for_archival: 0,
+        immutability_policy: 'active',
+        hot_retention_days: 180,
+        worm_retention_years: 7
+      })
+    }
+  }
+
+  const handleArchive = async () => {
+    try {
+      setArchiving(true)
+      const res = await executeAuditArchive({ limit: 1000 })
+      setArchiveResult(res.manifest)
+      await loadArchiveStatus()
+      await loadLogs()
+    } catch (err) {
+      reportDiagnostic('error', 'admin', 'Failed to archive audit logs:', err)
+      setError(err.message || 'Failed to execute audit archival')
+    } finally {
+      setArchiving(false)
+    }
+  }
 
   const loadLogs = async () => {
     try {
@@ -52,7 +88,7 @@ export default function AuditLogs() {
       const data = await getAuditLogs({ limit: 500 })
       setAllLogs(data.logs || data.data || [])
     } catch (err) {
-      console.error('Failed to load audit logs:', err)
+      reportDiagnostic('error', 'admin', 'Failed to load audit logs:', err)
       setError(err.message || 'Failed to load audit logs')
     } finally {
       setLoading(false)
@@ -184,8 +220,7 @@ export default function AuditLogs() {
   const uniqueEntityTypes = [...new Set((allLogs || []).map(l => l.entity_type).filter(Boolean))]
 
   return (
-    <AdminGuard>
-      <div className="p-8">
+    <div className="p-8">
         <PageHeader
           title="Audit Logs"
           subtitle="Operational audit trail of actions, entity changes, and system events"
@@ -220,6 +255,61 @@ export default function AuditLogs() {
               className="btn-secondary py-1 px-3 text-xs font-bold uppercase tracking-wider"
             >
               Retry
+            </button>
+          </div>
+        )}
+
+        {/* WORM & Immutability Compliance Banner */}
+        <div className="mb-6 p-4 bg-surface-elevated border border-border-subtle rounded-lg flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-accent-green/10 border border-accent-green/30 rounded text-accent-green">
+              <ShieldCheck size={20} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-text-primary">Immutability Triggers Active</span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono font-bold bg-accent-green/20 text-accent-green rounded-full">
+                  <Lock size={10} /> prevent_audit_modification
+                </span>
+              </div>
+              <p className="text-xs text-text-muted mt-0.5">
+                Append-only enforcement on PostgreSQL audit tables rejecting UPDATE and DELETE. Hot retention: 180 days · Cold WORM archival: 7 years.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4 text-xs font-mono text-text-muted">
+            {archiveStatus && (
+              <div className="text-right">
+                <p className="text-text-primary font-semibold">{archiveStatus.total_records ?? allLogs.length} Records in Hot Store</p>
+                <p className="text-[11px] text-text-muted">{archiveStatus.eligible_for_archival ?? 0} eligible for WORM archival</p>
+              </div>
+            )}
+            {archiveStatus?.eligible_for_archival > 0 && (
+              <button
+                onClick={handleArchive}
+                disabled={archiving}
+                className="btn-secondary py-1.5 px-3 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+              >
+                <Archive size={14} />
+                {archiving ? 'Sealing...' : 'Seal WORM Batch'}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {archiveResult && (
+          <div className="mb-6 p-4 bg-accent-green/10 border border-accent-green/30 text-accent-green rounded-lg flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs font-mono">
+              <CheckCircle2 size={16} />
+              <span>
+                Archived {archiveResult.record_count} records. WORM Seal SHA256: {archiveResult.payload_sha256?.slice(0, 16)}... (Retain until {archiveResult.worm_retention_until ? new Date(archiveResult.worm_retention_until).toLocaleDateString() : '7 years'})
+              </span>
+            </div>
+            <button
+              onClick={() => setArchiveResult(null)}
+              className="text-xs font-bold underline ml-4 cursor-pointer"
+            >
+              Dismiss
             </button>
           </div>
         )}
@@ -278,6 +368,12 @@ export default function AuditLogs() {
           />
         )}
       </div>
+  )
+}
+export default function AuditLogs() {
+  return (
+    <AdminGuard>
+      <AuditLogsContent />
     </AdminGuard>
   )
 }

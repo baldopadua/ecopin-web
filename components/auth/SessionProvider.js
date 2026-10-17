@@ -1,9 +1,8 @@
 'use client'
-import {updateAuthToken} from '@/lib/auth-token.mjs'
-import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, useRef, useCallback, useSyncExternalStore } from 'react'
 import { useRouter } from 'next/navigation'
-import { getTimeoutMinutes } from '@/lib/api/system'
-import { validateSession } from '@/lib/api/auth'
+import { getSessionMetadata, readSessionKey, subscribeSession, clearSessionMetadata, loadSessionMetadata } from '@/lib/auth-token.mjs'
+import { logout } from '@/lib/api/auth'
 import Dialog from '@/components/ui/Dialog'
 import { Clock } from 'lucide-react'
 
@@ -11,326 +10,59 @@ const SessionContext = createContext(null)
 
 export function SessionProvider({ children }) {
   const [showSessionExpiredModal, setShowSessionExpiredModal] = useState(false)
-  const [sessionTimeoutMinutes, setSessionTimeoutMinutes] = useState(60) // Default 60 minutes
-  const isShowingModalRef = useRef(false) // Prevent duplicate modals using ref
+  const session = useSyncExternalStore(subscribeSession, getSessionMetadata, () => null)
+  const showing = useRef(false)
   const router = useRouter()
-  const sessionCheckRef = useRef(null)
 
   const handleSessionExpired = useCallback(() => {
-    if (isShowingModalRef.current) return // Prevent duplicate modals
-    
-    updateAuthToken(null)
-    localStorage.removeItem('refreshToken')
-    localStorage.removeItem('lastActivity')
-    isShowingModalRef.current = true
+    if (showing.current) return
+    showing.current = true
+    clearSessionMetadata()
+    void logout().catch(() => {})
     setShowSessionExpiredModal(true)
   }, [])
 
-  const updateLastActivity = () => {
-    localStorage.setItem('lastActivity', Date.now())
-  }
-
-  // Function to validate session with server (for critical operations)
   const validateSessionWithServer = useCallback(async () => {
-    try {
-      const validationResult = await validateSession()
-      if (!validationResult.valid) {
-        updateAuthToken(null)
-        localStorage.removeItem('refreshToken')
-        localStorage.removeItem('lastActivity')
-        if (!isShowingModalRef.current) {
-          isShowingModalRef.current = true
-          setShowSessionExpiredModal(true)
-        }
-        return false
-      }
-      return true
-    } catch (error) {
-      console.error('Server validation failed:', error)
-      // Assume valid on network errors to avoid false logouts
-      return true
-    }
-  }, [])
+    const key = readSessionKey()
+    const current = await loadSessionMetadata()
+    if (current?.state === 'full') return true
+    if (readSessionKey() === key || !readSessionKey()) handleSessionExpired()
+    return false
+  }, [handleSessionExpired])
 
   useEffect(() => {
-    // Fetch system settings to get session timeout (only if token exists)
-    const token = localStorage.getItem('authToken')
-    if (!token) return
-
-    const fetchSessionTimeout = async () => {
-      const timeout = await getTimeoutMinutes()
-      if (timeout && timeout.session_timeout_minutes) {
-        setSessionTimeoutMinutes(timeout.session_timeout_minutes)
-      }
+    const check = () => {
+      if (session?.expiresAt <= Date.now()) handleSessionExpired()
+      else void validateSessionWithServer()
     }
-
-    fetchSessionTimeout()
-
-    const handleSettingsUpdated = () => {
-      fetchSessionTimeout()
-    }
-
-    window.addEventListener('system-settings-updated', handleSettingsUpdated)
-    
+    const visible = () => { if (document.visibilityState === 'visible') check() }
+    const timer = setInterval(check, 60000)
+    document.addEventListener('visibilitychange', visible)
+    window.addEventListener('session-expired', handleSessionExpired)
     return () => {
-      window.removeEventListener('system-settings-updated', handleSettingsUpdated)
+      clearInterval(timer)
+      document.removeEventListener('visibilitychange', visible)
+      window.removeEventListener('session-expired', handleSessionExpired)
     }
-  }, [])
+  }, [session, handleSessionExpired, validateSessionWithServer])
 
-  useEffect(() => {
-    const token = localStorage.getItem('authToken')
-    const pathname = window.location.pathname
-    const isPublicRoute = !pathname.startsWith('/dashboard') && !pathname.startsWith('/map')
-
-    // Public routes: no session management needed
-    if (isPublicRoute) return
-
-    // Protected route with no token: redirect to login
-    if (!token) {
-      router.push('/auth')
-      return
-    }
-
-    // Initialize last activity if not exists
-    if (!localStorage.getItem('lastActivity')) {
-      updateLastActivity()
-    }
-
-    // Function to check session expiry based on last activity
-    const checkSessionExpiry = () => {
-      const lastActivity = localStorage.getItem('lastActivity')
-      const currentTime = Date.now()
-      const timeoutMs = sessionTimeoutMinutes * 60 * 1000
-
-      if (!lastActivity) {
-        updateAuthToken(null)
-        localStorage.removeItem('refreshToken')
-        if (!isShowingModalRef.current) {
-          isShowingModalRef.current = true
-          setShowSessionExpiredModal(true)
-        }
-        return
-      }
-
-      const timeSinceActivity = currentTime - parseInt(lastActivity)
-      
-      // Check if session has expired
-      if (timeSinceActivity > timeoutMs) {
-        updateAuthToken(null)
-        localStorage.removeItem('refreshToken')
-        localStorage.removeItem('lastActivity')
-        if (!isShowingModalRef.current) {
-          isShowingModalRef.current = true
-          setShowSessionExpiredModal(true)
-        }
-        return
-      }
-
-      // Also check JWT expiration
-      try {
-        const storedToken = localStorage.getItem('authToken')
-        if (storedToken) {
-          const base64Url = storedToken.split('.')[1]
-          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
-          const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
-          }).join(''))
-          const payload = JSON.parse(jsonPayload)
-          const jwtExpTime = payload.exp * 1000 // Convert to milliseconds
-          
-          if (jwtExpTime - currentTime < 300000 && jwtExpTime >= currentTime) {
-            import('@/lib/api/auth').then(({ refreshAuthToken }) => {
-              refreshAuthToken().then((newToken) => {
-                if (!newToken && jwtExpTime < Date.now()) {
-                  updateAuthToken(null)
-                  localStorage.removeItem('refreshToken')
-                  localStorage.removeItem('lastActivity')
-                  if (!isShowingModalRef.current) {
-                    isShowingModalRef.current = true
-                    setShowSessionExpiredModal(true)
-                  }
-                }
-              })
-            }).catch(console.error)
-          }
-
-          if (jwtExpTime < currentTime) {
-            updateAuthToken(null)
-            localStorage.removeItem('refreshToken')
-            localStorage.removeItem('lastActivity')
-            if (!isShowingModalRef.current) {
-              isShowingModalRef.current = true
-              setShowSessionExpiredModal(true)
-            }
-            return
-          }
-        }
-      } catch (e) {
-        // If JWT parsing fails, consider session expired
-        updateAuthToken(null)
-        localStorage.removeItem('refreshToken')
-        localStorage.removeItem('lastActivity')
-        if (!isShowingModalRef.current) {
-          isShowingModalRef.current = true
-          setShowSessionExpiredModal(true)
-        }
-        return
-      }
-    }
-
-    // Activity tracking - update last activity timestamp
-    const handleUserActivity = () => {
-      // Don't update if session has already expired based on inactivity timeout
-      const lastActivity = localStorage.getItem('lastActivity')
-      if (lastActivity) {
-        const timeSinceActivity = Date.now() - parseInt(lastActivity)
-        if (timeSinceActivity > sessionTimeoutMinutes * 60 * 1000) {
-          checkSessionExpiry()
-          return
-        }
-      }
-      updateLastActivity()
-    }
-
-    // Enhanced activity events for better detection
-    const activityEvents = [
-      'mousedown', 'keydown', 'scroll', 'touchstart', 'click',
-      'focus', 'pageshow'
-    ]
-    
-    activityEvents.forEach(event => {
-      window.addEventListener(event, handleUserActivity)
-    })
-
-    // Handle visibility change specifically
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        const lastActivity = localStorage.getItem('lastActivity')
-        const currentTime = Date.now()
-        const timeSinceActivity = lastActivity ? currentTime - parseInt(lastActivity) : 0
-        
-        // Grace period: if away for less than 30 seconds, update activity and continue
-        const gracePeriodMs = 30000 // 30 seconds
-        
-        if (timeSinceActivity < gracePeriodMs) {
-          updateLastActivity()
-          return // Skip session check for short absences
-        }
-        
-        // First do client-side check
-        checkSessionExpiry()
-        
-        // Then do server-side validation for additional security (async)
-        validateSession().then(validationResult => {
-          if (!validationResult.valid) {
-            updateAuthToken(null)
-            localStorage.removeItem('refreshToken')
-            localStorage.removeItem('lastActivity')
-            if (!isShowingModalRef.current) {
-              isShowingModalRef.current = true
-              setShowSessionExpiredModal(true)
-            }
-          }
-        }).catch(error => {
-          console.error('Server validation failed on visibility change:', error)
-          // Don't logout on network errors, rely on client-side check
-        })
-      }
-    }
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-
-    // Single session check interval (every 60 seconds)
-    sessionCheckRef.current = setInterval(() => {
-      checkSessionExpiry()
-    }, 60000)
-
-    // Initial check
-    checkSessionExpiry()
-
-    const handleStorageChange = (e) => {
-      if (e.key === 'authToken' && e.newValue === null) {
-        localStorage.removeItem('lastActivity')
-        if (!isShowingModalRef.current) {
-          isShowingModalRef.current = true
-          setShowSessionExpiredModal(true)
-        }
-      }
-    }
-
-    const handleSessionExpiredEvent = () => {
-      updateAuthToken(null)
-      localStorage.removeItem('refreshToken')
-      localStorage.removeItem('lastActivity')
-      if (!isShowingModalRef.current) {
-        isShowingModalRef.current = true
-        setShowSessionExpiredModal(true)
-      }
-    }
-
-    window.addEventListener('storage', handleStorageChange)
-    window.addEventListener('session-expired', handleSessionExpiredEvent)
-
-    return () => {
-      activityEvents.forEach(event => {
-        window.removeEventListener(event, handleUserActivity)
-      })
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-      if (sessionCheckRef.current) {
-        clearInterval(sessionCheckRef.current)
-      }
-      window.removeEventListener('storage', handleStorageChange)
-      window.removeEventListener('session-expired', handleSessionExpiredEvent)
-    }
-  }, [router, sessionTimeoutMinutes, handleSessionExpired])
-
-  const handleModalClose = () => {
-    setShowSessionExpiredModal(false)
-    isShowingModalRef.current = false
-    router.push('/auth')
-  }
-
-  return (
-    <SessionContext.Provider value={{ handleSessionExpired, validateSessionWithServer }}>
-      {children}
-      {showSessionExpiredModal && (
-        <Dialog open={showSessionExpiredModal} labelledBy="session-expired-title" dismissible={false}>
-          <div className="card max-w-md w-full">
-            <div className="text-center">
-              <div className="mb-4">
-                <Clock
-                  size={64}
-                  strokeWidth={1.5}
-                  className="mx-auto text-warning"
-                  aria-hidden="true"
-                />
-              </div>
-              <h2 id="session-expired-title" className="text-xl font-medium text-text-primary mb-2">Sign in to continue</h2>
-              <p className="text-text-secondary mb-6">
-                Your session has ended. Sign in again to open your workspace.
-              </p>
-              <button
-                onClick={handleModalClose}
-                className="btn-primary w-full min-h-12"
-              >
-                Return to sign in
-              </button>
-            </div>
-          </div>
-        </Dialog>
-      )}
-    </SessionContext.Provider>
-  )
+  return <SessionContext.Provider value={{ handleSessionExpired, validateSessionWithServer }}>
+    {children}
+    {showSessionExpiredModal && <Dialog open labelledBy="session-expired-title" dismissible={false}>
+      <div className="card max-w-md w-full text-center">
+        <Clock size={64} strokeWidth={1.5} className="mx-auto text-warning mb-4" aria-hidden="true" />
+        <h2 id="session-expired-title" className="text-xl font-medium text-text-primary mb-2">Sign in to continue</h2>
+        <p className="text-text-secondary mb-6">Your session has ended. Sign in again to open your workspace.</p>
+        <button onClick={() => router.push('/auth')} className="btn-primary w-full min-h-12">Return to sign in</button>
+      </div>
+    </Dialog>}
+  </SessionContext.Provider>
 }
 
 export function useSession() {
   const context = useContext(SessionContext)
-  if (!context) {
-    throw new Error('useSession must be used within a SessionProvider')
-  }
+  if (!context) throw new Error('useSession must be used within a SessionProvider')
   return context
 }
 
-// Helper function to trigger session expired from non-React code
-export function triggerSessionExpired() {
-  window.dispatchEvent(new CustomEvent('session-expired'))
-}
+export { triggerSessionExpired } from '@/lib/auth-token.mjs'

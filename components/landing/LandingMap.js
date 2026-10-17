@@ -124,7 +124,7 @@ export default function LandingMap({ isDark }) {
       <Link href="/explore" aria-label="Open the full public map"><ArrowUpRight size={22} /></Link>
     </div>
     <MapContainer center={LOCATIONS.pasig.center} zoom={14} scrollWheelZoom={false} zoomControl={false} className={styles.leafletMap}>
-      <TileLayer key={isDark ? 'dark' : 'light'} url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" className={isDark ? styles.darkTiles : styles.lightTiles} attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' />
+      <TileLayer key={isDark ? 'dark' : 'light'} url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" className={isDark ? styles.darkTiles : styles.lightTiles} attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' />
       <ReportLayer location={location} issueType={issueType} retry={retry} onState={setState} isDark={isDark} />
       <MapControls onReset={() => setLocation('pasig')} />
     </MapContainer>

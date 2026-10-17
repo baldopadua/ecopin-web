@@ -90,7 +90,7 @@ export default function LandingPage() {
             <div className={styles.phoneOrbit} aria-hidden="true" />
             <div className={styles.phone} aria-label="Illustration of the EcoPin mobile reporting app">
               <div className={styles.phoneCamera} />
-              <div className={styles.phoneHeader}><Image src="/Solo Logo Light.png" alt="" width="24" height="24" /><strong>EcoPin</strong><span>Pasig City</span></div>
+              <div className={styles.phoneHeader}><Image src="/Solo Logo Light.png" alt="" width={24} height={24} style={{ width: 'auto', height: 'auto' }} /><strong>EcoPin</strong><span>Pasig City</span></div>
               <div className={styles.phoneMap}><Image src="/pasig.svg" alt="" width={400} height={400} unoptimized /><span className={styles.phonePin}><MapPin size={30} /></span><span className={styles.phonePinSmall}><MapPin size={22} /></span><div className={styles.phoneLocation}><MapPin size={14} /> Your neighborhood</div></div>
               <div className={styles.phoneSheet}><span>Make a difference nearby</span><strong>What did you notice?</strong><div><Camera size={18} /> Capture an issue <ArrowRight size={16} /></div><small>Photo · Location · Description</small></div>
               <div className={styles.phoneHome} />

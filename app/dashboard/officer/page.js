@@ -9,6 +9,7 @@ import StatusBadge from '@/components/ui/StatusBadge'
 import { useUser } from '@/components/auth/UserContext'
 import { OfficerGuard } from '@/components/auth/RequireRole'
 import { Target, Users, AlertTriangle, CloudLightning, ChevronRight, CheckCircle2, Search, Map } from 'lucide-react'
+import { reportDiagnostic } from '../../../lib/diagnostics.mjs';
 
 export default function OfficerHomepage() {
   const router = useRouter()
@@ -56,7 +57,7 @@ export default function OfficerHomepage() {
         }
 
       } catch (error) {
-        console.error('Failed to load dashboard data:', error)
+        reportDiagnostic('error', 'other', 'Failed to load dashboard data:', error)
       } finally {
         setLoading(false)
       }

@@ -3,6 +3,7 @@ import FleetCapabilities from '@/components/optimization/FleetCapabilities'
 import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import PageHeader from '@/components/layout/PageHeader'
+import { AdminGuard } from '@/components/auth/RequireRole'
 import Notification from '@/components/ui/Notification'
 import { SkeletonForm } from '@/components/ui/Skeleton'
 import {
@@ -12,13 +13,14 @@ import {
   updateFieldCrew,
   createFieldCrew,
 } from '@/lib/api/optimization'
+import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
 
 const LocationPickerMap = dynamic(
   () => import('@/components/map/LocationPickerMap'),
   { ssr: false }
 )
 
-export default function OptimizationSettings() {
+function OptimizationSettingsContent() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(null) // null | 'depot' | 'crew-<id>'
   const [isEditingDepot, setIsEditingDepot] = useState(false)
@@ -88,7 +90,7 @@ export default function OptimizationSettings() {
 
       setCrews(crewsData || [])
     } catch (err) {
-      console.error('Failed to load optimization settings:', err)
+      reportDiagnostic('error', 'settings', 'Failed to load optimization settings:', err)
       setNotification({ message: 'Failed to load settings', type: 'error' })
     } finally {
       setLoading(false)
@@ -469,5 +471,13 @@ export default function OptimizationSettings() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function OptimizationSettings() {
+  return (
+    <AdminGuard>
+      <OptimizationSettingsContent />
+    </AdminGuard>
   )
 }

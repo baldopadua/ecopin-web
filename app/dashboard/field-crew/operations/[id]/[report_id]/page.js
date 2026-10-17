@@ -15,6 +15,11 @@ import { Buffer } from 'buffer'
 
 // API
 import { fetchCleanupTaskById, fetchReportById, uploadCleanupPhoto, logAgencyResponse, fetchAgencyResponses, fetchReportEvidence, updateLifecycleStage } from '@/lib/api'
+import { reportDiagnostic } from '../../../../../../lib/diagnostics.mjs';
+
+import { backendFetch as fetch } from '../../../../../../lib/backend-fetch.mjs';
+
+
 
 // We need dynamic import for EcoPinMap since it uses Leaflet which requires window
 const EcoPinMap = dynamic(() => import('@/components/map/EcoPinMap'), {
@@ -44,7 +49,7 @@ const parseLocation = (location, latitude, longitude) => {
       if (geometry && geometry.x && geometry.y) return { latitude: geometry.y, longitude: geometry.x }
     }
   } catch (error) {
-    console.error('Error parsing location:', error)
+    reportDiagnostic('error', 'reports', 'Error parsing location:', error)
   }
   return { latitude: null, longitude: null }
 }
@@ -63,7 +68,7 @@ export default function ReportDetailPage() {
   const [loading, setLoading] = useState(true)
   const [notification, setNotification] = useState(null)
   const [isAssigned, setIsAssigned] = useState(false)
-  
+
   // Note state
   const [noteText, setNoteText] = useState('')
   const [submittingNote, setSubmittingNote] = useState(false)
@@ -98,7 +103,7 @@ export default function ReportDetailPage() {
         }
 
       } catch (error) {
-        console.error('Error loading report details:', error)
+        reportDiagnostic('error', 'reports', 'Error loading report details:', error)
         if (isMounted) {
           setNotification({ message: 'Failed to load report data', type: 'error' })
         }
@@ -106,11 +111,11 @@ export default function ReportDetailPage() {
         if (isMounted) setLoading(false)
       }
     }
-    
+
     if (user) {
       loadData()
     }
-    
+
     return () => { isMounted = false }
   }, [taskId, reportId, user])
 
@@ -129,7 +134,7 @@ export default function ReportDetailPage() {
         created_at: new Date().toISOString(),
         created_by: user?.id
       }, ...prev])
-      
+
       setNoteText('')
       setNotification({ message: 'Note added successfully', type: 'success' })
     } catch (err) {
@@ -147,7 +152,7 @@ export default function ReportDetailPage() {
       setNotification({ message: 'File exceeds 5MB limit', type: 'error' })
       return
     }
-    
+
     // Count total photos
     const currentCrewPhotos = [report.before_photo_url, report.after_photo_url].filter(Boolean).length
     if (currentCrewPhotos >= 5) {
@@ -158,16 +163,16 @@ export default function ReportDetailPage() {
     setUploadingPhoto(true)
     try {
       const activeUploadType = !report.before_photo_url ? 'before' : 'after'
-      
+
       const formData = new FormData()
       formData.append('image', file)
       formData.append('photo_type', activeUploadType)
 
-      const token = localStorage.getItem('authToken')
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/reports/${reportId}/photo`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
+
         },
         body: formData
       })
@@ -176,7 +181,7 @@ export default function ReportDetailPage() {
         const errorData = await response.json()
         throw new Error(errorData.message || errorData.error || 'Failed to upload photo')
       }
-      
+
       // Check lifecycle advancement based on uploaded photo type
       try {
         const activeUploadType = !report.before_photo_url ? 'before' : 'after'
@@ -188,7 +193,7 @@ export default function ReportDetailPage() {
           await updateLifecycleStage(reportId, 'resolved')
         }
       } catch (stageError) {
-        console.error('Failed to advance lifecycle stage:', stageError)
+        reportDiagnostic('error', 'reports', 'Failed to advance lifecycle stage:', stageError)
       }
 
       // Refresh report
@@ -202,7 +207,7 @@ export default function ReportDetailPage() {
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
-  
+
   if (loading) {
     return (
       <div className="p-8 space-y-6">
@@ -234,15 +239,15 @@ export default function ReportDetailPage() {
   ]
 
   const isScouting = report.issue_type === 'scouting' || report.issue_type === 'acknowledge_only';
-  const isFinished = report.status === 'resolved' || report.status === 'closed' || 
-                     (isScouting && report.stage === 'acknowledged') || 
+  const isFinished = report.status === 'resolved' || report.status === 'closed' ||
+                     (isScouting && report.stage === 'acknowledged') ||
                      (!isScouting && report.stage === 'responded');
 
   return (
     <FieldCrewGuard>
       <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
-        <PageHeader 
-          title={`Report #${report.id}`} 
+        <PageHeader
+          title={`Report #${report.id}`}
           subtitle="Individual Report Evidence Logging"
           breadcrumbs={[
             { label: 'Dashboard', href: '/dashboard/field-crew' },
@@ -273,10 +278,10 @@ export default function ReportDetailPage() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
+
           {/* Left Column: Metadata, Photos, Notes */}
           <div className="lg:col-span-2 space-y-8">
-            
+
             {/* Metadata Section */}
             <section className="bg-surface p-6 border border-border border-[#1A1A1A]  shadow-sm">
               <div className="flex justify-between items-start mb-4 border-b border-border pb-4">
@@ -289,7 +294,7 @@ export default function ReportDetailPage() {
                   {report.stage && <StatusBadge status={report.stage} type="lifecycle" />}
                 </div>
               </div>
-              
+
               <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6">
                 <div>
                   <dt className="font-mono text-xs uppercase tracking-widest text-text-muted mb-1">Issue Type</dt>
@@ -323,7 +328,7 @@ export default function ReportDetailPage() {
                     {new Date(report.updated_at).toLocaleString()}
                   </dd>
                 </div>
-                
+
                 {report.is_anonymous === false && report.reporter_name && (
                   <div className="md:col-span-2 mt-4 pt-4 border-t border-border">
                     <dt className="font-mono text-xs uppercase tracking-widest text-[#ccff00] mb-1">Reporter Information</dt>
@@ -336,7 +341,7 @@ export default function ReportDetailPage() {
             {/* Photo Verification System */}
             <section className="bg-surface p-6 border border-border border-[#1A1A1A]  shadow-sm">
               <h3 className="font-mono text-sm uppercase tracking-widest text-text-primary mb-4 border-b border-border pb-2">Photo Verification System</h3>
-              
+
               <div className="space-y-6">
                 {/* Citizen Evidence */}
                 <div>
@@ -364,7 +369,7 @@ export default function ReportDetailPage() {
                        [{crewPhotos.length}/5 UPLOADED]
                      </span>
                    </h4>
-                   
+
                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                      {crewPhotos.map((photo, i) => (
                         <div key={i} className="relative group border border-border border-[#1A1A1A] ">
@@ -403,7 +408,7 @@ export default function ReportDetailPage() {
             {/* Field Crew Notes & Activity Log */}
             <section className="bg-surface p-6 border border-border border-[#1A1A1A]  shadow-sm">
               <h3 className="font-mono text-sm uppercase tracking-widest text-text-primary mb-4 border-b border-border pb-2">Activity Log & Notes</h3>
-              
+
               <div className="space-y-6">
                 {/* Notes Input */}
                 <form onSubmit={handleNoteSubmit}>
@@ -449,7 +454,7 @@ export default function ReportDetailPage() {
 
           {/* Right Column: Context & Map */}
           <div className="lg:col-span-1 space-y-6">
-            
+
             {/* Actions */}
             <div className="flex flex-col gap-3">
               <button

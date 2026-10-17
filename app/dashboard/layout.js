@@ -1,5 +1,5 @@
 'use client'
-import {updateAuthToken} from '@/lib/auth-token.mjs'
+import { clearSessionMetadata, loadSessionMetadata } from '@/lib/auth-token.mjs'
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Sidebar from '@/components/layout/Sidebar'
@@ -7,8 +7,7 @@ import { UserProvider } from '@/components/auth/UserContext'
 import { SessionProvider } from '@/components/auth/SessionProvider'
 import { TaskProvider } from '@/components/context/TaskContext'
 import styles from '@/components/layout/DashboardShell.module.css'
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL + '/api/auth'
+import { reportDiagnostic } from '../../lib/diagnostics.mjs';
 
 export default function DashboardLayout({ children }) {
   const [user, setUser] = useState(null)
@@ -18,38 +17,35 @@ export default function DashboardLayout({ children }) {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const token = localStorage.getItem('authToken')
-      if (!token) {
-        router.push('/auth')
-        return
-      }
-
       try {
-        const response = await fetch(`${API_BASE_URL}/me`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        })
-
-        if (!response.ok) {
-          updateAuthToken(null)
+        const session = await loadSessionMetadata()
+        if (session?.state !== 'full') {
+          clearSessionMetadata()
           router.push('/auth')
           return
         }
 
-        const data = await response.json()
-        const userRole = data.user.role || 'citizen'
+        const data = { user: session.user }
+        const userRole = data.user?.role || 'citizen'
+
+        if (userRole === 'citizen' || userRole === 'field_crew') {
+          // Immediately block citizen and field crew from any web dashboard pages
+          clearSessionMetadata()
+          router.push('/auth')
+          return
+        }
+
+        if (pathname.startsWith('/dashboard/admin') && userRole !== 'admin' && userRole !== 'sysadmin') {
+          setIsRedirecting(true)
+          router.push('/dashboard/officer')
+          return
+        }
 
         setUser(data.user)
 
-        if (userRole === 'admin' && pathname === '/dashboard') {
+        if ((userRole === 'admin' || userRole === 'sysadmin') && pathname === '/dashboard') {
           setIsRedirecting(true)
           router.push('/dashboard/admin')
-        } else if (userRole === 'field_crew') {
-          // Immediately block field crew from any dashboard pages
-          updateAuthToken(null)
-          router.push('/auth')
-          return
         } else if (userRole === 'officer' && pathname === '/dashboard') {
           setIsRedirecting(true)
           router.push('/dashboard/officer')
@@ -57,8 +53,8 @@ export default function DashboardLayout({ children }) {
           setIsRedirecting(false)
         }
       } catch (error) {
-        console.error('Failed to fetch user data:', error)
-        updateAuthToken(null)
+        reportDiagnostic('error', 'other', 'Failed to fetch user data:', error)
+        clearSessionMetadata()
         router.push('/auth')
       }
     }
@@ -129,6 +125,3 @@ export default function DashboardLayout({ children }) {
     </SessionProvider>
   )
 }
-
-
-
