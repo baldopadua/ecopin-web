@@ -1,6 +1,7 @@
 'use client'
 import SecureImage from '@/components/ui/SecureImage'
 import React, { useState } from 'react'
+import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 
 export default function PhotoGalleryCard({ task, reports }) {
   const [lightboxImage, setLightboxImage] = useState(null)
@@ -106,20 +107,20 @@ export default function PhotoGalleryCard({ task, reports }) {
         >
           <div className="relative max-w-7xl max-h-screen p-4 flex items-center justify-center" onClick={e => e.stopPropagation()}>
             <button 
-              className="absolute top-4 right-4 text-white hover:text-gray-300 z-50 bg-black/50 rounded-full p-2"
+              type="button"
+              aria-label="Close lightbox"
+              className="absolute top-4 right-4 text-white hover:text-gray-300 z-50 bg-black/50 rounded-full p-2 flex items-center justify-center"
               onClick={() => setLightboxImage(null)}
             >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <X size={24} aria-hidden="true" />
             </button>
             <button 
-              className="absolute left-4 text-white hover:text-gray-300 z-50 bg-black/50 rounded-full p-3"
+              type="button"
+              aria-label="Previous photo"
+              className="absolute left-4 text-white hover:text-gray-300 z-50 bg-black/50 rounded-full p-3 flex items-center justify-center"
               onClick={handlePreviousPhoto}
             >
-              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
+              <ChevronLeft size={32} aria-hidden="true" />
             </button>
             <SecureImage 
               src={lightboxImage.url} 
@@ -127,12 +128,12 @@ export default function PhotoGalleryCard({ task, reports }) {
               className="max-w-full max-h-[90vh] object-contain rounded-lg"
             />
             <button 
-              className="absolute right-4 text-white hover:text-gray-300 z-50 bg-black/50 rounded-full p-3"
+              type="button"
+              aria-label="Next photo"
+              className="absolute right-4 text-white hover:text-gray-300 z-50 bg-black/50 rounded-full p-3 flex items-center justify-center"
               onClick={handleNextPhoto}
             >
-              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
+              <ChevronRight size={32} aria-hidden="true" />
             </button>
             <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white bg-black/50 px-4 py-2 rounded-full">
               {getPhotosByType(lightboxImage.type)[lightboxImage.index].label}

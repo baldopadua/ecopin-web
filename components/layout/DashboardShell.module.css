@@ -70,10 +70,13 @@
 .iconButton:hover { background: var(--surface-elevated); color: var(--text-primary); }
 .navigation { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 12px; }
 .navLink { display: flex; min-height: 48px; align-items: center; gap: 12px; padding: 12px;
-  margin-bottom: 4px; border-radius: 12px; color: var(--text-secondary); font-size: 14px; }
-.navLink svg { flex-shrink: 0; }
+  margin-bottom: 4px; border-radius: 12px; color: var(--text-secondary); font-size: 14px;
+  transition: color 0.15s ease, background-color 0.15s ease; }
+.navLink svg { flex-shrink: 0; transition: color 0.15s ease, opacity 0.15s ease; opacity: 0.88; }
 .navLink:hover { background: var(--surface-elevated); color: var(--text-primary); }
+.navLink:hover svg { opacity: 1; }
 .active { background: color-mix(in srgb, var(--workspace-link) 10%, var(--surface)); color: var(--workspace-link); font-weight: 600; }
+.active svg { color: var(--workspace-link); opacity: 1; }
 .collapsed .navLink { justify-content: center; }
 .account { padding: 16px 12px; border-top: 1px solid var(--border); }
 .profile { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 8px; border-radius: 12px; }

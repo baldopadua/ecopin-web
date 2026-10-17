@@ -2,6 +2,7 @@
   "name": "ecopin-dashboard",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "npm@12.0.2",
   "scripts": {
     "dev": "next dev -p 4001 --webpack",
     "build": "next build",
@@ -9,8 +10,12 @@
     "lint": "eslint",
     "test:public-map": "node --test --test-isolation=none tests/public-report-page.test.mjs",
     "test:reports": "node --env-file=.env --test tests/reports-access.test.mjs",
+    "test:storage": "node --env-file=.env --test --test-isolation=none tests/storage-access.test.mjs",
+    "test:preview": "node --test --test-isolation=none tests/preview-authorization.test.mjs",
+    "test:forecast-browser": "node --test --test-isolation=none tests/forecast-map-browser.test.cjs",
     "test:analytics": "node --test --test-isolation=none tests/report-analytics.test.mjs tests/sweeper-analytics.test.mjs",
-    "test": "npm run test:public-map && node --test tests/private-media.test.mjs && node --test tests/optimization-response.test.mjs && npm run test:reports && npm run test:analytics"
+    "test:sweeper-settings": "node --test --test-isolation=none tests/sweeper-config.test.mjs",
+    "test": "npm run test:public-map && node --test tests/rate-limiter.test.mjs && node --test tests/private-media.test.mjs && node --test tests/optimization-response.test.mjs && node --env-file=.env --test tests/batch-evidence-cache.test.mjs && npm run test:reports && npm run test:storage && npm run test:analytics && npm run test:preview"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.4",
@@ -25,7 +30,7 @@
     "leaflet.markercluster": "^1.5.3",
     "lenis": "^1.3.26",
     "lucide-react": "^1.47.0",
-    "next": "^16.3.0",
+    "next": "16.4.2",
     "react": "19.2.8",
     "react-chartjs-2": "^5.3.1",
     "react-datepicker": "^9.1.0",
@@ -41,7 +46,7 @@
     "@types/react": "19.2.18",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
-    "eslint-config-next": "16.3.0"
+    "eslint-config-next": "16.4.2"
   },
   "allowScripts": {
     "unrs-resolver@1.12.2": true

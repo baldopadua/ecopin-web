@@ -12,7 +12,7 @@
 .metric span { font-size: 12px; color: var(--text-secondary); }
 .metric strong { font-size: 14px; font-weight: 500; color: var(--text-primary); }
 .workspace { display: grid; grid-template-columns: minmax(0, 1fr) 336px; align-items: start; gap: 24px; }
-.mapPanel { min-width: 0; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; background: var(--surface); }
+.mapPanel { min-width: 0; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; background: var(--surface); position: relative; isolation: isolate; }
 .map { position: relative; height: clamp(400px, 58dvh, 720px); background: var(--surface-elevated); }
 .mapState { display: flex; height: 100%; align-items: center; justify-content: center; padding: 24px; text-align: center; color: var(--text-secondary); }
 .legend { display: flex; flex-wrap: wrap; gap: 16px; padding: 16px 16px 8px; }

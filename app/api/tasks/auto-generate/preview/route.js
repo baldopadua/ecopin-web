@@ -1,6 +1,44 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
+async function authorizePreview(req) {
+  const deny = (status, error) => NextResponse.json({ error }, {
+    status,
+    headers: { 'Cache-Control': 'no-store' }
+  })
+  const authorization = req.headers.get('authorization')
+  if (!authorization || !/^Bearer [A-Za-z0-9._~+/-]+=*$/i.test(authorization)) {
+    return deny(401, 'Authentication required')
+  }
+
+  try {
+    // Trust the existing session service, never a decoded JWT or client role.
+    const base = process.env.NEXT_PUBLIC_BACKEND_API_URL
+    const url = new URL(`${base.replace(/\/$/, '')}/api/auth/me`)
+    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) {
+      return deny(503, 'Unable to verify session')
+    }
+    const response = await fetch(url.href, {
+      headers: { Authorization: authorization },
+      cache: 'no-store',
+      redirect: 'error',
+      signal: AbortSignal.timeout(5000)
+    })
+    if (response.status === 401) return deny(401, 'Authentication required')
+    if (response.status === 403) return deny(403, 'Officer access required')
+    if (!response.ok) return deny(503, 'Unable to verify session')
+
+    const { user } = await response.json()
+    if (!user || typeof user.id !== 'string' || !user.id.trim() || typeof user.role !== 'string') {
+      return deny(503, 'Unable to verify session')
+    }
+    if (user.role !== 'officer') return deny(403, 'Officer access required')
+    return null
+  } catch {
+    return deny(503, 'Unable to verify session')
+  }
+}
+
 const parseLocation = (location, latitude, longitude) => {
   if (latitude && longitude) return { latitude, longitude }
   if (!location) return { latitude: null, longitude: null }
@@ -134,6 +172,9 @@ function generateTasksNative(payload) {
 }
 
 export async function POST(req) {
+  const denied = await authorizePreview(req)
+  if (denied) return denied
+
   try {
     const body = await req.json()
     const { config = {} } = body
@@ -236,7 +277,7 @@ export async function POST(req) {
       mlData = { tasks: generateTasksNative(mlPayload) }
     }
 
-    return NextResponse.json(mlData)
+    return NextResponse.json(mlData, { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
     console.error('Preview error:', error)
     return NextResponse.json({ error: error.message || 'Failed to generate routes' }, { status: 500 })

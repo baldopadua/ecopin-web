@@ -156,7 +156,7 @@ export default function ClustersPage() {
 
   return (
     <OfficerGuard>
-      <div className="p-8 h-[calc(100vh-64px)] flex flex-col">
+      <div className="p-8 min-h-full flex flex-col">
         <PageHeader
           title="Hotzone Intel"
           subtitle="Spatial intelligence and cluster mapping"

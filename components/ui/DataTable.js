@@ -1,5 +1,6 @@
 'use client'
 import { SkeletonLine } from './Skeleton'
+import { ChevronUp, ChevronDown } from 'lucide-react'
 
 /**
  * Universal Data Table component
@@ -34,14 +35,10 @@ export default function DataTable({
   const renderSortIcon = (key) => {
     if (!sortable || sortKey !== key) return null
     
-    return (
-      <svg className="w-4 h-4 ml-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        {sortDirection === 'asc' ? (
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-        ) : (
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        )}
-      </svg>
+    return sortDirection === 'asc' ? (
+      <ChevronUp size={16} className="ml-1 inline" aria-hidden="true" />
+    ) : (
+      <ChevronDown size={16} className="ml-1 inline" aria-hidden="true" />
     )
   }
 

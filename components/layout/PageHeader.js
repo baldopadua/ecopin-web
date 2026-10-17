@@ -1,8 +1,8 @@
 import Link from 'next/link'
 
-export default function PageHeader({ title, titleAccent, subtitle, breadcrumbs, children }) {
+export default function PageHeader({ title, titleAccent, subtitle, breadcrumbs, children, className = '' }) {
   return (
-    <header className="relative mb-6 pb-4 border-b border-border">
+    <header className={`sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border transition-colors -mx-4 sm:-mx-8 -mt-5 sm:-mt-8 px-4 sm:px-8 pt-5 sm:pt-8 pb-4 mb-6 ${className}`}>
       {breadcrumbs && breadcrumbs.length > 0 && (
         <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 text-sm text-text-secondary mb-4">
           {breadcrumbs.map((crumb, i) => (

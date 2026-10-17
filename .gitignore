@@ -44,3 +44,11 @@ next-env.d.ts
 TASK.md
 # Generated local patch dump
 /diff.txt
+
+# SQL scripts and internal migration/security files
+*.sql
+scripts/
+
+# Security audit logs and sensitive security notes
+QA_SECURITY_AUDIT_LOG.md
+docs/*security*.md

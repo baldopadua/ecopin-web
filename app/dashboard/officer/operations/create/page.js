@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { fetchFilteredReports, fetchAvailableCrew } from '@/lib/api'
 import { createCustomCleanupTask } from '@/lib/api'
+import { readAuthToken, triggerSessionExpired } from '@/lib/auth-token.mjs'
 import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
 import Button from '@/components/ui/Button'
@@ -191,9 +192,14 @@ export default function CreateCleanupTaskPage() {
     setGenerationError(null)
     
     try {
+      const token = readAuthToken()
+      if (!token) {
+        triggerSessionExpired()
+        throw new Error('Please sign in again to preview routes')
+      }
       const res = await fetch('/api/tasks/auto-generate/preview', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           config: autoSettings
         })
@@ -201,6 +207,7 @@ export default function CreateCleanupTaskPage() {
       
       const data = await res.json()
 
+      if (res.status === 401) triggerSessionExpired()
       if (!res.ok) {
         throw new Error(data.error || data.message || 'Failed to generate routes')
       }
