@@ -1,4 +1,4 @@
-.page { max-width: 1120px; margin: 0 auto; padding: 32px; color: var(--text-primary); }
+.page { min-width: 0; padding: 32px; color: var(--text-primary); }
 .panel { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
 .section { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 32px; padding: 24px; }
 .section + .section { border-top: 1px solid var(--border); }
