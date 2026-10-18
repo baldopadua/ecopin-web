@@ -44,20 +44,35 @@ export async function POST(req, context) {
     const action = ((await context.params).action || []).join('/');
     if (action === 'login') {
       const data = await input(req, ['email', 'password']);
-      if (!data || typeof data.email !== 'string' || data.email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email) || typeof data.password !== 'string' || !data.password || data.password.length > 1024) return webFailure(400);
+      if (!data || typeof data.email !== 'string' || data.email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email) || typeof data.password !== 'string' || !data.password || data.password.length > 1024) {
+        return webJson({ error: 'Please enter a valid email address and password.' }, 400);
+      }
       const quota = await checkPreviewQuota(createHash('sha256').update(data.email.trim().toLowerCase()).digest('hex'), req.signal, 'ecopin:session-login:v1');
-      if (quota.status !== 200) return webFailure(quota.status);
+      if (quota.status !== 200) {
+        return webJson({ error: 'Too many login attempts. Please wait a few moments and try again.' }, 429);
+      }
       const response = await authorityFetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: data.email.trim(), password: data.password }) }, req.signal);
-      if (!response.ok) return webFailure(response.status === 401 || response.status === 403 ? 401 : 503);
+      if (!response.ok) {
+        let errMessage = null;
+        try {
+          const errData = await authorityJson(response, req.signal, 4096);
+          errMessage = errData?.message || errData?.error;
+        } catch { /* ignore parse error */ }
+
+        if (response.status === 401 || response.status === 403) {
+          return webJson({ error: errMessage || 'Invalid email or password. Please try again.' }, response.status);
+        }
+        return webFailure(response.status === 429 ? 429 : 503);
+      }
       const result = await authorityJson(response, req.signal, 32768);
       const kind = result.requirePasswordChange === true ? 'temporary' : 'full';
       let user = null;
       let maxAge = 300;
       if (kind === 'full') {
         const verification = await authorityFetch('/api/auth/me', { headers: { Authorization: `Bearer ${result.token}` } }, req.signal);
-        if (!verification.ok) return webFailure(verification.status === 401 || verification.status === 403 ? 401 : 503);
+        if (!verification.ok) return webJson({ error: 'Unable to verify account permissions. Please try again.' }, 401);
         user = safeUser((await authorityJson(verification, req.signal, 32768)).user);
-        if (!user) return webFailure(403);
+        if (!user) return webJson({ error: 'This sign-in is for authorized personnel only.' }, 403);
         const policyResponse = await authorityFetch('/api/admin/timeout', { headers: { Authorization: `Bearer ${result.token}` } }, req.signal);
         if (!policyResponse.ok) return webFailure(503);
         const policy = await authorityJson(policyResponse, req.signal, 32768);
