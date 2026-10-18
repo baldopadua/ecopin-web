@@ -14,6 +14,10 @@ const databaseModule = 'data:text/javascript,export const supabase = {}';
 const hooks = registerHooks({
   resolve(specifier, context, nextResolve) {
     if (specifier === '@/lib/supabase') return { url: databaseModule, shortCircuit: true };
+    if (specifier === 'server-only') return { url: 'data:text/javascript,', shortCircuit: true };
+    if (specifier.startsWith('@/')) {
+      return { url: new URL(specifier.replace(/^@\//, '../'), import.meta.url).href, shortCircuit: true };
+    }
     return nextResolve(specifier === 'next/server' ? 'next/server.js' : specifier, context);
   },
 });

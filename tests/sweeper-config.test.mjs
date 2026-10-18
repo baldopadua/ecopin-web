@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises'
 import vm from 'node:vm'
 
 const source = (await readFile(new URL('../lib/api/sweeper.js', import.meta.url), 'utf8'))
-  .replace(/^import .*\n/gm, '')
+  .replace(/^import .*\r?\n/gm, '')
   .replaceAll('export async function', 'async function') +
   '\n;({ updateSlaThreshold, updateShiftDuration, updateWorkTime })'
 
@@ -13,7 +13,9 @@ function loadApi(rateLimitedFetch) {
     localStorage: { getItem: () => 'test-token' },
     process: { env: { NEXT_PUBLIC_BACKEND_API_URL: 'https://api.test' } },
     rateLimitedFetch,
+    readSessionKey() { return 'test-session'; },
     triggerSessionExpired() {},
+    reportDiagnostic() {},
     console: { error() {} },
     URLSearchParams
   })

@@ -382,7 +382,7 @@ export async function POST(req) {
     const reportDeadline = AbortSignal.any([AbortSignal.timeout(3000), ...(req.signal ? [req.signal] : [])])
     const { data, error } = await supabase
       .from('public_reports')
-      .select('id,status,validation_status,created_at,latitude,longitude,location,cluster_id,severity_score,severity_level,on_private_property,property_owner_consent_status')
+      .select('id,status,validation_status,created_at,latitude,longitude,location,cluster_id,severity_score,severity_level')
       .eq('status', 'unresolved')
       .eq('validation_status', 'approved')
       .abortSignal(reportDeadline)
@@ -400,8 +400,7 @@ export async function POST(req) {
       r.validation_status === 'approved' &&
       !claimedReportIds.has(r.id) &&
       !blockedReportIds.has(r.id) &&
-      !(r.cluster_id && blockedClusterIds.has(r.cluster_id)) &&
-      !(r.on_private_property && r.property_owner_consent_status === 'denied')
+      !(r.cluster_id && blockedClusterIds.has(r.cluster_id))
     )
 
     // Group reports by cluster_id if assigned to a cluster, otherwise treat as individual
