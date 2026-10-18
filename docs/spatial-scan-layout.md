@@ -1,19 +1,17 @@
 # Spatial scan layout
 
-The officer's Spatial Scan is a viewport-height workspace. Desktop shows the map
-and a 320px hotspot panel side by side, with forecast/layer controls above and
-historical playback below. Hotspots use measured row heights and pagination,
-keeping the list and its navigation within the available height.
+The officer's Hotspot Forecast (Spatial Scan) is a viewport-height workspace that fits entirely within the screen without causing outer `#workspace-content` scrolling.
 
-Below 900px, Map and Hotspots buttons switch the visible workspace panel. Below
-1024px the page subtracts the dashboard's 64px mobile header. Short windows and
-enlarged text may scroll to preserve access: the minimum page height is 640px on
-desktop and 720px in the compact layout.
+## Design and layout rules
 
-Use the dashboard's Outfit typography, theme tokens, 4/8px spacing, restrained
-borders, and 44px control targets. Preserve the forecast/source caveat, risk labels,
-attribution, and loading/error/empty states. Public landing composition rules in
-DESIGN.md do not apply to this operational workspace.
+- **Viewport fit:** The workspace fits the viewport on desktop, laptop, tablet, and mobile screens (1440×900, 1366×768, 1280×720, 1024×768, 899px). All map panels, overview metrics, HUD controls, and feed items adapt without vertical page scrollbars.
+- **Header preservation:** `PageHeader` preserves the civic visual design—displaying breadcrumbs (`Officer / Spatial scan`), the "Hotspot forecast" heading, subtitle, a bottom divider border (`1px solid var(--border)`), and header action buttons (`Saved forecasts`, refresh, and status badge pill) styled as standard DESIGN.md pill buttons.
+- **HUD & Overview:** Compact horizon selectors (`7d`, `30d`, `90d`), layer toggles (`Forecast map`, `Today's reports`), and summary metrics.
+- **Workspace layout:**
+  - Desktop shows the interactive map and a responsive 340px hotspot panel side by side (`minmax(0, 1fr) 340px`).
+  - Hotspot items use measured row heights and pagination (`DynamicFeed`), keeping the list and navigation within available height.
+  - Below 900px, a compact segmented switcher (`Map` / `Areas`) allows toggling between map and feed.
+- **Design system adherence:** Adheres to `DESIGN.md` Section 21: Outfit typography, civic blue actions (`#0052cc`), 12px panel borders, pill action buttons (9999px), and 44px minimum interactive targets.
 
 Browser verification: `node --test tests/spatial-scan.browser.cjs`, with Playwright
 available through NODE_PATH and a local app at http://localhost:4001 (or

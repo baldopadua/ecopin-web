@@ -4,6 +4,9 @@ import { useParams, useRouter } from 'next/navigation'
 import { getOptimizationRunById, approveOptimization, discardOptimization } from '@/lib/api/optimization'
 import { fetchReportsByIds } from '@/lib/api/reports'
 import RouteInfoHeader from '@/components/ui/RouteInfoHeader'
+import PageHeader from '@/components/layout/PageHeader'
+import { SkeletonLine } from '@/components/ui/Skeleton'
+import { formatStatusLabel } from '@/lib/helpers/statusHelpers'
 import EvidenceGallery from '@/components/ui/EvidenceGallery'
 import DisassembleModal from '@/components/optimization/DisassembleModal'
 import Notification from '@/components/ui/Notification'
@@ -17,7 +20,7 @@ import {
   CrewRouteCard, 
   RouteMapView 
 } from '@/components/optimization/RouteComponents'
-import { Sun, Circle, Map, CheckCircle2, XCircle, ArrowLeft, RotateCcw } from 'lucide-react'
+import { Sun, Circle, Map, CheckCircle2, XCircle, RotateCcw } from 'lucide-react'
 import { reportDiagnostic } from '../../../../../lib/diagnostics.mjs';
 
 export default function OptimizationRunPage() {
@@ -103,22 +106,62 @@ export default function OptimizationRunPage() {
     loadRun()
   }
 
+  const header = <PageHeader
+    title="Optimization details"
+    subtitle={`Run ID: ${run?.id || id}`}
+    breadcrumbs={[
+      { label: 'Dashboard', href: '/dashboard' },
+      { label: 'Optimization', href: '/dashboard/officer/optimization' },
+      { label: 'Optimization details' }
+    ]}
+  />
+
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto space-y-6 animate-pulse">
-        <div className="h-10 bg-surface-elevated w-1/4 mb-4"></div>
-        <div className="h-64 bg-surface-elevated"></div>
+      <div className="p-8 space-y-6" aria-busy="true">
+        {header}
+        <p role="status" className="sr-only">Loading optimization details…</p>
+        <div className="card border border-border mb-6" aria-hidden="true">
+          <div className="flex items-center justify-between mb-4">
+            <SkeletonLine className="h-7 w-2/3 max-w-40" /><SkeletonLine className="h-6 w-16 shrink-0" />
+          </div>
+          <div className="card border-l border-l-[var(--primary)] mb-4">
+            <SkeletonLine className="h-6 w-44 max-w-full mb-4" />
+            <div className="grid grid-cols-3 gap-4">
+              {[0, 1, 2].map(index => <div key={index} className="flex flex-col items-center gap-2">
+                <SkeletonLine className="h-7 w-7" /><SkeletonLine className="h-5 w-16 max-w-full" /><SkeletonLine className="h-3 w-12" />
+              </div>)}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            {[0, 1, 2, 3].map(index => <div key={index} className="bg-surface-elevated border border-border p-3">
+              <SkeletonLine className="h-3 w-24 max-w-full mb-2" /><SkeletonLine className="h-8 w-16" />
+            </div>)}
+          </div>
+          <div className="space-y-4 mb-6">
+            {[0, 1].map(index => <div key={index} className="border border-border rounded-xl p-4">
+              <SkeletonLine className="h-5 w-1/3 mb-3" /><SkeletonLine className="h-4 w-2/3 mb-2" /><SkeletonLine className="h-4 w-1/2" />
+            </div>)}
+          </div>
+          <SkeletonLine className="h-5 w-40 mb-3" />
+          <SkeletonLine className="h-40 w-full mb-6" />
+          <SkeletonLine className="h-5 w-32 mb-3" />
+          <SkeletonLine className="h-[400px] w-full" />
+        </div>
       </div>
     )
   }
 
   if (!run) {
     return (
-      <div className="max-w-7xl mx-auto text-center py-20">
+      <div className="p-8 space-y-6">
+        {header}
+        <div className="text-center py-20">
         <h2 className="text-2xl font-semibold text-text-primary mb-4">Run not found</h2>
         <button onClick={() => router.push('/dashboard/officer/optimization')} className="px-4 py-2 bg-surface-elevated border border-border">
           Back to Optimization
         </button>
+        </div>
       </div>
     )
   }
@@ -132,15 +175,7 @@ export default function OptimizationRunPage() {
 
   return (
     <div className="p-8 space-y-6">
-      <div className="flex items-center gap-4 mb-2">
-        <button aria-label="Back to Optimization Center" onClick={() => router.push('/dashboard/officer/optimization')} className="p-2 border border-border bg-surface-elevated hover:bg-surface text-text-muted hover:text-text-primary">
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div>
-          <h1 className="text-3xl font-semibold normal-case tracking-normal text-text-primary">Optimization details</h1>
-          <p className="text-sm font-sans text-text-muted">Run ID: {run.id}</p>
-        </div>
-      </div>
+      {header}
 
       {notification && (
         <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />
@@ -150,7 +185,7 @@ export default function OptimizationRunPage() {
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-text-primary text-lg">Proposal result</h3>
           <span className={`text-xs px-3 py-1 border font-semibold font-sans normal-case tracking-normal ${STATUS_STYLES[run.status] || STATUS_STYLES.draft}`}>
-            {run.status?.replaceAll('_', ' ')}
+            {formatStatusLabel(run.status)}
           </span>
         </div>
 

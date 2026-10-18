@@ -43,24 +43,9 @@ function SystemSettingsContent() {
     try {
       setSaving(true)
       
-      // Validate session_timeout_minutes before saving
-      if (settings.session_timeout_minutes === '' || isNaN(settings.session_timeout_minutes)) {
-        setNotification({ message: 'Session timeout must be a valid number', type: 'error' })
-        setSaving(false)
-        return
-      }
-      
-      if (settings.session_timeout_minutes < 5) {
-        setNotification({ message: 'Session timeout must be at least 5 minutes', type: 'error' })
-        setSaving(false)
-        return
-      }
-      
       await updateSystemSettings(settings)
       setNotification({ message: 'Settings saved successfully', type: 'success' })
       
-      // Notify SessionProvider to re-fetch the session timeout
-      window.dispatchEvent(new CustomEvent('system-settings-updated'))
     } catch (err) {
       reportDiagnostic('error', 'settings', 'Failed to save settings:', err)
       setNotification({ message: 'Failed to save settings', type: 'error' })
@@ -197,21 +182,11 @@ function SystemSettingsContent() {
 
           <h2 className="text-xl font-bold text-text-primary mb-6">Session Settings</h2>
 
-          {/* Session Timeout */}
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-2">
-              Session Timeout (minutes)
-            </label>
-            <input
-              type="number"
-              min="5"
-              max="1440"
-              value={settings.session_timeout_minutes}
-              onChange={(e) => handleChange('session_timeout_minutes', e.target.value === '' ? '' : parseInt(e.target.value))}
-              className="w-full p-3 border border-border rounded-lg bg-surface-elevated text-text-primary"
-            />
+            <h3 className="text-sm font-medium text-text-primary mb-2">Web session lifetime</h3>
+            <p className="text-text-primary">30 days after sign-in</p>
             <p className="text-xs text-text-muted mt-1">
-              Users will be logged out after this period of inactivity
+              You are signed out when this period ends. Inactivity does not sign you out, and activity does not extend the deadline.
             </p>
           </div>
         </div>

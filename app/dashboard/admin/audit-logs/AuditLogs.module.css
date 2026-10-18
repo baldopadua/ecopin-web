@@ -1,0 +1,339 @@
+.page {
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px 24px;
+  overflow: hidden;
+  box-sizing: border-box;
+  color: var(--text-primary);
+  font-family: var(--font-outfit), sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.page .pageHeader {
+  position: static !important;
+  margin: 0 !important;
+  padding: 0 0 10px 0 !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--border) !important;
+  flex-shrink: 0;
+}
+
+.pageHeader nav {
+  margin-bottom: 4px !important;
+  font-size: 13px;
+}
+
+.pageHeader h1 {
+  margin: 0 0 2px !important;
+  font-size: 24px;
+  line-height: 1.25;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.pageHeader p {
+  margin: 0 !important;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+/* WORM & Immutability Compliance Banner */
+.wormBanner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  flex-shrink: 0;
+}
+
+.wormLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.wormIconBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--success, #2e7d32) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--success, #2e7d32) 30%, transparent);
+  color: var(--success, #2e7d32);
+  flex-shrink: 0;
+}
+
+.wormTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.wormTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.wormBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-family: monospace;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--success, #2e7d32) 15%, transparent);
+  color: var(--success, #2e7d32);
+  border: 1px solid color-mix(in srgb, var(--success, #2e7d32) 25%, transparent);
+}
+
+.wormSubtitle {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+
+.wormRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.wormStats {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+}
+
+.wormStatMain {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.wormStatSub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.sealBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sealBtn:hover:not(:disabled) {
+  background: var(--surface);
+  border-color: var(--workspace-link, #0052cc);
+  color: var(--workspace-link, #0052cc);
+}
+
+.sealBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Filter bar adjustments */
+.filterBar {
+  margin-bottom: 0 !important;
+  padding: 8px 12px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 14px !important;
+  background: var(--surface) !important;
+  flex-shrink: 0;
+}
+
+.filterBar :global(.input) {
+  min-height: 38px;
+  font-size: 13px;
+}
+
+.filterBar :global(button.btn-secondary) {
+  min-height: 38px;
+  padding: 6px 14px;
+  font-size: 13px;
+  border-radius: 9999px;
+}
+
+.filterBar :global(.border-t) {
+  margin-top: 6px !important;
+  padding-top: 6px !important;
+}
+
+/* Table workspace */
+.tableWorkspace {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.tableContainer {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.tableContainer table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+  font-family: var(--font-outfit), sans-serif;
+}
+
+.tableContainer table th {
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-elevated);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.tableContainer table td {
+  padding: 6px 12px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.tableContainer table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.tableContainer table tbody tr:hover {
+  background: var(--surface-elevated);
+}
+
+/* Status / Action badges */
+.actionBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
+  background: color-mix(in srgb, #0052cc 10%, transparent);
+  color: #0052cc;
+  border: 1px solid color-mix(in srgb, #0052cc 25%, transparent);
+}
+
+:global(.dark) .actionBadge {
+  color: #82b6ff;
+  border-color: color-mix(in srgb, #82b6ff 30%, transparent);
+  background: color-mix(in srgb, #82b6ff 12%, transparent);
+}
+
+.targetBadge {
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.pagination {
+  margin-top: 0 !important;
+  flex-shrink: 0;
+  padding: 2px 0;
+}
+
+/* Error message banner */
+.errorBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--error, #d32f2f) 30%, transparent);
+  background: color-mix(in srgb, var(--error, #d32f2f) 10%, var(--surface));
+  color: var(--error, #d32f2f);
+  flex-shrink: 0;
+}
+
+.retryBtn {
+  min-height: 36px;
+  padding: 6px 16px;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--error, #d32f2f) 35%, transparent);
+  background: var(--surface);
+  color: var(--error, #d32f2f);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.retryBtn:hover {
+  background: color-mix(in srgb, var(--error, #d32f2f) 15%, var(--surface));
+}
+
+@media (max-width: 1023px) {
+  .page {
+    height: calc(100dvh - 64px);
+  }
+}
+
+@media (max-width: 899px) {
+  .page {
+    padding: 12px;
+    gap: 8px;
+  }
+  .pageHeader h1 {
+    font-size: 20px;
+  }
+  .wormBanner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .wormRight {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .filterBar {
+    padding: 6px 10px !important;
+  }
+}

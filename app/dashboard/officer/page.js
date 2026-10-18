@@ -1,18 +1,16 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { fetchCleanupTasks, fetchPublicReports, fetchClusters, fetchWorkQueue, getOptimizationRuns } from '@/lib/api'
-import DashboardLayout from '@/components/layout/DashboardLayout'
-import StatsCard from '@/components/ui/StatsCard'
+import CommandCenterPanel from '@/components/ui/CommandCenterPanel'
+import styles from '@/components/ui/CommandCenter.module.css'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { useUser } from '@/components/auth/UserContext'
 import { OfficerGuard } from '@/components/auth/RequireRole'
-import { Target, Users, AlertTriangle, CloudLightning, ChevronRight, CheckCircle2, Search, Map } from 'lucide-react'
+import { Users, AlertTriangle, CloudLightning, ChevronRight, Search } from 'lucide-react'
 import { reportDiagnostic } from '../../../lib/diagnostics.mjs';
 
 export default function OfficerHomepage() {
-  const router = useRouter()
   const user = useUser()
   const [loading, setLoading] = useState(true)
   const [tasks, setTasks] = useState([])
@@ -107,290 +105,57 @@ export default function OfficerHomepage() {
 
   return (
     <OfficerGuard>
-      <DashboardLayout
-        title="Command Center"
-        subtitle={`Welcome, ${user?.full_name || 'Officer'}. System status is operational.`}
-        breadcrumbs={[{ label: 'Command Center', href: '/dashboard/officer' }]}
-        loading={loading}
-      >
-        {/* Hero KPI Strip */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-           <StatsCard 
-             title="Active Field Units" 
-             value={activeTasks.length} 
-             subtitle={!loading && activeTasks.length > 0 ? `${activeTasks.length} cleanup task${activeTasks.length === 1 ? '' : 's'} in progress.` : 'No tasks currently in progress.'}
-             icon={<Users className="w-6 h-6" />} 
-             color="accent"
-             onClick={() => router.push('/dashboard/officer/operations?status=in_progress')}
-             className="group transition-all hover:border-border dark:hover:border-white"
-           >
-             <div className="mt-3 pt-2.5 border-t border-border flex items-center justify-between">
-               <Link
-                 href="/dashboard/officer/operations?status=in_progress"
-                 onClick={(e) => e.stopPropagation()}
-                 className="text-xs font-medium flex items-center gap-1 text-text-secondary group-hover:text-text-primary group-hover:underline transition-colors"
-               >
-                 View operations
-                 <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
-               </Link>
-             </div>
-           </StatsCard>
-           <StatsCard 
-             title="Unresolved Reports" 
-             value={reports.length} 
-             subtitle={!loading && reports.length > 0 ? `${reports.length} report${reports.length === 1 ? '' : 's'} awaiting action.` : 'No unresolved reports.'}
-             icon={<Search className="w-6 h-6" />} 
-             color="warning"
-             onClick={() => router.push('/dashboard/officer/reports')}
-             className="group transition-all hover:border-border dark:hover:border-white"
-           >
-             <div className="mt-3 pt-2.5 border-t border-border flex items-center justify-between">
-               <Link
-                 href="/dashboard/officer/reports"
-                 onClick={(e) => e.stopPropagation()}
-                 className="text-xs font-medium flex items-center gap-1 text-text-secondary group-hover:text-text-primary group-hover:underline transition-colors"
-               >
-                 View reports
-                 <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
-               </Link>
-             </div>
-           </StatsCard>
-           <StatsCard 
-             title="SLA Risk" 
-             value={slaRiskTasks.length} 
-             subtitle={!loading && slaRiskTasks.length > 0 ? `${slaRiskTasks.length} report(s) exceeded 48hr threshold.` : 'All reports within SLA limit.'}
-             icon={<AlertTriangle className="w-6 h-6" />} 
-             color={slaRiskTasks.length > 0 ? "error" : "success"}
-             onClick={() => router.push(slaRiskTasks.length > 0 ? '/dashboard/officer/reports?filter=overdue' : '/dashboard/officer/reports')}
-             className={`group transition-all hover:border-border dark:hover:border-white ${slaRiskTasks.length > 0 ? "animate-pulse border-error bg-error/5" : ""}`}
-           >
-             <div className="mt-3 pt-2.5 border-t border-border flex items-center justify-between">
-               <Link
-                 href={slaRiskTasks.length > 0 ? '/dashboard/officer/reports?filter=overdue' : '/dashboard/officer/reports'}
-                 onClick={(e) => e.stopPropagation()}
-                 className={`text-xs font-medium flex items-center gap-1 group-hover:underline transition-colors ${
-                   slaRiskTasks.length > 0 ? 'text-error dark:text-red-400' : 'text-text-secondary group-hover:text-text-primary'
-                 }`}
-               >
-                 {slaRiskTasks.length > 0 ? 'View overdue reports' : 'View reports'}
-                 <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
-               </Link>
-             </div>
-           </StatsCard>
-           <StatsCard 
-             title="Manual Review" 
-             value={manualReviewTasks.length} 
-             subtitle={!loading && manualReviewTasks.length > 0 ? `${manualReviewTasks.length} pending review.` : 'No reports pending review.'}
-             icon={<AlertTriangle className="w-6 h-6" />} 
-             color={manualReviewTasks.length > 0 ? "warning" : "success"}
-             onClick={() => router.push(manualReviewTasks.length > 0 ? '/dashboard/officer/reports?filter=manual_review' : '/dashboard/officer/reports')}
-             className={`group transition-all hover:border-border dark:hover:border-white ${manualReviewTasks.length > 0 ? "animate-pulse border-warning bg-warning/5" : ""}`}
-           >
-             <div className="mt-3 pt-2.5 border-t border-border flex items-center justify-between">
-               <Link
-                 href={manualReviewTasks.length > 0 ? '/dashboard/officer/reports?filter=manual_review' : '/dashboard/officer/reports'}
-                 onClick={(e) => e.stopPropagation()}
-                 className={`text-xs font-medium flex items-center gap-1 group-hover:underline transition-colors ${
-                   manualReviewTasks.length > 0 ? 'text-warning dark:text-yellow-400' : 'text-text-secondary group-hover:text-text-primary'
-                 }`}
-               >
-                 {manualReviewTasks.length > 0 ? 'Review reports' : 'View reports'}
-                 <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
-               </Link>
-             </div>
-           </StatsCard>
+      <div className={styles.page}>
+        <header className={styles.header}>
+          <h1>Command Center</h1>
+          <Link href="/dashboard/officer/optimization" className={styles.primary}>
+            <CloudLightning size={16} aria-hidden="true" />Run Optimization
+          </Link>
+          <p>Welcome, {user?.full_name || 'Officer'}. System status is operational.</p>
+        </header>
+        <div className={styles.metrics} aria-label="Operational overview">
+          {[
+            { title: 'Active Field Units', value: activeTasks.length, note: 'Cleanup tasks in progress', href: '/dashboard/officer/operations?status=in_progress', icon: Users },
+            { title: 'Unresolved Reports', value: reports.length, note: 'Reports awaiting action', href: '/dashboard/officer/reports', icon: Search },
+            { title: 'SLA Risk', value: slaRiskTasks.length, note: 'Reports older than 48 hours', href: slaRiskTasks.length ? '/dashboard/officer/reports?filter=overdue' : '/dashboard/officer/reports', icon: AlertTriangle },
+            { title: 'Manual Review', value: manualReviewTasks.length, note: 'Reports awaiting review', href: manualReviewTasks.length ? '/dashboard/officer/reports?filter=manual_review' : '/dashboard/officer/reports', icon: AlertTriangle },
+          ].map(({ title, value, note, href, icon: Icon }) => <Link key={title} href={href}
+            className={`${styles.metric} ${title === 'SLA Risk' && value > 0 && !loading ? styles.slaAlert : ''}`}>
+            <span>{title}</span><Icon size={18} aria-hidden="true" />
+            <strong>{loading ? '—' : value}</strong><small>{note}</small>
+          </Link>)}
         </div>
-
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
-           {/* Left Column: Action Queue & Active Targets */}
-           <div className="min-w-0 xl:col-span-2 space-y-6">
-              {/* Active Targets - In-Progress Cleanup Tasks */}
-              <div className="card border border-border dark:border-[#333333] rounded-xl p-4 sm:p-6">
-                 <div className="flex flex-wrap justify-between items-center gap-3 mb-4 border-b border-border pb-3">
-                    <h2 className="text-lg md:text-xl font-semibold tracking-tight text-text-primary flex flex-wrap items-center gap-2">
-                       Active Targets
-                       {!loading && (
-                          <span className="text-xs font-medium bg-warning/10 text-warning border border-warning/30 px-2.5 py-0.5 rounded-full">
-                             {activeTasks.length} in progress
-                          </span>
-                       )}
-                    </h2>
-                    <Link href="/dashboard/officer/operations?status=in_progress" className="text-sm font-medium text-text-secondary hover:text-accent-green transition-colors flex items-center gap-0.5">
-                       View All <ChevronRight className="w-4 h-4 ml-1" />
-                    </Link>
-                 </div>
-                 
-                 {loading ? (
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-pulse">
-                     {[1,2].map(i => <div key={i} className="h-28 bg-surface-elevated border border-border rounded-lg" />)}
-                   </div>
-                 ) : activeTasks.length === 0 ? (
-                   <div className="text-center py-8 text-text-muted bg-surface-elevated border border-dashed border-border rounded-lg">
-                      <p className="font-medium text-text-secondary">No in-progress cleanup tasks</p>
-                      <p className="text-xs text-text-muted mt-1">There are currently no cleanup tasks actively in progress.</p>
-                   </div>
-                 ) : (
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     {activeTasks.slice(0, 2).map(task => {
-                        const crewCount = task.assigned_crew_ids?.length || (task.assigned_to ? 1 : 0);
-                        const reportCount = task.reports?.length || task.report_ids?.length || 0;
-                        return (
-                           <div 
-                              key={task.id} 
-                              className="border border-border dark:border-[#333333] p-4 hover:bg-surface-elevated hover:border-accent-green transition-all cursor-pointer rounded-lg bg-surface flex flex-col justify-between group" 
-                              onClick={() => router.push(`/dashboard/officer/operations/${task.id}`)}
-                           >
-                              <div>
-                                 <div className="flex flex-wrap justify-between items-start gap-2 mb-2">
-                                    <h3 className="text-base font-semibold text-text-primary line-clamp-1 min-w-0 flex-1 group-hover:text-accent-green transition-colors leading-snug">
-                                       {task.title || `Task #${task.id?.slice(0, 8)}`}
-                                    </h3>
-                                    <StatusBadge status={task.status || 'in_progress'} type="task" />
-                                 </div>
-                                 <p className="text-sm text-text-secondary line-clamp-2 mb-3 min-h-[2.5rem] leading-relaxed [overflow-wrap:anywhere]">
-                                    {task.description || 'No description provided.'}
-                                 </p>
-                              </div>
-                              <div className="pt-2 border-t border-border/50 flex flex-wrap gap-2 justify-between items-center text-xs">
-                                 <span className="text-text-muted">
-                                    Assigned: <span className={crewCount > 0 ? "font-medium text-accent-green" : "font-medium text-text-muted"}>
-                                       {crewCount > 0 ? `${crewCount} Crew Dispatched` : 'Unassigned'}
-                                    </span>
-                                 </span>
-                                 {reportCount > 0 && (
-                                    <span className="text-xs font-medium text-text-secondary">
-                                       {reportCount} report{reportCount > 1 ? 's' : ''}
-                                    </span>
-                                 )}
-                              </div>
-                           </div>
-                        );
-                     })}
-                   </div>
-                 )}
-              </div>
-
-              {/* Action Queue */}
-              <div className="card border border-border dark:border-[#333333] rounded-xl p-4 sm:p-6">
-                 <div className="flex flex-wrap justify-between items-center gap-3 mb-4 border-b border-border pb-3">
-                    <h2 className="text-lg md:text-xl font-semibold tracking-tight text-text-primary">Action Queue</h2>
-                    <button 
-                      onClick={() => router.push('/dashboard/officer/optimization')}
-                      className="btn-primary text-sm font-medium px-4 py-2 flex items-center gap-2"
-                    >
-                      <CloudLightning className="w-4 h-4" /> Run Optimization
-                    </button>
-                 </div>
-                 
-                 {loading ? (
-                   <div className="animate-pulse space-y-4">
-                     {[1,2,3].map(i => <div key={i} className="h-16 bg-surface-elevated border border-border" />)}
-                   </div>
-                 ) : actionQueueItems.length === 0 ? (
-                   <div className="text-center py-8 text-text-muted">
-                      <CheckCircle2 className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                      <p className="text-base font-semibold text-text-primary">Queue is empty</p>
-                      <p className="text-sm text-text-muted mt-1">All pending actions have been dispatched.</p>
-                   </div>
-                 ) : (
-                   <div className="space-y-4">
-                     {actionQueueItems.map(item => (
-                       <div key={item.id} className="border border-border p-4 hover:border-accent-green transition-colors bg-surface-elevated rounded-lg">
-                          <div className="flex flex-wrap justify-between items-start gap-3 mb-2">
-                             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-                                <span className="bg-warning/15 text-warning border border-warning/30 text-xs font-medium px-2.5 py-0.5 rounded-full">Pending</span>
-                                <h3 className="text-base font-semibold text-text-primary leading-snug line-clamp-2 [overflow-wrap:anywhere]">{item.title || `Cluster ${item.id.slice(0,8)}`}</h3>
-                             </div>
-                             <div className="text-right">
-                                <span className="text-xs font-medium text-text-muted block">Priority score</span>
-                                <span className="text-sm font-semibold text-error">{(item.priority_score || 0).toFixed(1)}/100</span>
-                             </div>
-                          </div>
-                          <div className="flex flex-wrap gap-3 justify-between items-end mt-3">
-                             <div className="text-sm text-text-secondary flex flex-wrap gap-x-4 gap-y-1">
-                                <span>Reports: <span className="font-semibold text-text-primary">{item.report_count || item.report_ids?.length || 0}</span></span>
-                                <span>Radius: <span className="font-semibold text-text-primary">{Math.round(item.radius_meters || 50)}m</span></span>
-                             </div>
-                             <button 
-                               onClick={() => router.push(`/dashboard/officer/operations/create?preselect=${item.id}`)}
-                               className="text-sm font-medium text-accent-green hover:underline flex items-center gap-1 transition-colors"
-                             >
-                               Dispatch <ChevronRight className="w-4 h-4" />
-                             </button>
-                          </div>
-                       </div>
-                     ))}
-                     <Link href="/dashboard/officer/optimization" className="text-sm font-medium text-accent-green hover:underline flex items-center gap-1">
-                        View full action queue <ChevronRight className="w-4 h-4" />
-                     </Link>
-                   </div>
-                 )}
-              </div>
-           </div>
-
-            <div className="min-w-0">
-              <div className="card border border-border rounded-xl p-4 sm:p-6 bg-surface-elevated text-text-primary">
-                 <div className="flex flex-wrap justify-between items-center gap-3 mb-4 border-b border-border pb-3">
-                    <h2 className="text-lg md:text-xl font-semibold tracking-tight text-text-primary flex flex-wrap items-center gap-2">
-                       <Target className="w-5 h-5 text-error" /> Critical Hotzones
-                    </h2>
-                 </div>
-                 
-                 {loading ? (
-                   <div className="animate-pulse space-y-4">
-                     {[1,2,3].map(i => <div key={i} className="h-32 bg-surface border border-border" />)}
-                   </div>
-                 ) : criticalClusters.length === 0 ? (
-                   <div className="text-center py-12 text-text-muted border border-dashed border-border rounded-lg">
-                      <Map className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                      <p className="text-base font-semibold text-text-primary">No hotzones detected</p>
-                   </div>
-                 ) : (
-                   <div className="space-y-4">
-                     {criticalClusters.map((cluster, idx) => (
-                         <div key={cluster.id} className="bg-surface border border-border p-4 rounded-xl cursor-pointer hover:border-error transition-colors hover:shadow-sm" onClick={() => router.push(`/dashboard/officer/hotzone-intel/${cluster.id}`)}>
-                              <div className="flex justify-between items-start gap-3 mb-3">
-                                 <div className="min-w-0 flex-1">
-                                    <span className="text-xs font-semibold uppercase tracking-wider text-error block mb-1">{getPriorityLabel(cluster)} Priority (Rank {idx + 1})</span>
-                                    <h3 className="text-base font-semibold text-text-primary leading-snug truncate">{cluster.label || `Cluster ${cluster.id.slice(0,6)}`}</h3>
-                                 </div>
-                                 <div className="text-right">
-                                    <span className="block text-xs font-medium uppercase tracking-wider text-text-muted mb-1">Score</span>
-                                    <span className="text-2xl md:text-3xl font-bold text-text-primary leading-none">{Math.round(cluster.priority_score || 0)}</span>
-                                 </div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2 text-sm text-text-secondary">
-                                 <div>
-                                    <span className="block text-xs font-medium text-text-muted">Reports</span>
-                                    <span className="text-sm font-semibold text-text-primary">{cluster.report_count || cluster.report_ids?.length || 0}</span>
-                                 </div>
-                                 <div>
-                                    <span className="block text-xs font-medium text-text-muted">Radius</span>
-                                    <span className="text-sm font-semibold text-text-primary">{Math.round(cluster.radius_meters || 50)}m</span>
-                                 </div>
-                              </div>
-                           </div>
-                     ))}
-                     
-                     <div className="pt-4 mt-4 border-t border-border">
-                        <Link href="/dashboard/officer/hotzone-intel" className="btn-secondary w-full text-center flex items-center justify-center gap-2 text-sm font-medium">
-                           View All Intelligence <ChevronRight className="w-4 h-4" />
-                        </Link>
-                     </div>
-                   </div>
-                 )}
-              </div>
-           </div>
+        <div className={styles.panels}>
+          <CommandCenterPanel title="Active Targets" items={activeTasks} loading={loading}
+            empty="No in-progress cleanup tasks" href="/dashboard/officer/operations?status=in_progress">
+            {task => {
+              const crewCount = task.assigned_crew_ids?.length || (task.assigned_to ? 1 : 0)
+              const reportCount = task.reports?.length || task.report_ids?.length || 0
+              return <Link href={`/dashboard/officer/operations/${task.id}`} className={styles.item}>
+                <span className={styles.itemTitle}><strong>{task.title || `Task #${task.id?.slice(0, 8)}`}</strong><StatusBadge status={task.status || 'in_progress'} type="task" /></span>
+                <span className={styles.description}>{task.description || 'No description provided.'}</span>
+                <span className={styles.meta}><span>{crewCount ? `${crewCount} crew dispatched` : 'Unassigned'}</span><span>{reportCount} reports</span></span>
+              </Link>
+            }}
+          </CommandCenterPanel>
+          <CommandCenterPanel title="Action Queue" items={workQueue} loading={loading}
+            empty="Queue is empty" href="/dashboard/officer/optimization">
+            {item => <Link href={`/dashboard/officer/operations/create?preselect=${item.id}`} className={styles.item}>
+              <span className={styles.itemTitle}><strong>{item.title || `Cluster ${item.id.slice(0, 8)}`}</strong><span className={styles.priority}>Pending</span></span>
+              <span className={styles.meta}><span>Priority score</span><strong>{(item.priority_score || 0).toFixed(1)}/100</strong></span>
+              <span className={styles.meta}><span>{item.report_count || item.report_ids?.length || 0} reports · {Math.round(item.radius_meters || 50)}m</span><span className={styles.action}>Dispatch <ChevronRight size={14} aria-hidden="true" /></span></span>
+            </Link>}
+          </CommandCenterPanel>
+          <CommandCenterPanel title="Critical Hotzones" items={criticalClusters} loading={loading}
+            empty="No hotzones detected" href="/dashboard/officer/hotzone-intel">
+            {(cluster, index) => <Link href={`/dashboard/officer/hotzone-intel/${cluster.id}`} className={styles.item}>
+              <span className={styles.itemTitle}><strong>{cluster.label || `Cluster ${cluster.id.slice(0, 6)}`}</strong><span className={styles.count}>#{index + 1}</span></span>
+              <span className={styles.meta}><span className={styles.priority}>{getPriorityLabel(cluster)} priority</span><strong>Score {Math.round(cluster.priority_score || 0)}</strong></span>
+              <span className={styles.meta}><span>{cluster.report_count || cluster.report_ids?.length || 0} reports</span><span>Radius {Math.round(cluster.radius_meters || 50)}m</span></span>
+            </Link>}
+          </CommandCenterPanel>
         </div>
-
-      </DashboardLayout>
+      </div>
     </OfficerGuard>
   )
 }
-
-
-
-
-
-
-

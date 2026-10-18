@@ -9,7 +9,8 @@ import DataTable from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { getAllUsers, updateUserRole, deleteUser, createUser, getSystemSettings, changeUserPassword } from '@/lib/api'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, KeyRound, Trash2, Loader2 } from 'lucide-react'
+import styles from './UserActions.module.css'
 import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
 
 function UserManagementContent() {
@@ -293,23 +294,34 @@ function UserManagementContent() {
       label: 'Actions',
       width: '20%',
       render: (value, row) => (
-        <div className="flex gap-4">
-          <button
+        <div className={styles.actions}>
+          <span className={styles.action}>
+          <button type="button"
+            aria-label={`Change password for ${row.full_name || row.email}`}
+            aria-describedby={`password-action-${row.id}`}
             onClick={() => {
               setUserToChangePassword(row.id)
               setShowChangePasswordModal(true)
             }}
-            className="text-primary hover:text-primary/80 text-sm font-medium"
+            className={styles.iconButton}
           >
-            Change Password
+            <KeyRound size={18} aria-hidden="true" />
           </button>
-          <button
+          <span id={`password-action-${row.id}`} role="tooltip" className={styles.tooltip}>Change password</span>
+          </span>
+          <span className={styles.action}>
+          <button type="button"
+            aria-label={`${deletingUser === row.id ? 'Deleting' : 'Delete'} ${row.full_name || row.email}`}
+            aria-describedby={`delete-action-${row.id}`}
+            aria-busy={deletingUser === row.id}
             onClick={() => confirmDelete(row.id)}
             disabled={deletingUser === row.id}
-            className="text-error hover:text-error/80 text-sm font-medium disabled:opacity-50"
+            className={`${styles.iconButton} ${styles.deleteButton}`}
           >
-            {deletingUser === row.id ? 'Deleting...' : 'Delete'}
+            {deletingUser === row.id ? <Loader2 size={18} className={styles.busy} aria-hidden="true" /> : <Trash2 size={18} aria-hidden="true" />}
           </button>
+          <span id={`delete-action-${row.id}`} role="tooltip" className={styles.tooltip}>{deletingUser === row.id ? 'Deleting…' : 'Delete'}</span>
+          </span>
         </div>
       )
     }

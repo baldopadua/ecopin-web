@@ -52,21 +52,15 @@ export async function POST(req, context) {
       const result = await authorityJson(response, req.signal, 32768);
       const kind = result.requirePasswordChange === true ? 'temporary' : 'full';
       let user = null;
-      let maxAge = 300;
       if (kind === 'full') {
         const verification = await authorityFetch('/api/auth/me', { headers: { Authorization: `Bearer ${result.token}` } }, req.signal);
         if (!verification.ok) return webFailure(verification.status === 401 || verification.status === 403 ? 401 : 503);
         user = safeUser((await authorityJson(verification, req.signal, 32768)).user);
         if (!user) return webFailure(403);
-        const policyResponse = await authorityFetch('/api/admin/timeout', { headers: { Authorization: `Bearer ${result.token}` } }, req.signal);
-        if (!policyResponse.ok) return webFailure(503);
-        const policy = await authorityJson(policyResponse, req.signal, 32768);
-        if (!Number.isFinite(policy.session_timeout_minutes) || policy.session_timeout_minutes <= 0) return webFailure(503);
-        maxAge = Math.max(1, Math.floor(Math.min(60, policy.session_timeout_minutes) * 60));
       }
       const previous = await readWebSession(req);
       if (previous) await revokeWebSession(previous, req.signal);
-      const session = await issueWebSession({ accessToken: result.token, refreshToken: kind === 'full' ? result.session?.refresh_token || null : null, kind, maxAge }, req.signal);
+      const session = await issueWebSession({ accessToken: result.token, refreshToken: kind === 'full' ? result.session?.refresh_token || null : null, kind }, req.signal);
       return webJson(sessionMetadata(session, user), 200, sessionCookie(session.id, session.expiresAt));
     }
     const session = await readWebSession(req);

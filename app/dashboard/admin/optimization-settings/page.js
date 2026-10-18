@@ -14,6 +14,7 @@ import {
   createFieldCrew,
 } from '@/lib/api/optimization'
 import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
+import styles from './OptimizationSettings.module.css'
 
 const LocationPickerMap = dynamic(
   () => import('@/components/map/LocationPickerMap'),
@@ -25,6 +26,7 @@ function OptimizationSettingsContent() {
   const [saving, setSaving] = useState(null) // null | 'depot' | 'crew-<id>'
   const [isEditingDepot, setIsEditingDepot] = useState(false)
   const [notification, setNotification] = useState(null)
+  const [activeTab, setActiveTab] = useState('depot') // 'depot' | 'crew'
 
   // Depot settings
   const [depot, setDepot] = useState({
@@ -207,35 +209,35 @@ function OptimizationSettingsContent() {
 
   if (loading) {
     return (
-      <div className="p-8">
+      <div className={styles.page}>
         <PageHeader
-          title="Optimization"
-          titleAccent="Settings"
-          subtitle="Loading..."
+          title="Optimization settings"
+          subtitle="Configure depot location, crew schedules, and operational parameters."
           breadcrumbs={[
-            { label: 'Dashboard', href: '/dashboard' },
             { label: 'Admin', href: '/dashboard/admin' },
-            { label: 'Optimization Settings' }
+            { label: 'Optimization settings' }
           ]}
+          className={styles.pageHeader}
         />
-        <div className="card">
-          <SkeletonForm fields={6} />
+        <div className={styles.panel}>
+          <div className={styles.panelBody}>
+            <SkeletonForm fields={6} />
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="p-8">
+    <div className={styles.page}>
       <PageHeader
-        title="Optimization"
-        titleAccent="Settings"
-        subtitle="Configure depot location, crew schedules, and operational parameters"
+        title="Optimization settings"
+        subtitle="Configure depot location, crew schedules, and operational parameters."
         breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
           { label: 'Admin', href: '/dashboard/admin' },
-          { label: 'Optimization Settings' }
+          { label: 'Optimization settings' }
         ]}
+        className={styles.pageHeader}
       />
 
       {notification && (
@@ -246,228 +248,278 @@ function OptimizationSettingsContent() {
         />
       )}
 
-      {/* SWMO Depot Settings */}
-      <div className="card border border-border mb-6">
-        <h2 className="text-xl font-bold text-text-primary mb-2">🏢 SWMO Depot</h2>
-        <p className="text-sm text-text-muted mb-6">
-          The depot is the start and end point for all crew routes. Changing this affects future optimization runs.
-        </p>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-text-primary mb-2">
-              Depot Name
-            </label>
-            <input
-              type="text"
-              maxLength={100}
-              value={depot.name}
-              onChange={(e) => handleDepotChange('name', e.target.value)}
-              disabled={!isEditingDepot}
-              className="w-full p-3 border border-border bg-surface-elevated text-text-primary focus:border-[#ccff00] focus:outline-none transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-              placeholder="e.g., SWMO Depot (PLP Center)"
-            />
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-text-primary mb-2">
-              Depot Location
-            </label>
-            <LocationPickerMap
-              position={{ lat: depot.latitude, lng: depot.longitude }}
-              readOnly={!isEditingDepot}
-              onChange={(latlng) => {
-                setDepot(prev => ({
-                  ...prev,
-                  latitude: latlng.lat,
-                  longitude: latlng.lng
-                }))
-              }}
-            />
-            <div className="mt-2 flex gap-4 text-xs text-text-muted font-mono">
-              <span>Lat: {depot.latitude?.toFixed(6) || 'N/A'}</span>
-              <span>Lng: {depot.longitude?.toFixed(6) || 'N/A'}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6 flex justify-end gap-4">
-          {!isEditingDepot ? (
-            <button
-              onClick={() => setIsEditingDepot(true)}
-              className="btn-secondary px-6 py-3"
-            >
-              Change Location
-            </button>
-          ) : (
-            <>
-              <button
-                onClick={() => {
-                  setIsEditingDepot(false)
-                  loadAll() // reload original settings
-                }}
-                disabled={saving === 'depot'}
-                className="btn-secondary px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveDepot}
-                disabled={saving === 'depot'}
-                className="btn-primary px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {saving === 'depot' ? 'Saving...' : 'Save Depot Settings'}
-              </button>
-            </>
-          )}
-        </div>
+      {/* Tabs Switcher */}
+      <div className={styles.tabList} role="tablist" aria-label="Optimization settings sections">
+        <button
+          type="button"
+          role="tab"
+          id="tab-depot"
+          aria-selected={activeTab === 'depot'}
+          aria-controls="panel-depot"
+          onClick={() => setActiveTab('depot')}
+          className={styles.tabButton}
+        >
+          <span>SWMO Depot Location</span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id="tab-crew"
+          aria-selected={activeTab === 'crew'}
+          aria-controls="panel-crew"
+          onClick={() => setActiveTab('crew')}
+          className={styles.tabButton}
+        >
+          <span>Field Crew Configuration</span>
+          <span className={styles.tabBadge}>{crews.length}</span>
+        </button>
       </div>
 
-      {/* Crew Settings */}
-      <div className="card border border-border">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2">
-          <h2 className="text-xl font-bold text-text-primary">👷 Field Crew Configuration</h2>
-          <button 
-            onClick={() => setShowAddCrew(!showAddCrew)}
-            className="mt-2 sm:mt-0 text-sm bg-surface-elevated text-text-primary border border-border px-3 py-1 hover:border-text-primary transition-colors font-bold uppercase tracking-wider"
+      <div className={styles.tabContent}>
+        {/* Tab 1: SWMO Depot Settings */}
+        {activeTab === 'depot' && (
+          <section
+            id="panel-depot"
+            role="tabpanel"
+            aria-labelledby="tab-depot"
+            className={styles.panel}
           >
-            {showAddCrew ? 'Cancel' : '+ Add Crew'}
-          </button>
-        </div>
-        <p className="text-sm text-text-muted mb-6">
-          Configure shift schedules and task limits for each field crew. Changes apply to future optimization runs.
-        </p>
+            <div className={styles.panelHeader}>
+              <div>
+                <h2>SWMO Depot</h2>
+                <p>The depot is the origin and destination for all cleanup routes.</p>
+              </div>
+            </div>
 
-        {showAddCrew && (
-          <div className="mb-6 p-4 border border-border border-[#2563eb] bg-[#2563eb]/5">
-            <h3 className="font-bold text-text-primary mb-4 uppercase tracking-wider text-sm text-[#2563eb]">New Field Crew</h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="md:col-span-1">
-                <label className="block text-xs font-medium text-text-primary mb-1 uppercase">Crew Name</label>
-                <input
-                  type="text"
-                  value={newCrew.name}
-                  onChange={(e) => setNewCrew(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full p-2 border border-border bg-surface-elevated text-text-primary focus:border-[#2563eb] focus:outline-none transition-colors text-sm"
-                  placeholder="e.g., Team Alpha"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-text-primary mb-1 uppercase">Shift Start</label>
-                <input
-                  type="time"
-                  value={newCrew.shift_start}
-                  onChange={(e) => setNewCrew(prev => ({ ...prev, shift_start: e.target.value }))}
-                  className="w-full p-2 border border-border bg-surface-elevated text-text-primary font-mono focus:border-[#2563eb] focus:outline-none transition-colors text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-text-primary mb-1 uppercase">Shift End</label>
-                <input
-                  type="time"
-                  value={newCrew.shift_end}
-                  onChange={(e) => setNewCrew(prev => ({ ...prev, shift_end: e.target.value }))}
-                  className="w-full p-2 border border-border bg-surface-elevated text-text-primary font-mono focus:border-[#2563eb] focus:outline-none transition-colors text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-text-primary mb-1 uppercase">Max Tasks</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="50"
-                  value={newCrew.max_tasks_per_shift}
-                  onChange={(e) => setNewCrew(prev => ({ ...prev, max_tasks_per_shift: parseInt(e.target.value) || 10 }))}
-                  className="w-full p-2 border border-border bg-surface-elevated text-text-primary font-mono focus:border-[#2563eb] focus:outline-none transition-colors text-sm"
-                />
+            <div className={styles.panelBody}>
+              <div className={styles.depotLayout}>
+                <div className={styles.mapWrapper}>
+                  <LocationPickerMap
+                    position={{ lat: depot.latitude, lng: depot.longitude }}
+                    readOnly={!isEditingDepot}
+                    onChange={(latlng) => {
+                      setDepot(prev => ({
+                        ...prev,
+                        latitude: latlng.lat,
+                        longitude: latlng.lng
+                      }))
+                    }}
+                  />
+                </div>
+
+                <div className={styles.depotMeta}>
+                  <div className={styles.field}>
+                    <label htmlFor="depot-name-input">Depot name</label>
+                    <input
+                      id="depot-name-input"
+                      type="text"
+                      maxLength={100}
+                      value={depot.name}
+                      onChange={(e) => handleDepotChange('name', e.target.value)}
+                      disabled={!isEditingDepot}
+                      className={styles.input}
+                      placeholder="e.g., SWMO Depot (PLP Center)"
+                    />
+                  </div>
+
+                  <div className={styles.field}>
+                    <label>Coordinates</label>
+                    <div className={styles.coords}>
+                      <span>Lat: {depot.latitude?.toFixed(6) || '—'}</span>
+                      <span>Lng: {depot.longitude?.toFixed(6) || '—'}</span>
+                    </div>
+                  </div>
+
+                  <div className={styles.actionRow}>
+                    {!isEditingDepot ? (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingDepot(true)}
+                        className={styles.btnSecondary}
+                      >
+                        Change location
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsEditingDepot(false)
+                            loadAll()
+                          }}
+                          disabled={saving === 'depot'}
+                          className={styles.btnSecondary}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSaveDepot}
+                          disabled={saving === 'depot'}
+                          className={styles.btnPrimary}
+                        >
+                          {saving === 'depot' ? 'Saving…' : 'Save depot settings'}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-            <FleetCapabilities crew={newCrew} onChange={(key,value)=>setNewCrew(prev=>({...prev,[key]:value}))} />
-            <div className="mt-4 flex justify-end">
-              <button
-                onClick={handleCreateCrew}
-                disabled={saving === 'new-crew'}
-                className="bg-[#2563eb] text-white font-bold uppercase tracking-wider text-xs px-4 py-2 border border-border hover:bg-blue-700 disabled:opacity-50 transition-colors"
-              >
-                {saving === 'new-crew' ? 'Creating...' : 'Create Crew'}
-              </button>
-            </div>
-          </div>
+          </section>
         )}
 
-        {crews.length === 0 ? (
-          <p className="text-text-muted text-sm">No field crews found. Click &quot;+ Add Crew&quot; above to create one.</p>
-        ) : (
-          <div className="space-y-6">
-            {crews.map((crew) => (
-              <div key={crew.id} className="border border-border p-4 bg-surface-elevated">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-text-primary text-lg">{crew.name}</h3>
-                  <span className={`text-xs px-2 py-1 border font-mono uppercase tracking-wider ${
-                    crew.availability_status === 'available'
-                      ? 'bg-success/20 text-success border-success/30'
-                      : crew.availability_status === 'on_route'
-                      ? 'bg-warning/20 text-warning border-warning/30'
-                      : 'bg-text-muted/20 text-text-muted border-text-muted/30'
-                  }`}>
-                    {crew.availability_status}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-text-primary mb-2">
-                      Shift Start
-                    </label>
-                    <input
-                      type="time"
-                      value={crew.shift_start || '08:00'}
-                      onChange={(e) => handleCrewChange(crew.id, 'shift_start', e.target.value)}
-                      className="w-full p-3 border border-border bg-surface-elevated text-text-primary font-mono focus:border-[#ccff00] focus:outline-none transition-colors"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-text-primary mb-2">
-                      Shift End
-                    </label>
-                    <input
-                      type="time"
-                      value={crew.shift_end || '17:00'}
-                      onChange={(e) => handleCrewChange(crew.id, 'shift_end', e.target.value)}
-                      className="w-full p-3 border border-border bg-surface-elevated text-text-primary font-mono focus:border-[#ccff00] focus:outline-none transition-colors"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-text-primary mb-2">
-                      Max Tasks per Shift
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="50"
-                      value={crew.max_tasks_per_shift || 10}
-                      onChange={(e) => handleCrewChange(crew.id, 'max_tasks_per_shift', e.target.value)}
-                      className="w-full p-3 border border-border bg-surface-elevated text-text-primary font-mono focus:border-[#ccff00] focus:outline-none transition-colors"
-                    />
-                    <p className="text-xs text-text-muted mt-1">Range: 1–50</p>
-                  </div>
-                </div>
-
-                <FleetCapabilities crew={crew} onChange={(key,value)=>handleCrewChange(crew.id,key,value)} />
-                <div className="mt-4 flex justify-end">
-                  <button
-                    onClick={() => handleSaveCrew(crew)}
-                    disabled={saving === `crew-${crew.id}`}
-                    className="btn-primary px-4 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {saving === `crew-${crew.id}` ? 'Saving...' : `Save ${crew.name}`}
-                  </button>
-                </div>
+        {/* Tab 2: Crew Settings */}
+        {activeTab === 'crew' && (
+          <section
+            id="panel-crew"
+            role="tabpanel"
+            aria-labelledby="tab-crew"
+            className={styles.panel}
+          >
+            <div className={styles.panelHeader}>
+              <div>
+                <h2>Field Crew Configuration</h2>
+                <p>Configure shift schedules and limits for each field crew.</p>
               </div>
-            ))}
-          </div>
+              <button 
+                type="button"
+                onClick={() => setShowAddCrew(!showAddCrew)}
+                className={styles.btnSecondary}
+              >
+                {showAddCrew ? 'Cancel' : '+ Add crew'}
+              </button>
+            </div>
+
+            <div className={styles.panelBody}>
+              {showAddCrew && (
+                <div className={styles.newCrewBox}>
+                  <h3 className="font-semibold text-text-primary text-sm">New field crew</h3>
+                  <div className={styles.newCrewGrid}>
+                    <div className={styles.field}>
+                      <label>Crew name</label>
+                      <input
+                        type="text"
+                        value={newCrew.name}
+                        onChange={(e) => setNewCrew(prev => ({ ...prev, name: e.target.value }))}
+                        className={styles.input}
+                        placeholder="e.g., Team Alpha"
+                      />
+                    </div>
+                    <div className={styles.field}>
+                      <label>Shift start</label>
+                      <input
+                        type="time"
+                        value={newCrew.shift_start}
+                        onChange={(e) => setNewCrew(prev => ({ ...prev, shift_start: e.target.value }))}
+                        className={styles.input}
+                      />
+                    </div>
+                    <div className={styles.field}>
+                      <label>Shift end</label>
+                      <input
+                        type="time"
+                        value={newCrew.shift_end}
+                        onChange={(e) => setNewCrew(prev => ({ ...prev, shift_end: e.target.value }))}
+                        className={styles.input}
+                      />
+                    </div>
+                    <div className={styles.field}>
+                      <label>Max tasks</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="50"
+                        value={newCrew.max_tasks_per_shift}
+                        onChange={(e) => setNewCrew(prev => ({ ...prev, max_tasks_per_shift: parseInt(e.target.value) || 10 }))}
+                        className={styles.input}
+                      />
+                    </div>
+                  </div>
+                  <FleetCapabilities crew={newCrew} onChange={(key,value)=>setNewCrew(prev=>({...prev,[key]:value}))} />
+                  <div className={styles.actionRow}>
+                    <button
+                      type="button"
+                      onClick={handleCreateCrew}
+                      disabled={saving === 'new-crew'}
+                      className={styles.btnPrimary}
+                    >
+                      {saving === 'new-crew' ? 'Creating…' : 'Create crew'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {crews.length === 0 ? (
+                <p className="text-text-muted text-sm py-4">No field crews found. Click &quot;+ Add crew&quot; to configure one.</p>
+              ) : (
+                <div className="space-y-4">
+                  {crews.map((crew) => (
+                    <div key={crew.id} className={styles.crewCard}>
+                      <div className={styles.crewHeader}>
+                        <h3 className={styles.crewTitle}>{crew.name}</h3>
+                        <span className={`${styles.statusBadge} ${
+                          crew.availability_status === 'available'
+                            ? styles.statusAvailable
+                            : crew.availability_status === 'on_route'
+                            ? styles.statusOnRoute
+                            : styles.statusOffline
+                        }`}>
+                          {crew.availability_status || 'offline'}
+                        </span>
+                      </div>
+
+                      <div className={styles.crewGrid}>
+                        <div className={styles.field}>
+                          <label>Shift start</label>
+                          <input
+                            type="time"
+                            value={crew.shift_start || '08:00'}
+                            onChange={(e) => handleCrewChange(crew.id, 'shift_start', e.target.value)}
+                            className={styles.input}
+                          />
+                        </div>
+
+                        <div className={styles.field}>
+                          <label>Shift end</label>
+                          <input
+                            type="time"
+                            value={crew.shift_end || '17:00'}
+                            onChange={(e) => handleCrewChange(crew.id, 'shift_end', e.target.value)}
+                            className={styles.input}
+                          />
+                        </div>
+
+                        <div className={styles.field}>
+                          <label>Max tasks per shift</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="50"
+                            value={crew.max_tasks_per_shift || 10}
+                            onChange={(e) => handleCrewChange(crew.id, 'max_tasks_per_shift', e.target.value)}
+                            className={styles.input}
+                          />
+                        </div>
+                      </div>
+
+                      <FleetCapabilities crew={crew} onChange={(key,value)=>handleCrewChange(crew.id,key,value)} />
+                      <div className={styles.actionRow}>
+                        <button
+                          type="button"
+                          onClick={() => handleSaveCrew(crew)}
+                          disabled={saving === `crew-${crew.id}`}
+                          className={styles.btnPrimary}
+                        >
+                          {saving === `crew-${crew.id}` ? 'Saving…' : `Save ${crew.name}`}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
         )}
       </div>
     </div>

@@ -315,7 +315,9 @@ export function validateAndSanitizeTasks(tasks, authorizedTargets, authorizedRep
       target_lat: targetLat,
       target_lon: targetLon,
       included_reports: sanitizedIncluded,
-      cumulative_detour_minutes: detourMins
+      cumulative_detour_minutes: detourMins,
+      ...(Number.isFinite(raw.estimated_distance_km) && raw.estimated_distance_km >= 0
+        ? { estimated_distance_km: raw.estimated_distance_km } : {})
     })
   }
 

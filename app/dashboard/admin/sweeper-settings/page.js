@@ -88,8 +88,15 @@ function SweeperSettingsPageContent() {
 
   return (
     <div className={styles.page}>
-        <PageHeader title="Sweeper settings" subtitle="Set report deadlines and the cleanup time used in dispatch planning."
-          breadcrumbs={[{ label: 'Admin', href: '/dashboard/admin' }, { label: 'Sweeper settings' }]} />
+        <PageHeader
+          title="Sweeper settings"
+          subtitle="Set report deadlines and the cleanup time used in dispatch planning."
+          breadcrumbs={[
+            { label: 'Admin', href: '/dashboard/admin' },
+            { label: 'Sweeper settings' }
+          ]}
+          className={styles.pageHeader}
+        />
         {notification && <Notification {...notification} onClose={() => setNotification(null)} />}
         {loading ? (
           <div className={styles.loading} role="status" aria-busy="true">

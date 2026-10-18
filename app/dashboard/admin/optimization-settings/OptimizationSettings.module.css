@@ -1,0 +1,427 @@
+.page {
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 24px;
+  overflow: hidden;
+  box-sizing: border-box;
+  color: var(--text-primary);
+  font-family: var(--font-outfit), sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.page .pageHeader {
+  position: static !important;
+  margin: 0 !important;
+  padding: 0 0 12px 0 !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--border) !important;
+  flex-shrink: 0;
+}
+
+.pageHeader nav {
+  margin-bottom: 4px !important;
+  font-size: 13px;
+}
+
+.pageHeader h1 {
+  margin: 0 0 2px !important;
+  font-size: 24px;
+  line-height: 1.25;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.pageHeader p {
+  margin: 0 !important;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+/* Tabs Navigation */
+.tabList {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  padding-bottom: 4px;
+}
+
+.tabButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 6px 16px;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tabButton:hover:not(:disabled) {
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+.tabButton[aria-selected="true"] {
+  background: #0052cc;
+  color: #ffffff;
+  border-color: #0052cc;
+  box-shadow: 0 1px 3px rgba(0, 82, 204, 0.25);
+}
+
+.tabButton:focus-visible {
+  outline: 3px solid var(--workspace-link);
+  outline-offset: 2px;
+}
+
+.tabBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.2);
+  color: inherit;
+}
+
+.tabButton[aria-selected="false"] .tabBadge {
+  background: var(--surface-elevated);
+  color: var(--text-muted);
+}
+
+/* Content Area */
+.tabContent {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.panelHeader {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.panelHeader h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panelHeader p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.panelBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Depot Specific Layout */
+.depotLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+.mapWrapper {
+  flex: 1;
+  min-height: 280px;
+  height: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  position: relative;
+}
+
+.mapWrapper > div {
+  height: 100% !important;
+  min-height: 280px;
+  border: none !important;
+}
+
+.depotMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Form inputs */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.input {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13px;
+  transition: border-color 0.15s ease;
+}
+
+.input:focus {
+  border-color: var(--workspace-link);
+  outline: none;
+}
+
+.input:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.coords {
+  display: flex;
+  gap: 12px;
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 6px 10px;
+  background: var(--surface-elevated);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+/* Action Buttons */
+.btnPrimary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 18px;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  background: #0052cc;
+  color: white;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btnPrimary:hover:not(:disabled) {
+  background: #003d99;
+}
+
+.btnSecondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 18px;
+  border: 1px solid var(--border);
+  border-radius: 9999px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btnSecondary:hover:not(:disabled) {
+  background: var(--surface-elevated);
+}
+
+.btnPrimary:focus-visible,
+.btnSecondary:focus-visible {
+  outline: 3px solid var(--workspace-link);
+  outline-offset: 2px;
+}
+
+.btnPrimary:disabled,
+.btnSecondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.actionRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 8px;
+}
+
+/* Crew cards */
+.crewCard {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-elevated);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.crewCard fieldset,
+.newCrewBox fieldset {
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.crewCard fieldset input,
+.crewCard fieldset select,
+.newCrewBox fieldset input,
+.newCrewBox fieldset select {
+  border-radius: 8px;
+}
+
+.crewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.crewTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-family: monospace;
+  text-transform: uppercase;
+}
+
+.statusAvailable {
+  background: color-mix(in srgb, var(--success) 12%, var(--surface));
+  color: var(--success);
+  border: 1px solid color-mix(in srgb, var(--success) 25%, transparent);
+}
+
+.statusOnRoute {
+  background: color-mix(in srgb, var(--warning) 12%, var(--surface));
+  color: var(--warning);
+  border: 1px solid color-mix(in srgb, var(--warning) 25%, transparent);
+}
+
+.statusOffline {
+  background: var(--surface);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.crewGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.newCrewBox {
+  border: 1px solid color-mix(in srgb, #0052cc 30%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, #0052cc 4%, var(--surface));
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.newCrewGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 1023px) {
+  .page {
+    height: calc(100dvh - 64px);
+  }
+  .depotLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .crewGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .newCrewGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 899px) {
+  .page {
+    padding: 12px;
+    gap: 8px;
+  }
+  .pageHeader h1 {
+    font-size: 20px;
+  }
+}

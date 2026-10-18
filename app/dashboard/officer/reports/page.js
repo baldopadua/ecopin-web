@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { fetchPublicReports, fetchIssueTypes } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
@@ -9,10 +9,10 @@ import Pagination from '@/components/ui/Pagination'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { OfficerGuard } from '@/components/auth/RequireRole'
 import { Target, Wrench, AlertTriangle, Clock } from 'lucide-react'
+import styles from './Reports.module.css'
 
 export default function OfficerReportsPage() {
   const [reports, setReports] = useState([])
-  const [filteredReports, setFilteredReports] = useState([])
   const [issueTypes, setIssueTypes] = useState([])
   const [loading, setLoading] = useState(true)
   const router = useRouter()
@@ -20,38 +20,46 @@ export default function OfficerReportsPage() {
   // Filter states
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [validationFilter, setValidationFilter] = useState('all')
-
-  useEffect(() => {
+  const [statusFilter, setStatusFilter] = useState(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
-      if (params.get('filter') === 'overdue') {
-        setStatusFilter('overdue')
-      } else if (params.get('filter') === 'manual_review') {
-        setValidationFilter('manual_review')
-      }
+      if (params.get('filter') === 'overdue') return 'overdue'
     }
-  }, [])
+    return 'all'
+  })
+  const [validationFilter, setValidationFilter] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('filter') === 'manual_review') return 'manual_review'
+    }
+    return 'all'
+  })
 
-  // Pagination states
+  // Pagination states - 5 items per page to comfortably fit screen without scrolling
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 8
+  const itemsPerPage = 5
 
   useEffect(() => {
+    let active = true
     Promise.all([
       fetchPublicReports(),
       fetchIssueTypes()
     ]).then(([reportsData, typesData]) => {
-      setReports(reportsData)
-      setFilteredReports(reportsData)
-      setIssueTypes(typesData)
+      if (!active) return
+      setReports(reportsData || [])
+      setIssueTypes(typesData || [])
+      setLoading(false)
+    }).catch(() => {
+      if (!active) return
       setLoading(false)
     })
+    return () => {
+      active = false
+    }
   }, [])
 
-  // Apply filters
-  useEffect(() => {
+  // Apply filters with useMemo
+  const filteredReports = useMemo(() => {
     let filtered = reports
 
     if (searchQuery) {
@@ -69,7 +77,7 @@ export default function OfficerReportsPage() {
     if (statusFilter === 'overdue') {
       const now = new Date()
       filtered = filtered.filter(r => {
-        if (r.is_overdue) return true;
+        if (r.is_overdue) return true
         const created = new Date(r.created_at)
         const diffHours = (now - created) / (1000 * 60 * 60)
         return diffHours > 48
@@ -86,12 +94,12 @@ export default function OfficerReportsPage() {
       }
     }
 
-    setFilteredReports(filtered)
-    setCurrentPage(1)
+    return filtered
   }, [searchQuery, typeFilter, statusFilter, validationFilter, reports])
 
-  const totalPages = Math.ceil(filteredReports.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
+  const totalPages = Math.max(1, Math.ceil(filteredReports.length / itemsPerPage))
+  const safeCurrentPage = Math.min(currentPage, totalPages)
+  const startIndex = (safeCurrentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
   const paginatedReports = filteredReports.slice(startIndex, endIndex)
 
@@ -111,7 +119,7 @@ export default function OfficerReportsPage() {
   }
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A'
+    if (!dateString) return '—'
     return new Date(dateString).toLocaleDateString()
   }
 
@@ -136,15 +144,15 @@ export default function OfficerReportsPage() {
     { 
       key: 'title', 
       label: 'Title', 
-      width: '25%',
+      width: '26%',
       render: (value, row) => {
         const overdue = isReportOverdue(row)
         return (
           <div className="flex flex-col gap-1 items-start">
-            <span className="font-medium text-text-primary">{value}</span>
+            <span className={styles.reportTitle}>{value}</span>
             {overdue && (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-semibold tracking-wide uppercase bg-red-100 text-red-700 dark:bg-red-950/80 dark:text-red-300 dark:border dark:border-red-800/60">
-                <AlertTriangle className="w-3 h-3 text-red-600 dark:text-red-400" />
+              <span className={styles.overdueBadge}>
+                <AlertTriangle size={12} aria-hidden="true" />
                 Overdue (SLA Risk)
               </span>
             )}
@@ -154,24 +162,26 @@ export default function OfficerReportsPage() {
     },
     { 
       key: 'issue_type', 
-      label: 'Issue Type', 
-      width: '15%',
+      label: 'Issue type', 
+      width: '16%',
       render: (value) => (
-        <span className="text-sm text-text-secondary">{value || 'N/A'}</span>
+        <span className="text-text-secondary capitalize">
+          {value ? value.replaceAll('_', ' ') : '—'}
+        </span>
       )
     },
     { 
       key: 'status', 
       label: 'Status', 
-      width: '12%',
+      width: '14%',
       render: (value, row) => {
         const overdue = isReportOverdue(row)
         return (
           <div className="flex flex-col gap-1 items-start">
             <StatusBadge status={value} type="report" />
             {overdue && (
-              <span className="inline-flex items-center gap-0.5 text-[11px] font-medium text-red-600 dark:text-red-400">
-                <Clock className="w-2.5 h-2.5" /> Overdue
+              <span className={styles.overdueSub}>
+                <Clock size={12} aria-hidden="true" /> Overdue
               </span>
             )}
           </div>
@@ -181,96 +191,103 @@ export default function OfficerReportsPage() {
     { 
       key: 'cluster_id', 
       label: 'Cluster', 
-      width: '15%',
-      render: (value, row) => value ? (
+      width: '16%',
+      render: (value) => value ? (
         <button 
+           type="button"
            onClick={(e) => {
              e.stopPropagation()
              router.push(`/dashboard/officer/hotzone-intel/${value}`)
            }}
-           className="flex items-center gap-1 text-xs font-mono bg-transparent px-2 py-1 border border-border hover:border-accent-green hover:text-accent-green transition-colors"
+           className={styles.clusterButton}
+           aria-label={`View cluster ${String(value).slice(0, 8)}`}
         >
-          <Target className="w-3 h-3" /> {String(value).slice(0,8)}
+          <Target size={14} aria-hidden="true" />
+          <span>{String(value).slice(0, 8)}</span>
         </button>
-      ) : <span className="text-text-muted text-xs font-mono">Unassigned</span>
+      ) : <span className={styles.unassignedCluster}>Unassigned</span>
     },
     { 
       key: 'actions', 
       label: 'Action', 
-      width: '15%',
+      width: '14%',
       render: (_, row) => (
         <button 
+           type="button"
            onClick={(e) => {
              e.stopPropagation()
              router.push(`/dashboard/officer/operations/create?preselect=${row.cluster_id || row.id}`)
            }}
-           className="flex items-center gap-1 text-xs font-bold uppercase tracking-widest bg-transparent px-3 py-1.5 border border-border dark:border-[#333333] hover:border-accent-green hover:text-accent-green transition-colors"
+           className={styles.dispatchButton}
+           aria-label={`Dispatch crew for ${row.title || 'report'}`}
         >
-          <Wrench className="w-3 h-3" /> Dispatch
+          <Wrench size={14} aria-hidden="true" />
+          <span>Dispatch</span>
         </button>
       )
     },
     { 
       key: 'created_at', 
       label: 'Created', 
-      width: '15%',
+      width: '14%',
       render: (value) => (
-        <span className="text-sm text-text-muted">{formatDate(value)}</span>
+        <span className="text-text-muted">{formatDate(value)}</span>
       )
     }
   ]
 
   return (
     <OfficerGuard>
-      <div className="p-8">
+      <div className={styles.page}>
         <PageHeader 
-          title="Reports Directory"
-          subtitle="View and manage raw environmental data and create operations"
+          title="Reports directory"
+          subtitle="View and manage raw environmental data and create operations."
           breadcrumbs={[
-            { label: 'Dashboard', href: '/dashboard/officer' },
+            { label: 'Officer', href: '/dashboard/officer' },
             { label: 'Reports' }
           ]}
+          className={styles.pageHeader}
         />
 
         {/* Search and Filters */}
         <FilterBar
           searchPlaceholder="Search by title or description..."
           searchValue={searchQuery}
-          onSearchChange={setSearchQuery}
+          onSearchChange={val => { setSearchQuery(val); setCurrentPage(1) }}
           filters={[
             {
-              label: 'All Types',
+              label: 'All types',
               value: typeFilter,
-              onChange: setTypeFilter,
+              onChange: val => { setTypeFilter(val); setCurrentPage(1) },
               options: [
-                { value: 'all', label: 'All Types' },
-                ...issueTypes.map(type => ({ value: type, label: type }))
+                { value: 'all', label: 'All types' },
+                ...issueTypes.map(type => ({ value: type, label: type.replaceAll('_', ' ') }))
               ]
             },
             {
-              label: 'Report Status',
+              label: 'Report status',
               value: statusFilter,
-              onChange: setStatusFilter,
+              onChange: val => { setStatusFilter(val); setCurrentPage(1) },
               options: [
-                { value: 'all', label: 'All Report Status' },
-                { value: 'overdue', label: 'Overdue (SLA Risk)' },
+                { value: 'all', label: 'All statuses' },
+                { value: 'overdue', label: 'Overdue (SLA risk)' },
                 { value: 'unresolved', label: 'Unresolved' },
-                { value: 'in_progress', label: 'In Progress' },
+                { value: 'in_progress', label: 'In progress' },
                 { value: 'resolved', label: 'Resolved' },
                 { value: 'closed', label: 'Closed' },
-                { value: 'pending_owner_consent', label: 'Pending Owner Consent' },
-                { value: 'waiting_for_feedback', label: 'Waiting for Feedback' }
+                { value: 'pending_owner_consent', label: 'Pending owner consent' },
+                { value: 'waiting_for_feedback', label: 'Waiting for feedback' }
               ]
             },
             {
-              label: 'Review Status',
+              label: 'Review status',
               value: validationFilter,
-              onChange: setValidationFilter,
+              onChange: val => { setValidationFilter(val); setCurrentPage(1) },
               options: [
-                { value: 'all', label: 'All Review Status' },
+                { value: 'all', label: 'All review statuses' },
                 { value: 'pending', label: 'Pending' },
-                { value: 'pending_ai_validation', label: 'Pending AI Validation' },
-                { value: 'manual_review', label: 'Manual Review' },
+                { value: 'pending_ai_validation', label: 'Pending AI validation' },
+                { value: 'manual_review', label: 'Manual review' },
                 { value: 'approved', label: 'Approved' },
                 { value: 'rejected', label: 'Rejected' }
               ]
@@ -279,31 +296,35 @@ export default function OfficerReportsPage() {
           onReset={handleResetFilters}
           resultsCount={filteredReports.length}
           loading={loading}
+          sticky={false}
+          className={styles.filterBar}
         />
 
         {/* Reports List */}
-        <div className="flex flex-col gap-4">
+        <div className={styles.tableWorkspace}>
            <DataTable
              columns={tableColumns}
              data={paginatedReports}
              loading={loading}
-             emptyMessage="No reports match your filters"
+             emptyMessage="No reports match your filters."
              onRowClick={handleRowClick}
-             rowClassName={(row) => isReportOverdue(row) ? 'border-l-4 border-l-red-500 bg-red-50/30 dark:bg-red-950/20' : ''}
+             rowActionLabel={(report) => `Open ${report.title || 'report'} details`}
+             className={styles.tableContainer}
+             caption="Reports directory"
            />
-        </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-            itemsPerPage={itemsPerPage}
-            totalItems={filteredReports.length}
-            className="mt-6"
-          />
-        )}
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <Pagination
+              currentPage={safeCurrentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              itemsPerPage={itemsPerPage}
+              totalItems={filteredReports.length}
+              className={styles.pagination}
+            />
+          )}
+        </div>
       </div>
     </OfficerGuard>
   )
