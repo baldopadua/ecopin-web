@@ -155,12 +155,8 @@ export function generateTasksNative(payload) {
     max_escalation_cap = 10.0,
     max_detour_minutes = 5.0,
     max_detour_time_per_task = 15.0,
-<<<<<<< Updated upstream
-    max_route_distance_km = 40.0,
-=======
     max_route_distance_km = 50.0,
     max_route_duration_minutes = 480.0,
->>>>>>> Stashed changes
     start_location = { lat: 14.561433, lon: 121.075636 },
     clusters = [],
     individual_reports = []

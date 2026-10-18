@@ -48,15 +48,9 @@ function CustomMap({ selectedReports, allowedReportIds, onReportSelect, onCluste
 }
 
 const STRATEGIES = [
-<<<<<<< Updated upstream
-  { id: 'standard', name: 'Standard Dispatch', config: { aging_factor: 1.5, max_escalation_cap: 10.0, max_detour_minutes: 5.0, max_detour_time_per_task: 15.0, max_route_distance_km: 40.0 } },
-  { id: 'thorough', name: 'Thorough Cleanup', config: { aging_factor: 1.5, max_escalation_cap: 10.0, max_detour_minutes: 10.0, max_detour_time_per_task: 30.0, max_route_distance_km: 60.0 } },
-  { id: 'backlog', name: 'Backlog Crusher', config: { aging_factor: 3.0, max_escalation_cap: 20.0, max_detour_minutes: 5.0, max_detour_time_per_task: 15.0, max_route_distance_km: 35.0 } }
-=======
   { id: 'standard', name: 'Standard Dispatch', config: { aging_factor: 1.5, max_escalation_cap: 10.0, max_detour_minutes: 5.0, max_detour_time_per_task: 15.0, max_route_distance_km: 50.0, max_route_duration_minutes: 480.0 } },
   { id: 'thorough', name: 'Thorough Cleanup', config: { aging_factor: 1.5, max_escalation_cap: 10.0, max_detour_minutes: 10.0, max_detour_time_per_task: 30.0, max_route_distance_km: 75.0, max_route_duration_minutes: 600.0 } },
   { id: 'backlog', name: 'Backlog Crusher', config: { aging_factor: 3.0, max_escalation_cap: 20.0, max_detour_minutes: 5.0, max_detour_time_per_task: 15.0, max_route_distance_km: 40.0, max_route_duration_minutes: 360.0 } }
->>>>>>> Stashed changes
 ]
 
 export default function CreateCleanupTaskPage() {
@@ -87,12 +81,8 @@ export default function CreateCleanupTaskPage() {
     max_escalation_cap: STRATEGIES[0].config.max_escalation_cap,
     max_detour_minutes: STRATEGIES[0].config.max_detour_minutes,
     max_detour_time_per_task: STRATEGIES[0].config.max_detour_time_per_task,
-<<<<<<< Updated upstream
-    max_route_distance_km: STRATEGIES[0].config.max_route_distance_km
-=======
     max_route_distance_km: STRATEGIES[0].config.max_route_distance_km,
     max_route_duration_minutes: STRATEGIES[0].config.max_route_duration_minutes
->>>>>>> Stashed changes
   })
   const [generatedTasks, setGeneratedTasks] = useState(null)
   const [generationError, setGenerationError] = useState(null)
@@ -233,9 +223,11 @@ export default function CreateCleanupTaskPage() {
       setTimeout(() => {
         router.push('/dashboard/officer/operations')
       }, 1500)
+    } catch (error) {
       reportDiagnostic('error', 'dispatch', 'Failed to create task:', error)
       const message = error?.message || 'Failed to create task. Please try again.'
       setNotification({ message, type: 'error' })
+    } finally {
       setCreating(false)
     }
   }
