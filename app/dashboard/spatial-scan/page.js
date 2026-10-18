@@ -10,6 +10,7 @@ const ForecastMap = dynamic(() => import('@/components/map/HotspotForecastMap'),
 import CommandHUD from '../../../components/ui/CommandHUD';
 import DynamicFeed from '../../../components/ui/DynamicFeed';
 import TimePlayer from '../../../components/ui/TimePlayer';
+import { filterAvailableSnapshotDates } from '../../../lib/helpers/forecastTimeline';
 import { RequireRole } from '../../../components/auth/RequireRole';
 import { reportDiagnostic } from '../../../lib/diagnostics.mjs';
 
@@ -87,17 +88,89 @@ function TacticalScanContent() {
     }
   };
 
+  const historicalCache = useRef(new Map());
+
+  const parsePredictionRecords = (rawRecords) => {
+    const features = [];
+    const region_analyses = {};
+    
+    rawRecords.forEach(record => {
+      let issueBreakdown = {};
+      if (record.issue_breakdown) {
+        try {
+          issueBreakdown = typeof record.issue_breakdown === 'string'
+            ? JSON.parse(record.issue_breakdown)
+            : record.issue_breakdown;
+        } catch (e) { }
+      }
+
+      region_analyses[record.region_id] = {
+        ...record,
+        is_hotspot: record.risk_score > 0,
+        issue_breakdown: issueBreakdown,
+      };
+
+      if (record.risk_score > 0 && record.geojson_polygon) {
+        let geometry = null;
+        try {
+          geometry = typeof record.geojson_polygon === 'string' 
+            ? JSON.parse(record.geojson_polygon) 
+            : record.geojson_polygon;
+        } catch (e) { }
+
+        if (geometry) {
+          features.push({
+            type: 'Feature',
+            geometry,
+            properties: {
+              ...record,
+              issue_breakdown: issueBreakdown,
+              center_lat: record.region_center_lat,
+              center_lng: record.region_center_lng,
+            }
+          });
+        }
+      }
+    });
+
+    return {
+      region_analyses,
+      geojson: { type: 'FeatureCollection', features }
+    };
+  };
+
+  const fetchHistoricalData = async (dateStr) => {
+    if (historicalCache.current.has(dateStr)) {
+      return historicalCache.current.get(dateStr);
+    }
+    const data = await fetchPredictions({ startDate: dateStr, endDate: dateStr });
+    const rawRecords = data?.data || [];
+    const processed = parsePredictionRecords(rawRecords);
+    if (processed.geojson.features.length > 0) {
+      historicalCache.current.set(dateStr, processed);
+    }
+    return processed;
+  };
+
   const loadAvailableDates = async () => {
     setDatesError('');
     try {
       const data = await getAvailablePredictionDates();
-      
-      let dates = data.data || [];
-      setAvailableDates(dates);
+      const validDates = filterAvailableSnapshotDates(data?.data);
 
-      if (dates.length > 0) {
-        setSelectedDate(dates[dates.length - 1]); // default to latest
-        loadHistoricalForDate(dates[dates.length - 1]);
+      setAvailableDates(validDates);
+
+      if (validDates.length > 0) {
+        const latestDate = validDates[validDates.length - 1];
+        setSelectedDate(latestDate);
+        loadHistoricalForDate(latestDate);
+
+        // Prefetch remaining dates in the background so playback is completely seamless
+        validDates.forEach(date => {
+          if (date !== latestDate) {
+            fetchHistoricalData(date).catch(() => {});
+          }
+        });
       }
     } catch (err) {
       reportDiagnostic('error', 'forecast', 'Failed to load available dates:', err);
@@ -106,60 +179,29 @@ function TacticalScanContent() {
   };
 
   const loadHistoricalForDate = async (dateStr) => {
+    if (!dateStr) return;
+
+    // Instant switch if cached in memory
+    if (historicalCache.current.has(dateStr)) {
+      const cached = historicalCache.current.get(dateStr);
+      setHistoricalPredictions(cached);
+      setHistoryError('');
+      setHistoryLoading(false);
+      return;
+    }
+
     const request = ++historyRequest.current;
-    setHistoryLoading(true);
+    if (!historicalPredictions) {
+      setHistoryLoading(true);
+    }
     setHistoryError('');
     try {
-      const data = await fetchPredictions({ startDate: dateStr, endDate: dateStr });
-      const rawRecords = data.data || [];
-      
-      const features = [];
-      const region_analyses = {};
-      
-      rawRecords.forEach(record => {
-        let issueBreakdown = {};
-        if (record.issue_breakdown) {
-          try {
-            issueBreakdown = typeof record.issue_breakdown === 'string'
-              ? JSON.parse(record.issue_breakdown)
-              : record.issue_breakdown;
-          } catch (e) { }
-        }
-
-        region_analyses[record.region_id] = {
-          ...record,
-          is_hotspot: record.risk_score > 0,
-          issue_breakdown: issueBreakdown,
-        };
-
-        if (record.risk_score > 0 && record.geojson_polygon) {
-          let geometry = null;
-          try {
-            geometry = typeof record.geojson_polygon === 'string' 
-              ? JSON.parse(record.geojson_polygon) 
-              : record.geojson_polygon;
-          } catch (e) { }
-
-          if (geometry) {
-            features.push({
-              type: 'Feature',
-              geometry,
-              properties: {
-                ...record,
-                issue_breakdown: issueBreakdown,
-                center_lat: record.region_center_lat,
-                center_lng: record.region_center_lng,
-              }
-            });
-          }
-        }
-      });
-
+      const processed = await fetchHistoricalData(dateStr);
       if (request !== historyRequest.current) return;
-      setHistoricalPredictions({
-        region_analyses,
-        geojson: { type: 'FeatureCollection', features }
-      });
+      if (processed.geojson.features.length === 0) {
+        setAvailableDates(prev => prev.filter(d => d !== dateStr));
+      }
+      setHistoricalPredictions(processed);
     } catch (err) {
       reportDiagnostic('error', 'forecast', 'Failed to load historical data:', err);
       if (request === historyRequest.current) setHistoryError('The forecast for this date could not load.');
@@ -169,6 +211,7 @@ function TacticalScanContent() {
   };
 
   const handleDateChange = (newDate) => {
+    if (!newDate) return;
     setActiveTab('historical');
     setSelectedDate(newDate);
     setFocusedItem(null);
@@ -212,6 +255,9 @@ function TacticalScanContent() {
       .sort((a, b) => b.properties.risk_score - a.properties.risk_score);
   }, [currentData]);
 
+  const isInitialLoading = activeTab === 'current'
+    ? (currentLoading && !currentPredictions)
+    : (historyLoading && !historicalPredictions);
   const loading = activeTab === 'current' ? currentLoading : historyLoading;
   const error = activeTab === 'current' ? currentError : historyError;
   const retry = () => activeTab === 'current' ? loadCurrentPredictions() : selectedDate && loadHistoricalForDate(selectedDate);
@@ -232,7 +278,7 @@ function TacticalScanContent() {
         <div className={styles.switcher} role="group" aria-label="Forecast period">
           <button type="button" aria-pressed={activeTab === 'current'} onClick={() => { setActiveTab('current'); setFocusedItem(null); }}>Latest forecast</button>
           <button type="button" aria-pressed={activeTab === 'historical'} disabled={!availableDates.length}
-            onClick={() => { setActiveTab('historical'); setFocusedItem(null); if (!selectedDate) handleDateChange(availableDates[availableDates.length - 1]); }}>Historical snapshots</button>
+            onClick={() => { setActiveTab('historical'); setFocusedItem(null); if ((!selectedDate || !availableDates.includes(selectedDate)) && availableDates.length) handleDateChange(availableDates[availableDates.length - 1]); }}>Historical snapshots</button>
         </div>
         <CommandHUD accuracy={accuracy} lastUpdated={lastUpdated} viewMode={viewMode} setViewMode={setViewMode} />
       </div>
@@ -244,8 +290,19 @@ function TacticalScanContent() {
       <div className={styles.workspace} data-view={compactView}>
         <section className={styles.mapPanel} aria-label="Spatial forecast map">
           <div className={styles.map}>
-            {loading || error || !hasMapData ? <div className={styles.mapState} role="status"><p>{loading ? 'Loading forecast…' : error ? 'Forecast map unavailable' : viewMode === 'heatmap' ? 'No heatmap locations are available for this view.' : 'No risk areas are available for this forecast.'}</p></div>
-              : <ForecastMap predictions={currentDataWithHeatmap} timeHorizon={activeTab === 'historical' ? 'historical' : 'monthly'} viewModeOverride={viewMode} focusedItem={focusedItem} hideUI={true} />}
+            {isInitialLoading || (error && !currentDataWithHeatmap) ? (
+              <div className={styles.mapState} role="status">
+                <p>{isInitialLoading ? 'Loading forecast…' : error ? 'Forecast map unavailable' : viewMode === 'heatmap' ? 'No heatmap locations are available for this view.' : 'No risk areas are available for this forecast.'}</p>
+              </div>
+            ) : (
+              <ForecastMap
+                predictions={currentDataWithHeatmap}
+                timeHorizon={activeTab === 'historical' ? 'historical' : 'monthly'}
+                viewModeOverride={viewMode}
+                focusedItem={focusedItem}
+                hideUI={true}
+              />
+            )}
           </div>
           {viewMode === 'clusters' && <div className={styles.legend} aria-label="Risk level legend">
             <span><i className={styles.high} />High risk</span><span><i className={styles.medium} />Medium risk</span><span><i className={styles.low} />Low risk</span>
@@ -254,7 +311,7 @@ function TacticalScanContent() {
             ? heatmapNote
             : 'Polygons show forecast risk areas. Select a hotspot in the list to center the map.'}</p>
         </section>
-        <DynamicFeed key={`${activeTab}-${selectedDate}`} items={loading || error ? [] : feedItems} selectedItem={focusedItem} loading={loading} error={error} onRetry={retry}
+        <DynamicFeed items={feedItems} selectedItem={focusedItem} loading={isInitialLoading} error={error} onRetry={retry}
           onClick={setFocusedItem} />
       </div>
       <TimePlayer key={activeTab} dates={availableDates} currentDate={activeTab === 'historical' ? selectedDate : null}

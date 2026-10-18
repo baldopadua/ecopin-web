@@ -391,7 +391,7 @@ export default function HotspotForecastMap({ predictions, timeHorizon, viewModeO
         {/* Cluster polygon layer */}
         {showClusters && geojsonData && geojsonData.features.length > 0 && (
           <GeoJSON
-            key={JSON.stringify(geojsonData).slice(0, 40)}
+            key={(geojsonData.features || []).map(f => `${f.properties?.region_id || ''}-${f.properties?.risk_score || ''}-${f.properties?.prediction_date || ''}`).join('|')}
             data={geojsonData}
             style={getFeatureStyle}
             onEachFeature={onEachFeature}
