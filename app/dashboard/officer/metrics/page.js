@@ -391,14 +391,123 @@ export default function AnalyticsPage() {
         doc.text(chart.title, 14, 22)
         doc.setFontSize(10)
         doc.text(doc.splitTextToSize(chart.description, 180), 14, 32)
-        autoTable(doc, { startY: 53, head: [['Category / week', `Value (${chart.unit})`]], body: chartRows(chart.data).map(row => [row.label, row.value]), headStyles: { fillColor: [0, 82, 204] }, styles: { fontSize: 10 } })
+        const rows = chartRows(chart.data)
+        const totalValue = rows.reduce((sum, r) => sum + (typeof r.value === 'number' ? r.value : 0), 0)
+
+        autoTable(doc, { 
+          startY: 53, 
+          head: [['Category / week', `Value (${chart.unit})`]], 
+          body: rows.map(row => [row.label, row.value]), 
+          headStyles: { fillColor: [0, 82, 204] }, 
+          columnStyles: {
+            0: { cellPadding: { left: 8, top: 2.5, right: 3, bottom: 2.5 } }
+          },
+          didDrawCell: (data) => {
+            if (data.section === 'body' && data.column.index === 0) {
+              const row = rows[data.row.index]
+              if (row?.color) {
+                const [r, g, b] = hexToRgb(row.color)
+                doc.setFillColor(r, g, b)
+                doc.setDrawColor(200, 200, 200)
+                doc.setLineWidth(0.1)
+                doc.roundedRect(data.cell.x + 2.5, data.cell.y + (data.cell.height - 3.2) / 2, 3.2, 3.2, 0.6, 0.6, 'FD')
+              }
+            }
+          },
+          styles: { fontSize: 10 } 
+        })
+
+        let legendStartY = doc.lastAutoTable.finalY + 12
         if (chart.ref.current) {
-          const y = doc.lastAutoTable.finalY + 12
-          if (y + 95 > 280) doc.addPage()
-          const imageY = y + 95 > 280 ? 20 : y
-          doc.setFillColor(...(isDark ? [36, 36, 36] : [245, 247, 250]))
-          doc.rect(14, imageY, 180, 95, 'F')
-          doc.addImage(chart.ref.current.toBase64Image(), 'PNG', 14, imageY, 180, 95)
+          const chartInstance = chart.ref.current
+          const canvas = chartInstance.canvas
+          const chartWidth = canvas?.width || chartInstance.width || 180
+          const chartHeight = canvas?.height || chartInstance.height || 95
+          const aspectRatio = (chartWidth && chartHeight) ? (chartWidth / chartHeight) : (180 / 95)
+
+          const maxWidth = 180
+          const maxHeight = 85
+          let renderWidth = maxWidth
+          let renderHeight = renderWidth / aspectRatio
+
+          if (renderHeight > maxHeight) {
+            renderHeight = maxHeight
+            renderWidth = renderHeight * aspectRatio
+          }
+
+          const imageX = 14 + (maxWidth - renderWidth) / 2
+          const y = doc.lastAutoTable.finalY + 10
+          const pageOverflow = y + renderHeight > 240
+          if (pageOverflow) doc.addPage()
+          const imageY = pageOverflow ? 20 : y
+
+          // Enforce print-friendly light background
+          doc.setFillColor(255, 255, 255)
+          doc.rect(imageX, imageY, renderWidth, renderHeight, 'F')
+          doc.addImage(chartInstance.toBase64Image(), 'PNG', imageX, imageY, renderWidth, renderHeight)
+
+          legendStartY = imageY + renderHeight + 8
+        }
+
+        // Render Chart Legend section in PDF
+        if (legendStartY + 25 > 280) {
+          doc.addPage()
+          legendStartY = 20
+        }
+
+        doc.setFontSize(10)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(23, 33, 46)
+        doc.text('Chart Legend', 14, legendStartY)
+
+        doc.setFontSize(9)
+        doc.setFont('helvetica', 'normal')
+
+        const isDoughnut = chart.component === Doughnut || chart.id?.includes('categories') || chart.id?.includes('statuses') || chart.id === 'resident-ratings'
+
+        if (isDoughnut) {
+          const colWidth = 88
+          const rowSpacing = 6
+          const gridStartY = legendStartY + 5
+          rows.forEach((row, idx) => {
+            const col = idx % 2
+            const rowInGrid = Math.floor(idx / 2)
+            const itemX = 14 + (col * colWidth)
+            const itemY = gridStartY + (rowInGrid * rowSpacing)
+
+            if (itemY > 282) {
+              doc.addPage()
+              legendStartY = 20
+            }
+
+            const [r, g, b] = hexToRgb(row.color)
+            doc.setFillColor(r, g, b)
+            doc.setDrawColor(200, 200, 200)
+            doc.setLineWidth(0.1)
+            doc.roundedRect(itemX, itemY - 3, 3.5, 3.5, 0.6, 0.6, 'FD')
+
+            const pctStr = totalValue > 0 && typeof row.value === 'number'
+              ? ` (${Math.round((row.value / totalValue) * 100)}%)`
+              : ''
+            const legendText = `${row.label}: ${row.value} ${chart.unit}${pctStr}`
+            doc.setTextColor(40, 40, 40)
+            doc.text(legendText, itemX + 5.5, itemY)
+          })
+        } else {
+          const datasetLabel = chart.data.datasets?.[0]?.label || (chart.unit === '%' ? 'Resolution Rate (%)' : 'Reports')
+          const datasetColor = rows[0]?.color || '#10B981'
+          const [r, g, b] = hexToRgb(datasetColor)
+
+          doc.setFillColor(r, g, b)
+          doc.setDrawColor(200, 200, 200)
+          doc.setLineWidth(0.1)
+          doc.roundedRect(14, legendStartY + 2, 3.5, 3.5, 0.6, 0.6, 'FD')
+
+          doc.setTextColor(40, 40, 40)
+          const descText = chart.unit === '%' 
+            ? `${datasetLabel} — Percentage of reports resolved or closed per creation week cohort`
+            : `${datasetLabel} — Total volume of public reports created per week`
+          doc.text(descText, 19.5, legendStartY + 5)
         }
       }
       await doc.save('EcoPin-Metrics-Report.pdf', { returnPromise: true })
@@ -473,4 +582,28 @@ function ChartPanel({ id, title, description, rows, unit, children }) {
       </div>)}
     </dl>}
   </section>
+}
+
+function hexToRgb(hex) {
+  if (!hex) return [0, 82, 204]
+  if (hex.startsWith('rgba') || hex.startsWith('rgb')) {
+    const parts = hex.match(/\d+/g)
+    if (parts && parts.length >= 3) return [parseInt(parts[0], 10), parseInt(parts[1], 10), parseInt(parts[2], 10)]
+  }
+  const cleanHex = hex.replace('#', '')
+  if (cleanHex.length === 3) {
+    return [
+      parseInt(cleanHex[0] + cleanHex[0], 16),
+      parseInt(cleanHex[1] + cleanHex[1], 16),
+      parseInt(cleanHex[2] + cleanHex[2], 16)
+    ]
+  }
+  if (cleanHex.length >= 6) {
+    return [
+      parseInt(cleanHex.substring(0, 2), 16),
+      parseInt(cleanHex.substring(2, 4), 16),
+      parseInt(cleanHex.substring(4, 6), 16)
+    ]
+  }
+  return [0, 82, 204]
 }

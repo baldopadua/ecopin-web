@@ -12,6 +12,7 @@ import CommandHUD from '../../../components/ui/CommandHUD';
 import DynamicFeed from '../../../components/ui/DynamicFeed';
 import TimePlayer from '../../../components/ui/TimePlayer';
 import ZoneTrendDrawer from '../../../components/ui/ZoneTrendDrawer';
+import { filterAvailableSnapshotDates } from '../../../lib/helpers/forecastTimeline';
 import { RequireRole } from '../../../components/auth/RequireRole';
 
 const ForecastMap = dynamic(() => import('@/components/map/HotspotForecastMap'), { ssr: false });
@@ -60,7 +61,7 @@ function TacticalScanContent() {
     const controller = new AbortController();
     getAvailablePredictionDates(timeHorizon, { signal: controller.signal }).then(response => {
       if (controller.signal.aborted) return;
-      const dates = response.data || [];
+      const dates = filterAvailableSnapshotDates(response.data || []);
       setDatesResult({ key: datesKey, data: dates, error: '' });
       setSelectedDate(previous => dates.includes(previous) ? previous : dates.at(-1) || null);
     }).catch(error => { if (!controller.signal.aborted && error.name !== 'AbortError') setDatesResult({ key: datesKey, data: [], error: 'Historical dates could not load.' }); });

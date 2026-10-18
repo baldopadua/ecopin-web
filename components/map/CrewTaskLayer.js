@@ -1,6 +1,6 @@
 'use client'
 import { useMemo, useState } from 'react'
-import { Polyline, Marker, Popup, useMapEvents } from 'react-leaflet'
+import { Polyline, Marker, Popup, Tooltip, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import { Buffer } from 'buffer'
 import wkx from 'wkx'
@@ -30,7 +30,7 @@ const parseGeometry = (geometry) => {
 }
 
 const CREW_COLORS = [
-  '#ccff00', '#FF0055', '#00FFFF', '#FF9900', '#9900FF', '#00FF66'
+  '#0052cc', '#FF0055', '#00FFFF', '#FF9900', '#9900FF', '#00FF66'
 ]
 
 function getCrewColor(crewIdStr) {
@@ -57,7 +57,7 @@ function createTaskReportIcon(label, color, isCompleted) {
       justify-content: center;
       font-size: 10px;
       font-weight: bold;
-      color: ${isCompleted ? color : (color === '#ccff00' || color === '#00FFFF' || color === '#00FF66' ? 'black' : 'white')};
+      color: ${isCompleted ? color : (color === '#00FFFF' || color === '#00FF66' ? 'black' : 'white')};
       box-shadow: 0 2px 4px rgba(0,0,0,0.4);
     "></div>`,
     iconSize: [24, 24],
@@ -115,7 +115,11 @@ export default function CrewTaskLayer({ tasks = [], basePath, photoPins = false,
                 opacity: 0.7, 
                 dashArray: '5, 10'
               }}
-            />
+            >
+              <Tooltip sticky>
+                Task micro-route ({color}): Connects cluster centroid to constituent report sub-pins
+              </Tooltip>
+            </Polyline>
           )}
           
           {/* Pins for Reports */}

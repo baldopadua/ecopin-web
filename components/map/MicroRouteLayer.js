@@ -1,6 +1,6 @@
 'use client'
 import { useMemo } from 'react'
-import { Polyline, Marker, Popup } from 'react-leaflet'
+import { Polyline, Marker, Popup, Tooltip } from 'react-leaflet'
 import L from 'leaflet'
 import { Buffer } from 'buffer'
 import wkx from 'wkx'
@@ -96,12 +96,16 @@ export default function MicroRouteLayer({ tasks = [], routeWaypoints = [] }) {
           <Polyline
             positions={positions}
             pathOptions={{
-              color: '#ccff00', 
-              weight: 3, 
-              opacity: 0.7, 
+              color: '#0052cc', 
+              weight: 3.5, 
+              opacity: 0.85, 
               dashArray: '5, 10'
             }}
-          />
+          >
+            <Tooltip sticky>
+              Task micro-route (blue): Connects cluster centroid to constituent report sub-pins
+            </Tooltip>
+          </Polyline>
           
           {/* Numbered Sub-Pins for Reports */}
           {validReports.map(({ report, coords, label }) => (

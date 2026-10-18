@@ -109,6 +109,7 @@ const getDistanceKm = (lat1, lon1, lat2, lon2) => {
 const isReportVerified = (report) => {
   if (!report) return false
   const val = (report.validation_status || '').toLowerCase().trim()
+  if (val === 'manual_review' || val === 'pending' || val === 'rejected') return false
   const stage = (report.stage || '').toLowerCase().trim()
   return (
     val === 'approved' || 

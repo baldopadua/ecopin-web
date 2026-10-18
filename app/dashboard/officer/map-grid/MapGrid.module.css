@@ -605,6 +605,11 @@
   }
 }
 
+.microRouteLine { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 18px;
+  flex-shrink: 0; border-radius: 6px; background: rgba(0, 82, 204, 0.12); border: 1px solid rgba(0, 82, 204, 0.3); }
+.microRouteLine::after { content: ''; display: block; width: 22px; border-top: 2.5px dashed #0052cc; }
+.microRouteCode { color: var(--workspace-link, #0052cc); font-size: 12px; font-weight: 600; font-family: monospace; }
+
 @media (max-width: 1023px) {
   .page {
     height: calc(100dvh - 64px);

@@ -56,10 +56,11 @@ function ReportLayer({ location, issueType, retry, onState, isDark }) {
           issueType, limit: 100, signal: controller.signal,
         })
         if (controller.signal.aborted) return
-        const visible = page.reports.filter(report =>
-          ['approved', 'validated', 'verified'].includes((report.validation_status || '').toLowerCase().trim()) ||
-          (report.stage || '').toLowerCase().trim() === 'verified'
-        ).filter(report => Number.isFinite(report.latitude) && Number.isFinite(report.longitude))
+        const visible = page.reports.filter(report => {
+          const val = (report.validation_status || '').toLowerCase().trim()
+          if (val === 'manual_review' || val === 'pending' || val === 'rejected') return false
+          return ['approved', 'validated', 'verified'].includes(val) || (report.stage || '').toLowerCase().trim() === 'verified'
+        }).filter(report => Number.isFinite(report.latitude) && Number.isFinite(report.longitude))
         setReports(visible)
         onState({ loading: false, error: false, count: visible.length, hasMore: page.hasMore })
         const photoIds = visible.filter(report => report.location_precision === 'exact' && evidenceCache.current[report.id] === undefined).map(report => report.id)

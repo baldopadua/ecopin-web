@@ -17,6 +17,7 @@
 !tests/forward-forecast.browser.cjs
 !tests/forecast-map-browser.test.cjs
 !tests/spatial-scan.browser.cjs
+!tests/time-player.test.mjs
 
 # next.js
 /.next/

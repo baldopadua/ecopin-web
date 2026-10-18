@@ -73,17 +73,25 @@ export default function OfficerHomepage() {
     return status === 'pending'
   })
   
-  // Calculate SLA risk: reports unresolved for more than 48 hours
+  // Calculate SLA risk: reports unresolved/actionable for more than 48 hours or flagged overdue
   const now = new Date()
+  const terminalStatuses = ['resolved', 'closed', 'completed', 'rejected']
   const slaRiskTasks = reports.filter(t => {
-     if (t.is_overdue) return true;
-     const created = new Date(t.created_at)
-     const diffHours = (now - created) / (1000 * 60 * 60)
-     return diffHours > 48
+     const status = (t.status || '').toLowerCase()
+     if (terminalStatuses.includes(status)) return false
+
+     if (t.is_overdue) return true
+     if (t.deadline_at) return now > new Date(t.deadline_at)
+     if (t.created_at) {
+       const created = new Date(t.created_at)
+       const diffHours = (now - created) / (1000 * 60 * 60)
+       return diffHours > 48
+     }
+     return false
   })
 
   // Manual Review tasks
-  const manualReviewTasks = reports.filter(t => t.validation_status === 'manual_review' || t.validation_status === 'Manual_Review')
+  const manualReviewTasks = reports.filter(t => (t.validation_status || '').toLowerCase() === 'manual_review')
 
   // Critical hotzones: top 3 highest severity (now using priority_score)
   const criticalClusters = [...clusters].sort((a, b) => (b.priority_score || 0) - (a.priority_score || 0)).slice(0, 3)

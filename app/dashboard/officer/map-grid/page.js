@@ -168,7 +168,6 @@ function OfficerMapContent() {
             )}
           </EcoPinMap>
         </section>
-
         {isSidebarOpen && (
           <aside
             id="map-grid-controls"
@@ -286,7 +285,7 @@ function OfficerMapContent() {
               </section>
 
               <section className={styles.section} aria-labelledby="map-grid-cluster-legend">
-                <h3 id="map-grid-cluster-legend">Cluster legend</h3>
+                <h3 id="map-grid-cluster-legend">Cluster & route legend</h3>
                 <ul className={styles.legendGrid}>
                   <li className={styles.legendItem}>
                     <span className={styles.standardCluster} aria-hidden="true">#</span>
@@ -298,8 +297,12 @@ function OfficerMapContent() {
                     </span>
                     <span>Overdue cluster</span>
                   </li>
+                  <li className={styles.legendItem} title="Dashed blue line (#0052cc) represents the task micro-route connecting cluster centroid to constituent report sub-pins.">
+                    <span className={styles.microRouteLine} aria-hidden="true" />
+                    <span>Task micro-route (<code className={styles.microRouteCode}>#0052cc</code>)</span>
+                  </li>
                 </ul>
-                <p className={styles.helper}>Numbers on cluster markers show their report counts.</p>
+                <p className={styles.helper}>Numbers on cluster markers show their report counts. Dashed blue line (#0052cc) represents the task micro-route connecting cluster centroid to constituent report sub-pins.</p>
               </section>
             </div>
           </aside>

@@ -16,6 +16,7 @@ body {
   --primary: #0052CC;
   --secondary: #60A5FA;
   --accent: #0052CC;
+  --accent-blue: #0052CC;
   --accent-green: #0052CC;
   --accent-green-dark: #0042A3;
 
@@ -126,6 +127,7 @@ body {
   --color-primary: var(--primary);
   --color-secondary: var(--secondary);
   --color-accent: var(--accent);
+  --color-accent-blue: var(--accent-blue);
   --color-accent-green: var(--accent-green);
   --color-accent-green-dark: var(--accent-green-dark);
   --color-status-success: var(--status-success);
@@ -150,6 +152,7 @@ html.dark {
   --primary: #0052CC;
   --secondary: #60A5FA;
   --accent: #0052CC;
+  --accent-blue: #0052CC;
   --accent-green: #0052CC;
   --accent-green-dark: #0042A3;
 

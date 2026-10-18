@@ -448,7 +448,7 @@ export default function HotspotForecastMap({ predictions, timeHorizon, viewModeO
         {/* Cluster polygon layer */}
         {showClusters && clusterFeatures.length > 0 && (
           <GeoJSON
-            key={`zones-${timeHorizon}-${JSON.stringify(sanitizedGeoJson)}`}
+            key={`zones-${timeHorizon}-${(sanitizedGeoJson.features || []).map(f => `${f.properties?.zone_id || f.properties?.region_id || ''}-${f.properties?.risk_score || ''}-${f.properties?.prediction_date || ''}`).join('|')}`}
             data={sanitizedGeoJson}
             style={getFeatureStyle}
             onEachFeature={onEachFeature}
