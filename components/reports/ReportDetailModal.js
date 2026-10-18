@@ -198,8 +198,8 @@ export default function ReportDetailModal({ report, evidence = [], agencyRespons
                     <Calendar className="w-3 h-3" /> Date Logged
                   </span>
                   <span className="font-bold text-text-primary text-xs font-mono">
-                    {report.created_at ? new Date(report.created_at).toLocaleDateString('en-US', {
-                      month: 'short', day: 'numeric', year: 'numeric'
+                    {report.created_at ? new Date(report.created_at).toLocaleString('en-US', {
+                      month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
                     }) : '—'}
                   </span>
                 </div>
