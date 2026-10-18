@@ -10,6 +10,24 @@ import StatusBadge from '@/components/ui/StatusBadge'
 import { OfficerGuard } from '@/components/auth/RequireRole'
 import { Target, Wrench, AlertTriangle, Clock } from 'lucide-react'
 
+const terminalStatuses = ['resolved', 'closed', 'completed', 'rejected']
+
+function isReportOverdue(report) {
+  if (!report) return false
+  const normalizedStatus = (report.status || '').toLowerCase()
+  if (terminalStatuses.includes(normalizedStatus)) return false
+
+  if (report.is_overdue) return true
+  if (report.deadline_at) {
+    return new Date() > new Date(report.deadline_at)
+  }
+  if (report.created_at) {
+    const diffHours = (new Date() - new Date(report.created_at)) / (1000 * 60 * 60)
+    return diffHours > 48
+  }
+  return false
+}
+
 export default function OfficerReportsPage() {
   const [reports, setReports] = useState([])
   const [filteredReports, setFilteredReports] = useState([])
@@ -67,22 +85,16 @@ export default function OfficerReportsPage() {
     }
 
     if (statusFilter === 'overdue') {
-      const now = new Date()
-      filtered = filtered.filter(r => {
-        if (r.is_overdue) return true;
-        const created = new Date(r.created_at)
-        const diffHours = (now - created) / (1000 * 60 * 60)
-        return diffHours > 48
-      })
+      filtered = filtered.filter(isReportOverdue)
     } else if (statusFilter !== 'all') {
       filtered = filtered.filter(r => r.status === statusFilter)
     }
 
     if (validationFilter !== 'all') {
       if (validationFilter === 'manual_review') {
-        filtered = filtered.filter(r => r.validation_status === 'manual_review' || r.validation_status === 'Manual_Review')
+        filtered = filtered.filter(r => (r.validation_status || '').toLowerCase() === 'manual_review')
       } else {
-        filtered = filtered.filter(r => r.validation_status === validationFilter)
+        filtered = filtered.filter(r => (r.validation_status || '').toLowerCase() === validationFilter.toLowerCase())
       }
     }
 
@@ -113,23 +125,6 @@ export default function OfficerReportsPage() {
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A'
     return new Date(dateString).toLocaleDateString()
-  }
-
-  const isReportOverdue = (report) => {
-    if (!report) return false
-    const terminalStatuses = ['resolved', 'closed', 'completed', 'rejected']
-    const normalizedStatus = (report.status || '').toLowerCase()
-    if (terminalStatuses.includes(normalizedStatus)) return false
-
-    if (report.is_overdue) return true
-    if (report.deadline_at) {
-      return new Date() > new Date(report.deadline_at)
-    }
-    if (report.created_at) {
-      const diffHours = (new Date() - new Date(report.created_at)) / (1000 * 60 * 60)
-      return diffHours > 48
-    }
-    return false
   }
 
   const tableColumns = [

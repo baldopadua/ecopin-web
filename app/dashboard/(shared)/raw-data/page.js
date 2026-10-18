@@ -63,12 +63,13 @@ export default function ReportsPage() {
       if (validationFilter === 'pending') {
         // Include both pending and manual_review when filtering by pending
         filtered = filtered.filter(r => 
-          r.validation_status === 'pending' || 
-          r.validation_status === 'manual_review' || 
-          r.validation_status === 'Manual_Review'
+          (r.validation_status || '').toLowerCase() === 'pending' || 
+          (r.validation_status || '').toLowerCase() === 'manual_review'
         )
+      } else if (validationFilter === 'manual_review') {
+        filtered = filtered.filter(r => (r.validation_status || '').toLowerCase() === 'manual_review')
       } else {
-        filtered = filtered.filter(r => r.validation_status === validationFilter)
+        filtered = filtered.filter(r => (r.validation_status || '').toLowerCase() === validationFilter.toLowerCase())
       }
     }
 
