@@ -66,7 +66,7 @@ function TacticalScanContent() {
 
   const loadAccuracy = async () => {
     try {
-      const data = await getAccuracyMetrics('monthly');
+      const data = await getAccuracyMetrics();
       setAccuracy(data.data);
       setLastUpdated(new Date().toLocaleTimeString());
     } catch (err) {

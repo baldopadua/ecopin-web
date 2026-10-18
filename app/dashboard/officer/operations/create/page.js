@@ -560,7 +560,7 @@ export default function CreateCleanupTaskPage() {
                        <button
                          key={p}
                          onClick={() => setTaskPriority(p)}
-                         className={`flex-1 py-2 text-xs font-mono font-bold uppercase tracking-widest border border-border ${taskPriority === p ? (p==='high' ? 'bg-error text-white border-error' : p==='medium' ? 'bg-warning text-text-primary border-warning' : 'bg-success text-white border-success') : 'bg-transparent text-text-muted border-border hover:border-white'}`}
+                         className={`flex-1 py-2 text-xs font-mono font-bold uppercase tracking-widest border border-border ${taskPriority === p ? (p==='high' ? 'bg-error text-white border-error' : p==='medium' ? 'bg-warning text-white border-warning' : 'bg-success text-white border-success') : 'bg-transparent text-text-muted border-border hover:border-white'}`}
                        >
                          {p}
                        </button>
