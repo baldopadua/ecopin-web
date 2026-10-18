@@ -106,12 +106,16 @@ function OfficerMapContent() {
               </ul>
               <p className={styles.helper}>Photo pins use a colored ring and status symbol. Where a report photo is unavailable, a neutral image placeholder appears. Open a pin for its written status and details.</p>
             </section>
-            <section className={styles.section} aria-labelledby="map-grid-cluster-legend"><h3 id="map-grid-cluster-legend">Cluster legend</h3>
+            <section className={styles.section} aria-labelledby="map-grid-cluster-legend"><h3 id="map-grid-cluster-legend">Cluster & route legend</h3>
               <ul className={styles.legend}>
                 <li><span className={styles.standardCluster} aria-hidden="true">#</span>Standard cluster</li>
                 <li><span className={styles.overdueCluster} aria-hidden="true"><AlertTriangle size={16} /></span>Cluster with an overdue report</li>
+                <li title="Dashed blue line (#0052cc) represents the task micro-route connecting cluster centroid to constituent report sub-pins.">
+                  <span className={styles.microRouteLine} aria-hidden="true" />
+                  <span>Task micro-route (<code className={styles.microRouteCode}>#0052cc</code>)</span>
+                </li>
               </ul>
-              <p className={styles.helper}>Numbers on cluster markers show their report counts.</p>
+              <p className={styles.helper}>Numbers on cluster markers show their report counts. Dashed blue line (#0052cc) represents the task micro-route connecting cluster centroid to constituent report sub-pins.</p>
             </section>
           </div>
         </aside>}

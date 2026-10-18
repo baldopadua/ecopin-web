@@ -41,6 +41,10 @@
 .standardCluster, .overdueCluster { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;
   flex-shrink: 0; border: 2px solid #007bff; border-radius: 50%; background: #007bff1a; color: var(--workspace-link); font-size: 14px; font-weight: 600; }
 .overdueCluster { border-color: #dc3545; background: #dc35451a; color: var(--error); }
+.microRouteLine { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 18px;
+  flex-shrink: 0; border-radius: 6px; background: rgba(0, 82, 204, 0.12); border: 1px solid rgba(0, 82, 204, 0.3); }
+.microRouteLine::after { content: ''; display: block; width: 22px; border-top: 2.5px dashed #0052cc; }
+.microRouteCode { color: var(--workspace-link, #0052cc); font-size: 12px; font-weight: 600; font-family: monospace; }
 .notice { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 16px;
   margin-bottom: 24px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--error); }
 .notice p { margin: 0; flex: 1; min-width: 180px; }
