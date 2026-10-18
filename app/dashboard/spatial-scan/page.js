@@ -19,6 +19,7 @@ function TacticalScanContent() {
   // HUD State
   const [reportsHeatmap, setReportsHeatmap] = useState(null);
   const [viewMode, setViewMode] = useState('clusters');
+  const [compactView, setCompactView] = useState('map');
   const [accuracy, setAccuracy] = useState(null);
   const [lastUpdated, setLastUpdated] = useState('');
   
@@ -225,7 +226,7 @@ function TacticalScanContent() {
 
   return (
     <div className={styles.page}>
-      <PageHeader title="Spatial scan" subtitle="Explore forecast hotspots and compare available historical snapshots."
+      <PageHeader title="Spatial scan" className={styles.pageHeader}
         breadcrumbs={[{ label: 'Officer', href: '/dashboard/officer' }, { label: 'Spatial scan' }]} />
       <div className={styles.toolbar}>
         <div className={styles.switcher} role="group" aria-label="Forecast period">
@@ -236,7 +237,11 @@ function TacticalScanContent() {
         <CommandHUD accuracy={accuracy} lastUpdated={lastUpdated} viewMode={viewMode} setViewMode={setViewMode} />
       </div>
       {datesError && <div className={styles.notice} role="alert">{datesError}<button type="button" onClick={loadAvailableDates}>Retry dates</button></div>}
-      <div className={styles.workspace}>
+      <div className={`${styles.switcher} ${styles.compactViews}`} role="group" aria-label="Workspace view">
+        <button type="button" aria-pressed={compactView === 'map'} onClick={() => setCompactView('map')}>Map</button>
+        <button type="button" aria-pressed={compactView === 'hotspots'} onClick={() => setCompactView('hotspots')}>Hotspots</button>
+      </div>
+      <div className={styles.workspace} data-view={compactView}>
         <section className={styles.mapPanel} aria-label="Spatial forecast map">
           <div className={styles.map}>
             {loading || error || !hasMapData ? <div className={styles.mapState} role="status"><p>{loading ? 'Loading forecast…' : error ? 'Forecast map unavailable' : viewMode === 'heatmap' ? 'No heatmap locations are available for this view.' : 'No risk areas are available for this forecast.'}</p></div>
@@ -249,7 +254,7 @@ function TacticalScanContent() {
             ? heatmapNote
             : 'Polygons show forecast risk areas. Select a hotspot in the list to center the map.'}</p>
         </section>
-        <DynamicFeed items={loading || error ? [] : feedItems} selectedItem={focusedItem} loading={loading} error={error} onRetry={retry}
+        <DynamicFeed key={`${activeTab}-${selectedDate}`} items={loading || error ? [] : feedItems} selectedItem={focusedItem} loading={loading} error={error} onRetry={retry}
           onClick={setFocusedItem} />
       </div>
       <TimePlayer key={activeTab} dates={availableDates} currentDate={activeTab === 'historical' ? selectedDate : null}

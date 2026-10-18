@@ -22,8 +22,8 @@ export default function TimePlayer({ dates, currentDate, onDateChange, isProject
 
   return <section className={styles.timeline} aria-labelledby="spatial-timeline-title">
     <div className={styles.timelineHeader}>
-      <div><h2 id="spatial-timeline-title">Historical playback</h2>
-        <p>{isProjective ? 'Choose Historical snapshots above to explore saved forecasts.' : dates.length ? 'Play through the available forecast dates, or choose a date below.' : 'No historical snapshots are available.'}</p>
+      <div className={styles.playbackLabel}><h2 id="spatial-timeline-title">Historical playback</h2>
+        <p>{isProjective ? 'Select Historical snapshots to play.' : dates.length ? 'Play saved forecasts.' : 'No snapshots available.'}</p>
       </div>
       <div className={styles.dateField}><label htmlFor={dateId}>Forecast date</label>
         <select id={dateId} value={disabled ? '' : currentDate || ''} disabled={disabled}
