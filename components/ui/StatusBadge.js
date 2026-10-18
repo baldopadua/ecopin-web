@@ -13,7 +13,9 @@ import {
   getLocationVerificationColor,
   formatLocationVerificationLabel,
   formatStatusLabel,
-  formatActionLabel
+  formatActionLabel,
+  formatValidationStatusLabel,
+  formatLifecycleStageLabel
 } from '@/lib/helpers/statusHelpers'
 
 /**
