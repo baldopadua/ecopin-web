@@ -16,7 +16,7 @@ import OptimizationSettings, { normalizeCapacitySettings } from '@/components/op
 import TemplateSelector from '@/components/ui/TemplateSelector'
 import DisassembleModal from '@/components/optimization/DisassembleModal'
 import { useTask } from '@/components/context/TaskContext'
-import { Sun, CloudRain, CloudLightning, Circle, Globe, Map, Check, CheckCircle2, XCircle, Ruler, Timer, RotateCcw, Loader2, History } from 'lucide-react'
+import { Sun, CloudRain, CloudLightning, Circle, Globe, Map, Check, CheckCircle2, XCircle, Ruler, Timer, RotateCcw, Loader2, History, AlertCircle, Info } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import styles from './optimization.module.css'
 import { 
@@ -68,6 +68,8 @@ function formatOperationalReason(reason) {
     case 'cap_time':
     case 'shift_exceeded':
       return 'Shift capacity full · queued for next shift';
+    case 'exceeds_residual_capacity':
+      return 'Exceeds remaining crew capacity · deferred to prevent plan cancellation';
     case 'cap_volume':
     case 'capacity_volume':
       return 'Vehicle volume full · queued for next shift';
@@ -615,6 +617,55 @@ export default function OptimizationPage() {
                     </button>
                   </div>
                 </div>
+
+                {/* Residual Capacity Filter Notification Banner */}
+                {(() => {
+                  const capFilter = currentProposal.capacity_filtering || currentProposal.capacity?.capacity_filtering || currentProposal.solver_diagnostics?.capacity_filtering || null;
+                  if (!capFilter || (!capFilter.filtered_oversized_count && !capFilter.has_active_tasks)) return null;
+                  return (
+                    <div className="p-4 mb-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                      <div className="flex items-start gap-2.5">
+                        <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <h5 className="font-semibold text-text-primary text-sm m-0">
+                              Viable Tasks Filtered for Remaining Crew Capacity
+                            </h5>
+                            {capFilter.filtered_oversized_count > 0 && (
+                              <span className="text-[11px] px-2.5 py-0.5 font-medium rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                                {capFilter.filtered_oversized_count} oversized tasks deferred
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-text-secondary mt-1 mb-2">
+                            {capFilter.alert_message || "These are the only viable tasks that fit within the field crew's remaining shift capacity. Tasks exceeding remaining time or vehicle limits were automatically deferred to prevent plan cancellation."}
+                          </p>
+                          {capFilter.crew_residual_capacities?.length > 0 && (
+                            <div className="flex flex-wrap gap-2 pt-2 border-t border-amber-500/20">
+                              {capFilter.crew_residual_capacities.map((crewCap) => (
+                                <div
+                                  key={crewCap.crew_id}
+                                  className="text-[11px] px-2.5 py-1 rounded-lg bg-surface border border-border text-text-secondary flex items-center gap-1.5"
+                                >
+                                  <span className="font-medium text-text-primary">{crewCap.crew_name || 'Crew'}</span>:
+                                  <span>{crewCap.remaining_minutes} min remaining</span>
+                                  <span className="text-text-muted">·</span>
+                                  <span>{crewCap.remaining_tasks} slots</span>
+                                  {crewCap.remaining_volume_m3 != null && (
+                                    <>
+                                      <span className="text-text-muted">·</span>
+                                      <span>{crewCap.remaining_volume_m3} m³</span>
+                                    </>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold text-text-primary text-base m-0">Proposal metrics and routes</h3>

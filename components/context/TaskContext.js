@@ -60,22 +60,35 @@ export function TaskProvider({ children }) {
       const outsideBufferCount = new Set((result.rejectedBundles || [])
         .filter(entry => entry.reason === 'outside_buffer' && entry.report_id)
         .map(entry => entry.report_id)).size
+      const capacityFiltering = result.plan?.capacity_breakdown?.capacity_filtering ||
+        result.plan?.solver_diagnostics?.capacity_filtering ||
+        result.capacity?.capacity_filtering || null
       const generatedDraft = {
         ...result.plan, status: 'draft_plan', selectedCount,
         omittedCount: unselectedItems.length,
         outsideBufferCount,
         plannedCrewCount: result.plannedCrewCount || 0,
         proposedRoutes: result.proposedRoutes || [],
-        capacityUtilized: result.capacity.used || 0,
+        capacityUtilized: result.capacity?.used || 0,
         groups: result.groups, rejectedBundles: result.rejectedBundles,
-        capacity: result.capacity
+        capacity: result.capacity,
+        capacity_filtering: capacityFiltering
       }
       setDraftPlan(generatedDraft)
       setOptimizationProgress({ percent: 100, message: 'Draft plan ready' })
-      setGlobalNotification({ message: `Draft plan generated with ${selectedCount} tasks.`,
-        type: selectedCount ? 'success' : 'warning' })
+      if (capacityFiltering?.alert_message) {
+        setGlobalNotification({
+          message: capacityFiltering.alert_message,
+          type: 'info'
+        })
+      } else {
+        setGlobalNotification({
+          message: `Draft plan generated with ${selectedCount} tasks.`,
+          type: selectedCount ? 'success' : 'warning'
+        })
+      }
       if (onSuccess) onSuccess({ ...result, plan: generatedDraft,
-        selectedCount, omittedLoggedCount: generatedDraft.omittedCount })
+        selectedCount, omittedLoggedCount: generatedDraft.omittedCount, capacityFiltering })
     } catch (error) {
       reportDiagnostic('error', 'ui', 'Optimization error:', error)
       setGlobalNotification({ message: error.message || 'Failed to generate optimization', type: 'error' })
