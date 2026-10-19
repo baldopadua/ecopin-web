@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import { AdminGuard } from '@/components/auth/RequireRole'
@@ -16,28 +16,31 @@ function SystemSettingsContent() {
     password_require_lowercase: true,
     password_require_numbers: true,
     password_require_special_chars: true,
-    session_timeout_minutes: 60
+    session_timeout_minutes: 60,
+    daily_report_quota: 10
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [notification, setNotification] = useState(null)
 
-  useEffect(() => {
-    loadSettings()
-  }, [])
-
-  const loadSettings = async () => {
+  const loadSettings = useCallback(async () => {
     try {
       setLoading(true)
       const data = await getSystemSettings()
-      setSettings(data)
+      setSettings(prev => ({ ...prev, ...data, daily_report_quota: data.daily_report_quota ?? 10 }))
     } catch (err) {
       reportDiagnostic('error', 'settings', 'Failed to load settings:', err)
       setNotification({ message: 'Failed to load system settings', type: 'error' })
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      void loadSettings()
+    })
+  }, [loadSettings])
 
   const handleSave = async () => {
     try {
@@ -179,6 +182,28 @@ function SystemSettingsContent() {
                 Require special characters (!@#$%^&*)
               </label>
             </div>
+          </div>
+
+          <hr className="border-border" />
+
+          {/* WT-97: Citizen Report Submission Quota */}
+          <h2 className="text-xl font-bold text-text-primary mb-6">Citizen Submission Quota & Rate Limiting</h2>
+
+          <div>
+            <label className="block text-sm font-medium text-text-primary mb-2">
+              Daily Report Submission Quota (per citizen account)
+            </label>
+            <input
+              type="number"
+              min="1"
+              max="100"
+              value={settings.daily_report_quota ?? 10}
+              onChange={(e) => handleChange('daily_report_quota', parseInt(e.target.value, 10) || 1)}
+              className="w-full p-3 border border-border rounded-lg bg-surface-elevated text-text-primary"
+            />
+            <p className="text-xs text-text-muted mt-1">
+              Maximum reports a citizen account can submit within a rolling 24-hour window (default: 10). Exceeding this limit triggers a user-friendly countdown warning.
+            </p>
           </div>
 
           <hr className="border-border" />
