@@ -33,8 +33,8 @@ function CustomMap({ selectedReports, allowedReportIds, onReportSelect, onCluste
   // Calculate center from selected reports if any
   const mapCenter = useMemo(() => {
     if (!selectedReports || selectedReports.length === 0 || !reports || reports.length === 0) return null
-    const selectedSet = new Set(selectedReports)
-    const matched = reports.filter(r => selectedSet.has(r.id) && (r.latitude || r.lat || r.location))
+    const selectedSet = new Set(selectedReports.map(String))
+    const matched = reports.filter(r => selectedSet.has(String(r.id)) && (r.latitude || r.lat || r.location))
     if (matched.length > 0) {
       const first = matched[0]
       let lat = first.latitude || first.lat
@@ -127,12 +127,20 @@ export default function CreateCleanupTaskPage() {
 
 
   const filteredReports = useMemo(() => {
-    return reports.filter(r => 
+    const list = reports.filter(r => 
       (r.title && r.title.toLowerCase().includes(reportSearch.toLowerCase())) ||
       (r.issue_type && r.issue_type.toLowerCase().includes(reportSearch.toLowerCase())) ||
       (r.id && r.id.toLowerCase().includes(reportSearch.toLowerCase()))
     )
-  }, [reports, reportSearch])
+
+    // Pin selected reports to the top of the list
+    return list.slice().sort((a, b) => {
+      const aSel = selectedReports.has(String(a.id)) ? 1 : 0
+      const bSel = selectedReports.has(String(b.id)) ? 1 : 0
+      if (aSel !== bSel) return bSel - aSel
+      return 0
+    })
+  }, [reports, reportSearch, selectedReports])
 
   const allowedReportIds = useMemo(() => reports.map(r => r.id), [reports])
 
@@ -181,7 +189,7 @@ export default function CreateCleanupTaskPage() {
       } else {
         const directMatch = reports.find(r => String(r.id) === String(preselectParam))
         if (directMatch) {
-          preselectReportIds.push(directMatch.id)
+          preselectReportIds.push(String(directMatch.id))
         } else {
           preselectClusterId = preselectParam
         }
@@ -189,34 +197,43 @@ export default function CreateCleanupTaskPage() {
     }
 
     // Combine explicit target report IDs
-    const targetReportIds = new Set([...sessionReportIds, ...queryReportIds, ...preselectReportIds])
+    const targetReportIds = new Set([...sessionReportIds, ...queryReportIds, ...preselectReportIds].map(String))
 
-    // Find all matching eligible reports
+    // Find all matching eligible reports in local state
     const matchedReportIds = reports
       .filter(r => targetReportIds.has(String(r.id)))
-      .map(r => r.id)
+      .map(r => String(r.id))
 
     if (matchedReportIds.length > 0) {
       setSelectedReports(new Set(matchedReportIds))
-      hasPreselectedRef.current = true
-    } else if (targetReportIds.size > 0) {
-      setSelectedReports(new Set(targetReportIds))
+      const matchedSet = new Set(matchedReportIds)
+      setReports(prev => {
+        const pinned = prev.filter(r => matchedSet.has(String(r.id)))
+        const others = prev.filter(r => !matchedSet.has(String(r.id)))
+        return [...pinned, ...others]
+      })
       hasPreselectedRef.current = true
     } else if (preselectClusterId) {
       const clusterReports = reports.filter(r => String(r.cluster_id) === String(preselectClusterId))
       if (clusterReports.length > 0) {
-        setSelectedReports(new Set(clusterReports.map(r => r.id)))
+        const clusterIds = clusterReports.map(r => String(r.id))
+        const clusterIdSet = new Set(clusterIds)
+        setSelectedReports(new Set(clusterIds))
+        setReports(prev => {
+          const pinned = prev.filter(r => clusterIdSet.has(String(r.id)))
+          const others = prev.filter(r => !clusterIdSet.has(String(r.id)))
+          return [...pinned, ...others]
+        })
         hasPreselectedRef.current = true
       } else {
         fetchReportsByClusterId(preselectClusterId).then(fetched => {
           if (Array.isArray(fetched) && fetched.length > 0) {
-            const fetchedIds = new Set(fetched.map(r => String(r.id)))
-            const eligibleMatches = reports.filter(r => fetchedIds.has(String(r.id))).map(r => r.id)
-            if (eligibleMatches.length > 0) {
-              setSelectedReports(new Set(eligibleMatches))
-            } else {
-              setSelectedReports(new Set(fetched.map(r => r.id)))
-            }
+            const fetchedIdSet = new Set(fetched.map(r => String(r.id)))
+            setReports(prev => {
+              const remaining = prev.filter(r => !fetchedIdSet.has(String(r.id)))
+              return [...fetched, ...remaining]
+            })
+            setSelectedReports(new Set(fetched.map(r => String(r.id))))
           }
         }).catch(err => {
           reportDiagnostic('warn', 'dispatch', 'Failed to fetch cluster reports for preselection:', err)
@@ -224,6 +241,9 @@ export default function CreateCleanupTaskPage() {
           hasPreselectedRef.current = true
         })
       }
+    } else if (targetReportIds.size > 0) {
+      setSelectedReports(new Set(targetReportIds))
+      hasPreselectedRef.current = true
     }
 
     // Prefill title & priority if available
@@ -240,27 +260,80 @@ export default function CreateCleanupTaskPage() {
   const loadReports = async () => {
     setLoading(true)
     try {
-      const [reportsData, tasksData, blocksData] = await Promise.all([
+      const preselectClusterParam = searchParams.get('preselect') || searchParams.get('cluster_id')
+
+      const [reportsData, tasksData, blocksData, clusterReportsData] = await Promise.all([
         fetchFilteredReports(),
         fetchCleanupTasks().catch(() => []),
-        fetchDispatchBlocks().catch(() => [])
+        fetchDispatchBlocks().catch(() => []),
+        (preselectClusterParam && !preselectClusterParam.includes(','))
+          ? fetchReportsByClusterId(preselectClusterParam).catch(() => [])
+          : Promise.resolve([])
       ])
 
       const activeTasks = Array.isArray(tasksData) ? tasksData.filter(t => !['completed', 'cancelled'].includes(t.status)) : []
       setExistingTasks(activeTasks)
-      const claimedReportIds = new Set(activeTasks.flatMap(t => t.report_ids || []))
+      const claimedReportIds = new Set(activeTasks.flatMap(t => (t.report_ids || []).map(String)))
 
-      const blockedReportIds = new Set(Array.isArray(blocksData) ? blocksData.map(b => b.report_id).filter(Boolean) : [])
-      const blockedClusterIds = new Set(Array.isArray(blocksData) ? blocksData.map(b => b.cluster_id).filter(Boolean) : [])
+      const blockedReportIds = new Set(Array.isArray(blocksData) ? blocksData.map(b => String(b.report_id)).filter(Boolean) : [])
+      const blockedClusterIds = new Set(Array.isArray(blocksData) ? blocksData.map(b => String(b.cluster_id)).filter(Boolean) : [])
 
-      const eligibleReports = reportsData.filter(r =>
-        r.status === 'unresolved' &&
-        r.validation_status === 'approved' &&
-        !claimedReportIds.has(r.id) &&
-        !blockedReportIds.has(r.id) &&
-        !(r.cluster_id && blockedClusterIds.has(r.cluster_id))
-      )
-      setReports(eligibleReports)
+      // Merge public reports and constituent cluster reports by id
+      const allReportsMap = new Map()
+      ;(reportsData || []).forEach(r => allReportsMap.set(String(r.id), r))
+      if (Array.isArray(clusterReportsData)) {
+        clusterReportsData.forEach(r => {
+          const id = String(r.id)
+          const existing = allReportsMap.get(id)
+          allReportsMap.set(id, { ...existing, ...r })
+        })
+      }
+      const combinedReports = Array.from(allReportsMap.values())
+
+      const isApprovedValidation = (val) => {
+        const v = (val || '').toLowerCase().trim()
+        return v === 'approved' || v === 'validated' || v === 'automatically_valid'
+      }
+
+      const isUnresolvedStatus = (st) => {
+        const s = (st || '').toLowerCase().trim()
+        return s === 'unresolved' || s === 'submitted' || s === 'pending' || s === 'open' || s === 'new'
+      }
+
+      const eligibleReports = combinedReports.filter(r => {
+        const id = String(r.id)
+        const cId = r.cluster_id ? String(r.cluster_id) : null
+        return (
+          isUnresolvedStatus(r.status) &&
+          isApprovedValidation(r.validation_status) &&
+          !claimedReportIds.has(id) &&
+          !blockedReportIds.has(id) &&
+          !(cId && blockedClusterIds.has(cId))
+        )
+      })
+
+      const rawReportIds = searchParams.get('report_ids') || searchParams.get('reports') || searchParams.get('reportIds')
+      const targetQueryIds = rawReportIds
+        ? rawReportIds.split(',').map(s => s.trim().toLowerCase()).filter(Boolean)
+        : []
+      const clusterReportIds = Array.isArray(clusterReportsData)
+        ? clusterReportsData.map(r => String(r.id).toLowerCase())
+        : []
+      const targetPreselectIds = new Set([...targetQueryIds, ...clusterReportIds])
+      const targetClusterId = preselectClusterParam ? String(preselectClusterParam).toLowerCase() : null
+
+      const isTarget = (r) => {
+        const id = String(r.id).toLowerCase()
+        const cId = r.cluster_id ? String(r.cluster_id).toLowerCase() : null
+        return (
+          targetPreselectIds.has(id) ||
+          (targetClusterId && (cId === targetClusterId || id === targetClusterId))
+        )
+      }
+
+      const pinned = eligibleReports.filter(isTarget)
+      const others = eligibleReports.filter(r => !isTarget(r))
+      setReports([...pinned, ...others])
     } catch (error) {
       reportDiagnostic('error', 'dispatch', 'Failed to load reports:', error)
       setNotification({ message: 'Failed to load reports', type: 'error' })
@@ -279,12 +352,13 @@ export default function CreateCleanupTaskPage() {
   }
 
   const toggleReportSelection = useCallback((reportId) => {
+    const strId = String(reportId)
     setSelectedReports(prev => {
       const newSelected = new Set(prev)
-      if (newSelected.has(reportId)) {
-        newSelected.delete(reportId)
+      if (newSelected.has(strId)) {
+        newSelected.delete(strId)
       } else {
-        newSelected.add(reportId)
+        newSelected.add(strId)
       }
       return newSelected
     })
@@ -502,8 +576,18 @@ export default function CreateCleanupTaskPage() {
                   onReportSelect={toggleReportSelection} onClusterSelect={clusterReportIds => {
                     setSelectedReports(prev => {
                       const next = new Set(prev)
-                      const eligibleIds = new Set(reports.map(r => r.id))
-                      clusterReportIds.forEach(id => { if (eligibleIds.has(id)) next.add(id) })
+                      const strClusterIds = (clusterReportIds || []).map(String)
+                      const eligibleIds = new Set(reports.map(r => String(r.id)))
+                      const validClusterIds = strClusterIds.filter(id => eligibleIds.has(id))
+                      if (validClusterIds.length === 0) return prev
+
+                      // Toggle behavior: if all reports in cluster are already selected, deselect them; otherwise select all
+                      const allSelected = validClusterIds.every(id => next.has(id))
+                      if (allSelected) {
+                        validClusterIds.forEach(id => next.delete(id))
+                      } else {
+                        validClusterIds.forEach(id => next.add(id))
+                      }
                       return next
                     })
                   }} />}
@@ -516,15 +600,20 @@ export default function CreateCleanupTaskPage() {
               <Input aria-label="Search reports" placeholder="Search title, type or ID" value={reportSearch} onChange={event => setReportSearch(event.target.value)} />
               <OperationChoices key={reportSearch} items={loading ? [] : filteredReports} label="Reports"
                 empty={loading ? 'Loading reports…' : reports.length ? 'No matching reports found.' : 'No unassigned reports available. Reports already assigned or restricted by dispatch access blocks are excluded.'}>
-                {report => <div className={styles.reportRow}>
-                  <Checkbox id={`report-cb-${report.id}`} aria-label={`Select ${report.title || report.id}`}
-                    checked={selectedReports.has(report.id)} onChange={() => toggleReportSelection(report.id)} />
-                  <label htmlFor={`report-cb-${report.id}`}>
-                    <strong>{report.title || 'Untitled report'}</strong>
-                    <small>#{report.id.substring(0, 6)} · {(report.issue_type || '').replace(/_/g, ' ')}</small>
-                    <span>{report.description || 'No description provided.'}</span>
-                  </label>
-                </div>}
+                {report => {
+                  const isSelected = selectedReports.has(String(report.id))
+                  return (
+                    <div className={`${styles.reportRow} ${isSelected ? styles.selectedReportRow : ''}`}>
+                      <Checkbox id={`report-cb-${report.id}`} aria-label={`Select ${report.title || report.id}`}
+                        checked={isSelected} onChange={() => toggleReportSelection(report.id)} />
+                      <label htmlFor={`report-cb-${report.id}`}>
+                        <strong>{report.title || 'Untitled report'}</strong>
+                        <small>#{report.id.substring(0, 6)} · {(report.issue_type || '').replace(/_/g, ' ')}</small>
+                        <span>{report.description || 'No description provided.'}</span>
+                      </label>
+                    </div>
+                  )
+                }}
               </OperationChoices>
             </section>
             <section className={`${styles.panel} ${styles.detailsPanel}`} aria-label="Task details">
