@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { fetchValidatedReports, fetchClusterById, createCleanupTask, fetchCleanupTasks, updateClusterLabel } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
@@ -76,6 +76,7 @@ export default function ClusterDetailPage() {
   const [loadingTasks, setLoadingTasks] = useState(true)
   const [error, setError] = useState(null)
   const [notification, setNotification] = useState(null)
+  const [dispatchError, setDispatchError] = useState(null)
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [editingTitle, setEditingTitle] = useState('')
   const [savingTitle, setSavingTitle] = useState(false)
@@ -94,8 +95,19 @@ export default function ClusterDetailPage() {
       fetchCleanupTasks()
     ]).then(([clusterData, reportsData, tasksData]) => {
       setCluster(clusterData)
-      const clusterReports = reportsData.filter(r => String(r.cluster_id) === String(clusterId))
-      setReports(clusterReports)
+      const dbReports = clusterData?.reports || []
+      const clusterReportsFromFeed = (reportsData || []).filter(r => String(r.cluster_id) === String(clusterId))
+      
+      const reportsById = new Map()
+      dbReports.forEach(r => reportsById.set(String(r.id), r))
+      clusterReportsFromFeed.forEach(r => {
+        const existing = reportsById.get(String(r.id))
+        reportsById.set(String(r.id), { ...existing, ...r, validation_status: r.validation_status || existing?.validation_status })
+      })
+      const constituentReports = reportsById.size > 0
+        ? Array.from(reportsById.values())
+        : (clusterReportsFromFeed.length > 0 ? clusterReportsFromFeed : dbReports)
+      setReports(constituentReports)
 
       const clusterTask = tasksData.find(task => String(task.cluster_id) === String(clusterId))
       if (clusterTask) {
@@ -146,12 +158,78 @@ export default function ClusterDetailPage() {
     }
   }
   
+  const unapprovedReports = useMemo(() => {
+    return reports.filter(r => {
+      const v = (r.validation_status || '').toLowerCase().trim()
+      return v !== 'approved' && v !== 'validated' && v !== 'automatically_valid'
+    })
+  }, [reports])
+
   const handleDispatch = () => {
-     if (existingTask) {
-        router.push(`/dashboard/officer/operations/${existingTask.id}`)
-     } else {
-        router.push(`/dashboard/officer/operations/create?preselect=${clusterId}`)
-     }
+    if (existingTask) {
+      router.push(`/dashboard/officer/operations/${existingTask.id}`)
+      return
+    }
+
+    const constituentReports = (reports && reports.length > 0)
+      ? reports
+      : (cluster?.reports || [])
+
+    if (constituentReports.length === 0) {
+      setNotification({
+        type: 'error',
+        message: 'No reports found in this cluster to dispatch.'
+      })
+      return
+    }
+
+    // Check first if the reports in the cluster are approved reports
+    const unapproved = constituentReports.filter(r => {
+      const valStatus = (r.validation_status || '').toLowerCase().trim()
+      return valStatus !== 'approved' && valStatus !== 'validated' && valStatus !== 'automatically_valid'
+    })
+
+    if (unapproved.length > 0) {
+      const count = unapproved.length
+      const errorMessage = `Cannot dispatch cluster: ${count} report${count > 1 ? 's' : ''} in this cluster ${count > 1 ? 'are' : 'is'} not approved yet. Please manually verify the reports first.`
+      setNotification({
+        type: 'error',
+        message: errorMessage
+      })
+      setDispatchError(errorMessage)
+      return
+    }
+
+    setDispatchError(null)
+
+    const reportIds = constituentReports.map(r => r.id).filter(Boolean)
+
+    // Store in session state for cross-page preselection
+    if (typeof window !== 'undefined' && reportIds.length > 0) {
+      try {
+        sessionStorage.setItem('dispatch_report_ids', JSON.stringify(reportIds))
+        sessionStorage.setItem('preselected_report_ids', JSON.stringify(reportIds))
+      } catch (err) {
+        reportDiagnostic('warn', 'dispatch', 'Failed to store report IDs in sessionStorage', err)
+      }
+    }
+
+    const queryParams = new URLSearchParams()
+    if (clusterId) {
+      queryParams.set('preselect', clusterId)
+      queryParams.set('cluster_id', clusterId)
+    }
+    if (reportIds.length > 0) {
+      queryParams.set('report_ids', reportIds.join(','))
+    }
+    if (cluster?.label) {
+      queryParams.set('title', `Hotzone: ${cluster.label}`)
+    }
+    if (cluster?.priority) {
+      queryParams.set('priority', cluster.priority)
+    }
+
+    router.push(`/dashboard/officer/operations/create?${queryParams.toString()}`)
   }
 
   const exportPDF = () => {
@@ -268,14 +346,20 @@ export default function ClusterDetailPage() {
   const priorityLabel = getPriorityLabel(cluster)
 
   const reportColumns = [
-    { key: 'title', label: 'Title', width: '30%', render: v => <span className="font-bold">{v}</span> },
-    { key: 'issue_type', label: 'Type', width: '20%' },
+    { key: 'title', label: 'Title', width: '25%', render: v => <span className="font-bold">{v}</span> },
+    { key: 'issue_type', label: 'Type', width: '15%' },
     { key: 'created_at', label: 'Date', width: '15%', render: v => new Date(v).toLocaleDateString() },
+    { 
+      key: 'validation_status', 
+      label: 'Verification', 
+      width: '15%', 
+      render: v => <StatusBadge status={v || 'pending'} type="validation" /> 
+    },
     { key: 'status', label: 'Status', width: '15%', render: v => <StatusBadge status={v} /> },
     {
       key: 'actions',
       label: 'Action',
-      width: '20%',
+      width: '15%',
       render: (_, row) => (
         <button
           type="button"
@@ -283,7 +367,7 @@ export default function ClusterDetailPage() {
             e.stopPropagation()
             handleViewReport(row)
           }}
-          className="border border-border px-3 py-2 text-text-primary bg-surface hover:text-primary hover:border-primary hover:bg-surface-elevated transition-colors cursor-pointer rounded-xl"
+          className="border border-border px-3 py-2 text-text-primary bg-surface hover:text-primary hover:border-primary hover:bg-surface-elevated transition-colors cursor-pointer rounded-xl text-xs"
         >
           View report
         </button>
@@ -405,6 +489,12 @@ export default function ClusterDetailPage() {
                     >
                       {existingTask ? 'View dispatched task' : 'Dispatch field crew'}
                     </button>
+                 )}
+                 {dispatchError && (
+                   <div className="mt-3 p-3 rounded-xl bg-error/10 border border-error/30 text-error text-xs flex items-start gap-2" role="alert">
+                     <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-error" />
+                     <p className="font-semibold flex-1">{dispatchError}</p>
+                   </div>
                  )}
               </div>
            </div>

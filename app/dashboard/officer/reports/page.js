@@ -1,7 +1,8 @@
 'use client'
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { fetchPublicReports, fetchIssueTypes, fetchCleanupTasks } from '@/lib/api'
+import { fetchIssueTypes } from '@/lib/api'
+import { useDashboardReports, useDashboardTasks } from '@/components/context/DashboardQueryProvider'
 import PageHeader from '@/components/layout/PageHeader'
 import FilterBar from '@/components/ui/FilterBar'
 import DataTable from '@/components/ui/DataTable'
@@ -10,10 +11,7 @@ import useTablePageSize from '@/components/ui/useTablePageSize'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { OfficerGuard } from '@/components/auth/RequireRole'
 import { Target, Wrench, AlertTriangle, Clock, ClipboardCheck } from 'lucide-react'
-import { reportDiagnostic } from '@/lib/diagnostics.mjs'
 import styles from './Reports.module.css'
-
-import { subscribeSession } from '@/lib/auth-token.mjs'
 
 const terminalStatuses = ['resolved', 'closed', 'completed', 'rejected']
 
@@ -34,11 +32,14 @@ function isReportOverdue(report) {
 }
 
 export default function OfficerReportsPage() {
-  const [reports, setReports] = useState([])
-  const [tasks, setTasks] = useState([])
-  const [issueTypes, setIssueTypes] = useState([])
-  const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const reportsQuery = useDashboardReports()
+  const tasksQuery = useDashboardTasks()
+
+  const reports = useMemo(() => reportsQuery.data || [], [reportsQuery.data])
+  const tasks = useMemo(() => Array.isArray(tasksQuery.data) ? tasksQuery.data : (tasksQuery.data?.tasks || []), [tasksQuery.data])
+  const [issueTypes, setIssueTypes] = useState([])
+  const loading = reportsQuery.isPending || tasksQuery.isPending
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState('')
@@ -64,36 +65,12 @@ export default function OfficerReportsPage() {
 
   useEffect(() => {
     let active = true
-    Promise.all([
-      fetchPublicReports(),
-      fetchIssueTypes(),
-      fetchCleanupTasks().catch(err => {
-        reportDiagnostic('warn', 'tasks', 'Failed to fetch tasks for reports:', err)
-        return []
-      })
-    ]).then(([reportsData, typesData, tasksData]) => {
+    fetchIssueTypes().then(typesData => {
       if (!active) return
-      setReports(reportsData || [])
       setIssueTypes(typesData || [])
-      setTasks(tasksData || [])
-      setLoading(false)
-    }).catch(() => {
-      if (!active) return
-      setLoading(false)
-    })
+    }).catch(() => {})
     return () => {
       active = false
-    }
-  }, [])
-
-  useEffect(() => {
-    const unsubscribe = subscribeSession(() => {
-      fetchCleanupTasks().then(t => {
-        if (Array.isArray(t) && t.length > 0) setTasks(t)
-      }).catch(() => {})
-    })
-    return () => {
-      unsubscribe?.()
     }
   }, [])
 
@@ -120,10 +97,24 @@ export default function OfficerReportsPage() {
     }
 
     if (validationFilter !== 'all') {
-      if (validationFilter === 'manual_review') {
-        filtered = filtered.filter(r => (r.validation_status || '').toLowerCase() === 'manual_review')
+      const targetFilter = validationFilter.toLowerCase().trim()
+      if (targetFilter === 'pending' || targetFilter === 'pending_ai_validation') {
+        filtered = filtered.filter(r => {
+          const v = (r.validation_status || '').toLowerCase().trim()
+          return v === 'pending' || v === 'pending_ai_validation'
+        })
+      } else if (targetFilter === 'manual_review') {
+        filtered = filtered.filter(r => {
+          const v = (r.validation_status || '').toLowerCase().trim()
+          return v === 'manual_review' || v === 'manual review' || v === 'pending_manual_review' || Boolean(r.manual_review_id)
+        })
+      } else if (targetFilter === 'approved' || targetFilter === 'validated' || targetFilter === 'automatically_valid') {
+        filtered = filtered.filter(r => {
+          const v = (r.validation_status || '').toLowerCase().trim()
+          return v === 'approved' || v === 'validated' || v === 'automatically_valid'
+        })
       } else {
-        filtered = filtered.filter(r => (r.validation_status || '').toLowerCase() === validationFilter.toLowerCase())
+        filtered = filtered.filter(r => (r.validation_status || '').toLowerCase().trim() === targetFilter)
       }
     }
 
@@ -206,7 +197,7 @@ export default function OfficerReportsPage() {
     { 
       key: 'title', 
       label: 'Title', 
-      width: '22%',
+      width: '18%',
       render: (value, row) => {
         const overdue = isReportOverdue(row)
         return (
@@ -225,7 +216,7 @@ export default function OfficerReportsPage() {
     { 
       key: 'issue_type', 
       label: 'Issue type', 
-      width: '14%',
+      width: '12%',
       render: (value) => (
         <span className="text-text-secondary capitalize">
           {value ? value.replaceAll('_', ' ') : '—'}
@@ -235,7 +226,7 @@ export default function OfficerReportsPage() {
     { 
       key: 'status', 
       label: 'Status', 
-      width: '13%',
+      width: '12%',
       render: (value, row) => {
         const overdue = isReportOverdue(row)
         return (
@@ -251,9 +242,18 @@ export default function OfficerReportsPage() {
       }
     },
     { 
+      key: 'validation_status', 
+      label: 'Review Status', 
+      width: '14%',
+      render: (value, row) => {
+        const effective = value || (row?.manual_review_id ? 'manual_review' : 'pending')
+        return <StatusBadge status={effective} type="validation" />
+      }
+    },
+    { 
       key: 'cluster_id', 
       label: 'Cluster', 
-      width: '13%',
+      width: '11%',
       render: (value) => value ? (
         <button 
            type="button"
@@ -272,7 +272,7 @@ export default function OfficerReportsPage() {
     { 
       key: 'actions', 
       label: 'Action', 
-      width: '24%',
+      width: '21%',
       render: (_, row) => {
         const existingTask = reportTaskMap[row.id]
         if (existingTask) {
@@ -293,16 +293,25 @@ export default function OfficerReportsPage() {
           )
         }
 
+        const validationStatus = (row.validation_status || '').toLowerCase().trim()
+        const isManualReview = validationStatus === 'manual_review' ||
+          validationStatus === 'manual review' ||
+          validationStatus === 'pending_manual_review' ||
+          Boolean(row.manual_review_id)
+
         return (
           <button 
              type="button"
+             disabled={isManualReview}
              onClick={(e) => {
                e.stopPropagation()
+               if (isManualReview) return
                router.push(`/dashboard/officer/operations/create?preselect=${row.cluster_id || row.id}`)
              }}
+             onPointerDown={(e) => e.stopPropagation()}
              className={styles.dispatchButton}
-             aria-label={`Dispatch crew for ${row.title || 'report'}`}
-             title="Dispatch Field Crew"
+             aria-label={isManualReview ? `Cannot dispatch ${row.title || 'report'} - manual review required` : `Dispatch crew for ${row.title || 'report'}`}
+             title={isManualReview ? "Manual review required before dispatch" : "Dispatch Field Crew"}
           >
             <Wrench size={14} className="shrink-0" aria-hidden="true" />
             <span>Dispatch</span>
@@ -313,7 +322,7 @@ export default function OfficerReportsPage() {
     { 
       key: 'created_at', 
       label: 'Created', 
-      width: '14%',
+      width: '12%',
       render: (value) => (
         <span className="text-text-muted">{formatDate(value)}</span>
       )
