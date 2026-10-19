@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { fetchFilteredReports, fetchAvailableCrew, fetchReportsByClusterId, fetchCleanupTasks, fetchDispatchBlocks } from '@/lib/api'
 import { createCustomCleanupTask } from '@/lib/api'
@@ -23,18 +23,44 @@ const EcoPinMap = dynamic(() => import('@/components/map/EcoPinMap'), {
 })
 
 // CustomMap component defined outside to prevent re-creation
-function CustomMap({ selectedReports, allowedReportIds, onReportSelect, onClusterSelect }) {
+function CustomMap({ selectedReports, allowedReportIds, onReportSelect, onClusterSelect, reports = [] }) {
   const [mounted, setMounted] = useState(false)
   
   useEffect(() => {
     setMounted(true)
   }, [])
 
+  // Calculate center from selected reports if any
+  const mapCenter = useMemo(() => {
+    if (!selectedReports || selectedReports.length === 0 || !reports || reports.length === 0) return null
+    const selectedSet = new Set(selectedReports)
+    const matched = reports.filter(r => selectedSet.has(r.id) && (r.latitude || r.lat || r.location))
+    if (matched.length > 0) {
+      const first = matched[0]
+      let lat = first.latitude || first.lat
+      let lng = first.longitude || first.lng
+      if (!lat && first.location) {
+        try {
+          if (typeof first.location === 'object' && first.location.coordinates) {
+            lng = first.location.coordinates[0]
+            lat = first.location.coordinates[1]
+          }
+        } catch {}
+      }
+      if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
+        return { lat: parseFloat(lat), lng: parseFloat(lng) }
+      }
+    }
+    return null
+  }, [selectedReports, reports])
+
   if (!mounted) return <div className={styles.mapLoading}>Loading map...</div>
 
   return (
     <div className={styles.map}>
       <EcoPinMap 
+        centerLat={mapCenter?.lat}
+        centerLng={mapCenter?.lng}
         initialStatus="unresolved"
         initialValidationStatus="all"
         selectionMode={true}
@@ -114,23 +140,101 @@ export default function CreateCleanupTaskPage() {
     loadAvailableCrew()
   }, [])
 
+  const hasPreselectedRef = useRef(false)
+
   useEffect(() => {
-    // Preselect report or cluster if provided in URL (only if eligible)
-    const preselectId = searchParams.get('preselect')
-    if (preselectId && reports.length > 0) {
-      // First check if it matches an individual report in eligible reports
-      const matchingReport = reports.find(r => r.id === preselectId)
-      if (matchingReport) {
-        setSelectedReports(new Set([preselectId]))
+    if (reports.length === 0 || hasPreselectedRef.current) return
+
+    // 1. Check session state for report IDs
+    let sessionReportIds = []
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = sessionStorage.getItem('dispatch_report_ids') || sessionStorage.getItem('preselected_report_ids')
+        if (stored) {
+          const parsed = JSON.parse(stored)
+          if (Array.isArray(parsed)) {
+            sessionReportIds = parsed.map(String).filter(Boolean)
+          }
+          sessionStorage.removeItem('dispatch_report_ids')
+          sessionStorage.removeItem('preselected_report_ids')
+        }
+      } catch (err) {
+        reportDiagnostic('warn', 'dispatch', 'Failed to parse report IDs from sessionStorage', err)
+      }
+    }
+
+    // 2. Check query params for report IDs
+    const rawReportIds = searchParams.get('report_ids') || searchParams.get('reports') || searchParams.get('reportIds')
+    const queryReportIds = rawReportIds
+      ? rawReportIds.split(',').map(s => s.trim()).filter(Boolean)
+      : []
+
+    // 3. Check preselect or cluster_id parameter
+    const preselectParam = searchParams.get('preselect') || searchParams.get('cluster_id')
+    const preselectReportIds = []
+    let preselectClusterId = null
+
+    if (preselectParam) {
+      if (preselectParam.includes(',')) {
+        preselectReportIds.push(...preselectParam.split(',').map(s => s.trim()).filter(Boolean))
       } else {
-        // Check if preselectId is a cluster_id in the eligible reports
-        const clusterReports = reports.filter(r => String(r.cluster_id) === String(preselectId))
-        if (clusterReports.length > 0) {
-          setSelectedReports(new Set(clusterReports.map(r => r.id)))
+        const directMatch = reports.find(r => String(r.id) === String(preselectParam))
+        if (directMatch) {
+          preselectReportIds.push(directMatch.id)
+        } else {
+          preselectClusterId = preselectParam
         }
       }
     }
-  }, [searchParams, reports])
+
+    // Combine explicit target report IDs
+    const targetReportIds = new Set([...sessionReportIds, ...queryReportIds, ...preselectReportIds])
+
+    // Find all matching eligible reports
+    const matchedReportIds = reports
+      .filter(r => targetReportIds.has(String(r.id)))
+      .map(r => r.id)
+
+    if (matchedReportIds.length > 0) {
+      setSelectedReports(new Set(matchedReportIds))
+      hasPreselectedRef.current = true
+    } else if (targetReportIds.size > 0) {
+      setSelectedReports(new Set(targetReportIds))
+      hasPreselectedRef.current = true
+    } else if (preselectClusterId) {
+      const clusterReports = reports.filter(r => String(r.cluster_id) === String(preselectClusterId))
+      if (clusterReports.length > 0) {
+        setSelectedReports(new Set(clusterReports.map(r => r.id)))
+        hasPreselectedRef.current = true
+      } else {
+        fetchReportsByClusterId(preselectClusterId).then(fetched => {
+          if (Array.isArray(fetched) && fetched.length > 0) {
+            const fetchedIds = new Set(fetched.map(r => String(r.id)))
+            const eligibleMatches = reports.filter(r => fetchedIds.has(String(r.id))).map(r => r.id)
+            if (eligibleMatches.length > 0) {
+              setSelectedReports(new Set(eligibleMatches))
+            } else {
+              setSelectedReports(new Set(fetched.map(r => r.id)))
+            }
+          }
+        }).catch(err => {
+          reportDiagnostic('warn', 'dispatch', 'Failed to fetch cluster reports for preselection:', err)
+        }).finally(() => {
+          hasPreselectedRef.current = true
+        })
+      }
+    }
+
+    // Prefill title & priority if available
+    const titleParam = searchParams.get('title')
+    if (titleParam && !taskTitle) {
+      setTaskTitle(titleParam)
+    }
+    const priorityParam = searchParams.get('priority')
+    if (priorityParam && ['low', 'medium', 'high', 'urgent'].includes(priorityParam.toLowerCase())) {
+      setTaskPriority(priorityParam.toLowerCase() === 'urgent' ? 'high' : priorityParam.toLowerCase())
+    }
+  }, [searchParams, reports, taskTitle])
 
   const loadReports = async () => {
     setLoading(true)
@@ -393,7 +497,7 @@ export default function CreateCleanupTaskPage() {
             <section className={`${styles.panel} ${styles.mapPanel}`} aria-label="Select reports on map">
               <h2>Select reports</h2>
               {loading ? <div className={styles.mapLoading} role="status">Loading reports…</div>
-                : <CustomMap selectedReports={Array.from(selectedReports).sort()} allowedReportIds={allowedReportIds}
+                : <CustomMap selectedReports={Array.from(selectedReports).sort()} allowedReportIds={allowedReportIds} reports={reports}
                   onReportSelect={toggleReportSelection} onClusterSelect={clusterReportIds => {
                     setSelectedReports(prev => {
                       const next = new Set(prev)

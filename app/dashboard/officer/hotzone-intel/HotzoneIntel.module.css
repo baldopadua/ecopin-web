@@ -81,3 +81,39 @@
   flex-shrink: 0;
   padding: 2px 0;
 }
+
+.taskCell {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: pointer;
+  align-items: flex-start;
+}
+
+.taskCell:hover .taskTitleSnippet {
+  text-decoration: underline;
+  color: var(--primary);
+}
+
+.taskTitleSnippet {
+  font-size: 11px;
+  color: var(--text-secondary);
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.15s ease;
+}
+
+.noTaskBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--border) 40%, transparent);
+  border: 1px dashed var(--border);
+}
+

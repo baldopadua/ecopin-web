@@ -1,7 +1,8 @@
 'use client'
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { fetchPublicReports, fetchIssueTypes, fetchCleanupTasks } from '@/lib/api'
+import { fetchIssueTypes } from '@/lib/api'
+import { useDashboardReports, useDashboardTasks } from '@/components/context/DashboardQueryProvider'
 import PageHeader from '@/components/layout/PageHeader'
 import FilterBar from '@/components/ui/FilterBar'
 import DataTable from '@/components/ui/DataTable'
@@ -10,60 +11,55 @@ import useTablePageSize from '@/components/ui/useTablePageSize'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { useUser } from '@/components/auth/UserContext'
 import { Wrench, ClipboardCheck } from 'lucide-react'
-import { reportDiagnostic } from '@/lib/diagnostics.mjs'
-import { subscribeSession } from '@/lib/auth-token.mjs'
 
 export default function ReportsPage() {
   const user = useUser()
-  const [reports, setReports] = useState([])
-  const [filteredReports, setFilteredReports] = useState([])
-  const [issueTypes, setIssueTypes] = useState([])
-  const [tasks, setTasks] = useState([])
-  const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const reportsQuery = useDashboardReports()
+  const tasksQuery = useDashboardTasks()
+
+  const reports = useMemo(() => reportsQuery.data || [], [reportsQuery.data])
+  const tasks = useMemo(() => Array.isArray(tasksQuery.data) ? tasksQuery.data : (tasksQuery.data?.tasks || []), [tasksQuery.data])
+  const [issueTypes, setIssueTypes] = useState([])
+  const loading = reportsQuery.isPending || tasksQuery.isPending
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [validationFilter, setValidationFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const s = params.get('status')
+      if (s) return s
+    }
+    return 'all'
+  })
+  const [validationFilter, setValidationFilter] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const filter = params.get('filter') || params.get('validation') || params.get('review_status')
+      if (filter) return filter
+    }
+    return 'all'
+  })
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
   const { containerRef, pageSize: itemsPerPage } = useTablePageSize({ resetKey: `${searchQuery}|${typeFilter}|${statusFilter}|${validationFilter}` })
 
   useEffect(() => {
-    Promise.all([
-      fetchPublicReports(),
-      fetchIssueTypes(),
-      fetchCleanupTasks().catch(err => {
-        reportDiagnostic('warn', 'tasks', 'Failed to fetch tasks for raw data:', err)
-        return []
-      })
-    ]).then(([reportsData, typesData, tasksData]) => {
-      setReports(reportsData || [])
-      setFilteredReports(reportsData || [])
+    let active = true
+    fetchIssueTypes().then(typesData => {
+      if (!active) return
       setIssueTypes(typesData || [])
-      setTasks(tasksData || [])
-      setLoading(false)
-    }).catch(() => {
-      setLoading(false)
-    })
-  }, [])
-
-  useEffect(() => {
-    const unsubscribe = subscribeSession(() => {
-      fetchCleanupTasks().then(t => {
-        if (Array.isArray(t) && t.length > 0) setTasks(t)
-      }).catch(() => {})
-    })
+    }).catch(() => {})
     return () => {
-      unsubscribe?.()
+      active = false
     }
   }, [])
 
   // Apply filters
-  useEffect(() => {
+  const filteredReports = useMemo(() => {
     let filtered = reports
 
     if (searchQuery) {
@@ -83,21 +79,28 @@ export default function ReportsPage() {
     }
 
     if (validationFilter !== 'all') {
-      if (validationFilter === 'pending') {
-        // Include both pending and manual_review when filtering by pending
-        filtered = filtered.filter(r => 
-          (r.validation_status || '').toLowerCase() === 'pending' || 
-          (r.validation_status || '').toLowerCase() === 'manual_review'
-        )
-      } else if (validationFilter === 'manual_review') {
-        filtered = filtered.filter(r => (r.validation_status || '').toLowerCase() === 'manual_review')
+      const targetFilter = validationFilter.toLowerCase().trim()
+      if (targetFilter === 'pending' || targetFilter === 'pending_ai_validation') {
+        filtered = filtered.filter(r => {
+          const v = (r.validation_status || '').toLowerCase().trim()
+          return v === 'pending' || v === 'pending_ai_validation'
+        })
+      } else if (targetFilter === 'manual_review') {
+        filtered = filtered.filter(r => {
+          const v = (r.validation_status || '').toLowerCase().trim()
+          return v === 'manual_review' || v === 'manual review' || v === 'pending_manual_review' || Boolean(r.manual_review_id)
+        })
+      } else if (targetFilter === 'approved' || targetFilter === 'validated' || targetFilter === 'automatically_valid') {
+        filtered = filtered.filter(r => {
+          const v = (r.validation_status || '').toLowerCase().trim()
+          return v === 'approved' || v === 'validated' || v === 'automatically_valid'
+        })
       } else {
-        filtered = filtered.filter(r => (r.validation_status || '').toLowerCase() === validationFilter.toLowerCase())
+        filtered = filtered.filter(r => (r.validation_status || '').toLowerCase().trim() === targetFilter)
       }
     }
 
-    setFilteredReports(filtered)
-    setCurrentPage(1) // Reset to page 1 when filters change
+    return filtered
   }, [searchQuery, typeFilter, statusFilter, validationFilter, reports])
 
   // Calculate pagination
@@ -201,9 +204,10 @@ export default function ReportsPage() {
         key: 'validation_status', 
         label: 'Review Status', 
         width: isStaff ? '12%' : '14%',
-        render: (value) => (
-          <StatusBadge status={value} type="validation" />
-        )
+        render: (value, row) => {
+          const effective = value || (row?.manual_review_id ? 'manual_review' : 'pending')
+          return <StatusBadge status={effective} type="validation" />
+        }
       },
       { 
         key: 'created_at', 
@@ -248,16 +252,25 @@ export default function ReportsPage() {
             )
           }
 
+          const validationStatus = (row.validation_status || '').toLowerCase().trim()
+          const isManualReview = validationStatus === 'manual_review' ||
+            validationStatus === 'manual review' ||
+            validationStatus === 'pending_manual_review' ||
+            Boolean(row.manual_review_id)
+
           return (
             <button
               type="button"
+              disabled={isManualReview}
               onClick={(e) => {
                 e.stopPropagation()
+                if (isManualReview) return
                 router.push(`/dashboard/officer/operations/create?preselect=${row.cluster_id || row.id}`)
               }}
-              className="btn-primary inline-flex items-center flex-nowrap shrink-0 gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium !bg-[#0052cc] !text-white hover:!bg-[#003d99] transition-colors whitespace-nowrap"
-              aria-label={`Dispatch crew for ${row.title || 'report'}`}
-              title="Dispatch Field Crew"
+              onPointerDown={(e) => e.stopPropagation()}
+              className="btn-primary inline-flex items-center flex-nowrap shrink-0 gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium !bg-[#0052cc] !text-white hover:!bg-[#003d99] transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:!bg-[#0052cc]"
+              aria-label={isManualReview ? `Cannot dispatch ${row.title || 'report'} - manual review required` : `Dispatch crew for ${row.title || 'report'}`}
+              title={isManualReview ? "Manual review required before dispatch" : "Dispatch Field Crew"}
             >
               <Wrench size={14} className="shrink-0" aria-hidden="true" />
               <span>Dispatch</span>
@@ -318,12 +331,12 @@ export default function ReportsPage() {
           {
             label: 'Review Status',
             value: validationFilter,
-            onChange: setValidationFilter,
+            onChange: (val) => { setValidationFilter(val); setCurrentPage(1) },
             options: [
               { value: 'all', label: 'All Review Status' },
-              { value: 'automatically_valid', label: 'Automatically Valid' },
+              { value: 'approved', label: 'Approved' },
               { value: 'manual_review', label: 'Manual Review' },
-              { value: 'validated', label: 'Validated' },
+              { value: 'pending', label: 'Pending AI Validation' },
               { value: 'rejected', label: 'Rejected' }
             ]
           }

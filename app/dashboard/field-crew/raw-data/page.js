@@ -106,16 +106,24 @@ export default function FieldCrewReportsPage() {
     }
 
     if (validationFilter !== 'all') {
-      if (validationFilter === 'pending') {
-        // Include both pending and manual_review when filtering by pending
-        filtered = filtered.filter(r => 
-          (r.validation_status || '').toLowerCase() === 'pending' || 
-          (r.validation_status || '').toLowerCase() === 'manual_review'
-        )
-      } else if (validationFilter === 'manual_review') {
-        filtered = filtered.filter(r => (r.validation_status || '').toLowerCase() === 'manual_review')
+      const targetFilter = validationFilter.toLowerCase().trim()
+      if (targetFilter === 'pending' || targetFilter === 'pending_ai_validation') {
+        filtered = filtered.filter(r => {
+          const v = (r.validation_status || '').toLowerCase().trim()
+          return v === 'pending' || v === 'pending_ai_validation'
+        })
+      } else if (targetFilter === 'manual_review') {
+        filtered = filtered.filter(r => {
+          const v = (r.validation_status || '').toLowerCase().trim()
+          return v === 'manual_review' || v === 'manual review' || v === 'pending_manual_review' || Boolean(r.manual_review_id)
+        })
+      } else if (targetFilter === 'approved' || targetFilter === 'validated' || targetFilter === 'automatically_valid') {
+        filtered = filtered.filter(r => {
+          const v = (r.validation_status || '').toLowerCase().trim()
+          return v === 'approved' || v === 'validated' || v === 'automatically_valid'
+        })
       } else {
-        filtered = filtered.filter(r => (r.validation_status || '').toLowerCase() === validationFilter.toLowerCase())
+        filtered = filtered.filter(r => (r.validation_status || '').toLowerCase().trim() === targetFilter)
       }
     }
 
@@ -196,14 +204,14 @@ export default function FieldCrewReportsPage() {
               ]
             },
             {
-              label: 'All Validation',
+              label: 'Review Status',
               value: validationFilter,
-              onChange: setValidationFilter,
+              onChange: (val) => { setValidationFilter(val); setCurrentPage(1) },
               options: [
-                { value: 'all', label: 'All Validation' },
-                { value: 'automatically_valid', label: 'Automatically Valid' },
+                { value: 'all', label: 'All Review Status' },
+                { value: 'approved', label: 'Approved' },
                 { value: 'manual_review', label: 'Manual Review' },
-                { value: 'validated', label: 'Validated' },
+                { value: 'pending', label: 'Pending AI Validation' },
                 { value: 'rejected', label: 'Rejected' }
               ]
             }
@@ -243,11 +251,12 @@ export default function FieldCrewReportsPage() {
             },
             { 
               key: 'validation_status', 
-              label: 'Validation', 
+              label: 'Review Status', 
               width: '15%',
-              render: (value) => (
-                <StatusBadge status={value} type="validation" />
-              )
+              render: (value, row) => {
+                const effective = value || (row?.manual_review_id ? 'manual_review' : 'pending')
+                return <StatusBadge status={effective} type="validation" />
+              }
             },
             { 
               key: 'created_at', 
