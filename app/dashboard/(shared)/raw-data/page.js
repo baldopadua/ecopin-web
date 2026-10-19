@@ -1,19 +1,23 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { fetchPublicReports, fetchIssueTypes } from '@/lib/api'
+import { fetchPublicReports, fetchIssueTypes, fetchCleanupTasks } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import FilterBar from '@/components/ui/FilterBar'
 import DataTable from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { useUser } from '@/components/auth/UserContext'
+import { Wrench, ClipboardCheck } from 'lucide-react'
+import { reportDiagnostic } from '@/lib/diagnostics.mjs'
+import { subscribeSession } from '@/lib/auth-token.mjs'
 
 export default function ReportsPage() {
   const user = useUser()
   const [reports, setReports] = useState([])
   const [filteredReports, setFilteredReports] = useState([])
   const [issueTypes, setIssueTypes] = useState([])
+  const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
@@ -30,13 +34,31 @@ export default function ReportsPage() {
   useEffect(() => {
     Promise.all([
       fetchPublicReports(),
-      fetchIssueTypes()
-    ]).then(([reportsData, typesData]) => {
-      setReports(reportsData)
-      setFilteredReports(reportsData)
-      setIssueTypes(typesData)
+      fetchIssueTypes(),
+      fetchCleanupTasks().catch(err => {
+        reportDiagnostic('warn', 'tasks', 'Failed to fetch tasks for raw data:', err)
+        return []
+      })
+    ]).then(([reportsData, typesData, tasksData]) => {
+      setReports(reportsData || [])
+      setFilteredReports(reportsData || [])
+      setIssueTypes(typesData || [])
+      setTasks(tasksData || [])
+      setLoading(false)
+    }).catch(() => {
       setLoading(false)
     })
+  }, [])
+
+  useEffect(() => {
+    const unsubscribe = subscribeSession(() => {
+      fetchCleanupTasks().then(t => {
+        if (Array.isArray(t) && t.length > 0) setTasks(t)
+      }).catch(() => {})
+    })
+    return () => {
+      unsubscribe?.()
+    }
   }, [])
 
   // Apply filters
@@ -103,56 +125,148 @@ export default function ReportsPage() {
     return new Date(dateString).toLocaleDateString()
   }
 
-  const tableColumns = [
-    { 
-      key: 'title', 
-      label: 'Title', 
-      width: '25%',
-      render: (value) => (
-        <span className="font-medium text-text-primary">{value}</span>
+  // Map reports to matching tasks
+  const reportTaskMap = useMemo(() => {
+    const map = {}
+    if (!tasks || tasks.length === 0) return map
+
+    const activeTasks = tasks.filter(t => t.status !== 'cancelled')
+
+    reports.forEach(report => {
+      const reportId = String(report.id)
+      const clusterId = report.cluster_id ? String(report.cluster_id) : null
+      const directTaskId = report.cleanup_task_id ? String(report.cleanup_task_id) : null
+
+      if (directTaskId) {
+        const found = activeTasks.find(t => String(t.id) === directTaskId)
+        map[report.id] = found || { id: directTaskId }
+        return
+      }
+
+      const byReportId = activeTasks.find(t => 
+        (Array.isArray(t.report_ids) && t.report_ids.some(id => String(id) === reportId)) ||
+        (Array.isArray(t.report_sequence) && t.report_sequence.some(id => String(id) === reportId)) ||
+        (Array.isArray(t.satellite_report_ids) && t.satellite_report_ids.some(id => String(id) === reportId)) ||
+        (Array.isArray(t.reports) && t.reports.some(r => String(r.id || r) === reportId))
       )
-    },
-    { 
-      key: 'issue_type', 
-      label: 'Issue Type', 
-      width: '20%',
-      render: (value) => (
-        <span className="text-sm text-text-secondary">{value || 'N/A'}</span>
-      )
-    },
-    { 
-      key: 'status', 
-      label: 'Report Status', 
-      width: '15%',
-      render: (value) => (
-        <StatusBadge status={value} type="report" />
-      )
-    },
-    { 
-      key: 'validation_status', 
-      label: 'Review Status', 
-      width: '15%',
-      render: (value) => (
-        <StatusBadge status={value} type="validation" />
-      )
-    },
-    { 
-      key: 'created_at', 
-      label: 'Created', 
-      width: '15%',
-      render: (value) => (
-        <span className="text-sm text-text-muted">{formatDate(value)}</span>
-      )
-    },
-    { 
-      key: 'stage', 
-      label: 'Operational Stage', 
-      width: '12%',
-      render: (value) => (
-        <StatusBadge status={value} type="lifecycle" />
-      )
+      if (byReportId) {
+        map[report.id] = byReportId
+        return
+      }
+
+      if (clusterId) {
+        const byCluster = activeTasks.find(t => 
+          String(t.cluster_id) === clusterId ||
+          (Array.isArray(t.cluster_ids) && t.cluster_ids.some(cid => String(cid) === clusterId))
+        )
+        if (byCluster) {
+          map[report.id] = byCluster
+        }
+      }
+    })
+
+    return map
+  }, [reports, tasks])
+
+  const tableColumns = useMemo(() => {
+    const isStaff = ['officer', 'admin'].includes(user?.role)
+    const cols = [
+      { 
+        key: 'title', 
+        label: 'Title', 
+        width: isStaff ? '18%' : '25%',
+        render: (value) => (
+          <span className="font-medium text-text-primary">{value}</span>
+        )
+      },
+      { 
+        key: 'issue_type', 
+        label: 'Issue Type', 
+        width: isStaff ? '14%' : '20%',
+        render: (value) => (
+          <span className="text-sm text-text-secondary">{value || 'N/A'}</span>
+        )
+      },
+      { 
+        key: 'status', 
+        label: 'Report Status', 
+        width: isStaff ? '12%' : '14%',
+        render: (value) => (
+          <StatusBadge status={value} type="report" />
+        )
+      },
+      { 
+        key: 'validation_status', 
+        label: 'Review Status', 
+        width: isStaff ? '12%' : '14%',
+        render: (value) => (
+          <StatusBadge status={value} type="validation" />
+        )
+      },
+      { 
+        key: 'created_at', 
+        label: 'Created', 
+        width: isStaff ? '11%' : '15%',
+        render: (value) => (
+          <span className="text-sm text-text-muted">{formatDate(value)}</span>
+        )
+      },
+      { 
+        key: 'stage', 
+        label: 'Operational Stage', 
+        width: isStaff ? '11%' : '12%',
+        render: (value) => (
+          <StatusBadge status={value} type="lifecycle" />
+        )
+      }
+    ]
+
+    if (isStaff) {
+      cols.push({
+        key: 'actions',
+        label: 'Action',
+        width: '22%',
+        render: (_, row) => {
+          const existingTask = reportTaskMap[row.id]
+          if (existingTask) {
+            return (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  router.push(`/dashboard/officer/operations/${existingTask.id}`)
+                }}
+                className="btn-primary inline-flex items-center flex-nowrap shrink-0 gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium !bg-[#059669] !text-white hover:!bg-[#047857] transition-colors whitespace-nowrap"
+                aria-label={`View dispatched task for ${row.title || 'report'}`}
+                title="View Dispatched Task"
+              >
+                <ClipboardCheck size={14} className="shrink-0" aria-hidden="true" />
+                <span>View Dispatched Task</span>
+              </button>
+            )
+          }
+
+          return (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                router.push(`/dashboard/officer/operations/create?preselect=${row.cluster_id || row.id}`)
+              }}
+              className="btn-primary inline-flex items-center flex-nowrap shrink-0 gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium !bg-[#0052cc] !text-white hover:!bg-[#003d99] transition-colors whitespace-nowrap"
+              aria-label={`Dispatch crew for ${row.title || 'report'}`}
+              title="Dispatch Field Crew"
+            >
+              <Wrench size={14} className="shrink-0" aria-hidden="true" />
+              <span>Dispatch</span>
+            </button>
+          )
+        }
+      })
     }
-  ]
+
+    return cols
+  }, [user?.role, reportTaskMap, router])
 
   return (
     <div className="p-8">
