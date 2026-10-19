@@ -87,6 +87,9 @@ export default function OfficerHomepage() {
      return false
   })
 
+  // Unresolved reports
+  const unresolvedReports = reports.filter(t => (t.status || '').toLowerCase() === 'unresolved')
+
   // Manual Review tasks
   const manualReviewTasks = reports.filter(t => (t.validation_status || '').toLowerCase() === 'manual_review')
 
@@ -123,9 +126,9 @@ export default function OfficerHomepage() {
         <div className={styles.metrics} aria-label="Operational overview">
           {[
             { title: 'Active Field Units', value: activeTasks.length, note: 'Cleanup tasks in progress', href: '/dashboard/officer/operations?status=in_progress', icon: Users },
-            { title: 'Unresolved Reports', value: reports.length, note: 'Reports awaiting action', href: '/dashboard/officer/reports', icon: Search },
-            { title: 'SLA Risk', value: slaRiskTasks.length, note: 'Reports older than 48 hours', href: slaRiskTasks.length ? '/dashboard/officer/reports?filter=overdue' : '/dashboard/officer/reports', icon: AlertTriangle },
-            { title: 'Manual Review', value: manualReviewTasks.length, note: 'Reports awaiting review', href: manualReviewTasks.length ? '/dashboard/officer/reports?filter=manual_review' : '/dashboard/officer/reports', icon: AlertTriangle },
+            { title: 'Unresolved Reports', value: unresolvedReports.length, note: 'Reports awaiting action', href: '/dashboard/officer/reports?status=unresolved', icon: Search },
+            { title: 'SLA Risk', value: slaRiskTasks.length, note: 'Reports older than 48 hours', href: '/dashboard/officer/reports?status=overdue', icon: AlertTriangle },
+            { title: 'Manual Review', value: manualReviewTasks.length, note: 'Reports awaiting review', href: '/dashboard/officer/reports?filter=manual_review', icon: AlertTriangle },
           ].map(({ title, value, note, href, icon: Icon }) => <Link key={title} href={href}
             className={`${styles.metric} ${title === 'SLA Risk' && value > 0 && !loading ? styles.slaAlert : ''}`}>
             <span>{title}</span><Icon size={18} aria-hidden="true" />

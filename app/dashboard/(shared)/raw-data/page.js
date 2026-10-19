@@ -1,6 +1,6 @@
 'use client'
-import { useEffect, useState, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useEffect, useState, useMemo, useCallback } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { fetchIssueTypes } from '@/lib/api'
 import { useDashboardReports, useDashboardTasks } from '@/components/context/DashboardQueryProvider'
 import PageHeader from '@/components/layout/PageHeader'
@@ -12,9 +12,28 @@ import StatusBadge from '@/components/ui/StatusBadge'
 import { useUser } from '@/components/auth/UserContext'
 import { Wrench, ClipboardCheck } from 'lucide-react'
 
-export default function ReportsPage() {
+const terminalStatuses = ['resolved', 'closed', 'completed', 'rejected']
+
+function isReportOverdue(report) {
+  if (!report) return false
+  const normalizedStatus = (report.status || '').toLowerCase()
+  if (terminalStatuses.includes(normalizedStatus)) return false
+
+  if (report.is_overdue) return true
+  if (report.deadline_at) {
+    return new Date() > new Date(report.deadline_at)
+  }
+  if (report.created_at) {
+    const diffHours = (new Date() - new Date(report.created_at)) / (1000 * 60 * 60)
+    return diffHours > 48
+  }
+  return false
+}
+
+function RawDataContent() {
   const user = useUser()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const reportsQuery = useDashboardReports()
   const tasksQuery = useDashboardTasks()
 
@@ -23,25 +42,35 @@ export default function ReportsPage() {
   const [issueTypes, setIssueTypes] = useState([])
   const loading = reportsQuery.isPending || tasksQuery.isPending
 
+  const getTargetStatus = useCallback(() => {
+    const rawStatus = (searchParams.get('status') || searchParams.get('filter') || '').toLowerCase().trim()
+    if (rawStatus === 'unresolved') return 'unresolved'
+    if (rawStatus === 'overdue' || rawStatus === 'sla' || rawStatus === 'sla_risk') return 'overdue'
+    if (['in_progress', 'resolved', 'closed', 'pending_owner_consent', 'waiting_for_feedback'].includes(rawStatus)) return rawStatus
+    return 'all'
+  }, [searchParams])
+
+  const getTargetValidation = useCallback(() => {
+    const rawVal = (searchParams.get('validation') || searchParams.get('review_status') || '').toLowerCase().trim()
+    const rawFilter = (searchParams.get('filter') || searchParams.get('status') || '').toLowerCase().trim()
+    if (rawVal === 'manual_review' || rawFilter === 'manual_review' || rawVal === 'manual review' || rawVal === 'pending_manual_review') {
+      return 'manual_review'
+    }
+    if (['pending', 'pending_ai_validation', 'approved', 'rejected'].includes(rawVal)) return rawVal
+    return 'all'
+  }, [searchParams])
+
   // Filter states
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
-  const [statusFilter, setStatusFilter] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search)
-      const s = params.get('status')
-      if (s) return s
-    }
-    return 'all'
-  })
-  const [validationFilter, setValidationFilter] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search)
-      const filter = params.get('filter') || params.get('validation') || params.get('review_status')
-      if (filter) return filter
-    }
-    return 'all'
-  })
+  const [statusFilter, setStatusFilter] = useState(getTargetStatus)
+  const [validationFilter, setValidationFilter] = useState(getTargetValidation)
+
+  useEffect(() => {
+    setStatusFilter(getTargetStatus())
+    setValidationFilter(getTargetValidation())
+    setCurrentPage(1)
+  }, [getTargetStatus, getTargetValidation])
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
@@ -74,8 +103,11 @@ export default function ReportsPage() {
       filtered = filtered.filter(r => r.issue_type === typeFilter)
     }
 
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(r => r.status === statusFilter)
+    if (statusFilter === 'overdue') {
+      filtered = filtered.filter(isReportOverdue)
+    } else if (statusFilter !== 'all') {
+      const targetStatus = statusFilter.toLowerCase().trim()
+      filtered = filtered.filter(r => (r.status || '').toLowerCase().trim() === targetStatus)
     }
 
     if (validationFilter !== 'all') {
@@ -317,9 +349,10 @@ export default function ReportsPage() {
           {
             label: 'Report Status',
             value: statusFilter,
-            onChange: setStatusFilter,
+            onChange: (val) => { setStatusFilter(val); setCurrentPage(1) },
             options: [
               { value: 'all', label: 'All Report Status' },
+              { value: 'overdue', label: 'Overdue (SLA Risk)' },
               { value: 'unresolved', label: 'Unresolved' },
               { value: 'in_progress', label: 'In Progress' },
               { value: 'resolved', label: 'Resolved' },
@@ -369,5 +402,13 @@ export default function ReportsPage() {
         />
       )}
     </div>
+  )
+}
+
+export default function ReportsPage() {
+  return (
+    <Suspense fallback={<div className="p-6" role="status">Loading raw data…</div>}>
+      <RawDataContent />
+    </Suspense>
   )
 }

@@ -1,6 +1,6 @@
 'use client'
-import { useEffect, useState, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useEffect, useState, useMemo, useCallback } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { fetchIssueTypes } from '@/lib/api'
 import { useDashboardReports, useDashboardTasks } from '@/components/context/DashboardQueryProvider'
 import PageHeader from '@/components/layout/PageHeader'
@@ -31,8 +31,9 @@ function isReportOverdue(report) {
   return false
 }
 
-export default function OfficerReportsPage() {
+function OfficerReportsContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const reportsQuery = useDashboardReports()
   const tasksQuery = useDashboardTasks()
 
@@ -41,23 +42,35 @@ export default function OfficerReportsPage() {
   const [issueTypes, setIssueTypes] = useState([])
   const loading = reportsQuery.isPending || tasksQuery.isPending
 
+  const getTargetStatus = useCallback(() => {
+    const rawStatus = (searchParams.get('status') || searchParams.get('filter') || '').toLowerCase().trim()
+    if (rawStatus === 'unresolved') return 'unresolved'
+    if (rawStatus === 'overdue' || rawStatus === 'sla' || rawStatus === 'sla_risk') return 'overdue'
+    if (['in_progress', 'resolved', 'closed', 'pending_owner_consent', 'waiting_for_feedback'].includes(rawStatus)) return rawStatus
+    return 'all'
+  }, [searchParams])
+
+  const getTargetValidation = useCallback(() => {
+    const rawVal = (searchParams.get('validation') || searchParams.get('review_status') || '').toLowerCase().trim()
+    const rawFilter = (searchParams.get('filter') || searchParams.get('status') || '').toLowerCase().trim()
+    if (rawVal === 'manual_review' || rawFilter === 'manual_review' || rawVal === 'manual review' || rawVal === 'pending_manual_review') {
+      return 'manual_review'
+    }
+    if (['pending', 'pending_ai_validation', 'approved', 'rejected'].includes(rawVal)) return rawVal
+    return 'all'
+  }, [searchParams])
+
   // Filter states
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
-  const [statusFilter, setStatusFilter] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search)
-      if (params.get('filter') === 'overdue') return 'overdue'
-    }
-    return 'all'
-  })
-  const [validationFilter, setValidationFilter] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search)
-      if (params.get('filter') === 'manual_review') return 'manual_review'
-    }
-    return 'all'
-  })
+  const [statusFilter, setStatusFilter] = useState(getTargetStatus)
+  const [validationFilter, setValidationFilter] = useState(getTargetValidation)
+
+  useEffect(() => {
+    setStatusFilter(getTargetStatus())
+    setValidationFilter(getTargetValidation())
+    setCurrentPage(1)
+  }, [getTargetStatus, getTargetValidation])
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
@@ -93,7 +106,8 @@ export default function OfficerReportsPage() {
     if (statusFilter === 'overdue') {
       filtered = filtered.filter(isReportOverdue)
     } else if (statusFilter !== 'all') {
-      filtered = filtered.filter(r => r.status === statusFilter)
+      const targetStatus = statusFilter.toLowerCase().trim()
+      filtered = filtered.filter(r => (r.status || '').toLowerCase().trim() === targetStatus)
     }
 
     if (validationFilter !== 'all') {
@@ -330,8 +344,7 @@ export default function OfficerReportsPage() {
   ]
 
   return (
-    <OfficerGuard>
-      <div className={`workspace-page ${styles.page}`}>
+    <div className={`workspace-page ${styles.page}`}>
         <PageHeader 
           title="Reports directory"
           subtitle="View and manage raw environmental data and create operations."
@@ -419,6 +432,15 @@ export default function OfficerReportsPage() {
           )}
         </div>
       </div>
+  )
+}
+
+export default function OfficerReportsPage() {
+  return (
+    <OfficerGuard>
+      <Suspense fallback={<div className="workspace-page" role="status">Loading reports…</div>}>
+        <OfficerReportsContent />
+      </Suspense>
     </OfficerGuard>
   )
 }
