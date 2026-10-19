@@ -9,7 +9,8 @@ import {
   updateReportStatus,
   updatePropertyOwnerConsent,
   lguResolveReport,
-  updateReportValidation
+  updateReportValidation,
+  fetchCleanupTasks
 } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
@@ -53,6 +54,7 @@ export default function ReportDetailPage() {
   const [updatingConsent, setUpdatingConsent] = useState(false)
   const [notification, setNotification] = useState(null)
   const statusDropdownRef = useRef(null)
+  const [existingTask, setExistingTask] = useState(null)
   const [agencyResponses, setAgencyResponses] = useState([])
   const [resolvingReport, setResolvingReport] = useState(false)
   const [validatingReport, setValidatingReport] = useState(null)
@@ -62,9 +64,13 @@ export default function ReportDetailPage() {
   const loadReportData = async () => {
     setLoading(true)
     try {
-      const [reportData, evidenceData] = await Promise.all([
+      const [reportData, evidenceData, tasksData] = await Promise.all([
         fetchReportById(reportId),
-        fetchReportEvidence(reportId)
+        fetchReportEvidence(reportId),
+        fetchCleanupTasks().catch((err) => {
+          reportDiagnostic('warn', 'tasks', 'Failed to fetch tasks for report detail:', err)
+          return []
+        })
       ])
       if (reportData) {
         // Access Control: Field crew cannot view incomplete raw reports
@@ -73,6 +79,27 @@ export default function ReportDetailPage() {
           return
         }
 
+        const activeTasks = (tasksData || []).filter(t => t.status !== 'cancelled')
+        const reportClusterId = reportData.cluster_id ? String(reportData.cluster_id) : null
+        const directTaskId = reportData.cleanup_task_id ? String(reportData.cleanup_task_id) : null
+        const currentReportId = String(reportId)
+
+        const matchedTask = activeTasks.find(t => {
+          if (directTaskId && String(t.id) === directTaskId) return true
+          const inReportIds = Array.isArray(t.report_ids) && t.report_ids.some(id => String(id) === currentReportId)
+          const inSequence = Array.isArray(t.report_sequence) && t.report_sequence.some(id => String(id) === currentReportId)
+          const inSatellites = Array.isArray(t.satellite_report_ids) && t.satellite_report_ids.some(id => String(id) === currentReportId)
+          const inReports = Array.isArray(t.reports) && t.reports.some(r => String(r.id || r) === currentReportId)
+          if (inReportIds || inSequence || inSatellites || inReports) return true
+
+          if (reportClusterId) {
+            if (String(t.cluster_id) === reportClusterId) return true
+            if (Array.isArray(t.cluster_ids) && t.cluster_ids.some(cid => String(cid) === reportClusterId)) return true
+          }
+          return false
+        }) || (directTaskId ? { id: directTaskId } : null)
+
+        setExistingTask(matchedTask)
         setReport(reportData)
         setEvidence(evidenceData)
         setAgencyResponses([])
@@ -899,21 +926,21 @@ export default function ReportDetailPage() {
                 <div className="card">
                   <h2 className="text-lg font-bold text-text-primary mb-4">Actions</h2>
                   <div className="space-y-3">
-                  {/* Cleanup Task Link/Create */}
-                  {report.cleanup_task_id ? (
+                  {/* Cleanup Task Link/Dispatch - Same as cluster dispatch button */}
+                  {existingTask ? (
                     <button
-                      onClick={() => router.push(`/dashboard/officer/operations/${report.cleanup_task_id}`)}
+                      onClick={() => router.push(`/dashboard/officer/operations/${existingTask.id}`)}
                       className="btn-primary w-full"
                     >
-                      View Cleanup Task
+                      View Dispatched Task
                     </button>
                   ) : (
                     <button
-                      onClick={() => router.push(`/dashboard/officer/operations/create?preselect=${report.id}`)}
+                      onClick={() => router.push(`/dashboard/officer/operations/create?preselect=${report.cluster_id || report.id}`)}
                       disabled={report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review'}
                       className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Create Cleanup Task
+                      Dispatch Field Crew
                     </button>
                   )}
 

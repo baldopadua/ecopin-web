@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { fetchPublicReports, fetchIssueTypes } from '@/lib/api'
+import { fetchPublicReports, fetchIssueTypes, fetchCleanupTasks } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import FilterBar from '@/components/ui/FilterBar'
 import DataTable from '@/components/ui/DataTable'
@@ -9,8 +9,11 @@ import Pagination from '@/components/ui/Pagination'
 import useTablePageSize from '@/components/ui/useTablePageSize'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { OfficerGuard } from '@/components/auth/RequireRole'
-import { Target, Wrench, AlertTriangle, Clock } from 'lucide-react'
+import { Target, Wrench, AlertTriangle, Clock, ClipboardCheck } from 'lucide-react'
+import { reportDiagnostic } from '@/lib/diagnostics.mjs'
 import styles from './Reports.module.css'
+
+import { subscribeSession } from '@/lib/auth-token.mjs'
 
 const terminalStatuses = ['resolved', 'closed', 'completed', 'rejected']
 
@@ -32,6 +35,7 @@ function isReportOverdue(report) {
 
 export default function OfficerReportsPage() {
   const [reports, setReports] = useState([])
+  const [tasks, setTasks] = useState([])
   const [issueTypes, setIssueTypes] = useState([])
   const [loading, setLoading] = useState(true)
   const router = useRouter()
@@ -62,11 +66,16 @@ export default function OfficerReportsPage() {
     let active = true
     Promise.all([
       fetchPublicReports(),
-      fetchIssueTypes()
-    ]).then(([reportsData, typesData]) => {
+      fetchIssueTypes(),
+      fetchCleanupTasks().catch(err => {
+        reportDiagnostic('warn', 'tasks', 'Failed to fetch tasks for reports:', err)
+        return []
+      })
+    ]).then(([reportsData, typesData, tasksData]) => {
       if (!active) return
       setReports(reportsData || [])
       setIssueTypes(typesData || [])
+      setTasks(tasksData || [])
       setLoading(false)
     }).catch(() => {
       if (!active) return
@@ -74,6 +83,17 @@ export default function OfficerReportsPage() {
     })
     return () => {
       active = false
+    }
+  }, [])
+
+  useEffect(() => {
+    const unsubscribe = subscribeSession(() => {
+      fetchCleanupTasks().then(t => {
+        if (Array.isArray(t) && t.length > 0) setTasks(t)
+      }).catch(() => {})
+    })
+    return () => {
+      unsubscribe?.()
     }
   }, [])
 
@@ -136,11 +156,57 @@ export default function OfficerReportsPage() {
     return new Date(dateString).toLocaleDateString()
   }
 
+  // Map reports to matching tasks
+  const reportTaskMap = useMemo(() => {
+    const map = {}
+    if (!tasks || tasks.length === 0) return map
+
+    const activeTasks = tasks.filter(t => t.status !== 'cancelled')
+
+    reports.forEach(report => {
+      const reportId = String(report.id)
+      const clusterId = report.cluster_id ? String(report.cluster_id) : null
+      const directTaskId = report.cleanup_task_id ? String(report.cleanup_task_id) : null
+
+      // 1. Direct cleanup_task_id on report
+      if (directTaskId) {
+        const found = activeTasks.find(t => String(t.id) === directTaskId)
+        map[report.id] = found || { id: directTaskId }
+        return
+      }
+
+      // 2. Task containing this report in report_ids, report_sequence, satellite_report_ids, or reports array
+      const byReportId = activeTasks.find(t => 
+        (Array.isArray(t.report_ids) && t.report_ids.some(id => String(id) === reportId)) ||
+        (Array.isArray(t.report_sequence) && t.report_sequence.some(id => String(id) === reportId)) ||
+        (Array.isArray(t.satellite_report_ids) && t.satellite_report_ids.some(id => String(id) === reportId)) ||
+        (Array.isArray(t.reports) && t.reports.some(r => String(r.id || r) === reportId))
+      )
+      if (byReportId) {
+        map[report.id] = byReportId
+        return
+      }
+
+      // 3. Task linked to report's cluster (cluster_id scalar or cluster_ids array)
+      if (clusterId) {
+        const byCluster = activeTasks.find(t => 
+          String(t.cluster_id) === clusterId ||
+          (Array.isArray(t.cluster_ids) && t.cluster_ids.some(cid => String(cid) === clusterId))
+        )
+        if (byCluster) {
+          map[report.id] = byCluster
+        }
+      }
+    })
+
+    return map
+  }, [reports, tasks])
+
   const tableColumns = [
     { 
       key: 'title', 
       label: 'Title', 
-      width: '26%',
+      width: '22%',
       render: (value, row) => {
         const overdue = isReportOverdue(row)
         return (
@@ -159,7 +225,7 @@ export default function OfficerReportsPage() {
     { 
       key: 'issue_type', 
       label: 'Issue type', 
-      width: '16%',
+      width: '14%',
       render: (value) => (
         <span className="text-text-secondary capitalize">
           {value ? value.replaceAll('_', ' ') : '—'}
@@ -169,7 +235,7 @@ export default function OfficerReportsPage() {
     { 
       key: 'status', 
       label: 'Status', 
-      width: '14%',
+      width: '13%',
       render: (value, row) => {
         const overdue = isReportOverdue(row)
         return (
@@ -187,7 +253,7 @@ export default function OfficerReportsPage() {
     { 
       key: 'cluster_id', 
       label: 'Cluster', 
-      width: '16%',
+      width: '13%',
       render: (value) => value ? (
         <button 
            type="button"
@@ -206,21 +272,43 @@ export default function OfficerReportsPage() {
     { 
       key: 'actions', 
       label: 'Action', 
-      width: '14%',
-      render: (_, row) => (
-        <button 
-           type="button"
-           onClick={(e) => {
-             e.stopPropagation()
-             router.push(`/dashboard/officer/operations/create?preselect=${row.cluster_id || row.id}`)
-           }}
-           className={styles.dispatchButton}
-           aria-label={`Dispatch crew for ${row.title || 'report'}`}
-        >
-          <Wrench size={14} aria-hidden="true" />
-          <span>Dispatch</span>
-        </button>
-      )
+      width: '24%',
+      render: (_, row) => {
+        const existingTask = reportTaskMap[row.id]
+        if (existingTask) {
+          return (
+            <button 
+               type="button"
+               onClick={(e) => {
+                 e.stopPropagation()
+                 router.push(`/dashboard/officer/operations/${existingTask.id}`)
+               }}
+               className={styles.viewDispatchedButton}
+               aria-label={`View dispatched task for ${row.title || 'report'}`}
+               title="View Dispatched Task"
+            >
+              <ClipboardCheck size={14} className="shrink-0" aria-hidden="true" />
+              <span>View Dispatched Task</span>
+            </button>
+          )
+        }
+
+        return (
+          <button 
+             type="button"
+             onClick={(e) => {
+               e.stopPropagation()
+               router.push(`/dashboard/officer/operations/create?preselect=${row.cluster_id || row.id}`)
+             }}
+             className={styles.dispatchButton}
+             aria-label={`Dispatch crew for ${row.title || 'report'}`}
+             title="Dispatch Field Crew"
+          >
+            <Wrench size={14} className="shrink-0" aria-hidden="true" />
+            <span>Dispatch</span>
+          </button>
+        )
+      }
     },
     { 
       key: 'created_at', 

@@ -79,27 +79,84 @@
 }
 
 .dispatchButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
+  display: inline-flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
   min-height: 36px;
   padding: 6px 14px;
-  border: 1px solid transparent;
+  border: 1px solid transparent !important;
   border-radius: 9999px;
-  background: #0052cc;
-  color: white;
+  background: #0052cc !important;
+  color: white !important;
   font: inherit;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
   transition: background-color 0.15s ease;
 }
 
 .dispatchButton:hover {
-  background: #003d99;
+  background: #003d99 !important;
+  color: white !important;
 }
 
+.viewDispatchedButton {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid #059669 !important;
+  border-radius: 9999px;
+  background: #059669 !important;
+  color: white !important;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.viewDispatchedButton:hover {
+  background: #047857 !important;
+  border-color: #047857 !important;
+  color: white !important;
+}
+
+:global(.ecopin-table tbody tr:hover) .viewDispatchedButton {
+  background: #059669 !important;
+  border-color: #059669 !important;
+  color: white !important;
+}
+
+:global(.ecopin-table tbody tr:hover) .viewDispatchedButton:hover {
+  background: #047857 !important;
+  border-color: #047857 !important;
+  color: white !important;
+}
+
+:global(.ecopin-table tbody tr:hover) .dispatchButton {
+  background: #0052cc !important;
+  border-color: transparent !important;
+  color: white !important;
+}
+
+:global(.ecopin-table tbody tr:hover) .dispatchButton:hover {
+  background: #003d99 !important;
+  color: white !important;
+}
+
+.viewDispatchedButton:focus-visible,
 .dispatchButton:focus-visible,
 .clusterButton:focus-visible {
   outline: 3px solid var(--workspace-link);
