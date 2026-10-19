@@ -37,7 +37,7 @@ const parseGeometry = (geometry) => {
   return null
 }
 
-export default function OperationsMap({ tasks, clusters = [], selectedTemplate = 'standard', modern = false }) {
+export default function OperationsMap({ tasks, clusters = [], selectedTemplate = 'standard', modern = true }) {
   const [mounted, setMounted] = useState(false)
 
   // Find exact center from tasks

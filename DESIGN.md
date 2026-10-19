@@ -404,6 +404,34 @@ Keep the popup minimal: 220px content width, concern label, title, short descrip
 
 Do not turn the popup into a large photo card, duplicate the full detail panel, or add technical metadata unrelated to a citizen's next step. Popups follow the page theme: background and text use the landing tokens, and dark-theme links use `#82b6ff` rather than the darker filled-button blue.
 
+### Dashboard and specialized detail view map pins (WT-84)
+
+Sources: [ReportPhotoMarker.js](components/map/ReportPhotoMarker.js), [ReportPhotoMarker.module.css](components/map/ReportPhotoMarker.module.css), [EcoPinMarker.js](components/map/EcoPinMarker.js), [OperationsMap.js](components/map/OperationsMap.js), [useMapPhotoEvidence.js](components/map/useMapPhotoEvidence.js).
+
+Specialized map views in the authenticated staff portals (Officer & Field Crew: `HotzoneDetail`, `OperationsMap`, and single-report operation views) unify on the modernized photo pin design rather than legacy unanchored flat dots.
+
+1. **Modernized Photo Pin Architecture**:
+   - **Dimensions & Anchor**: 50px wide × 58px tall total marker footprint. Base anchor is `[25, 58]` (the bottom-center tip of the downward pointer), and popup anchor is `[0, -62]` (floating cleanly above the frame).
+   - **Visual Structure**: 50px circular photo frame with 3px solid `--pin-color` border, 2px white outline, and `box-shadow: 0 3px 12px #00000033`. The photo thumbnail renders via token-safe `SecureImage` with a smooth shimmer skeleton to prevent layout jumps.
+   - **Downward Pointer**: Built via CSS `::after` triangle (12px wide × 8px tall, `left: 19px, top: 49px`) colored with `--pin-color`, providing precise needle pinning on coordinates across zoom levels.
+   - **Status Badge / Pip**: 24×24px circle anchored at the top-right corner (`right: -4px, top: -3px`) with a 2px white border, filled with `--pin-color`, displaying a dedicated Lucide icon matching the report lifecycle state:
+     - `unresolved`, `submitted`, `pending`: `AlertCircle` with tone `--error` (`#d32f2f`)
+     - `in_progress`: `Clock3` with tone `--warning` (`#b45309`)
+     - `resolved`: `Check` with tone `--success` (`#2e7d32`)
+     - `waiting_for_feedback`: `MessageSquare` with tone `--info` (`#0369a1`)
+     - `pending_owner_consent`: `LockKeyhole` with tone `--info` (`#0369a1`)
+     - `closed`: `CheckCheck` with tone `--muted` (`#59636e`)
+     - Unknown / fallback: `HelpCircle` with tone `--muted` (`#59636e`)
+   - **Selection Highlight**: `outline: 3px solid #0052cc`, `box-shadow: 0 0 0 6px #0052cc33, 0 4px 16px #00000033`, and `zIndexOffset: 1000`.
+
+2. **Detail View Consistency**:
+   - **`OperationsMap`**: Defaults `modern = true`, automatically passing `photoPins={true}` and the unified `#0052cc` route color to `CrewTaskLayer`.
+   - **`HotzoneDetail` (`/dashboard/officer/hotzone-intel/[id]`)**: Renders `EcoPinMap` with `photoPins={true}` so officers inspecting clustered constituent reports see immediate photographic evidence and status badges rather than flat colored dots.
+   - **Single-Report Operation Detail (`/dashboard/field-crew/operations/[id]/[report_id]`)**: Enables `photoPins={true}` on the static map view.
+   - **Shared Map Grid (`/dashboard/(shared)/map-grid`)**: Passes `photoPins={true}` to both `EcoPinMap` and `CrewTaskLayer`.
+   - **Evidence Loading Safety**: `useMapPhotoEvidence` queries photo evidence for all reports whose location precision is not `'approximate'`, preserving privacy for private-property reports while ensuring internal task and cluster reports reliably resolve images. `ReportPhotoMarker` and `EcoPinMarker` safely fall back to preloaded `report.photo_url` / `report.image_url` / `report.image` attributes.
+   - **Fallback Marker**: `createEcoPinIcon` aligns with the unified status palette (`error`, `warning`, `success`, `info`, `muted`) whenever photo rendering is disabled or unsupported.
+
 ## 10. SWMO photo story
 
 Source: [LandingPage.js](components/landing/LandingPage.js) and the community styles in [LandingPage.module.css](components/landing/LandingPage.module.css).
@@ -831,6 +859,12 @@ Rows keep natural content height with a 56px minimum for readable, clickable rec
 Attach `useTablePageSize` to the allocated table viewport, with pagination outside that viewport. The helper measures rendered rows and uses `rowHeight` only while rows are unavailable. Pass a stable `resetKey` built from the active filters so an earlier tall row does not reduce capacity after filtering. The visible page capacity should increase on tall fitted monitors and use a readable baseline on smaller/shorter windows. Recompute when the viewport is resized. Clamp the current page after filters, data changes, or a capacity change so it never points past the final page. Keep the scrollbar in the table/list region rather than expanding the entire page.
 
 Sorting uses real buttons and `aria-sort`; pagination has a named control, current-page state, and stable focus. If an entire row opens a detail, provide a visible or screen-reader-accessible button/link and prevent nested actions from also opening the row. Prefer stable record IDs for keys.
+
+All dashboard data tables use `DataTable`, including operation report lists, infrastructure replication, and the spatial trend value disclosure. The canonical styles live in `app/globals.css`; the shell does not override table cells. Keep headers and column structure during loading and empty states. Empty-state rows are excluded from viewport page-size measurements.
+
+WT-83: only rows with `onRowClick` get a pointer cursor and a trailing Details column. Its 44px chevron button appears with the subtle civic-blue row highlight on hover or keyboard focus, and remains visible on touch devices. Nested links, buttons, selects, and other controls retain their own actions and colors. The detail action occupies its own cell rather than covering the title. Reduced-motion preferences remove transitions. Non-navigable user-management and log rows do not advertise detail navigation. Map popup facts use a definition list rather than a layout table.
+
+`tests/table-design.browser.cjs` checks the shared design across officer/admin tables in both themes, narrow-screen scrolling, keyboard detail navigation, and independent nested actions using synthetic data.
 
 ### Shared interaction states and accessibility
 

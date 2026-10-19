@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation'
 import ReportPhotoMarker from './ReportPhotoMarker'
 
 export const createEcoPinIcon = (status, isRemoving = false, isSelected = false) => {
-  let color = 'var(--error)' // unresolved
-  if (status === 'in_progress') color = 'var(--warning)' // in_progress
-  if (status === 'resolved') color = 'var(--success)' // resolved
+  let color = 'var(--error, #d32f2f)' // unresolved
+  if (status === 'in_progress') color = 'var(--warning, #b45309)' // in_progress
+  if (status === 'resolved') color = 'var(--success, #2e7d32)' // resolved
+  if (status === 'waiting_for_feedback' || status === 'pending_owner_consent') color = 'var(--info, #0369a1)'
+  if (status === 'closed') color = 'var(--text-muted, #59636e)'
 
   // If selected, use a distinct color (purple)
   if (isSelected) color = '#8B5CF6'
@@ -36,12 +38,13 @@ export default function EcoPinMarker({ report, position, isRemoving = false, isS
     }
   }
 
+  const photoSource = photo || report?.photo_url || report?.file_url || report?.image_url || report?.image
   const MarkerView = photoPin ? ReportPhotoMarker : Marker
-  const photoProps = photoPin ? { report, image: photo, selected: isSelected, removing: isRemoving } : {}
+  const photoProps = photoPin ? { report, image: photoSource, selected: isSelected, removing: isRemoving } : {}
   return (
     <MarkerView {...photoProps}
       position={position}
-      icon={createEcoPinIcon(report.status, isRemoving, isSelected)}
+      icon={createEcoPinIcon(report?.status, isRemoving, isSelected)}
       eventHandlers={{
         click: (e) => {
           if (selectionMode && onReportSelect) {

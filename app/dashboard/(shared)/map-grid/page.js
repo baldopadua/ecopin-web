@@ -100,8 +100,9 @@ function MapContent() {
           hideClusters={user?.role === 'field_crew'}
           hidePins={user?.role === 'field_crew'}
           hideFilterPanel={user?.role === 'field_crew'}
+          photoPins={true}
         >
-          {user?.role === 'field_crew' && <CrewTaskLayer tasks={filteredTasks} />}
+          {user?.role === 'field_crew' && <CrewTaskLayer photoPins={true} tasks={filteredTasks} />}
         </EcoPinMap>
       </div>
     </div>

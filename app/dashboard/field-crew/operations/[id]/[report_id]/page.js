@@ -587,6 +587,7 @@ export default function ReportDetailPage() {
                   hideFilterPanel={true}
                   hideClusters={true}
                   allowedReportIds={[report.id.toString()]}
+                  photoPins={true}
                 />
               </div>
             )}

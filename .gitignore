@@ -69,3 +69,5 @@ graphify-out/
 /tests/*
 !/tests/dashboard-query-client.test.mjs
 !/tests/role-layout.browser.cjs
+!/tests/table-design.browser.cjs
+!/tests/map-pin-consistency.test.mjs

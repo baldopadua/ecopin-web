@@ -513,6 +513,7 @@ export default function ClusterDetailPage() {
                    hideFilterPanel={true}
                    hideClusters={true} // Only show pins for the reports in this cluster
                    allowedReportIds={reports.map(r => r.id)}
+                   photoPins={true}
                  />
               ) : (
                  <div className="w-full h-full flex items-center justify-center text-text-muted text-sm">
