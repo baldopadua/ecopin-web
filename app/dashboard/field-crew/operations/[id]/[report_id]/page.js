@@ -14,7 +14,7 @@ import wkx from 'wkx'
 import { Buffer } from 'buffer'
 
 // API
-import { fetchCleanupTaskById, fetchReportById, uploadCleanupPhoto, logAgencyResponse, fetchAgencyResponses, fetchReportEvidence, updateLifecycleStage } from '@/lib/api'
+import { fetchCleanupTaskById, fetchReportById, uploadCleanupPhoto, logAgencyResponse, fetchAgencyResponses, fetchReportEvidence, updateLifecycleStage, updateReportStatus } from '@/lib/api'
 import { reportDiagnostic } from '../../../../../../lib/diagnostics.mjs';
 
 import { backendFetch as fetch } from '../../../../../../lib/backend-fetch.mjs';
@@ -72,6 +72,7 @@ export default function ReportDetailPage() {
   // Note state
   const [noteText, setNoteText] = useState('')
   const [submittingNote, setSubmittingNote] = useState(false)
+  const [isSubmittingStatus, setIsSubmittingStatus] = useState(false)
 
   // Photo state
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
@@ -205,6 +206,40 @@ export default function ReportDetailPage() {
     } finally {
       setUploadingPhoto(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  const handleStatusAdvance = async (targetStatus) => {
+    if (!isAssigned) {
+      setNotification({ message: 'You are not assigned to this task', type: 'error' })
+      return
+    }
+
+    if (isSubmittingStatus) return
+
+    // If targetStatus is 'resolved', ensure photos are uploaded unless scouting
+    if (targetStatus === 'resolved') {
+      const isScouting = report?.issue_type === 'scouting' || report?.issue_type === 'acknowledge_only'
+      if (!isScouting && (!report?.before_photo_url || !report?.after_photo_url)) {
+        setNotification({
+          message: 'Both before and after photos are required before marking this report as resolved/completed.',
+          type: 'warning'
+        })
+        return
+      }
+    }
+
+    setIsSubmittingStatus(true)
+    try {
+      await updateReportStatus(reportId, targetStatus)
+      const freshReport = await fetchReportById(reportId)
+      setReport(freshReport)
+      setNotification({ message: `Report status updated to ${targetStatus}!`, type: 'success' })
+    } catch (error) {
+      reportDiagnostic('error', 'reports', 'Failed to update report status:', error)
+      setNotification({ message: error.message || 'Failed to update report status. Please try again.', type: 'error' })
+    } finally {
+      setIsSubmittingStatus(false)
     }
   }
 
@@ -455,7 +490,60 @@ export default function ReportDetailPage() {
           {/* Right Column: Context & Map */}
           <div className="lg:col-span-1 space-y-6">
 
-            {/* Actions */}
+            {/* Report Actions */}
+            <div className="bg-surface p-5 border border-border border-[#1A1A1A] shadow-sm space-y-3">
+              <h3 className="font-mono text-xs uppercase tracking-widest text-[#ccff00] mb-2">Report Actions</h3>
+
+              {(!report.status || ['submitted', 'pending', 'unresolved'].includes(report.status)) && (
+                <button
+                  onClick={() => handleStatusAdvance('acknowledged')}
+                  disabled={isSubmittingStatus || !isAssigned}
+                  className="w-full px-4 py-3 bg-info text-white rounded-lg hover:bg-info/90 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-sm shadow-sm transition-all"
+                >
+                  {isSubmittingStatus ? 'Updating...' : '✅ Mark as Acknowledged'}
+                </button>
+              )}
+
+              {report.status === 'acknowledged' && (
+                <button
+                  onClick={() => handleStatusAdvance('responded')}
+                  disabled={isSubmittingStatus || !isAssigned}
+                  className="w-full px-4 py-3 bg-purple text-white rounded-lg hover:bg-purple/90 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-sm shadow-sm transition-all"
+                >
+                  {isSubmittingStatus ? 'Updating...' : '👷 Mark as Responded'}
+                </button>
+              )}
+
+              {report.status === 'responded' && (
+                <button
+                  onClick={() => handleStatusAdvance('resolved')}
+                  disabled={isSubmittingStatus || !isAssigned}
+                  className="w-full px-4 py-3 bg-success text-white rounded-lg hover:bg-success/90 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-sm shadow-sm transition-all"
+                >
+                  {isSubmittingStatus ? 'Updating...' : '🧹 Cleanup Completed / Mark Done'}
+                </button>
+              )}
+
+              {report.status === 'resolved' && (
+                <div className="w-full px-4 py-3 bg-success/20 border border-success/40 text-success rounded-lg font-bold text-sm text-center">
+                  ✓ Waiting for Citizen to Close
+                </div>
+              )}
+
+              {report.status === 'closed' && (
+                <div className="w-full px-4 py-3 bg-surface-elevated border border-border text-text-muted rounded-lg font-bold text-sm text-center">
+                  ✓ Report Closed
+                </div>
+              )}
+
+              {!isAssigned && (
+                <p className="text-xs text-text-muted font-mono text-center">
+                  You must be assigned to update report status.
+                </p>
+              )}
+            </div>
+
+            {/* Navigation Actions */}
             <div className="flex flex-col gap-3">
               <button
                 onClick={() => router.push(`/dashboard/field-crew/operations/${task.id}`)}

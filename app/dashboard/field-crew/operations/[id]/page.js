@@ -3,7 +3,7 @@ import SecureImage from '@/components/ui/SecureImage'
 import React, { useEffect, useState, useRef } from 'react'
 import { ArrowLeft, Eye, Camera, Upload, ChevronRight, CheckCircle } from 'lucide-react'
 import { useRouter, useParams } from 'next/navigation'
-import { fetchCleanupTaskById, uploadCleanupPhoto, markCleanupTaskComplete, fetchReportsByClusterId, batchCompleteReportsByCluster, updateReportStatus, fetchReportsByIds, updateReportValidation, fetchReportEvidence, updateLifecycleStage, logAgencyResponse, fetchAgencyResponses, fetchAvailableCrew, updateReportDetails } from '@/lib/api'
+import { fetchCleanupTaskById, uploadCleanupPhoto, markCleanupTaskComplete, updateCleanupTaskStatus, fetchReportsByClusterId, batchCompleteReportsByCluster, updateReportStatus, fetchReportsByIds, updateReportValidation, fetchReportEvidence, updateLifecycleStage, logAgencyResponse, fetchAgencyResponses, fetchAvailableCrew, updateReportDetails } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
@@ -71,6 +71,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
   const [reportsEvidence, setReportsEvidence] = useState({})
   const [loading, setLoading] = useState(true)
   const [markingComplete, setMarkingComplete] = useState(false)
+  const [isUpdatingTaskStatus, setIsUpdatingTaskStatus] = useState(false)
   const [completingReportId, setCompletingReportId] = useState(null)
   const [notification, setNotification] = useState(null)
   const [expandedReports, setExpandedReports] = useState({})
@@ -186,9 +187,38 @@ export default function FieldCrewCleanupTaskDetailPage() {
     }
   }
 
+  const handleStartEnRoute = async () => {
+    if (!isAssigned) {
+      setNotification({ message: 'You are not assigned to this task', type: 'error' })
+      return
+    }
+
+    if (isUpdatingTaskStatus) return
+
+    setIsUpdatingTaskStatus(true)
+    try {
+      await updateCleanupTaskStatus(taskId, 'en_route')
+      const updatedTask = await fetchCleanupTaskById(taskId)
+      setTask(updatedTask)
+      setNotification({ message: 'Task marked as En Route! Safe travels.', type: 'success' })
+    } catch (error) {
+      reportDiagnostic('error', 'dispatch', 'Failed to start en route:', error)
+      setNotification({ message: error.message || 'Failed to start en route. Please try again.', type: 'error' })
+    } finally {
+      setIsUpdatingTaskStatus(false)
+    }
+  }
+
   const handleMarkComplete = async () => {
     if (!isAssigned) {
       setNotification({ message: 'You are not assigned to this task', type: 'error' })
+      return
+    }
+
+    if (markingComplete) return
+
+    if (!['en_route', 'in_progress'].includes(task.status)) {
+      setNotification({ message: 'Task must be in En Route status before completing.', type: 'warning' })
       return
     }
 
@@ -226,7 +256,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
       setNotification({ message: 'Cleanup task marked as complete successfully!', type: 'success' })
     } catch (error) {
       reportDiagnostic('error', 'dispatch', 'Failed to mark task complete:', error)
-      setNotification({ message: 'Failed to mark task complete. Please try again.', type: 'error' })
+      setNotification({ message: error.message || 'Failed to mark task complete. Please try again.', type: 'error' })
     } finally {
       setMarkingComplete(false)
     }
@@ -283,10 +313,12 @@ export default function FieldCrewCleanupTaskDetailPage() {
   }
 
   const handleMarkReportComplete = async (reportId) => {
+    if (completingReportId) return
     const report = reports.find(r => r.id === reportId)
 
     // Check if the report has both before and after photos
-    if (!report.before_photo_url || !report.after_photo_url) {
+    const isScouting = report?.issue_type?.toLowerCase() === 'scouting' || report?.issue_type?.toLowerCase() === 'acknowledge_only'
+    if (!isScouting && (!report?.before_photo_url || !report?.after_photo_url)) {
       setNotification({ message: 'Please upload both before and after photos for this report before marking it as complete.', type: 'warning' })
       return
     }
@@ -315,13 +347,14 @@ export default function FieldCrewCleanupTaskDetailPage() {
       setNotification({ message: 'Cleanup completed successfully! Waiting for citizen to close.', type: 'success' })
     } catch (error) {
       reportDiagnostic('error', 'dispatch', 'Failed to mark report complete:', error)
-      setNotification({ message: 'Failed to mark report complete. Please try again.', type: 'error' })
+      setNotification({ message: error.message || 'Failed to mark report complete. Please try again.', type: 'error' })
     } finally {
       setCompletingReportId(null)
     }
   }
 
   const handleUpdateStatus = async (reportId, newStatus) => {
+    if (completingReportId) return
     setCompletingReportId(reportId)
     try {
       await updateReportStatus(reportId, newStatus)
@@ -336,7 +369,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
       setNotification({ message: `Report marked as ${newStatus}!`, type: 'success' })
     } catch (error) {
       reportDiagnostic('error', 'dispatch', 'Failed to update status:', error)
-      setNotification({ message: 'Failed to update status. Please try again.', type: 'error' })
+      setNotification({ message: error.message || 'Failed to update status. Please try again.', type: 'error' })
     } finally {
       setCompletingReportId(null)
     }
@@ -787,13 +820,49 @@ export default function FieldCrewCleanupTaskDetailPage() {
                           <td>
                             <StatusBadge status={report.validation_status} type="validation" />
                           </td>
-                          <td className="py-3 px-4 min-w-[140px]">
-                            <button
-                              onClick={() => handleViewReportDetail(report.id)}
-                              className="px-4 py-2 bg-transparent border border-border border-[#1A1A1A]  text-sm rounded-xl flex items-center justify-center gap-2 whitespace-nowrap hover:bg-[#1A1A1A] hover:text-white dark:hover:bg-surface dark:hover:text-text-primary transition-colors"
-                            >
-                              <Eye className="w-4 h-4" /> View Detail
-                            </button>
+                          <td className="py-3 px-4 min-w-[200px]">
+                            <div className="flex items-center gap-2">
+                              {(!report.status || ['submitted', 'pending', 'unresolved'].includes(report.status)) && (
+                                <button
+                                  onClick={() => handleUpdateStatus(report.id, 'acknowledged')}
+                                  disabled={completingReportId === report.id || !isAssigned}
+                                  className="px-3 py-1.5 bg-info text-white text-xs font-bold rounded-lg hover:bg-info/90 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                                >
+                                  {completingReportId === report.id ? 'Processing...' : 'Acknowledge'}
+                                </button>
+                              )}
+                              {report.status === 'acknowledged' && (
+                                <button
+                                  onClick={() => handleUpdateStatus(report.id, 'responded')}
+                                  disabled={completingReportId === report.id || !isAssigned}
+                                  className="px-3 py-1.5 bg-purple text-white text-xs font-bold rounded-lg hover:bg-purple/90 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                                >
+                                  {completingReportId === report.id ? 'Processing...' : 'Mark Responded'}
+                                </button>
+                              )}
+                              {report.status === 'responded' && (
+                                <button
+                                  onClick={() => handleMarkReportComplete(report.id)}
+                                  disabled={completingReportId === report.id || !isAssigned}
+                                  className="px-3 py-1.5 bg-success text-white text-xs font-bold rounded-lg hover:bg-success/90 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                                >
+                                  {completingReportId === report.id ? 'Processing...' : 'Complete'}
+                                </button>
+                              )}
+                              {report.status === 'resolved' && (
+                                <span className="text-xs text-success font-semibold whitespace-nowrap">✓ Resolved</span>
+                              )}
+                              {report.status === 'closed' && (
+                                <span className="text-xs text-text-muted font-semibold whitespace-nowrap">✓ Closed</span>
+                              )}
+                              <button
+                                onClick={() => handleViewReportDetail(report.id)}
+                                className="px-3 py-1.5 bg-transparent border border-border border-[#1A1A1A] text-xs font-bold rounded-lg flex items-center justify-center gap-1 whitespace-nowrap hover:bg-[#1A1A1A] hover:text-white dark:hover:bg-surface dark:hover:text-text-primary transition-colors ml-auto"
+                                title="View Report Details"
+                              >
+                                <Eye className="w-3.5 h-3.5" /> Details
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -897,7 +966,25 @@ export default function FieldCrewCleanupTaskDetailPage() {
                   </>
                 )}
 
-                {task.status !== 'completed' && (() => {
+                {/* Strict state machine: assigned/pending/created -> en_route -> completed */}
+                {['assigned', 'pending', 'created'].includes(task.status) && (
+                  <div className="mt-6 pt-4 border-t border-[#1A1A1A]">
+                    <button
+                      onClick={handleStartEnRoute}
+                      disabled={isUpdatingTaskStatus || !isAssigned}
+                      className={`w-full py-3 px-4 transition-all ${(!isAssigned || isUpdatingTaskStatus) ? 'bg-border text-text-muted cursor-not-allowed border border-transparent' : 'bg-[#ccff00] text-text-primary font-bold border border-[#1A1A1A] hover:translate-x-[2px] hover:translate-y-[2px] shadow-sm'}`}
+                    >
+                      {isUpdatingTaskStatus ? 'Starting Route...' : '🚀 Start / En Route'}
+                    </button>
+                    {!isAssigned && (
+                      <p className="text-xs text-text-muted mt-2 text-center font-mono">
+                        You must be assigned to start this task.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {['en_route', 'in_progress'].includes(task.status) && (() => {
                   const hasBeforePhotos = task.before_photo_url || reports.some(r => r.before_photo_url)
                   const hasAfterPhotos = task.after_photo_url || reports.some(r => r.after_photo_url)
                   const allResolved = reports.length === 0 || reports.every(r => {
@@ -916,6 +1003,12 @@ export default function FieldCrewCleanupTaskDetailPage() {
                       >
                         {markingComplete ? 'Processing...' : 'Mark Task Complete'}
                       </button>
+                      {!canMarkComplete && isAssigned && (
+                        <p className="text-xs text-text-muted mt-2 text-center font-mono">
+                          {!hasBeforePhotos || !hasAfterPhotos ? 'Before & after photos required. ' : ''}
+                          {!allResolved ? 'All reports must be resolved before completing.' : ''}
+                        </p>
+                      )}
                     </div>
                   )
                 })()}
