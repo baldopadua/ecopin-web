@@ -1,8 +1,4 @@
-.page { --forecast-accent: var(--workspace-link, #0052cc); --forecast-soft: color-mix(in srgb, var(--forecast-accent) 7%, var(--surface)); padding: 20px 24px; height: 100%; min-height: 0; min-width: 0; display: flex; flex-direction: column; gap: 12px; overflow: hidden; box-sizing: border-box; font-family: var(--font-outfit), sans-serif; font-size: 14px; line-height: 1.5; color: var(--text-primary); }
-.page .pageHeader { position: static !important; margin: 0 !important; padding: 0 0 12px 0 !important; background: transparent !important; backdrop-filter: none !important; border: 0 !important; border-bottom: 1px solid var(--border) !important; flex-shrink: 0; }
-.pageHeader nav { margin-bottom: 4px !important; font-size: 13px; }
-.pageHeader h1 { margin: 0 0 2px !important; font-size: 24px; line-height: 1.25; font-weight: 600; color: var(--text-primary); }
-.pageHeader p { margin: 0 !important; font-size: 13px; line-height: 1.4; color: var(--text-secondary); }
+.page { --forecast-accent: var(--workspace-link, #0052cc); --forecast-soft: color-mix(in srgb, var(--forecast-accent) 7%, var(--surface)); min-width: 0; box-sizing: border-box; font-family: var(--font-outfit), sans-serif; }
 .headingActions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .headingActions button { display: inline-flex; min-height: 44px; min-width: 44px; gap: 8px; justify-content: center; align-items: center; padding: 8px 16px; border: 1px solid var(--border); border-radius: 9999px; background: var(--surface); color: var(--text-primary); font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease; }
 .headingActions button:hover:not(:disabled) { background: var(--surface-elevated); border-color: var(--workspace-link); color: var(--workspace-link); }
@@ -139,7 +135,6 @@ button.forecastMetric:hover, button.forecastMetric[aria-pressed=true] { backgrou
 .page button:focus-visible, .page select:focus-visible, .page svg:focus-visible, .trendDrawer button:focus-visible, .trendFigure summary:focus-visible, .trendFigure svg:focus-visible { outline: 2px solid var(--workspace-link); outline-offset: 2px; }
 .switcher.compactViews { display: none; }
 @media (max-width: 1199px) {
-  .page { padding: 16px; gap: 10px; }
   .issued { display: none; }
   .horizonControls button { padding-inline: 10px; }
   .workspace { grid-template-columns: minmax(0, 1fr) 300px; }
@@ -148,13 +143,9 @@ button.forecastMetric:hover, button.forecastMetric[aria-pressed=true] { backgrou
   .forecastMetric > span { font-size: 12px; }
   .forecastMetric small { font-size: 10px; }
   .overviewTrend { padding-left: 12px; }
-  .pageHeader p { font-size: 12px; }
 }
-@media (max-width: 1023px) { .page { height: calc(100dvh - 64px); } }
+@media (max-width: 1023px), (max-height: 699px) { .workspace { flex: none; min-height: 460px; } }
 @media (max-width: 899px) {
-  .page { min-height: 0; gap: 8px; }
-  .pageHeader h1 { font-size: 20px; }
-  .pageHeader > div { gap: 8px; }
   .headingActions { gap: 6px; }
   .headingActions button { padding: 8px; }
   .headingActions button span { display: none; }
@@ -188,9 +179,6 @@ button.forecastMetric:hover, button.forecastMetric[aria-pressed=true] { backgrou
   .page[data-history=true] .overview { padding-block: 6px; }
 }
 @media (max-width: 599px) {
-  .page { padding: 12px; }
-  .pageHeader p { display: none; }
-  .pageHeader h1 { font-size: 22px; }
   .controls { flex-direction: column; align-items: stretch; gap: 4px; }
   .horizonControls { width: 100%; }
   .horizonControls button { flex: 1; align-items: center; padding-inline: 4px; }

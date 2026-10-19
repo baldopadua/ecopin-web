@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { fetchValidatedReports, fetchClusterById, createCleanupTask, fetchCleanupTasks, updateClusterLabel } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
+import styles from './HotzoneDetail.module.css'
 import Notification from '@/components/ui/Notification'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
 import DataTable from '@/components/ui/DataTable'
@@ -183,13 +184,13 @@ export default function ClusterDetailPage() {
         // Key Statistics Table
         doc.setFontSize(14)
         doc.setFont('helvetica', 'bold')
-        doc.text('Target Profile', 14, 55)
+        doc.text('Hotzone details', 14, 55)
         
         autoTable(doc, {
           startY: 60,
           head: [['Metric', 'Value', 'Metric', 'Value']],
           body: [
-            ['Priority Level', (cluster?.priority ? cluster.priority : ((cluster?.priority_score || 0) >= 80 ? 'urgent' : (cluster?.priority_score || 0) >= 60 ? 'high' : (cluster?.priority_score || 0) >= 35 ? 'medium' : 'low')).toUpperCase(), 'Priority Score', Math.round(cluster?.priority_score || 0).toString()],
+            ['Priority', (cluster?.priority ? cluster.priority : ((cluster?.priority_score || 0) >= 80 ? 'urgent' : (cluster?.priority_score || 0) >= 60 ? 'high' : (cluster?.priority_score || 0) >= 35 ? 'medium' : 'low')), 'Score', Math.round(cluster?.priority_score || 0).toString()],
             ['Total Reports', reports.length.toString(), 'Radius', `${Math.round(cluster?.radius_meters || 50)}m`],
           ],
           headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
@@ -200,10 +201,10 @@ export default function ClusterDetailPage() {
         
         let currentY = doc.lastAutoTable.finalY + 15
         
-        // Constituent Reports Table
+        // Reports in this hotzone
         doc.setFontSize(14)
         doc.setFont('helvetica', 'bold')
-        doc.text('Constituent Reports', 14, currentY)
+        doc.text('Reports in this hotzone', 14, currentY)
         
         const reportTableData = reports.map(r => [
           r.title || 'Untitled',
@@ -233,7 +234,7 @@ export default function ClusterDetailPage() {
   }
 
   if (loading) return (
-    <div className="p-8">
+    <div className={`workspace-page workspace-page--flow ${styles.detail}`}>
       <SkeletonCard className="mb-6" />
       <div className="card animate-pulse mb-6">
         <SkeletonLine className="h-6 w-1/4 mb-4" />
@@ -243,11 +244,11 @@ export default function ClusterDetailPage() {
   )
 
   if (!cluster) return (
-    <div className="p-8 flex flex-col items-center justify-center min-h-[50vh]">
+    <div className={`workspace-page workspace-page--flow ${styles.detail} flex flex-col items-center justify-center min-h-[50vh]`}>
        <AlertTriangle className="w-16 h-16 text-error mb-4 opacity-50" />
-       <h2 className="text-2xl font-bold uppercase tracking-widest">Cluster Not Found</h2>
+       <h2>Hotzone not found</h2>
        <button onClick={() => router.push('/dashboard/officer/hotzone-intel')} className="mt-4 btn-secondary flex items-center gap-2">
-          <ChevronLeft className="w-4 h-4" /> Back to Intel
+          <ChevronLeft className="w-4 h-4" /> Back to hotzones
        </button>
     </div>
   )
@@ -282,9 +283,9 @@ export default function ClusterDetailPage() {
             e.stopPropagation()
             handleViewReport(row)
           }}
-          className="text-xs font-bold uppercase tracking-wider border border-border px-3 py-1 text-text-primary bg-surface hover:text-primary hover:border-primary hover:bg-surface-elevated transition-colors cursor-pointer rounded-xs"
+          className="border border-border px-3 py-2 text-text-primary bg-surface hover:text-primary hover:border-primary hover:bg-surface-elevated transition-colors cursor-pointer rounded-xl"
         >
-          View Data
+          View report
         </button>
       )
     }
@@ -293,11 +294,7 @@ export default function ClusterDetailPage() {
   return (
     <OfficerGuard>
       {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
-      <div className="p-8">
-        
-
-
-
+      <div className={`workspace-page workspace-page--flow ${styles.detail}`}>
         <PageHeader
           title={
             isEditingTitle ? (
@@ -306,21 +303,21 @@ export default function ClusterDetailPage() {
                   type="text" 
                   value={editingTitle} 
                   onChange={(e) => setEditingTitle(e.target.value)} 
-                  className="px-2 py-1 text-2xl font-bold border border-border border-[#2563eb] focus:outline-none w-64 bg-surface-elevated text-text-primary"
+                  className="px-3 py-2 text-base font-semibold border border-border focus:outline-none w-64 bg-surface-elevated text-text-primary rounded-xl"
                   disabled={savingTitle}
                   autoFocus
                 />
                 <button 
                   onClick={handleSaveTitle}
                   disabled={savingTitle}
-                  className="px-3 py-1 text-sm font-bold uppercase tracking-widest bg-primary text-white border border-primary hover:bg-primary/90 transition-colors"
+                  className="px-4 py-2 bg-primary text-white border border-primary hover:bg-primary/90 transition-colors rounded-xl"
                 >
                   {savingTitle ? 'Saving...' : 'Save'}
                 </button>
                 <button 
                   onClick={() => setIsEditingTitle(false)}
                   disabled={savingTitle}
-                  className="px-3 py-1 text-sm font-bold uppercase tracking-widest text-text-muted hover:text-text-primary dark:hover:text-white transition-colors"
+                  className="px-4 py-2 text-text-muted hover:text-text-primary dark:hover:text-white transition-colors rounded-xl"
                 >
                   Cancel
                 </button>
@@ -333,90 +330,90 @@ export default function ClusterDetailPage() {
                     setEditingTitle(cluster.label || `Cluster #${cluster.id.slice(0,8)}`)
                     setIsEditingTitle(true)
                   }}
-                  className="text-text-muted hover:text-primary transition-colors p-1"
-                  title="Rename Cluster"
+                  className="text-text-secondary hover:text-primary min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl"
+                  aria-label="Rename hotzone"
                 >
                   <Pen className="w-5 h-5" />
                 </button>
               </div>
             )
           }
-          subtitle={`Priority Score: ${priorityScore} (${normalizeString(priorityLabel)})`}
+          subtitle={`Priority ${priorityScore} · ${normalizeString(priorityLabel)}`}
           breadcrumbs={[
-            { label: 'Intel', href: '/dashboard/officer/hotzone-intel' },
-            { label: `Cluster ${cluster.id.slice(0,8)}` }
+            { label: 'Hotzones', href: '/dashboard/officer/hotzone-intel' },
+            { label: cluster.label || `Hotzone ${cluster.id.slice(0, 8)}` }
           ]}
         >
           <button 
              onClick={() => router.push('/dashboard/officer/hotzone-intel')}
-             className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-text-secondary hover:text-primary transition-colors mt-2"
+             className="btn-secondary flex items-center gap-2"
           >
-             <ChevronLeft className="w-4 h-4" /> Back to Intel
+             <ChevronLeft className="w-4 h-4" /> Back to hotzones
           </button>
         </PageHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
            
            {/* Details Panel */}
-           <div className="card p-6 border border-border rounded-xl bg-surface-elevated text-text-primary lg:col-span-1 flex flex-col">
-              <h2 className="text-xl font-bold uppercase tracking-tight mb-6 flex items-center gap-2 border-b border-border pb-3">
-                 <Target className="w-5 h-5 text-accent-green" /> Target Profile
+           <div className="card p-5 border border-border rounded-2xl bg-surface-elevated text-text-primary lg:col-span-1 flex flex-col">
+              <h2 className="mb-5 flex items-center gap-2 border-b border-border pb-3">
+                 <Target className="w-5 h-5 text-accent-green" /> Hotzone details
               </h2>
               
-              <div className="space-y-6 flex-1">
+              <div className="space-y-5 flex-1">
                  <div>
-                    <span className="text-[10px] font-mono uppercase text-text-muted block mb-1">Priority</span>
+                    <span className={styles.detailLabel}>Priority</span>
                     <div className="text-3xl font-bold text-error">
                       {priorityScore}
-                      <span className="text-lg font-mono font-normal text-text-muted ml-2">/ 100</span>
+                      <span className="text-lg font-normal text-text-muted ml-2">/ 100</span>
                     </div>
-                    <span className="text-xs font-mono font-bold uppercase tracking-wider text-accent-green">
-                      ({priorityLabel})
+                    <span className="text-sm font-semibold text-accent-green">
+                      {normalizeString(priorityLabel)}
                     </span>
                  </div>
                  
                  <div>
-                    <span className="text-[10px] font-mono uppercase text-text-muted block mb-1">Composition</span>
+                    <span className={styles.detailLabel}>Reports and coverage</span>
                     <div className="flex items-center gap-4">
                        <div>
                          <span className="text-2xl font-bold block">{reports.length}</span>
-                         <span className="text-xs text-text-secondary">Reports</span>
+                         <span className="text-sm text-text-secondary">Reports</span>
                        </div>
                        <div className="h-8 w-px bg-border"></div>
                        <div>
                          <span className="text-2xl font-bold block">{Math.round(cluster.radius_meters || 50)}m</span>
-                         <span className="text-xs text-text-secondary">Radius</span>
+                         <span className="text-sm text-text-secondary">Radius</span>
                        </div>
                     </div>
                  </div>
                  
                  {cluster.issue_type && (
                    <div>
-                      <span className="text-[10px] font-mono uppercase text-text-muted block mb-1">Primary Signature</span>
-                      <div className="text-lg font-bold">{normalizeString(cluster.issue_type)}</div>
+                      <span className={styles.detailLabel}>Primary issue type</span>
+                      <div className="text-lg font-semibold">{normalizeString(cluster.issue_type)}</div>
                    </div>
                  )}
               </div>
               
-              <div className="pt-6 border-t border-border mt-6">
+              <div className="pt-5 border-t border-border mt-5">
                  {loadingTasks ? (
                     <button disabled className="btn-primary w-full opacity-50">Loading...</button>
                  ) : (
                     <button 
                       onClick={handleDispatch}
-                      className="w-full bg-accent-green text-white font-bold uppercase tracking-widest py-3 hover:bg-surface-elevated hover:text-text-primary transition-colors border border-border border-accent-green hover:border-text-primary"
+                      className="btn-primary w-full"
                     >
-                      {existingTask ? 'View Dispatched Task' : 'Dispatch Field Crew'}
+                      {existingTask ? 'View dispatched task' : 'Dispatch field crew'}
                     </button>
                  )}
               </div>
            </div>
            
            {/* Map Panel */}
-           <div className="lg:col-span-2 border border-border bg-surface-elevated relative min-h-[400px] isolate z-0">
-              <div className="absolute top-4 left-4 z-10 bg-surface-elevated text-text-primary px-3 py-1.5 border border-border pointer-events-none">
-                 <span className="font-bold uppercase tracking-widest text-xs flex items-center gap-2">
-                    <MapIcon className="w-3 h-3" /> Area View
+           <div className="lg:col-span-2 border border-border rounded-2xl overflow-hidden bg-surface relative min-h-[400px] isolate z-0">
+              <div className="absolute top-4 left-4 z-10 bg-surface text-text-primary px-3 py-2 border border-border rounded-xl pointer-events-none">
+                 <span className="font-semibold text-sm flex items-center gap-2">
+                    <MapIcon className="w-4 h-4" /> Area map
                  </span>
               </div>
               {centerLat && centerLng ? (
@@ -428,7 +425,7 @@ export default function ClusterDetailPage() {
                    allowedReportIds={reports.map(r => r.id)}
                  />
               ) : (
-                 <div className="w-full h-full flex items-center justify-center text-text-muted font-mono text-sm uppercase">
+                 <div className="w-full h-full flex items-center justify-center text-text-muted text-sm">
                     Location data unavailable
                  </div>
               )}
@@ -436,18 +433,18 @@ export default function ClusterDetailPage() {
         </div>
 
          {/* Reports List */}
-        <div className="card p-6 border border-border rounded-xl">
-           <div className="flex justify-between items-center mb-6 border-b border-border pb-3">
-              <h2 className="text-xl font-bold uppercase tracking-tight flex items-center gap-2">
-                 <Layers className="w-5 h-5 text-primary" /> Constituent Reports
+        <div className="card p-5 border border-border rounded-2xl">
+           <div className="flex justify-between items-center gap-4 mb-5 border-b border-border pb-3">
+              <h2 className="flex items-center gap-2">
+                 <Layers className="w-5 h-5 text-primary" /> Reports in this hotzone
               </h2>
               <button
                 onClick={exportPDF}
                 disabled={exporting || reports.length === 0}
-                className="px-4 py-2 bg-transparent text-text-primary font-bold border border-border dark:border-[#333333] hover:bg-surface-elevated transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-secondary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Download className="w-4 h-4" /> 
-                {exporting ? 'GENERATING PDF...' : 'EXPORT PDF'}
+                {exporting ? 'Generating PDF…' : 'Export PDF'}
               </button>
            </div>
            

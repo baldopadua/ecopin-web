@@ -1,58 +1,27 @@
 .page {
-  height: 100%;
   min-height: 0;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 20px 24px;
-  overflow: hidden;
-  box-sizing: border-box;
   color: var(--text-primary);
   font-family: var(--font-outfit), sans-serif;
   font-size: 14px;
   line-height: 1.5;
 }
 
-.page .pageHeader {
-  position: static !important;
-  margin: 0 !important;
-  padding: 0 0 10px 0 !important;
-  background: transparent !important;
-  backdrop-filter: none !important;
-  border: 0 !important;
-  border-bottom: 1px solid var(--border) !important;
-  flex-shrink: 0;
-}
-
-.pageHeader nav {
-  margin-bottom: 4px !important;
-  font-size: 13px;
-}
-
-.pageHeader h1 {
-  margin: 0 0 2px !important;
-  font-size: 24px;
-  line-height: 1.25;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.pageHeader p {
-  margin: 0 !important;
-  font-size: 13px;
-  line-height: 1.4;
-  color: var(--text-secondary);
-}
-
 /* WORM & Immutability Compliance Banner */
+.retention { flex-shrink: 0; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
+.retention > summary { min-height: 48px; padding: 12px 20px; cursor: pointer; color: var(--text-primary); font-size: 14px; }
+.retention > summary span { margin-left: 12px; color: var(--text-secondary); font-size: 12px; }
+.retention[open] > summary { border-bottom: 1px solid var(--border); }
+.retention .wormBanner { border: 0; }
 .wormBanner {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 8px 14px;
+  padding: 12px 16px;
   border: 1px solid var(--border);
   border-radius: 14px;
   background: var(--surface);
@@ -87,7 +56,7 @@
 }
 
 .wormTitle {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -98,8 +67,7 @@
   gap: 4px;
   padding: 2px 8px;
   border-radius: 9999px;
-  font-size: 11px;
-  font-family: monospace;
+  font-size: 12px;
   font-weight: 600;
   background: color-mix(in srgb, var(--success, #2e7d32) 15%, transparent);
   color: var(--success, #2e7d32);
@@ -108,9 +76,26 @@
 
 .wormSubtitle {
   margin: 0;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-secondary);
   line-height: 1.35;
+}
+
+.protectionDetails {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.protectionDetails summary {
+  width: fit-content;
+  cursor: pointer;
+  color: var(--workspace-link, #0052cc);
+}
+
+.protectionDetails p {
+  margin: 6px 0 0;
+  max-width: 52rem;
 }
 
 .wormRight {
@@ -127,13 +112,13 @@
 }
 
 .wormStatMain {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .wormStatSub {
-  font-size: 11px;
+  font-size: 13px;
   color: var(--text-muted);
 }
 
@@ -141,14 +126,14 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 36px;
-  padding: 6px 14px;
+  min-height: 44px;
+  padding: 8px 16px;
   border-radius: 9999px;
   border: 1px solid var(--border);
   background: var(--surface-elevated);
   color: var(--text-primary);
   font: inherit;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -165,33 +150,6 @@
   cursor: not-allowed;
 }
 
-/* Filter bar adjustments */
-.filterBar {
-  margin-bottom: 0 !important;
-  padding: 8px 12px !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 14px !important;
-  background: var(--surface) !important;
-  flex-shrink: 0;
-}
-
-.filterBar :global(.input) {
-  min-height: 38px;
-  font-size: 13px;
-}
-
-.filterBar :global(button.btn-secondary) {
-  min-height: 38px;
-  padding: 6px 14px;
-  font-size: 13px;
-  border-radius: 9999px;
-}
-
-.filterBar :global(.border-t) {
-  margin-top: 6px !important;
-  padding-top: 6px !important;
-}
-
 /* Table workspace */
 .tableWorkspace {
   flex: 1;
@@ -199,52 +157,22 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 16px;
   overflow: hidden;
 }
 
 .tableContainer {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
+  width: 100%;
   border: 1px solid var(--border);
   border-radius: 14px;
   background: var(--surface);
 }
 
-.tableContainer table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  font-size: 13px;
-  font-family: var(--font-outfit), sans-serif;
-}
-
-.tableContainer table th {
-  padding: 8px 12px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  border-bottom: 1px solid var(--border);
-  background: var(--surface-elevated);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.tableContainer table td {
-  padding: 6px 12px;
-  font-size: 13px;
-  border-bottom: 1px solid var(--border);
-  vertical-align: middle;
-}
-
-.tableContainer table tbody tr:last-child td {
-  border-bottom: 0;
-}
-
-.tableContainer table tbody tr:hover {
-  background: var(--surface-elevated);
+.tableViewport {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
 }
 
 /* Status / Action badges */
@@ -274,9 +202,7 @@
 }
 
 .pagination {
-  margin-top: 0 !important;
   flex-shrink: 0;
-  padding: 2px 0;
 }
 
 /* Error message banner */
@@ -294,14 +220,14 @@
 }
 
 .retryBtn {
-  min-height: 36px;
+  min-height: 44px;
   padding: 6px 16px;
   border-radius: 9999px;
   border: 1px solid color-mix(in srgb, var(--error, #d32f2f) 35%, transparent);
   background: var(--surface);
   color: var(--error, #d32f2f);
   font: inherit;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -311,19 +237,9 @@
   background: color-mix(in srgb, var(--error, #d32f2f) 15%, var(--surface));
 }
 
-@media (max-width: 1023px) {
-  .page {
-    height: calc(100dvh - 64px);
-  }
-}
-
 @media (max-width: 899px) {
   .page {
-    padding: 12px;
-    gap: 8px;
-  }
-  .pageHeader h1 {
-    font-size: 20px;
+    min-height: 0;
   }
   .wormBanner {
     flex-direction: column;
@@ -332,8 +248,5 @@
   .wormRight {
     width: 100%;
     justify-content: space-between;
-  }
-  .filterBar {
-    padding: 6px 10px !important;
   }
 }

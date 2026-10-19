@@ -6,6 +6,7 @@ import PageHeader from '@/components/layout/PageHeader'
 import FilterBar from '@/components/ui/FilterBar'
 import DataTable from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
+import useTablePageSize from '@/components/ui/useTablePageSize'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { OfficerGuard } from '@/components/auth/RequireRole'
 import { Target, Wrench, AlertTriangle, Clock } from 'lucide-react'
@@ -53,9 +54,9 @@ export default function OfficerReportsPage() {
     return 'all'
   })
 
-  // Pagination states - 5 items per page to comfortably fit screen without scrolling
+  // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 5
+  const { containerRef, pageSize: itemsPerPage } = useTablePageSize({ rowHeight: 72, resetKey: `${searchQuery}|${typeFilter}|${statusFilter}|${validationFilter}` })
 
   useEffect(() => {
     let active = true
@@ -233,7 +234,7 @@ export default function OfficerReportsPage() {
 
   return (
     <OfficerGuard>
-      <div className={styles.page}>
+      <div className={`workspace-page ${styles.page}`}>
         <PageHeader 
           title="Reports directory"
           subtitle="View and manage raw environmental data and create operations."
@@ -241,7 +242,6 @@ export default function OfficerReportsPage() {
             { label: 'Officer', href: '/dashboard/officer' },
             { label: 'Reports' }
           ]}
-          className={styles.pageHeader}
         />
 
         {/* Search and Filters */}
@@ -292,11 +292,11 @@ export default function OfficerReportsPage() {
           resultsCount={filteredReports.length}
           loading={loading}
           sticky={false}
-          className={styles.filterBar}
         />
 
         {/* Reports List */}
-        <div className={styles.tableWorkspace}>
+        <div className={`workspace-fill ${styles.tableWorkspace}`}>
+           <div ref={containerRef} className={styles.tableViewport}>
            <DataTable
              columns={tableColumns}
              data={paginatedReports}
@@ -307,6 +307,7 @@ export default function OfficerReportsPage() {
              className={styles.tableContainer}
              caption="Reports directory"
            />
+           </div>
 
           {/* Pagination */}
           {totalPages > 1 && (

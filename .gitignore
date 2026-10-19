@@ -68,3 +68,4 @@ graphify-out/
 # Tests folder is ignored, except for the specific test files that are needed for CI/CD and coverage reports
 /tests/*
 !/tests/dashboard-query-client.test.mjs
+!/tests/role-layout.browser.cjs

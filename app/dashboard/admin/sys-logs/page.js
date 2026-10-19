@@ -6,6 +6,7 @@ import { getSystemLogs } from '@/lib/api/admin'
 import FilterBar from '@/components/ui/FilterBar'
 import DataTable from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
+import useTablePageSize from '@/components/ui/useTablePageSize'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { AdminGuard } from '@/components/auth/RequireRole'
 import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
@@ -17,7 +18,7 @@ function SystemLogsContent() {
   const [error, setError] = useState(null)
   const [filters, setFilters] = useState({ search: '', action_type: '', start_date: '', end_date: '' })
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 8
+  const { containerRef, pageSize: itemsPerPage } = useTablePageSize({ resetKey: JSON.stringify(filters) })
 
   const loadLogs = useCallback(async () => {
     try {
@@ -67,7 +68,8 @@ function SystemLogsContent() {
   }, [filters, allLogs])
 
   const totalPages = Math.ceil(filteredLogs.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
+  const safeCurrentPage = Math.min(currentPage, Math.max(1, totalPages))
+  const startIndex = (safeCurrentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
   const paginatedLogs = filteredLogs.slice(startIndex, endIndex)
 
@@ -141,7 +143,7 @@ function SystemLogsContent() {
   ]
 
   return (
-    <div className="p-8">
+    <div className="workspace-page">
         <PageHeader
           title="System Logs"
           subtitle="View system activity and actions"
@@ -153,7 +155,7 @@ function SystemLogsContent() {
         />
 
         {error && (
-          <div className="mb-6 p-4 bg-error/10 border border-error/30 text-error flex justify-between items-center">
+          <div className="p-4 bg-error/10 border border-error/30 text-error flex justify-between items-center">
             <div>
               <p className="font-bold text-sm">Failed to load system logs</p>
               <p className="text-xs">{error}</p>
@@ -201,22 +203,23 @@ function SystemLogsContent() {
         />
 
         {/* Logs Table */}
+        <div ref={containerRef} className="workspace-scroll">
         <DataTable
           columns={tableColumns}
           data={paginatedLogs}
           loading={loading}
           emptyMessage="No system logs found"
         />
+        </div>
 
         {/* Pagination */}
         {totalPages > 1 && (
           <Pagination
-            currentPage={currentPage}
+            currentPage={safeCurrentPage}
             totalPages={totalPages}
             onPageChange={handlePageChange}
             itemsPerPage={itemsPerPage}
             totalItems={filteredLogs.length}
-            className="mt-6"
           />
         )}
       </div>

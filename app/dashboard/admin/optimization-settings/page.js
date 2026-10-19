@@ -3,6 +3,7 @@ import FleetCapabilities from '@/components/optimization/FleetCapabilities'
 import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import PageHeader from '@/components/layout/PageHeader'
+import PageTabs from '@/components/ui/PageTabs'
 import { AdminGuard } from '@/components/auth/RequireRole'
 import Notification from '@/components/ui/Notification'
 import { SkeletonForm } from '@/components/ui/Skeleton'
@@ -209,7 +210,7 @@ function OptimizationSettingsContent() {
 
   if (loading) {
     return (
-      <div className={styles.page}>
+      <div className={`${styles.page} workspace-page`}>
         <PageHeader
           title="Optimization settings"
           subtitle="Configure depot location, crew schedules, and operational parameters."
@@ -217,7 +218,6 @@ function OptimizationSettingsContent() {
             { label: 'Admin', href: '/dashboard/admin' },
             { label: 'Optimization settings' }
           ]}
-          className={styles.pageHeader}
         />
         <div className={styles.panel}>
           <div className={styles.panelBody}>
@@ -229,7 +229,7 @@ function OptimizationSettingsContent() {
   }
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} workspace-page`}>
       <PageHeader
         title="Optimization settings"
         subtitle="Configure depot location, crew schedules, and operational parameters."
@@ -237,7 +237,6 @@ function OptimizationSettingsContent() {
           { label: 'Admin', href: '/dashboard/admin' },
           { label: 'Optimization settings' }
         ]}
-        className={styles.pageHeader}
       />
 
       {notification && (
@@ -249,39 +248,15 @@ function OptimizationSettingsContent() {
       )}
 
       {/* Tabs Switcher */}
-      <div className={styles.tabList} role="tablist" aria-label="Optimization settings sections">
-        <button
-          type="button"
-          role="tab"
-          id="tab-depot"
-          aria-selected={activeTab === 'depot'}
-          aria-controls="panel-depot"
-          onClick={() => setActiveTab('depot')}
-          className={styles.tabButton}
-        >
-          <span>SWMO Depot Location</span>
-        </button>
-        <button
-          type="button"
-          role="tab"
-          id="tab-crew"
-          aria-selected={activeTab === 'crew'}
-          aria-controls="panel-crew"
-          onClick={() => setActiveTab('crew')}
-          className={styles.tabButton}
-        >
-          <span>Field Crew Configuration</span>
-          <span className={styles.tabBadge}>{crews.length}</span>
-        </button>
-      </div>
+      <PageTabs label="Optimization settings" tabs={[{ id: 'depot', label: 'SWMO Depot Location' }, { id: 'crew', label: 'Field Crew Configuration' }]} value={activeTab} onChange={setActiveTab} />
 
-      <div className={styles.tabContent}>
+      <div className={`${styles.tabContent} workspace-fill`}>
         {/* Tab 1: SWMO Depot Settings */}
         {activeTab === 'depot' && (
           <section
-            id="panel-depot"
+            id="depot-panel"
             role="tabpanel"
-            aria-labelledby="tab-depot"
+            aria-labelledby="depot-tab"
             className={styles.panel}
           >
             <div className={styles.panelHeader}>
@@ -372,9 +347,9 @@ function OptimizationSettingsContent() {
         {/* Tab 2: Crew Settings */}
         {activeTab === 'crew' && (
           <section
-            id="panel-crew"
+            id="crew-panel"
             role="tabpanel"
-            aria-labelledby="tab-crew"
+            aria-labelledby="crew-tab"
             className={styles.panel}
           >
             <div className={styles.panelHeader}>
@@ -465,7 +440,7 @@ function OptimizationSettingsContent() {
                             ? styles.statusOnRoute
                             : styles.statusOffline
                         }`}>
-                          {crew.availability_status || 'offline'}
+                          {(crew.availability_status || 'offline').toLowerCase().replace(/_/g, ' ').replace(/^\w/, letter => letter.toUpperCase())}
                         </span>
                       </div>
 

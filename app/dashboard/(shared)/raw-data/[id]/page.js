@@ -366,7 +366,7 @@ export default function ReportDetailPage() {
 
   if (loading) {
     return (
-      <div className="p-8">
+      <div className="workspace-page workspace-page--flow">
         <PageHeader
           title="Report Details"
           subtitle="Loading report information..."
@@ -420,7 +420,7 @@ export default function ReportDetailPage() {
 
   if (error || !report) {
     return (
-      <div className="p-8">
+      <div className="workspace-page workspace-page--flow">
         <PageHeader
           title="Report Details"
           subtitle="Error loading report"
@@ -453,7 +453,7 @@ export default function ReportDetailPage() {
   })
 
   return (
-    <div className="p-8">
+    <div className="workspace-page workspace-page--flow">
       <PageHeader
         title="Report Details"
         subtitle="View detailed report information"
@@ -495,12 +495,12 @@ export default function ReportDetailPage() {
                     {report.validation_status === 'rejected' || (report.on_private_property && report.property_owner_consent_status === 'denied') ? (
                       <>
                         <div className="flex items-center gap-1.5 px-3 py-1 bg-surface-elevated rounded-lg border border-border">
-                          <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">Review:</span>
+                          <span className="text-xs font-medium text-text-secondary">Review:</span>
                           <StatusBadge status={report.validation_status} type="validation" size="small" />
                         </div>
                         {report.on_private_property && report.property_owner_consent_status === 'denied' && (
                           <div className="flex items-center gap-1.5 px-3 py-1 bg-surface-elevated rounded-lg border border-border">
-                            <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">Consent:</span>
+                            <span className="text-xs font-medium text-text-secondary">Consent:</span>
                             <StatusBadge status={report.property_owner_consent_status} type="consent" size="small" />
                           </div>
                         )}
@@ -508,16 +508,16 @@ export default function ReportDetailPage() {
                     ) : (
                       <>
                         <div className="flex items-center gap-1.5 px-3 py-1 bg-surface-elevated rounded-lg border border-border">
-                          <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">Report Status:</span>
+                          <span className="text-xs font-medium text-text-secondary">Report status:</span>
                           <StatusBadge status={report.status} type="report" size="small" />
                         </div>
                         <div className="flex items-center gap-1.5 px-3 py-1 bg-surface-elevated rounded-lg border border-border">
-                          <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">Citizen Review:</span>
+                          <span className="text-xs font-medium text-text-secondary">Citizen review:</span>
                           <StatusBadge status={report.validation_status} type="validation" size="small" />
                         </div>
                         {report.on_private_property && (
                           <div className="flex items-center gap-1.5 px-3 py-1 bg-surface-elevated rounded-lg border border-border">
-                            <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">Consent:</span>
+                            <span className="text-xs font-medium text-text-secondary">Consent:</span>
                             <StatusBadge
                               status={report.property_owner_consent_status}
                               type="consent"
@@ -527,7 +527,7 @@ export default function ReportDetailPage() {
                         )}
                         {(report.stage || report.lifecycle_stage) && (
                           <div className="flex items-center gap-1.5 px-3 py-1 bg-surface-elevated rounded-lg border border-border">
-                            <span className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">Lifecycle Stage:</span>
+                            <span className="text-xs font-medium text-text-secondary">Progress:</span>
                             <StatusBadge status={report.stage || report.lifecycle_stage} type="lifecycle" size="small" />
                           </div>
                         )}
@@ -568,8 +568,8 @@ export default function ReportDetailPage() {
                     return (
                       <div key={stage} className="flex-1 flex flex-col items-center z-10">
                         <div className={`w-6 h-6 rounded-full ${isCurrent ? 'bg-[var(--primary)] ring-4 ring-[var(--primary)]/20' : isCompleted ? 'bg-[var(--primary)]' : 'bg-gray-300 dark:bg-gray-700'} transition-all relative`} />
-                        <span className={`text-xs mt-2 font-medium ${isCurrent ? 'text-[var(--primary)]' : isCompleted ? 'text-[var(--primary)]' : 'text-text-muted'}`}>
-                          {stage.replace(/_/g, ' ').toUpperCase()}
+                        <span className={`text-xs mt-2 font-medium capitalize ${isCurrent || isCompleted ? 'text-[var(--workspace-link)]' : 'text-text-secondary'}`}>
+                          {stage.replace(/_/g, ' ')}
                         </span>
                       </div>
                     )
@@ -579,8 +579,8 @@ export default function ReportDetailPage() {
 
               {/* Report Information */}
               <div className="card">
-                <h1 className="text-3xl font-bold text-text-primary mb-2">{report.title}</h1>
-                <p className="text-lg text-text-secondary mb-6">Issue: {report.issue_type || 'General'}</p>
+                <h2 className="text-xl font-semibold text-text-primary mb-2">{report.title}</h2>
+                <p className="text-sm text-text-secondary mb-6">Issue: {report.issue_type?.replaceAll('_', ' ') || 'General'}</p>
 
                 <h2 className="text-lg font-semibold text-text-primary mb-3">Description</h2>
                 <p className="text-text-primary leading-relaxed mb-6">
@@ -758,7 +758,7 @@ export default function ReportDetailPage() {
             </div>
 
             {/* Sidebar - Simplified */}
-            <div className="space-y-6 sticky top-[160px] self-start">
+            <div className="space-y-6 self-start">
               {/* Report Metadata */}
               <div className="card">
                 <h2 className="text-lg font-bold text-text-primary mb-4">Report Details</h2>

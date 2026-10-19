@@ -1,5 +1,5 @@
 .page {
-  padding: 32px;
+  padding: 24px;
   width: 100%;
   min-width: 0;
   font-family: var(--font-outfit), sans-serif;
@@ -535,7 +535,7 @@
 /* Responsive */
 @media (max-width: 767px) {
   .page {
-    padding: 20px 16px;
+    padding: 16px;
   }
   .card, .heroCard, .dangerCard {
     padding: 20px 16px;

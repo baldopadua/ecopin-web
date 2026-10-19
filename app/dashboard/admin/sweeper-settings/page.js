@@ -6,6 +6,7 @@ import { AdminGuard } from '@/components/auth/RequireRole'
 import Button from '@/components/ui/Button'
 import Dialog from '@/components/ui/Dialog'
 import Notification from '@/components/ui/Notification'
+import PageTabs from '@/components/ui/PageTabs'
 import { fetchSweeperConfig, updateSlaThreshold, updateWorkTime } from '@/lib/api/sweeper'
 import styles from './SweeperSettings.module.css'
 
@@ -21,6 +22,7 @@ function SweeperSettingsPageContent() {
   const [savingSla, setSavingSla] = useState(false)
   const [savingWorkTimes, setSavingWorkTimes] = useState({})
   const [pendingSla, setPendingSla] = useState(null)
+  const [activeTab, setActiveTab] = useState('deadline')
 
   const loadConfig = async () => {
     setLoading(true)
@@ -87,7 +89,7 @@ function SweeperSettingsPageContent() {
   }
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} workspace-page`}>
         <PageHeader
           title="Sweeper settings"
           subtitle="Set report deadlines and the cleanup time used in dispatch planning."
@@ -95,21 +97,22 @@ function SweeperSettingsPageContent() {
             { label: 'Admin', href: '/dashboard/admin' },
             { label: 'Sweeper settings' }
           ]}
-          className={styles.pageHeader}
         />
         {notification && <Notification {...notification} onClose={() => setNotification(null)} />}
+        <PageTabs label="Sweeper settings" tabs={[{ id: 'deadline', label: 'Service deadline' }, { id: 'work-times', label: 'Work time estimates' }]} value={activeTab} onChange={setActiveTab} />
         {loading ? (
-          <div className={styles.loading} role="status" aria-busy="true">
+          <div className={`${styles.loading} workspace-fill`} role="status" aria-busy="true">
             <span>Loading sweeper settings…</span>
             <div className={styles.skeleton} /><div className={styles.skeleton} />
           </div>
         ) : error ? (
-          <div className={styles.error} role="alert">
+          <div className={`${styles.error} workspace-fill`} role="alert">
             <p>{error}</p><Button variant="secondary" onClick={loadConfig}>Retry</Button>
           </div>
-        ) : config && (
-          <div className={styles.panel}>
-            <section className={styles.section} aria-labelledby="deadline-heading">
+        ) : config && (activeTab === 'deadline' ? (
+          <section id="deadline-panel" role="tabpanel" aria-labelledby="deadline-tab" className={`${styles.panel} workspace-fill`}>
+            <div className={`workspace-scroll ${styles.panelBody}`}>
+            <div className={styles.section} aria-labelledby="deadline-heading">
               <div className={styles.description}>
                 <h2 id="deadline-heading">Service-level deadline</h2>
                 <p>Reports that reach this deadline are marked as overdue. The deadline must be later than the configured report maturation periods.</p>
@@ -126,8 +129,13 @@ function SweeperSettingsPageContent() {
                   </Button>
                 </div>
               </form>
-            </section>
-            <section className={styles.section} aria-labelledby="work-time-heading">
+            </div>
+            <p className={styles.footer}>Crew schedules and capacity are managed in <Link href="/dashboard/admin/optimization-settings">Optimization settings</Link>.</p>
+            </div>
+          </section>
+        ) : (
+          <section id="work-times-panel" role="tabpanel" aria-labelledby="work-times-tab" className={`${styles.panel} workspace-fill`}>
+            <div className={`workspace-scroll ${styles.workPanelBody}`}>
               <div className={styles.description}>
                 <h2 id="work-time-heading">Work time estimates</h2>
                 <p>Estimated cleanup time per report. Dispatch planning combines this with travel time and each crew’s available capacity.</p>
@@ -150,10 +158,10 @@ function SweeperSettingsPageContent() {
                   </form>
                 ))}
               </div>
-            </section>
-            <p className={styles.footer}>Crew schedules and capacity are managed in <Link href="/dashboard/admin/optimization-settings">Optimization settings</Link>.</p>
-          </div>
-        )}
+              <p className={styles.footer}>Crew schedules and capacity are managed in <Link href="/dashboard/admin/optimization-settings">Optimization settings</Link>.</p>
+            </div>
+          </section>
+        ))}
         <Dialog open={pendingSla !== null} onClose={() => setPendingSla(null)} label="Confirm deadline change" dismissible={!savingSla}>
           <section className={styles.confirmation}>
             <h2>Confirm deadline change</h2>

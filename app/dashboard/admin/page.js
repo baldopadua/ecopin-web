@@ -92,7 +92,7 @@ function AdminHomepageContent() {
 
   if (loading) {
     return (
-      <div className="p-8">
+      <div className="workspace-page">
         <PageHeader
           title="Admin Dashboard"
           subtitle="Loading..."
@@ -126,7 +126,7 @@ function AdminHomepageContent() {
 
   if (error) {
     return (
-      <div className="p-8">
+      <div className="workspace-page">
         <PageHeader
           title="Admin Dashboard"
           subtitle="Error"
@@ -143,7 +143,7 @@ function AdminHomepageContent() {
   }
 
   return (
-    <div className="p-8">
+    <div className="workspace-page">
       <PageHeader
         title="Admin Dashboard"
         subtitle="Manage users, settings, and view system logs"
@@ -154,7 +154,7 @@ function AdminHomepageContent() {
       />
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatsCard
           title="Total Users"
           value={stats?.users?.total || 0}
@@ -210,7 +210,7 @@ function AdminHomepageContent() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <button
           onClick={() => router.push('/dashboard/admin/users')}
           className="card hover:border-accent-green transition-colors cursor-pointer text-left"
@@ -252,13 +252,11 @@ function AdminHomepageContent() {
       </div>
 
       {/* Recent System Logs */}
-      <div className="flex flex-col gap-4 mt-8">
+      <div className="workspace-fill">
         <h2 className="text-xl font-bold text-text-primary uppercase tracking-tight">Recent System Logs</h2>
-        <DataTable
-          columns={tableColumns}
-          data={recentLogs}
-          emptyMessage="No recent activity"
-        />
+        <div className="workspace-scroll">
+          <DataTable columns={tableColumns} data={recentLogs} emptyMessage="No recent activity" />
+        </div>
       </div>
     </div>
   )

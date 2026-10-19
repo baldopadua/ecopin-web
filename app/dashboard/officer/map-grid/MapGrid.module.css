@@ -1,47 +1,8 @@
 .page {
-  height: 100%;
-  min-height: 0;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 20px 24px;
-  overflow: hidden;
-  box-sizing: border-box;
   color: var(--text-primary);
   font-family: var(--font-outfit), sans-serif;
   font-size: 14px;
   line-height: 1.5;
-}
-
-.page .pageHeader {
-  position: static !important;
-  margin: 0 0 4px 0 !important;
-  padding: 0 0 12px 0 !important;
-  background: transparent !important;
-  border: 0 !important;
-  border-bottom: 1px solid var(--border) !important;
-  flex-shrink: 0;
-}
-
-.pageHeader nav {
-  margin-bottom: 4px !important;
-  font-size: 13px;
-}
-
-.pageHeader h1 {
-  margin: 0 0 2px !important;
-  font-size: 24px;
-  line-height: 1.25;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.pageHeader p {
-  margin: 0 !important;
-  font-size: 13px;
-  line-height: 1.4;
-  color: var(--text-secondary);
 }
 
 .headerActions {
@@ -595,10 +556,6 @@
 }
 
 @media (max-width: 1199px) {
-  .page {
-    padding: 16px;
-    gap: 10px;
-  }
   .workspace {
     grid-template-columns: minmax(0, 1fr) 300px;
     gap: 10px;
@@ -610,20 +567,7 @@
 .microRouteLine::after { content: ''; display: block; width: 22px; border-top: 2.5px dashed #0052cc; }
 .microRouteCode { color: var(--workspace-link, #0052cc); font-size: 12px; font-weight: 600; font-family: monospace; }
 
-@media (max-width: 1023px) {
-  .page {
-    height: calc(100dvh - 64px);
-  }
-}
-
 @media (max-width: 899px) {
-  .page {
-    padding: 12px;
-    gap: 8px;
-  }
-  .pageHeader h1 {
-    font-size: 20px;
-  }
   .controlToggle {
     min-height: 38px;
     padding: 6px 14px;

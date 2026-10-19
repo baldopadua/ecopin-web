@@ -5,6 +5,7 @@ import { getAuditLogs, getAuditArchiveStatus, executeAuditArchive } from '@/lib/
 import FilterBar from '@/components/ui/FilterBar'
 import DataTable from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
+import useTablePageSize from '@/components/ui/useTablePageSize'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { AdminGuard } from '@/components/auth/RequireRole'
 import ExportButton from '@/components/ui/ExportButton'
@@ -42,7 +43,7 @@ function AuditLogsContent() {
   const [archiveStatus, setArchiveStatus] = useState(null)
   const [archiving, setArchiving] = useState(false)
   const [archiveResult, setArchiveResult] = useState(null)
-  const itemsPerPage = 8
+  const { containerRef, pageSize: itemsPerPage } = useTablePageSize({ resetKey: JSON.stringify(filters) })
 
   const loadArchiveStatus = async () => {
     try {
@@ -132,7 +133,8 @@ function AuditLogsContent() {
   }, [filters, allLogs])
 
   const totalPages = Math.ceil(logs.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
+  const safeCurrentPage = Math.min(currentPage, Math.max(1, totalPages))
+  const startIndex = (safeCurrentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
   const paginatedLogs = logs.slice(startIndex, endIndex)
 
@@ -160,7 +162,7 @@ function AuditLogsContent() {
       label: 'Timestamp', 
       width: '18%',
       render: (value) => (
-        <span className="text-xs text-text-secondary whitespace-nowrap">{formatDate(value)}</span>
+        <span className="text-sm text-text-secondary whitespace-nowrap">{formatDate(value)}</span>
       )
     },
     { 
@@ -169,11 +171,11 @@ function AuditLogsContent() {
       width: '18%',
       render: (value, row) => (
         <div className="flex flex-col gap-0.5">
-          <span className="font-medium text-text-primary text-xs truncate max-w-[140px]" title={value || row.user_id || 'System'}>
+          <span className="font-medium text-text-primary text-sm" title={value || row.user_id || 'System'}>
             {value || row.user_id || 'System'}
           </span>
           {row.user_id && row.user_id !== 'system' && row.user_id !== 'admin' && (
-            <span className="text-xs font-mono text-text-muted">
+            <span className="text-sm font-mono text-text-muted">
               {row.user_id.slice(0, 8)}
             </span>
           )}
@@ -196,11 +198,11 @@ function AuditLogsContent() {
       width: '18%',
       render: (value, row) => (
         <div className="flex flex-col gap-0.5">
-          <span className="text-xs font-medium text-text-primary capitalize">
+          <span className="text-sm font-medium text-text-primary capitalize">
             {value ? value.replace(/_/g, ' ') : 'General'}
           </span>
           {row.entity_id && (
-            <span className="text-xs font-mono text-text-muted truncate max-w-[120px]" title={row.entity_id}>
+            <span className="text-sm font-mono text-text-muted break-all" title={row.entity_id}>
               {row.entity_id.length > 12 ? `${row.entity_id.slice(0, 8)}…` : row.entity_id}
             </span>
           )}
@@ -212,7 +214,7 @@ function AuditLogsContent() {
       label: 'Details', 
       width: '28%',
       render: (value) => (
-        <span className="text-xs font-mono text-text-secondary truncate block max-w-[320px]" title={JSON.stringify(value, null, 2)}>
+        <span className="text-sm text-text-secondary break-words" title={JSON.stringify(value, null, 2)}>
           {formatEventDetails(value)}
         </span>
       )
@@ -224,7 +226,7 @@ function AuditLogsContent() {
   const uniqueEntityTypes = [...new Set((allLogs || []).map(l => l.entity_type).filter(Boolean))]
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} workspace-page`}>
       <PageHeader
         title="Audit logs"
         subtitle="Operational audit trail of actions, entity changes, and system events."
@@ -232,7 +234,6 @@ function AuditLogsContent() {
           { label: 'Admin', href: '/dashboard/admin' },
           { label: 'Audit logs' }
         ]}
-        className={styles.pageHeader}
       >
         <ExportButton 
           data={logs.map(l => ({
@@ -250,8 +251,8 @@ function AuditLogsContent() {
       {error && (
         <div className={styles.errorBanner} role="alert">
           <div>
-            <p className="font-semibold text-xs">Failed to load audit logs</p>
-            <p className="text-xs opacity-90">{error}</p>
+            <p className="font-semibold text-sm">Failed to load audit logs</p>
+            <p className="text-sm opacity-90">{error}</p>
           </div>
           <button
             type="button"
@@ -264,6 +265,8 @@ function AuditLogsContent() {
       )}
 
       {/* WORM & Immutability Compliance Banner */}
+      <details className={styles.retention}>
+        <summary>Audit protection & retention <span>180-day history · 7-year archive</span></summary>
       <div className={styles.wormBanner}>
         <div className={styles.wormLeft}>
           <div className={styles.wormIconBox}>
@@ -271,21 +274,23 @@ function AuditLogsContent() {
           </div>
           <div>
             <div className={styles.wormTitleRow}>
-              <span className={styles.wormTitle}>Immutability triggers active</span>
-              <span className={styles.wormBadge}>
-                <Lock size={10} /> prevent_audit_modification
-              </span>
+              <span className={styles.wormTitle}>Audit history is protected</span>
+              <span className={styles.wormBadge}><Lock size={12} /> Append-only</span>
             </div>
             <p className={styles.wormSubtitle}>
-              Append-only enforcement on PostgreSQL audit tables rejecting UPDATE and DELETE. Hot retention: 180 days · Cold WORM archival: 7 years.
+              Hot retention: 180 days · Archive retention: 7 years.
             </p>
+            <details className={styles.protectionDetails}>
+              <summary>How protection works</summary>
+              <p>Database rules reject changes to audit records. Eligible records can be sealed into long-term WORM archives.</p>
+            </details>
           </div>
         </div>
         <div className={styles.wormRight}>
           {archiveStatus && (
             <div className={styles.wormStats}>
               <span className={styles.wormStatMain}>{archiveStatus.total_records ?? allLogs.length} records in hot store</span>
-              <span className={styles.wormStatSub}>{archiveStatus.eligible_for_archival ?? 0} eligible for WORM archival</span>
+              <span className={styles.wormStatSub}>{archiveStatus.eligible_for_archival ?? 0} eligible for archive</span>
             </div>
           )}
           {archiveStatus?.eligible_for_archival > 0 && (
@@ -296,24 +301,29 @@ function AuditLogsContent() {
               className={styles.sealBtn}
             >
               <Archive size={13} />
-              <span>{archiving ? 'Sealing…' : 'Seal WORM batch'}</span>
+              <span>{archiving ? 'Archiving…' : 'Archive eligible records'}</span>
             </button>
           )}
         </div>
       </div>
+      </details>
 
       {archiveResult && (
-        <div className="p-3 bg-accent-green/10 border border-accent-green/30 text-accent-green rounded-xl flex items-center justify-between text-xs flex-shrink-0">
-          <div className="flex items-center gap-2 font-mono">
+        <div className="p-3 bg-accent-green/10 border border-accent-green/30 text-accent-green rounded-xl flex items-center justify-between text-sm flex-shrink-0">
+          <div className="flex items-center gap-2">
             <CheckCircle2 size={15} />
             <span>
-              Archived {archiveResult.record_count} records. WORM Seal SHA256: {archiveResult.payload_sha256?.slice(0, 16)}… (Retain until {archiveResult.worm_retention_until ? new Date(archiveResult.worm_retention_until).toLocaleDateString() : '7 years'})
+              Archived {archiveResult.record_count} records. Retained until {archiveResult.worm_retention_until ? new Date(archiveResult.worm_retention_until).toLocaleDateString() : '7 years'}.
             </span>
+            <details className={styles.protectionDetails}>
+              <summary>View archive seal</summary>
+              <code>{archiveResult.payload_sha256}</code>
+            </details>
           </div>
           <button
             type="button"
             onClick={() => setArchiveResult(null)}
-            className="text-xs font-semibold underline ml-4 cursor-pointer hover:opacity-80"
+            className="text-sm font-semibold underline ml-4 cursor-pointer hover:opacity-80"
           >
             Dismiss
           </button>
@@ -352,25 +362,26 @@ function AuditLogsContent() {
         resultsCount={logs.length}
         loading={loading}
         sticky={false}
-        className={styles.filterBar}
       />
 
       {/* Logs Table Workspace */}
       <div className={styles.tableWorkspace}>
-        <div className={styles.tableContainer}>
-          <DataTable
-            columns={tableColumns}
-            data={paginatedLogs}
-            loading={loading}
-            emptyMessage="No audit logs found"
-          />
+        <div ref={containerRef} className={styles.tableViewport}>
+          <div className={styles.tableContainer}>
+            <DataTable
+              columns={tableColumns}
+              data={paginatedLogs}
+              loading={loading}
+              emptyMessage="No audit logs found"
+            />
+          </div>
         </div>
 
         {/* Pagination */}
         {totalPages > 1 && (
           <div className={styles.pagination}>
             <Pagination
-              currentPage={currentPage}
+              currentPage={safeCurrentPage}
               totalPages={totalPages}
               onPageChange={handlePageChange}
               itemsPerPage={itemsPerPage}

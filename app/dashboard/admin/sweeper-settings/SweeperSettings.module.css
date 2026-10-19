@@ -1,8 +1,4 @@
 .page {
-  width: 100%;
-  max-width: none;
-  margin: 0;
-  padding: 20px 24px;
   box-sizing: border-box;
   color: var(--text-primary);
   font-family: var(--font-outfit), sans-serif;
@@ -12,37 +8,6 @@
   flex-direction: column;
   gap: 16px;
   min-height: 0;
-}
-
-.page .pageHeader {
-  position: static !important;
-  margin: 0 !important;
-  padding: 0 0 12px 0 !important;
-  background: transparent !important;
-  backdrop-filter: none !important;
-  border: 0 !important;
-  border-bottom: 1px solid var(--border) !important;
-  flex-shrink: 0;
-}
-
-.pageHeader nav {
-  margin-bottom: 4px !important;
-  font-size: 13px;
-}
-
-.pageHeader h1 {
-  margin: 0 0 2px !important;
-  font-size: 24px;
-  line-height: 1.25;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.pageHeader p {
-  margin: 0 !important;
-  font-size: 13px;
-  line-height: 1.4;
-  color: var(--text-secondary);
 }
 
 .panel {
@@ -58,7 +23,7 @@
   display: grid;
   grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
   gap: 32px;
-  padding: 24px 28px;
+  padding: 0;
   align-items: start;
 }
 
@@ -82,13 +47,13 @@
 
 .description p {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.5;
   color: var(--text-secondary);
 }
 
 .description .hint {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-muted);
 }
 
@@ -104,14 +69,14 @@
 }
 
 .deadlineForm label {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .deadlineForm .hint {
   margin: 0 0 8px;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-secondary);
 }
 
@@ -174,7 +139,7 @@
 }
 
 .workRow label {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--text-primary);
   overflow-wrap: anywhere;
@@ -186,17 +151,30 @@
 }
 
 .unit {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-secondary);
 }
 
 .footer {
   border-top: 1px solid var(--border);
-  padding: 14px 28px;
+  padding: 14px 0 0;
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-secondary);
   background: var(--surface-elevated);
+}
+
+.panelBody,
+.workPanelBody {
+  flex: 1;
+  min-height: 0;
+  padding: 20px;
+}
+
+.workPanelBody {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .footer a {
@@ -276,7 +254,6 @@
   .section {
     grid-template-columns: minmax(0, 1fr);
     gap: 16px;
-    padding: 18px 16px;
   }
   .workTimes {
     grid-template-columns: minmax(0, 1fr);
@@ -289,6 +266,6 @@
     flex: 1 1 100%;
   }
   .footer {
-    padding: 14px 16px;
+    padding-top: 14px;
   }
 }

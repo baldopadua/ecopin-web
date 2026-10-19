@@ -10,7 +10,7 @@ import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
 
 const EcoPinMap = dynamic(
   () => import('@/components/map/EcoPinMap'),
-  { ssr: false, loading: () => <div className="h-screen w-full bg-background" /> }
+  { ssr: false, loading: () => <div className="h-full min-h-80 w-full bg-background" /> }
 )
 const CrewTaskLayer = dynamic(
   () => import('@/components/map/CrewTaskLayer'),
@@ -47,8 +47,7 @@ function MapContent() {
   })
 
   return (
-    <div className="h-screen flex flex-col">
-      <div className="p-8 pb-0">
+    <div className="workspace-page">
         <PageHeader 
           title="Map Grid"
           subtitle="View validated environmental reports on the map"
@@ -57,7 +56,7 @@ function MapContent() {
             { label: 'Map Grid' }
           ]}
         />
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 shrink-0">
           {user?.role === 'field_crew' ? (
             <div className="flex gap-4 items-center bg-surface-elevated border border-border p-3 shadow-sm rounded-lg">
               <span className="font-mono text-xs uppercase tracking-widest text-text-muted font-bold">Crew Task Filters:</span>
@@ -75,10 +74,9 @@ function MapContent() {
           ) : <div />}
 
           <div
-            className="flex items-center gap-3 bg-surface-elevated border border-border px-3.5 py-2 rounded-lg text-xs font-mono text-text-secondary shadow-sm ml-auto"
-            title="Dashed blue line (#0052cc) represents the task micro-route connecting cluster centroid to constituent report sub-pins."
+            className="flex flex-wrap items-center gap-3 bg-surface border border-border p-4 rounded-xl text-sm text-text-secondary ml-auto"
           >
-            <span className="font-bold text-text-muted uppercase tracking-wider text-[11px]">Map Legend:</span>
+            <span className="font-medium">Map key</span>
             <div className="flex items-center gap-2">
               <span
                 className="inline-flex items-center justify-center w-8 h-4 bg-primary/10 border border-primary/30 rounded"
@@ -87,13 +85,12 @@ function MapContent() {
                 <span className="w-5 border-t-2 border-dashed border-[#0052cc] dark:border-[#3b82f6]" />
               </span>
               <span className="text-text-primary">
-                Task micro-route (<code className="text-[#0052cc] dark:text-[#3b82f6] font-bold">#0052cc</code>): Centroid to sub-pins
+                Dashed line: route between report locations
               </span>
             </div>
           </div>
         </div>
-      </div>
-      <div className="flex-1 relative z-0">
+      <div className="workspace-fill relative z-0 min-h-80 overflow-hidden border border-border rounded-2xl">
         <EcoPinMap 
           centerLat={lat ? parseFloat(lat) : null} 
           centerLng={lng ? parseFloat(lng) : null} 

@@ -6,6 +6,7 @@ import { SkeletonStatCard } from '@/components/ui/Skeleton'
 import { OfficerGuard } from '@/components/auth/RequireRole'
 import Notification from '@/components/ui/Notification'
 import Button from '@/components/ui/Button'
+import PageTabs from '@/components/ui/PageTabs'
 import usePublicTheme from '@/components/landing/usePublicTheme'
 import styles from './Metrics.module.css'
 import { creationWeekKey } from '@/lib/report-analytics.mjs'
@@ -40,6 +41,7 @@ const SATISFACTION_LABELS = ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Sa
 
 export default function AnalyticsPage() {
   const { isDark } = usePublicTheme()
+  const [activeTab, setActiveTab] = useState('overview')
   const barChartRef = useRef(null)
   const lineChartRef = useRef(null)
   const doughnutIssueRef = useRef(null)
@@ -521,7 +523,7 @@ export default function AnalyticsPage() {
 
   return <OfficerGuard>
     {notification && <Notification {...notification} onClose={() => setNotification(null)} />}
-    <div className={styles.page} id="metrics-content">
+    <div className={`workspace-page ${styles.page}`} id="metrics-content">
       <PageHeader title="Report analytics" subtitle="Understand public report volume, current response outcomes, and resident feedback."
         breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Report analytics' }]}>
         <div className={styles.actions}>
@@ -535,33 +537,58 @@ export default function AnalyticsPage() {
         <p>{loaded ? 'The last loaded reports remain below. Try again to update the summary.' : 'No report figures are shown until the service responds.'}</p>
         <Button variant="secondary" disabled={loading} onClick={() => setReload(value => value + 1)}>Try again</Button>
       </section>}
-      {loading && !loaded && <div className={styles.metrics} aria-hidden="true">{Array.from({ length: 8 }, (_, i) => <SkeletonStatCard key={i} />)}</div>}
-      {loaded && <>
-        <section className={styles.section} aria-busy={loading}>
-          <h2>How are reports progressing?</h2>
-          <p className={styles.description}>All loaded public reports · Creation dates: {coverage}. Refresh to retrieve current outcomes.</p>
-          <dl className={styles.metrics}>{summaryRows.map(([label, value]) => <div className={styles.card} key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
-          <p className={styles.description}>Response timing uses recorded resolution or closure dates, with the latest update as the existing fallback. Today uses your local date. The age indicator includes source-flagged reports and unresolved reports older than 48 hours; it does not measure the configured SLA.</p>
-          {stats.total > 0 ? <div className={styles.progress}>
-            <label htmlFor="resolution-progress">{stats.resolved + stats.closed} of {stats.total} reports are resolved or closed ({stats.resolutionRate}%).</label>
-            <progress id="resolution-progress" max="100" value={stats.resolutionRate} />
-          </div> : <div className={styles.notice}><h3>No public reports to summarize</h3><p>New public reports will appear after they become available and you refresh.</p></div>}
-        </section>
-        <div className={styles.charts}>{charts.map(chart => {
-          const Chart = chart.component
-          return <ChartPanel key={chart.id} id={chart.id} title={chart.title} description={chart.description} unit={chart.unit} rows={chartRows(chart.data)}>
-            {chart.data.labels.length > 0 ? <Chart ref={chart.ref} data={chart.data} options={chart.options} role="img" aria-label={chart.title} /> : <p className={styles.empty}>No reports with usable data for this chart.</p>}
+      <PageTabs label="Report analytics views" value={activeTab} onChange={setActiveTab} tabs={[
+        { id: 'overview', label: 'Overview' },
+        { id: 'breakdown', label: 'Report breakdown' },
+        { id: 'trends', label: 'Trends' },
+        { id: 'feedback', label: 'Feedback' },
+      ]} />
+      <section id="overview-panel" role="tabpanel" aria-labelledby="overview-tab" aria-hidden={activeTab !== 'overview'} inert={activeTab !== 'overview'} className={`workspace-scroll ${styles.tabPanel}`} aria-busy={loading}>
+        {loading && !loaded && <div className={styles.metrics} aria-hidden="true">{Array.from({ length: 8 }, (_, i) => <SkeletonStatCard key={i} />)}</div>}
+        {loaded && <div className={styles.section}>
+            <h2>How are reports progressing?</h2>
+            <p className={styles.description}>All loaded public reports · Creation dates: {coverage}. Refresh to retrieve current outcomes.</p>
+            <dl className={styles.metrics}>{summaryRows.map(([label, value]) => <div className={styles.card} key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+            <details className={styles.methodology}>
+            <summary>Response progress & calculation notes</summary>
+            <p className={styles.description}>Response timing uses recorded resolution or closure dates, with the latest update as the existing fallback. Today uses your local date. The age indicator includes source-flagged reports and unresolved reports older than 48 hours; it does not measure the configured SLA.</p>
+            {stats.total > 0 ? <div className={styles.progress}>
+              <label htmlFor="resolution-progress">{stats.resolved + stats.closed} of {stats.total} reports are resolved or closed ({stats.resolutionRate}%).</label>
+              <progress id="resolution-progress" max="100" value={stats.resolutionRate} />
+            </div> : <div className={styles.notice}><h3>No public reports to summarize</h3><p>New public reports will appear after they become available and you refresh.</p></div>}
+            </details>
+          </div>}
+      </section>
+      <section id="breakdown-panel" role="tabpanel" aria-labelledby="breakdown-tab" aria-hidden={activeTab !== 'breakdown'} inert={activeTab !== 'breakdown'} className={`workspace-scroll ${styles.tabPanel}`}>
+          {loaded && <div className={styles.charts}>
+            <ChartPanel id="report-categories" title="Which concerns are reported?" description="Up to eight most frequent concern types among the loaded public reports." unit="reports" rows={chartRows(issueTypeChartData)}>
+              {issueTypeChartData.labels.length > 0 ? <Doughnut ref={doughnutIssueRef} data={issueTypeChartData} options={pieOptions} role="img" aria-label="Which concerns are reported?" /> : <p className={styles.empty}>No reports with usable data for this chart.</p>}
+            </ChartPanel>
+            <ChartPanel id="report-statuses" title="What is the current response status?" description="Written response states among the loaded public reports. Review decisions are separate." unit="reports" rows={chartRows(statusChartData)}>
+              {statusChartData.labels.length > 0 ? <Doughnut ref={doughnutStatusRef} data={statusChartData} options={pieOptions} role="img" aria-label="What is the current response status?" /> : <p className={styles.empty}>No reports with usable data for this chart.</p>}
+            </ChartPanel>
+          </div>}
+      </section>
+      <section id="trends-panel" role="tabpanel" aria-labelledby="trends-tab" aria-hidden={activeTab !== 'trends'} inert={activeTab !== 'trends'} className={`workspace-scroll ${styles.tabPanel}`}>
+        {loaded ? <div className={styles.charts}>
+          <ChartPanel id="weekly-reports" title="When were reports created?" description="Report counts for the last 12 recorded creation weeks. Weeks without records are not added." unit="reports" rows={chartRows(weeklyVolumeChartData)}>
+            {weeklyVolumeChartData.labels.length > 0 ? <Bar ref={barChartRef} data={weeklyVolumeChartData} options={chartOptions} role="img" aria-label="When were reports created?" /> : <p className={styles.empty}>No reports with usable data for this chart.</p>}
           </ChartPanel>
-        })}</div>
-      </>}
-      <section className={styles.section}>
-        <h2>How do residents rate the response?</h2>
-        <p className={styles.description}>Feedback from the separate satisfaction service. Its scope can differ from the loaded public reports.</p>
-        {ratingsLoading && <p role="status">Loading ratings…</p>}
-        {ratingsError && <div className={styles.notice} role="alert"><p>Ratings could not load.</p>{satisfactionData && <p>The last loaded ratings remain below.</p>}<Button variant="secondary" disabled={ratingsLoading || loading} onClick={retryRatings}>Retry ratings</Button></div>}
-        {satisfactionData?.total > 0 ? <ChartPanel id="resident-ratings" title="Resident ratings" description={`Average rating: ${satisfactionData.average} of 5 from ${satisfactionData.total} responses.`} unit="responses" rows={ratingRows}>
-          <Doughnut ref={doughnutSatRef} data={satisfactionChartData} options={pieOptions} role="img" aria-label="Resident ratings" />
-        </ChartPanel> : !ratingsLoading && !ratingsError && <p className={styles.notice}>No ratings have been received.</p>}
+          <ChartPanel id="weekly-outcomes" title="How are those weeks progressing?" description="Current resolved-or-closed percentage grouped by creation week. This is a present-day cohort comparison, not historical daily performance." unit="%" rows={chartRows(resolutionRateChartData)}>
+            {resolutionRateChartData.labels.length > 0 ? <Line ref={lineChartRef} data={resolutionRateChartData} options={{ ...chartOptions, scales: { ...chartOptions.scales, y: { ...chartOptions.scales.y, max: 100 } } }} role="img" aria-label="How are those weeks progressing?" /> : <p className={styles.empty}>No reports with usable data for this chart.</p>}
+          </ChartPanel>
+        </div> : <p role="status">{loading ? 'Loading report trends…' : 'No report trends are available.'}</p>}
+      </section>
+      <section id="feedback-panel" role="tabpanel" aria-labelledby="feedback-tab" aria-hidden={activeTab !== 'feedback'} inert={activeTab !== 'feedback'} className={`workspace-scroll ${styles.tabPanel}`}>
+        <div className={styles.section}>
+          <h2>How do residents rate the response?</h2>
+          <p className={styles.description}>Feedback from the separate satisfaction service. Its scope can differ from the loaded public reports.</p>
+          {ratingsLoading && <p role="status">Loading ratings…</p>}
+          {ratingsError && <div className={styles.notice} role="alert"><p>Ratings could not load.</p>{satisfactionData && <p>The last loaded ratings remain below.</p>}<Button variant="secondary" disabled={ratingsLoading || loading} onClick={retryRatings}>Retry ratings</Button></div>}
+          {satisfactionData?.total > 0 ? <ChartPanel id="resident-ratings" title="Resident ratings" description={`Average rating: ${satisfactionData.average} of 5 from ${satisfactionData.total} responses.`} unit="responses" rows={ratingRows}>
+            <Doughnut ref={doughnutSatRef} data={satisfactionChartData} options={pieOptions} role="img" aria-label="Resident ratings" />
+          </ChartPanel> : !ratingsLoading && !ratingsError && <p className={styles.notice}>No ratings have been received.</p>}
+        </div>
       </section>
     </div>
   </OfficerGuard>

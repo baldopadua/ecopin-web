@@ -1,12 +1,12 @@
-# EcoPin Public Landing Page Design
+# EcoPin Web Design Contract
 
-Updated: 13 October 2026
+Updated: 19 October 2026
 
-This is the design and implementation contract for EcoPin's current public landing experience. It completely replaces the previous `DESIGN.md`. It records the visual elements, interaction techniques, content rules, responsive behavior, and constraints used to build and improve the page.
+This document defines EcoPin's public web experience and the shared visual and interaction contract for administrator and officer workspaces. Sections 1–20 preserve the public landing, Explore, login, download, and citizen-guide design in detail. Section 21 defines the role-workspace contract; later sections retain route-specific staff requirements.
 
-Scope: the landing page at `/`, its map preview, the Explore page and its two report modes, the login page, Android download, and citizen guide. This document does not prescribe a redesign of administrator, responder, or other role dashboards.
+Scope: public web routes described in sections 1–20 and the administrator/officer web routes described in section 21 and later staff sections. Public/landing pages and field-crew pages are excluded from the role-workspace redesign. Their existing routes, behavior, and page-specific design constraints remain intact.
 
-The values below describe the current implementation. Requirements and verification targets are identified separately from behavior already implemented. Source links point to the files that own each decision; unused CSS selectors are not evidence of an active feature.
+This is a target contract, not a claim that every route already meets it or that the listed acceptance checks have passed. Public implementation details remain documented as existing behavior where stated; staff requirements and acceptance checks are prospective unless separately verified. Source links point to the files that own shared decisions; unused CSS selectors are not evidence of an active feature.
 
 ## Contents
 
@@ -30,6 +30,10 @@ The values below describe the current implementation. Requirements and verificat
 18. [Login page contract](#18-login-page-contract)
 19. [Explore page contract](#19-explore-page-contract)
 20. [Android installation page contract](#20-android-installation-page-contract)
+21. [Administrator and officer workspace contract](#21-administrator-and-officer-workspace-contract)
+22. [Password recovery and staff feedback](#22-password-recovery-and-staff-feedback)
+23. [Officer analytics](#23-officer-analytics)
+24. [Admin sweeper settings](#24-admin-sweeper-settings)
 
 ## 1. Direction and nonnegotiable rules
 
@@ -56,7 +60,7 @@ The supplied real estate landing reference informed the large centered headline,
 - Keep navigation available while scrolling and reflect the current signed-in account.
 - Never invent incident counts, impact statistics, testimonials, completion times, or product capabilities.
 - Identify the supplied cleanup workers as SWMO field crews. Do not describe them as random citizens or link their photos to a named live report without evidence.
-- Limit this work to public pages related to the landing experience.
+- Sections 1–20 govern the public landing and related public routes. Administrator and officer workspace rules are defined in section 21 and later staff sections; they do not authorize changes to public behavior or field-crew screens.
 
 Avoid neon accents, purple gradients, decorative charts, excessive glass panels, large shadowed cards everywhere, technical dashboard copy, and decorative movement that obscures the task.
 
@@ -758,21 +762,85 @@ Sources: [downloads](app/downloads/page.js) and [styles](app/downloads/Downloads
 
 The refinements browser check verifies feature removals, map theme changes, popup font parity, dropdown keyboard behavior without page jumps, search/layout controls, photo and report navigation, download behavior, mobile layouts, and slideshow timing/pause. Use synthetic browser fixtures; do not mutate production reports to verify visual changes.
 
-## 21. Working UI adaptation
+## 21. Administrator and officer workspace contract
 
-The full UI modernization in `../UI_UPDATE_BACKLOG.md` extends this civic visual language to supported working screens. The original public geometry, motion, routes, and privacy constraints remain authoritative for public pages. Staff screens use the same Outfit, civic blue, neutral charcoal, quiet borders, and semantic colors with compact task-oriented layouts.
+This section sets the shared visual and behavior contract for administrator and officer web routes, including deep pages and details. It carries the civic EcoPin identity into task-oriented workspaces. It does not redesign the public experience described in sections 1–20 or field-crew pages. A shared route that also serves field crew must retain that role's existing behavior and presentation.
 
-Dashboard overrides live in `components/layout/DashboardShell.module.css` and do not redefine public landing tokens globally. Working headings use 24–32px, body 14–16px, labels 14px, captions at least 12px, and sentence case. Use monospace only for actual payloads/identifiers. Shared table typography is readable Outfit; row hover preserves status colors. Buttons and filters have 44px minimum targets, 12px input/menu corners, 16px content cards, 24px dialogs, and pill actions. Elevation is subtle; hard offset dialog shadows are not part of the working design.
+### Route coverage
 
-The web shell uses a 256px sidebar, an 88px optional collapsed rail, and a 64px mobile top bar below 1024px. Mobile navigation opens a native modal drawer with Escape dismissal, background isolation, and opener focus return. Desktop links retain current-page semantics even when collapsed. Workspace content has a skip target, independent scrolling, and no permanently allocated sidebar gutter on small screens. Loading uses the same shell footprint.
+Apply this contract across the officer command center, map grid, spatial scan, hotzone intelligence and details, operations list/create/details, optimization and run details, reports, metrics, sweeper analytics, and crew management. Apply it across the admin dashboard, Users, system and infrastructure views, optimization settings, sweeper settings, audit logs, and system logs. Shared profile and raw-report routes follow the same shell typography, theme, header, controls, and table rules when rendered for an administrator or officer. Route guards, data access, lifecycle, and existing workflows remain authoritative.
 
-Staff filters share the proven public combobox behavior after verifying value compatibility: same string values/callbacks, generated unique IDs, keyboard selection/dismissal, selected state, bounded menus, and scrolling confined to the menu. Filter rows wrap, search remains labeled, reset is an explicit disabled control when inactive, and date ranges use labeled native date controls with valid bounds.
+The Users workspace has **Users** and **Create user** tabs. Changing tabs must preserve entered user drafts, validation feedback, and the create form's current state. Switching tabs must not silently submit, reset, or discard the draft.
 
-Tables preserve table semantics and allow intentional horizontal scrolling within a named keyboard-focusable region. Sorting uses real buttons and aria-sort; report opening has an explicit button as well as pointer row interaction. Nested action clicks do not also open a row. Stable record IDs are preferred for keys. Pagination has named destinations/current-page state and keeps focus on the selected control instead of forcing page scrolling.
+### Shared ownership and visual language
 
-Primary filled actions stay #0052CC with white content. On staff surfaces, readable status foregrounds are success #2E7D32/#83CBA0, warning #B45309/#FCD34D, error #D32F2F/#FCA5A5, information #0369A1/#82B6FF. These are display colors, not new workflow values. Written labels preserve distinctions among review, lifecycle, priority, assignment, and synchronization. No neon status override, decorative slashes, or all-caps badge tracking.
+Use [DashboardShell.module.css](components/layout/DashboardShell.module.css) for workspace tokens, shell behavior, and common page, panel, input, button, focus, and table rules. Use [PageHeader.js](components/layout/PageHeader.js) for page headings and breadcrumbs, [PageTabs.js](components/ui/PageTabs.js) with [PageTabs.module.css](components/ui/PageTabs.module.css) for tab strips, and [useTablePageSize.js](components/ui/useTablePageSize.js) for viewport-aware table pagination. Make cross-page changes in these shared owners; do not create slightly different page-local versions of the same pattern.
 
-The mobile contract in `../ecopin_app/DESIGN.md` adapts these rules to 48dp controls, system text scaling, safe areas, outdoor field work, and actual offline policy. Existing role access, endpoints, data, lifecycle, and private media delivery remain intact. Documentation describes the target and verified shared behavior; completion of each page remains tracked separately in the backlog.
+The visual direction is civic, friendly, and calm: Outfit typography, neutral charcoal dark surfaces, quiet borders, restrained elevation, and meaningful semantic status colors. Dashboard theme tokens are scoped to the shell and must not redefine the public landing palette globally. Use the semantic shell tokens (`--surface`, `--surface-elevated`, `--background`, `--border`, `--text-primary`, `--text-secondary`, `--workspace-link`, `--success`, `--warning`, `--error`, and `--info`) instead of scattered theme-specific values.
+
+- Primary actions use `#0052cc` with white text in both themes; hover may use `#003d99`.
+- Links and non-filled blue emphasis use `#0052cc` in light mode and `#82b6ff` in dark mode through `--workspace-link`.
+- Dark surfaces remain neutral charcoal. Do not shift them to blue-gray slate.
+- Status colors are readable display colors: success `#2e7d32` / `#83cba0`, warning `#b45309` / `#fcd34d`, error `#d32f2f` / `#fca5a5`, and information `#0369a1` / `#82b6ff`. Pair color with written status; never change workflow meaning to fit a color.
+- Use sentence case. Reserve monospace for identifiers or actual machine-formatted values. Avoid all-caps tracking, neon status overrides, decorative slashes, gradients, and heavy shadows.
+
+### Page frame, header, and controls
+
+Use a consistent page frame with 24px desktop padding, 16px narrow-screen padding, and a 20px vertical gap. Panels use 20px inner padding, a 1px semantic border, a 16px radius, and a theme surface. Inputs and buttons have a 44px minimum height; inputs and menus use 12px corners, dialogs use 24px corners, and primary/secondary actions use the shared pill treatment. Keep captions at least 12px and ordinary body text at 14–16px.
+
+Every page uses the same heading hierarchy and dimensions; do not shrink a heading to make a crowded page fit. The shared header uses a 28px medium-weight title (24px below 768px), 14px subtitle, and 12px breadcrumb. Long titles wrap cleanly. Keep page actions next to the heading where they fit, then wrap them without reducing targets or text size. Never override the shared header with page-local margins, negative offsets, hidden subtitles, or a smaller type scale.
+
+The sticky header preserves its initial top gutter while the workspace scrolls: 24px, or 16px below 768px, measured from the workspace scrollport. Its shared background extension covers that gutter so scrolling content cannot show above the breadcrumb. Keep this inside `PageHeader.module.css`; do not add padding that increases header height or reduces fitted-page capacity.
+
+### Tabs and panel semantics
+
+All workspace tab strips use `PageTabs`. The track has a tinted elevated surface, 1px border, 16px radius, 4px inset, and 8px gap. A selected tab has a surface fill, 1px border, 12px radius, and blue text; each tab has a 44px minimum height. On narrow screens the strip scrolls horizontally without shrinking or wrapping tab labels.
+
+Use the shared tab keyboard behavior: Left/Right Arrow moves between tabs, Home selects the first, End selects the last, and focus follows selection. Keep the tablist named. Each tab's `aria-controls` points to a matching `tabpanel`; each panel names its tab with `aria-labelledby`. Only the active panel is exposed. Preserve focus and panel state when changing tabs.
+
+### Fitted workspaces and natural flow pages
+
+For fitted workspaces at widths of at least 1024px and heights of at least 700px, use the shell's available height with a `.workspace-page` frame. Keep the page header, primary controls, filters, tabs, and pagination visible. Put overflow in the relevant table/list region using `.workspace-scroll`; do not scroll or clip the whole page to fit a dense table. Nested lists may have their own bounded scroll region when needed.
+
+Use `.workspace-page--flow` for pages whose content is expected to grow, including generated proposals, operation details, profile content, and long forms. These pages scroll naturally. At small widths, short window heights, browser zoom, or text enlargement, allow the page to grow and scroll. Never clip controls, compress text, or hide content to simulate a fit. Do not force every record or every detail onto one screen at the cost of readability.
+
+A typical fitted page is structured as follows; the actual content can vary while retaining the shared frame and contained scrolling:
+
+```jsx
+<main className="workspace-page">
+  <PageHeader title="Reports" subtitle="Review submitted reports" />
+  <div className="workspace-fill">
+    <section className="workspace-panel workspace-fill">
+      <PageTabs ... />
+      <FilterBar ... />
+      <div className="workspace-scroll" ref={containerRef}>
+        <DataTable ... />
+      </div>
+      <Pagination ... />
+    </section>
+  </div>
+</main>
+```
+
+### Tables and viewport-aware pagination
+
+Keep real table semantics. Headers use 13px Outfit, body cells use 14px Outfit with 1.5 line height, and cells use 12px vertical by 16px horizontal padding. The header may remain sticky inside the table viewport. Hover uses the elevated surface while preserving status text and badges. Use an intentionally horizontally scrollable, keyboard-focusable named region when columns cannot fit.
+
+Rows keep natural content height with a 56px minimum for readable, clickable records. Controls or wrapped content can increase that height. Do not set the whole table, `tbody`, or rows to `height: 100%`; do not use tall stretched rows or fake blank rows to fill the screen. Empty states use only the content height they need and explain the next useful action when one exists. Loading and failure states remain explicit.
+
+Attach `useTablePageSize` to the allocated table viewport, with pagination outside that viewport. The helper measures rendered rows and uses `rowHeight` only while rows are unavailable. Pass a stable `resetKey` built from the active filters so an earlier tall row does not reduce capacity after filtering. The visible page capacity should increase on tall fitted monitors and use a readable baseline on smaller/shorter windows. Recompute when the viewport is resized. Clamp the current page after filters, data changes, or a capacity change so it never points past the final page. Keep the scrollbar in the table/list region rather than expanding the entire page.
+
+Sorting uses real buttons and `aria-sort`; pagination has a named control, current-page state, and stable focus. If an entire row opens a detail, provide a visible or screen-reader-accessible button/link and prevent nested actions from also opening the row. Prefer stable record IDs for keys.
+
+### Shared interaction states and accessibility
+
+Make hover, selected, focus, disabled, loading, empty, error, stale, and success states legible in both themes. Use written labels alongside color or icons. Errors and stale data must not look like empty results; offer retry where the operation supports it. Keep form values and validation feedback after recoverable failures. Controls need visible keyboard focus, clear accessible names, and 44px targets. Dialogs preserve modal semantics, Escape behavior, and focus return. Respect reduced motion.
+
+### Acceptance checks
+
+Treat these as required checks for future dashboard UI changes; this list does not assert that they have already passed. Review officer and administrator routes, including deep details and Users/Create user, at `1366×768`, `1280×720`, and `1440×900`, in both light and dark themes. At these desktop sizes, fitted pages keep the header and primary controls visible, with only their designated table or nested-list areas scrolling. Also review widths `320px`, `768px`, and `1024px`, short windows, browser zoom, keyboard-only tab navigation, and enlarged text. Narrow and short layouts must scroll naturally without clipped or compressed content. Check representative loading, empty, error, stale, and success states as well as hover and focus. Keep synthetic fixtures for browser checks; do not mutate live reports or staff records for visual verification.
+
+Public page requirements remain the existing public behavior documented in sections 1–20. The shared shell, tabs, and table patterns above describe implementation ownership and the intended staff target; a listed component or CSS rule is not proof that every route currently conforms. Track route completion and any remaining page-specific work separately in the UI backlog.
 
 ## 22. Password recovery and staff feedback
 
@@ -787,6 +855,8 @@ These behaviors are verified by `tests/password-recovery.browser.cjs` and `tests
 ## 23. Officer analytics
 
 Analytics use Outfit, sentence case, 14px labels and summaries, quiet 16px cards, and wrapping actions. Group charts by the question they answer. Every chart has a named canvas and native written values with units; the written legend remains useful without color or canvas access. Chart axes follow the theme and avoid decorative animation. Keep current report status separate from review state. The native progress indicator includes its denominator and uses civic blue.
+
+Report analytics uses shared **Overview**, **Report breakdown**, **Trends**, and **Feedback** tabs. Overview shows the eight summary figures in four desktop columns, with calculation notes and the detailed progress bar in a disclosure. Report breakdown holds current categories/statuses, Trends holds creation-week volume/outcomes, and Feedback holds resident satisfaction. Keep default summary content in the laptop viewport; detailed panels can scroll as their real values and legends grow. Cards retain readable chart stages and written values. Inactive chart panels remain mounted, absolutely positioned, and `visibility: hidden` so their canvases remain measurable for PDF export before their tabs are opened. Using `display: none` produces zero-size canvases and breaks that export. Sweeper settings similarly uses **Service deadline** and **Work time estimates** tabs, with all per-issue save controls in the latter.
 
 Report analytics identifies the creation-date coverage of the loaded public projection. Creation-week outcome percentages describe current states of those cohorts, rather than claiming past daily performance. Group year-boundary dates under the correct week year. Invalid timestamps cannot create fictitious chart dates or negative/NaN durations. Preserve the existing resolution/closure/latest-update fallback, explain it, and identify the 48-hour age indicator separately from configured SLA policy. Satisfaction comes from its separate service and has independent failure/retry feedback; its scope can differ from public-report coverage.
 

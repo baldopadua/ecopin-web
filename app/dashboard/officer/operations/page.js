@@ -6,6 +6,7 @@ import PageHeader from '@/components/layout/PageHeader'
 import FilterBar from '@/components/ui/FilterBar'
 import DataTable from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
+import useTablePageSize from '@/components/ui/useTablePageSize'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { OfficerGuard } from '@/components/auth/RequireRole'
 import { Plus } from 'lucide-react'
@@ -29,7 +30,7 @@ export default function CleanupTasksPage() {
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 5
+  const { containerRef, pageSize: itemsPerPage } = useTablePageSize({ resetKey: `${searchQuery}|${statusFilter}` })
 
   useEffect(() => {
     let active = true
@@ -97,7 +98,7 @@ export default function CleanupTasksPage() {
   }
 
   return (
-    <div className={styles.page}>
+      <div className={`workspace-page ${styles.page}`}>
       <PageHeader
         title="Operations"
         subtitle="Manage and track cleanup tasks"
@@ -105,7 +106,6 @@ export default function CleanupTasksPage() {
           { label: 'Officer', href: '/dashboard/officer' },
           { label: 'Operations' }
         ]}
-        className={styles.pageHeader}
       >
         <OfficerGuard>
           <button
@@ -143,11 +143,11 @@ export default function CleanupTasksPage() {
         resultsCount={filteredTasks.length}
         loading={loading}
         sticky={false}
-        className={styles.filterBar}
       />
 
       {/* Tasks List */}
-      <div className={styles.tableWorkspace}>
+      <div className={`workspace-fill ${styles.tableWorkspace}`}>
+        <div ref={containerRef} className={styles.tableViewport}>
         <DataTable
           columns={[
             { key: 'title', label: 'Title', width: '22%' },
@@ -197,6 +197,7 @@ export default function CleanupTasksPage() {
           className={styles.tableContainer}
           caption="Cleanup tasks"
         />
+        </div>
 
         {/* Pagination */}
         {totalPages > 1 && (

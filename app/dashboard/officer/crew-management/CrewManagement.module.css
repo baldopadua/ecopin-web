@@ -1,4 +1,4 @@
-.page { min-width: 0; padding: 32px; font-family: var(--font-outfit), sans-serif; font-size: 14px; line-height: 1.5; }
+.page { min-width: 0; font-family: var(--font-outfit), sans-serif; font-size: 14px; line-height: 1.5; }
 .card { min-width: 0; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
 .crewHeader { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap;
   gap: 16px; padding: 20px; border-bottom: 1px solid var(--border); }
@@ -33,6 +33,28 @@
 .candidate { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 12px;
   border-radius: 12px; text-align: left; font: inherit; }
 .addIcon { margin-left: auto; color: var(--workspace-link); flex-shrink: 0; }
+.workloadAvailable { color: var(--success); border-color: color-mix(in srgb, var(--success) 25%, var(--border));
+  background: color-mix(in srgb, var(--success) 8%, var(--surface)); }
+.workloadActive { color: var(--workspace-link); border-color: color-mix(in srgb, var(--workspace-link) 25%, var(--border));
+  background: color-mix(in srgb, var(--workspace-link) 8%, var(--surface)); }
+.workloadCapacity { color: var(--error); border-color: color-mix(in srgb, var(--error) 25%, var(--border));
+  background: color-mix(in srgb, var(--error) 8%, var(--surface)); font-weight: 600; }
+.assignedTasksSection { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+.assignedTasksToggle { display: flex; align-items: center; justify-content: space-between; width: 100%;
+  padding: 8px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-elevated);
+  font: inherit; font-size: 13px; font-weight: 500; color: var(--text-primary); cursor: pointer; }
+.assignedTasksToggle:hover { background: color-mix(in srgb, var(--workspace-link) 6%, var(--surface-elevated)); }
+.assignedTaskList { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+.assignedTaskItem { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface);
+  text-decoration: none; transition: border-color 0.15s ease; }
+.assignedTaskItem:hover { border-color: var(--workspace-link); }
+.assignedTaskTitle { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+.assignedTaskMeta { display: flex; align-items: center; gap: 8px; }
+.summaryBanner { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 14px 20px;
+  margin-top: 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
+.summaryStat { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-secondary); }
+.summaryStat strong { font-weight: 600; color: var(--text-primary); }
 @media (max-width: 767px) {
   .page { padding: 20px 16px; }
   .crewHeader { padding: 16px; }

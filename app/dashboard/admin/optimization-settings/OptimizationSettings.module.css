@@ -1,111 +1,12 @@
 .page {
-  height: 100%;
   min-height: 0;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 20px 24px;
-  overflow: hidden;
-  box-sizing: border-box;
   color: var(--text-primary);
   font-family: var(--font-outfit), sans-serif;
   font-size: 14px;
   line-height: 1.5;
-}
-
-.page .pageHeader {
-  position: static !important;
-  margin: 0 !important;
-  padding: 0 0 12px 0 !important;
-  background: transparent !important;
-  backdrop-filter: none !important;
-  border: 0 !important;
-  border-bottom: 1px solid var(--border) !important;
-  flex-shrink: 0;
-}
-
-.pageHeader nav {
-  margin-bottom: 4px !important;
-  font-size: 13px;
-}
-
-.pageHeader h1 {
-  margin: 0 0 2px !important;
-  font-size: 24px;
-  line-height: 1.25;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.pageHeader p {
-  margin: 0 !important;
-  font-size: 13px;
-  line-height: 1.4;
-  color: var(--text-secondary);
-}
-
-/* Tabs Navigation */
-.tabList {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-  padding-bottom: 4px;
-}
-
-.tabButton {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 38px;
-  padding: 6px 16px;
-  border-radius: 9999px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--text-secondary);
-  font: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.tabButton:hover:not(:disabled) {
-  background: var(--surface);
-  color: var(--text-primary);
-}
-
-.tabButton[aria-selected="true"] {
-  background: #0052cc;
-  color: #ffffff;
-  border-color: #0052cc;
-  box-shadow: 0 1px 3px rgba(0, 82, 204, 0.25);
-}
-
-.tabButton:focus-visible {
-  outline: 3px solid var(--workspace-link);
-  outline-offset: 2px;
-}
-
-.tabBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 9999px;
-  font-size: 11px;
-  font-weight: 600;
-  background: rgba(255, 255, 255, 0.2);
-  color: inherit;
-}
-
-.tabButton[aria-selected="false"] .tabBadge {
-  background: var(--surface-elevated);
-  color: var(--text-muted);
 }
 
 /* Content Area */
@@ -131,7 +32,7 @@
 }
 
 .panelHeader {
-  padding: 14px 18px;
+  padding: 20px;
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -142,7 +43,7 @@
 
 .panelHeader h2 {
   margin: 0;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   color: var(--text-primary);
   display: flex;
@@ -152,7 +53,7 @@
 
 .panelHeader p {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-secondary);
 }
 
@@ -162,10 +63,10 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
-  padding: 16px 18px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
 /* Depot Specific Layout */
@@ -208,7 +109,7 @@
 }
 
 .field label {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--text-secondary);
 }
@@ -222,7 +123,7 @@
   background: var(--surface-elevated);
   color: var(--text-primary);
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
   transition: border-color 0.15s ease;
 }
 
@@ -240,7 +141,7 @@
   display: flex;
   gap: 12px;
   font-family: monospace;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-muted);
   padding: 6px 10px;
   background: var(--surface-elevated);
@@ -356,9 +257,7 @@
   align-items: center;
   padding: 2px 8px;
   border-radius: 9999px;
-  font-size: 11px;
-  font-family: monospace;
-  text-transform: uppercase;
+  font-size: 12px;
 }
 
 .statusAvailable {
@@ -402,9 +301,6 @@
 }
 
 @media (max-width: 1023px) {
-  .page {
-    height: calc(100dvh - 64px);
-  }
   .depotLayout {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -417,11 +313,5 @@
 }
 
 @media (max-width: 899px) {
-  .page {
-    padding: 12px;
-    gap: 8px;
-  }
-  .pageHeader h1 {
-    font-size: 20px;
-  }
+  .page { min-height: 0; }
 }

@@ -435,9 +435,9 @@ export default function ProfilePage() {
           </div>
 
           <div className={styles.heroDetails}>
-            <h1 id="identity-heading" className={styles.heroName}>
+            <h2 id="identity-heading" className={styles.heroName}>
               {formData.full_name || 'EcoPin User'}
-            </h1>
+            </h2>
             <p className={styles.heroEmail}>
               <Mail size={16} aria-hidden="true" className="text-text-muted flex-shrink-0" />
               <span>{formData.email || 'No email associated'}</span>

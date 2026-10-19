@@ -8,12 +8,15 @@ import feedbackStyles from '@/components/optimization/OptimizationFeedback.modul
 import RouteInfoHeader from '@/components/ui/RouteInfoHeader'
 import { SkeletonForm } from '@/components/ui/Skeleton'
 import EvidenceGallery from '@/components/ui/EvidenceGallery'
+import DataTable from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
+import PageTabs from '@/components/ui/PageTabs'
+import useTablePageSize from '@/components/ui/useTablePageSize'
 import OptimizationSettings, { normalizeCapacitySettings } from '@/components/optimization/OptimizationSettings'
 import TemplateSelector from '@/components/ui/TemplateSelector'
 import DisassembleModal from '@/components/optimization/DisassembleModal'
 import { useTask } from '@/components/context/TaskContext'
-import { Sun, CloudRain, CloudLightning, Circle, Globe, Map, Check, CheckCircle2, XCircle, Ruler, Timer, RotateCcw, Loader2, History, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Sun, CloudRain, CloudLightning, Circle, Globe, Map, Check, CheckCircle2, XCircle, Ruler, Timer, RotateCcw, Loader2, History } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import styles from './optimization.module.css'
 import { 
@@ -112,7 +115,10 @@ export default function OptimizationPage() {
   const [dispatchSuccess, setDispatchSuccess] = useState(null)
   const [disassembleTargetId, setDisassembleTargetId] = useState(null)
   const [isDisassembleModalOpen, setIsDisassembleModalOpen] = useState(false)
-  const runsPerPage = 5
+  const { containerRef: runsContainerRef, pageSize: runsPerPage } = useTablePageSize({ rowHeight: 64 })
+  const totalRunPages = Math.max(1, Math.ceil(previousRuns.length / runsPerPage))
+  const safeRunPage = Math.min(currentPage, totalRunPages)
+  const paginatedRuns = previousRuns.slice((safeRunPage - 1) * runsPerPage, safeRunPage * runsPerPage)
 
 
   const loadPendingClusters = useCallback(async () => {
@@ -357,12 +363,10 @@ export default function OptimizationPage() {
 
   const pendingProposal = previousRuns.find(r => r.status === 'proposed')
   return (
-    <div className={styles.page}>
+    <div className={`workspace-page ${styles.page}`}>
       <PageHeader
         title="Optimization"
-        titleAccent="Center"
         subtitle="Generate, review, and approve route optimization proposals for field crews"
-        className={styles.pageHeader}
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard' },
           { label: 'Officer', href: '/dashboard/officer' },
@@ -370,39 +374,10 @@ export default function OptimizationPage() {
         ]}
       />
 
-      {/* Tabs navigation */}
-      <div className={styles.tabList} role="tablist" aria-label="Optimization views">
-        <button
-          type="button"
-          role="tab"
-          id="tab-dispatch"
-          aria-selected={activeTab === 'dispatch'}
-          aria-controls="panel-dispatch"
-          tabIndex={activeTab === 'dispatch' ? 0 : -1}
-          onClick={() => setActiveTab('dispatch')}
-          className={styles.tabButton}
-        >
-          <Globe className="w-4 h-4" />
-          <span>Dispatch settings</span>
-        </button>
-
-        <button
-          type="button"
-          role="tab"
-          id="tab-previous"
-          aria-selected={activeTab === 'previous'}
-          aria-controls="panel-previous"
-          tabIndex={activeTab === 'previous' ? 0 : -1}
-          onClick={() => setActiveTab('previous')}
-          className={styles.tabButton}
-        >
-          <History className="w-4 h-4" />
-          <span>Previous runs</span>
-          {previousRuns.length > 0 && (
-            <span className={styles.tabBadge}>{previousRuns.length}</span>
-          )}
-        </button>
-      </div>
+      <PageTabs label="Optimization views" value={activeTab} onChange={setActiveTab} tabs={[
+        { id: 'dispatch', label: 'Dispatch settings', icon: Globe },
+        { id: 'previous', label: `Previous runs${previousRuns.length ? ` (${previousRuns.length})` : ''}`, icon: History },
+      ]} />
 
       {pendingProposal && (
         <div className={`${styles.banner} ${styles.bannerWarning}`}>
@@ -462,9 +437,9 @@ export default function OptimizationPage() {
       {/* ── TAB 1: Dispatch Settings ───────────────────────── */}
       {activeTab === 'dispatch' && (
         <div 
-          id="panel-dispatch" 
+          id="dispatch-panel"
           role="tabpanel" 
-          aria-labelledby="tab-dispatch" 
+          aria-labelledby="dispatch-tab"
           className={styles.tabPanel}
         >
           <div className={styles.scrollableContent}>
@@ -906,23 +881,23 @@ export default function OptimizationPage() {
       {/* ── TAB 2: Previous Runs ───────────────────────────── */}
       {activeTab === 'previous' && (
         <div 
-          id="panel-previous" 
+          id="previous-panel"
           role="tabpanel" 
-          aria-labelledby="tab-previous" 
+          aria-labelledby="previous-tab"
           className={styles.tabPanel}
         >
           <div className={styles.tableCard}>
             <div className={styles.tableHeaderRow}>
               <div>
-                <h3 className="font-semibold text-text-primary text-base m-0 normal-case tracking-normal flex items-center gap-2">
-                  <History className="w-4 h-4 text-primary" />
+                <h2 className="font-semibold text-text-primary text-xl m-0 normal-case tracking-normal flex items-center gap-2">
+                  <History className="w-5 h-5 text-primary" />
                   Previous runs
-                </h3>
-                <p className="text-xs text-text-muted mt-0.5 mb-0 font-sans">
+                </h2>
+                <p className="text-sm text-text-muted mt-1 mb-0 font-sans">
                   Historic route optimization runs and crew assignments
                 </p>
               </div>
-              <span className="text-xs text-text-muted font-sans">
+              <span className="text-sm text-text-muted font-sans">
                 {previousRuns.length} total runs
               </span>
             </div>
@@ -930,114 +905,37 @@ export default function OptimizationPage() {
             {runsLoading ? (
               <SkeletonForm fields={3} />
             ) : previousRuns.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+              <div className="flex-1 flex flex-col items-center justify-center text-center p-5">
                 <History className="w-8 h-8 text-text-muted mb-2 opacity-50" />
                 <p className="text-text-muted text-sm font-sans m-0">No optimization runs yet. Generate your first proposal in Dispatch Settings.</p>
               </div>
             ) : (
               <>
-                <div className={styles.tableWrap} role="region" aria-label="Previous optimization runs" tabIndex={0}>
-                  <table className={styles.table}>
-                    <thead>
-                      <tr>
-                        <th>Date</th>
-                        <th>Status</th>
-                        <th>Tasks</th>
-                        <th>Weather</th>
-                        <th>Traffic</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {previousRuns.slice((currentPage - 1) * runsPerPage, currentPage * runsPerPage).map(run => (
-                        <tr 
-                          key={run.id}
-                          onClick={() => handleViewRun(run.id)}
-                          className={styles.tableRowHover}
-                        >
-                          <td>{formatDate(run.created_at)}</td>
-                          <td>
-                            <span className={`${styles.statusBadge} ${STATUS_STYLES[run.status] || ''}`}>
-                              {run.status}
-                            </span>
-                          </td>
-                          <td>{run.num_tasks_optimized}</td>
-                          <td>
-                            <span className="flex items-center gap-1.5">
-                              {WEATHER_OPTIONS.find(w => w.value === (run.weather_condition?.toLowerCase() || 'normal'))?.icon || <Sun className="w-3.5 h-3.5 text-warning" />}
-                              <span>{WEATHER_OPTIONS.find(w => w.value === (run.weather_condition?.toLowerCase() || 'normal'))?.label || 'Normal'}</span>
-                            </span>
-                          </td>
-                          <td>
-                            <span className="flex items-center gap-1.5">
-                              {TRAFFIC_OPTIONS.find(t => t.value === (run.traffic_condition?.toLowerCase() || 'low'))?.icon || <Circle className="w-3 h-3 text-success fill-success" />} 
-                              <span>{TRAFFIC_OPTIONS.find(t => t.value === (run.traffic_condition?.toLowerCase() || 'low'))?.label || 'Low'}</span>
-                            </span>
-                          </td>
-                          <td>
-                            <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleViewRun(run.id);
-                                }}
-                                className={styles.tableActionBtn}
-                              >
-                                View
-                              </button>
-                              {run.status !== 'discarded' && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleOpenDisassemble(run.id);
-                                  }}
-                                  className={`${styles.tableActionBtn} text-error hover:text-error/80`}
-                                  title="Disassemble plan and restore backlog"
-                                >
-                                  <RotateCcw className="w-3 h-3" /> Disassemble
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div ref={runsContainerRef} className={styles.tableWrap}>
+                  <DataTable
+                    columns={[
+                      { key: 'created_at', label: 'Date', width: '18%', render: value => formatDate(value) },
+                      { key: 'status', label: 'Status', width: '15%', render: (value) => <span className={`inline-flex rounded-full border px-3 py-1 ${STATUS_STYLES[value] || ''}`}>{value}</span> },
+                      { key: 'num_tasks_optimized', label: 'Tasks', width: '10%' },
+                      { key: 'weather_condition', label: 'Weather', width: '17%', render: (value) => <span className="flex items-center gap-2">{WEATHER_OPTIONS.find(w => w.value === (value?.toLowerCase() || 'normal'))?.icon || <Sun className="w-4 h-4 text-warning" />}<span>{WEATHER_OPTIONS.find(w => w.value === (value?.toLowerCase() || 'normal'))?.label || 'Normal'}</span></span> },
+                      { key: 'traffic_condition', label: 'Traffic', width: '17%', render: (value) => <span className="flex items-center gap-2">{TRAFFIC_OPTIONS.find(t => t.value === (value?.toLowerCase() || 'low'))?.icon || <Circle className="w-4 h-4 text-success fill-success" />}<span>{TRAFFIC_OPTIONS.find(t => t.value === (value?.toLowerCase() || 'low'))?.label || 'Low'}</span></span> },
+                      { key: 'actions', label: 'Actions', width: '23%', render: (_, run) => <div className="flex flex-wrap items-center gap-2"><button type="button" className="btn-secondary" onClick={() => handleViewRun(run.id)}>View</button>{run.status !== 'discarded' && <button type="button" className="btn-secondary text-error" onClick={() => handleOpenDisassemble(run.id)} title="Disassemble plan and restore backlog"><RotateCcw className="w-4 h-4" /> Disassemble</button>}</div> },
+                    ]}
+                    data={paginatedRuns}
+                    emptyMessage="No optimization runs yet. Generate your first proposal in Dispatch Settings."
+                    onRowClick={run => handleViewRun(run.id)}
+                    rowActionLabel={run => `Open optimization run from ${formatDate(run.created_at)}`}
+                    caption="Previous optimization runs"
+                  />
                 </div>
-
-                {/* Pagination Controls */}
-                <div className={styles.paginationFooter}>
-                  <span>
-                    Showing {Math.min(previousRuns.length, (currentPage - 1) * runsPerPage + 1)}–{Math.min(previousRuns.length, currentPage * runsPerPage)} of {previousRuns.length} runs
-                  </span>
-                  {previousRuns.length > runsPerPage && (
-                    <div className={styles.pageControls}>
-                      <button
-                        type="button"
-                        aria-label="Previous page"
-                        disabled={currentPage <= 1}
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                        className={styles.pageBtn}
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </button>
-                      <span className="font-semibold text-text-primary px-1">
-                        {currentPage} / {Math.ceil(previousRuns.length / runsPerPage)}
-                      </span>
-                      <button
-                        type="button"
-                        aria-label="Next page"
-                        disabled={currentPage >= Math.ceil(previousRuns.length / runsPerPage)}
-                        onClick={() => setCurrentPage(p => Math.min(Math.ceil(previousRuns.length / runsPerPage), p + 1))}
-                        className={styles.pageBtn}
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <Pagination
+                  currentPage={safeRunPage}
+                  totalPages={totalRunPages}
+                  onPageChange={setCurrentPage}
+                  itemsPerPage={runsPerPage}
+                  totalItems={previousRuns.length}
+                  className="shrink-0 pt-3"
+                />
               </>
             )}
           </div>

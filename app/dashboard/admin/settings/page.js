@@ -60,7 +60,7 @@ function SystemSettingsContent() {
 
   if (loading) {
     return (
-      <div className="p-8">
+      <div className="workspace-page">
         <PageHeader
           title="System Settings"
           subtitle="Loading..."
@@ -70,15 +70,17 @@ function SystemSettingsContent() {
             { label: 'Settings' }
           ]}
         />
-        <div className="card">
-          <SkeletonForm fields={6} />
+        <div className="workspace-fill workspace-scroll">
+          <div className="card">
+            <SkeletonForm fields={6} />
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="p-8">
+    <div className="workspace-page">
       <PageHeader
         title="System Settings"
         subtitle="Configure password requirements and security settings"
@@ -97,6 +99,7 @@ function SystemSettingsContent() {
         />
       )}
 
+      <div className="workspace-fill workspace-scroll">
       <div className="card">
         <h2 className="text-xl font-bold text-text-primary mb-6">Password Requirements</h2>
         
@@ -201,6 +204,7 @@ function SystemSettingsContent() {
             {saving ? 'Saving...' : 'Save Settings'}
           </button>
         </div>
+      </div>
       </div>
     </div>
   )

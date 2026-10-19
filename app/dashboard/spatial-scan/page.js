@@ -109,7 +109,7 @@ function TacticalScanContent() {
   const clearFilters = () => { setQuery(''); setRiskFilter('all'); setFocusedItem(null); };
   const filterAreas = value => { setRiskFilter(value); setFocusedItem(null); };
 
-  return <div className={styles.page} data-history={activeTab === 'historical'}>
+  return <div className={`workspace-page ${styles.page}`} data-history={activeTab === 'historical'}>
     <PageHeader title="Hotspot forecast" className={styles.pageHeader} subtitle="See where report activity may build up. Plan your next inspection."
       breadcrumbs={[{ label: 'Officer', href: '/dashboard/officer' }, { label: 'Spatial scan' }]}>
       <div className={styles.headingActions}>

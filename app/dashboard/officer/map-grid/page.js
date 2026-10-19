@@ -65,12 +65,11 @@ function OfficerMapContent() {
   }
 
   return (
-    <div className={styles.page}>
+    <div className={`workspace-page ${styles.page}`}>
       <PageHeader
         title="Map grid"
         subtitle="Explore validated environmental reports, clusters, and active cleanup tasks."
         breadcrumbs={[{ label: 'Officer', href: '/dashboard/officer' }, { label: 'Map grid' }]}
-        className={styles.pageHeader}
       >
         <div className={styles.headerActions}>
           {filtersActive && (

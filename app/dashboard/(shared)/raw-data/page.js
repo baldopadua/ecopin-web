@@ -6,6 +6,7 @@ import PageHeader from '@/components/layout/PageHeader'
 import FilterBar from '@/components/ui/FilterBar'
 import DataTable from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
+import useTablePageSize from '@/components/ui/useTablePageSize'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { useUser } from '@/components/auth/UserContext'
 
@@ -25,7 +26,7 @@ export default function ReportsPage() {
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 8
+  const { containerRef, pageSize: itemsPerPage } = useTablePageSize({ resetKey: `${searchQuery}|${typeFilter}|${statusFilter}|${validationFilter}` })
 
   useEffect(() => {
     Promise.all([
@@ -79,7 +80,8 @@ export default function ReportsPage() {
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredReports.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
+  const safeCurrentPage = Math.min(currentPage, Math.max(1, totalPages))
+  const startIndex = (safeCurrentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
   const paginatedReports = filteredReports.slice(startIndex, endIndex)
 
@@ -155,7 +157,7 @@ export default function ReportsPage() {
   ]
 
   return (
-    <div className="p-8">
+    <div className="workspace-page">
       <PageHeader 
         title="Raw Data"
         subtitle="View and manage environmental reports"
@@ -215,9 +217,11 @@ export default function ReportsPage() {
         onReset={handleResetFilters}
         resultsCount={filteredReports.length}
         loading={loading}
+        sticky={false}
       />
 
       {/* Reports List */}
+      <div ref={containerRef} className="workspace-scroll">
       <DataTable
         columns={tableColumns}
         data={paginatedReports}
@@ -225,16 +229,16 @@ export default function ReportsPage() {
         emptyMessage="No reports match your filters"
         onRowClick={handleRowClick}
       />
+      </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
         <Pagination
-          currentPage={currentPage}
+          currentPage={safeCurrentPage}
           totalPages={totalPages}
           onPageChange={handlePageChange}
           itemsPerPage={itemsPerPage}
           totalItems={filteredReports.length}
-          className="mt-6"
         />
       )}
     </div>

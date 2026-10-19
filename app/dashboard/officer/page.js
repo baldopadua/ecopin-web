@@ -5,6 +5,7 @@ import { fetchWorkQueue, getOptimizationRuns } from '@/lib/api'
 import { useDashboardReports, useDashboardTasks, useDashboardClusters } from '@/components/context/DashboardQueryProvider'
 import CommandCenterPanel from '@/components/ui/CommandCenterPanel'
 import styles from '@/components/ui/CommandCenter.module.css'
+import PageHeader from '@/components/layout/PageHeader'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { useUser } from '@/components/auth/UserContext'
 import { OfficerGuard } from '@/components/auth/RequireRole'
@@ -108,14 +109,12 @@ export default function OfficerHomepage() {
 
   return (
     <OfficerGuard>
-      <div className={styles.page}>
-        <header className={styles.header}>
-          <h1>Command Center</h1>
+      <div className={`workspace-page ${styles.page}`}>
+        <PageHeader title="Command Center" subtitle={`Welcome, ${user?.full_name || 'Officer'}. System status is operational.`}>
           <Link href="/dashboard/officer/optimization" className={styles.primary}>
             <CloudLightning size={16} aria-hidden="true" />Run Optimization
           </Link>
-          <p>Welcome, {user?.full_name || 'Officer'}. System status is operational.</p>
-        </header>
+        </PageHeader>
         {dataError && <div role="alert">
           Some dashboard data could not refresh. Previously loaded data is shown where available.
           <button type="button" onClick={() => { void taskQuery.refetch(); void reportQuery.refetch(); void clusterQuery.refetch() }}>Try again</button>

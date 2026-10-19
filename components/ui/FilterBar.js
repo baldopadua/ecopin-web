@@ -1,6 +1,5 @@
 'use client'
 import DateRangePicker from './DateRangePicker'
-import Input from './Input'
 import PublicSelect from './PublicSelect'
 import { useId } from 'react'
 
@@ -27,8 +26,8 @@ export default function FilterBar({
     (showDateRange && (dateRange.start || dateRange.end))
 
   return (
-    <div className={`bg-surface border border-border rounded-2xl p-4 md:p-6 mb-6 ${sticky ? 'sticky top-0 z-10' : ''} ${className}`}>
-      <div className="flex flex-wrap items-end gap-4">
+    <div className={`workspace-filter bg-surface border border-border rounded-2xl p-4 md:p-6 mb-6 ${sticky ? 'sticky top-0 z-10' : ''} ${className}`}>
+      <div className="workspace-filter-fields flex flex-wrap items-end gap-4">
         {/* Search Input */}
         {onSearchChange && (
           <div className="flex-auto w-full sm:w-auto sm:min-w-[240px]">
@@ -63,25 +62,15 @@ export default function FilterBar({
           </div>
         )}
 
-        {/* Reset Button */}
-        {onReset && (
-          <button
-            onClick={onReset}
-            className="btn-secondary disabled:opacity-50"
-            disabled={!hasActiveFilters}
-          >
-            Reset Filters
-          </button>
-        )}
       </div>
       
       {/* Results Count */}
-      {resultsCount !== null && (
-        <div className="mt-4 pt-4 border-t border-border flex justify-between items-center">
-           <span className="text-sm text-text-secondary">Results</span>
-           <span role="status" className="text-sm font-medium text-text-primary">
+      {(resultsCount !== null || onReset) && (
+        <div className="workspace-filter-summary mt-4 pt-4 border-t border-border flex flex-wrap gap-3 justify-between items-center">
+           {resultsCount !== null && <span role="status" className="text-sm font-medium text-text-primary">
              {loading ? 'Loading results…' : `${resultsCount} ${resultsCount === 1 ? 'item' : 'items'} found`}
-           </span>
+           </span>}
+           {onReset && <button type="button" onClick={onReset} className="btn-secondary disabled:opacity-50" disabled={!hasActiveFilters}>Reset Filters</button>}
         </div>
       )}
     </div>

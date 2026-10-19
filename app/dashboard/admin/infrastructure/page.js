@@ -165,7 +165,7 @@ function InfrastructureContent() {
   }
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="workspace-page">
       <PageHeader
         title="Infrastructure & Disaster Recovery"
         subtitle="RPO/RTO validation, PostgreSQL PITR continuous WAL, cross-region storage replication, and runbook drill protocols."
@@ -184,6 +184,7 @@ function InfrastructureContent() {
         />
       )}
 
+      <div className="workspace-scroll flex flex-col gap-5">
       {/* Top SLA KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Database RPO */}
@@ -251,7 +252,6 @@ function InfrastructureContent() {
               <CheckCircle2 className="w-3.5 h-3.5" /> ACTIVE
             </span>
             <span className="text-xs text-text-muted">02:00 UTC Snapshot</span>
-          </div>
         </div>
       </div>
 
@@ -719,6 +719,8 @@ function InfrastructureContent() {
           </div>
         )}
       </div>
+      </div>
+    </div>
     </div>
   )
 }

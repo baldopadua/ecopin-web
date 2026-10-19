@@ -5,6 +5,7 @@ import { getOptimizationRunById, approveOptimization, discardOptimization } from
 import { fetchReportsByIds } from '@/lib/api/reports'
 import RouteInfoHeader from '@/components/ui/RouteInfoHeader'
 import PageHeader from '@/components/layout/PageHeader'
+import styles from './OptimizationRun.module.css'
 import { SkeletonLine } from '@/components/ui/Skeleton'
 import { formatStatusLabel } from '@/lib/helpers/statusHelpers'
 import EvidenceGallery from '@/components/ui/EvidenceGallery'
@@ -118,7 +119,7 @@ export default function OptimizationRunPage() {
 
   if (loading) {
     return (
-      <div className="p-8 space-y-6" aria-busy="true">
+      <div className={`workspace-page workspace-page--flow ${styles.runPage}`} aria-busy="true">
         {header}
         <p role="status" className="sr-only">Loading optimization details…</p>
         <div className="card border border-border mb-6" aria-hidden="true">
@@ -154,7 +155,7 @@ export default function OptimizationRunPage() {
 
   if (!run) {
     return (
-      <div className="p-8 space-y-6">
+      <div className={`workspace-page workspace-page--flow ${styles.runPage}`}>
         {header}
         <div className="text-center py-20">
         <h2 className="text-2xl font-semibold text-text-primary mb-4">Run not found</h2>
@@ -174,7 +175,7 @@ export default function OptimizationRunPage() {
   const maxDur = Math.max(...routes.map(r => r.total_duration_min || 0), 1)
 
   return (
-    <div className="p-8 space-y-6">
+    <div className={`workspace-page workspace-page--flow ${styles.runPage}`}>
       {header}
 
       {notification && (
@@ -183,7 +184,7 @@ export default function OptimizationRunPage() {
 
       <div className="card border border-border mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-text-primary text-lg">Proposal result</h3>
+          <h2 className="font-semibold text-text-primary">Proposal result</h2>
           <span className={`text-xs px-3 py-1 border font-semibold font-sans normal-case tracking-normal ${STATUS_STYLES[run.status] || STATUS_STYLES.draft}`}>
             {formatStatusLabel(run.status)}
           </span>
@@ -247,7 +248,7 @@ export default function OptimizationRunPage() {
         {/* Task-Time Histogram */}
         {routes.length > 0 && (
           <div className="mb-6">
-            <h4 className="font-semibold text-text-primary mb-3 font-sans normal-case text-sm">Task time workload</h4>
+            <h2 className="font-semibold text-text-primary mb-3">Task time workload</h2>
             <div className="flex items-end gap-2 h-40 bg-surface-elevated border border-border p-4">
               {routes.map((r, i) => {
                 const dur = r.total_duration_min || (r.task_count * 25) || 1
@@ -284,9 +285,9 @@ export default function OptimizationRunPage() {
         {/* Route map */}
         {routes.length > 0 && (
           <div className="mb-6">
-            <h4 className="font-semibold text-text-primary mb-3 flex items-center gap-2">
+            <h2 className="font-semibold text-text-primary mb-3 flex items-center gap-2">
               <Map className="w-5 h-5" /> Route map
-            </h4>
+            </h2>
             <div className="border border-border" style={{ height: '400px' }}>
               <RouteMapView routes={routes} travelMode={run?.settings_snapshot?.travel_mode || 'DRIVING'} />
             </div>

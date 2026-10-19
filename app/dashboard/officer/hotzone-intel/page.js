@@ -7,6 +7,7 @@ import { OfficerGuard } from '@/components/auth/RequireRole'
 import FilterBar from '@/components/ui/FilterBar'
 import DataTable from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
+import useTablePageSize from '@/components/ui/useTablePageSize'
 import styles from './HotzoneIntel.module.css'
 
 export default function ClustersPage() {
@@ -25,7 +26,7 @@ export default function ClustersPage() {
   const [severityFilter, setSeverityFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 5
+  const { containerRef, pageSize: itemsPerPage } = useTablePageSize({ resetKey: `${searchQuery}|${typeFilter}|${severityFilter}|${statusFilter}` })
   
   const router = useRouter()
 
@@ -140,7 +141,7 @@ export default function ClustersPage() {
 
   return (
     <OfficerGuard>
-      <div className={styles.page}>
+      <div className={`workspace-page ${styles.page}`}>
         <PageHeader
           title="Hotzone Intel"
           subtitle="Spatial intelligence and cluster mapping"
@@ -148,7 +149,6 @@ export default function ClustersPage() {
             { label: 'Dashboard', href: '/dashboard/officer' },
             { label: 'Hotzone Intel' }
           ]}
-          className={styles.pageHeader}
         />
 
         <FilterBar
@@ -192,15 +192,15 @@ export default function ClustersPage() {
           resultsCount={filteredClusters.length}
           loading={loading}
           sticky={false}
-          className={styles.filterBar}
         />
 
-        <div className={styles.tableWorkspace}>
+        <div className={`workspace-fill ${styles.tableWorkspace}`}>
           {clusterQuery.isError && <div role="alert">
             Hotzones could not refresh. Previously loaded hotzones remain below if available.
             <button type="button" onClick={() => { void clusterQuery.refetch() }}>Try again</button>
           </div>}
           {(!clusterQuery.isError || clusterQuery.data) && <>
+          <div ref={containerRef} className={styles.tableViewport}>
           <DataTable 
             columns={listColumns}
             data={paginatedClusters}
@@ -211,6 +211,7 @@ export default function ClustersPage() {
             className={styles.tableContainer}
             caption="Hotzone clusters"
           />
+          </div>
           
           {totalPages > 1 && (
             <Pagination

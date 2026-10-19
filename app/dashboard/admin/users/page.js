@@ -7,9 +7,11 @@ import Notification from '@/components/ui/Notification'
 import FilterBar from '@/components/ui/FilterBar'
 import DataTable from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
+import PageTabs from '@/components/ui/PageTabs'
+import useTablePageSize from '@/components/ui/useTablePageSize'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { getAllUsers, updateUserRole, deleteUser, createUser, getSystemSettings, changeUserPassword } from '@/lib/api'
-import { Eye, EyeOff, KeyRound, Trash2, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, KeyRound, Trash2, Loader2, Users, UserPlus } from 'lucide-react'
 import styles from './UserActions.module.css'
 import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
 
@@ -17,7 +19,6 @@ function UserManagementContent() {
   const router = useRouter()
   const [allUsers, setAllUsers] = useState([])
   const [filteredUsers, setFilteredUsers] = useState([])
-  const [paginatedUsers, setPaginatedUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [notification, setNotification] = useState(null)
@@ -25,10 +26,10 @@ function UserManagementContent() {
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 5
+  const { containerRef, pageSize: itemsPerPage } = useTablePageSize({ resetKey: JSON.stringify(filters) })
+  const [activeTab, setActiveTab] = useState('users')
   const [updatingRole, setUpdatingRole] = useState(null)
   const [deletingUser, setDeletingUser] = useState(null)
-  const [showCreateForm, setShowCreateForm] = useState(false)
   const [creatingUser, setCreatingUser] = useState(false)
   const [newUser, setNewUser] = useState({ email: '', password: '', full_name: '', role: 'citizen' })
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -107,13 +108,10 @@ function UserManagementContent() {
     setCurrentPage(1)
   }, [filters.search, filters.role, allUsers])
 
-  // Apply pagination locally
-  useEffect(() => {
-    const start = (currentPage - 1) * itemsPerPage
-    setPaginatedUsers(filteredUsers.slice(start, start + itemsPerPage))
-  }, [currentPage, filteredUsers])
-
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage)
+  const safeCurrentPage = Math.min(currentPage, Math.max(1, totalPages))
+
+  const paginatedUsers = filteredUsers.slice((safeCurrentPage - 1) * itemsPerPage, safeCurrentPage * itemsPerPage)
 
   const handleRoleChange = async (userId, newRole) => {
     try {
@@ -173,7 +171,7 @@ function UserManagementContent() {
       await createUser({ email, password, full_name, role })
       setNotification({ message: 'User created successfully', type: 'success' })
       setNewUser({ email: '', password: '', full_name: '', role: 'citizen' })
-      setShowCreateForm(false)
+      setActiveTab('users')
       loadUsers()
     } catch (err) {
       reportDiagnostic('error', 'admin', 'Failed to create user:', err)
@@ -328,7 +326,7 @@ function UserManagementContent() {
   ]
 
   return (
-    <div className="p-8">
+    <div className="workspace-page">
       <PageHeader
         title="User Management"
         subtitle="Manage user accounts and roles"
@@ -337,14 +335,7 @@ function UserManagementContent() {
           { label: 'Admin', href: '/dashboard/admin' },
           { label: 'Users' }
         ]}
-      >
-        <button
-          onClick={() => setShowCreateForm(!showCreateForm)}
-          className="btn-primary whitespace-nowrap"
-        >
-          {showCreateForm ? 'Cancel' : 'Create User'}
-        </button>
-      </PageHeader>
+      />
 
       {notification && (
         <Notification
@@ -460,14 +451,18 @@ function UserManagementContent() {
         </div>
       )}
 
-      {/* Create User Form */}
-      {showCreateForm && (
-        <div className="card mb-6">
-          <h3 className="text-lg font-semibold text-text-primary mb-4">Create New User</h3>
+      <PageTabs label="User management" tabs={[{ id: 'users', label: 'Users', icon: Users }, { id: 'create', label: 'Create user', icon: UserPlus }]} value={activeTab} onChange={setActiveTab} />
+
+      {activeTab === 'create' ? (
+      <section role="tabpanel" id="create-panel" aria-labelledby="create-tab" className="workspace-panel workspace-fill">
+        <div className="workspace-scroll">
+        <div>
+          <h2 className="text-lg font-semibold text-text-primary mb-4">Create new user</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">Email *</label>
+              <label htmlFor="create-user-email" className="block text-sm font-medium text-text-secondary mb-2">Email *</label>
               <input
+                id="create-user-email"
                 type="email"
                 value={newUser.email}
                 onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
@@ -476,9 +471,10 @@ function UserManagementContent() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">Password</label>
+              <label htmlFor="create-user-password" className="block text-sm font-medium text-text-secondary mb-2">Password</label>
               <div className="relative">
                 <input
+                  id="create-user-password"
                   type={showCreatePassword ? 'text' : 'password'}
                   value={newUser.password}
                   onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
@@ -503,8 +499,9 @@ function UserManagementContent() {
               </p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-2">Full Name *</label>
+              <label htmlFor="create-user-name" className="block text-sm font-medium text-text-secondary mb-2">Full name</label>
               <input
+                id="create-user-name"
                 type="text"
                 value={newUser.full_name}
                 onChange={(e) => setNewUser(prev => ({ ...prev, full_name: e.target.value }))}
@@ -513,8 +510,9 @@ function UserManagementContent() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-white mb-2">Role *</label>
+              <label htmlFor="create-user-role" className="block text-sm font-medium text-text-secondary mb-2">Role *</label>
               <select
+                id="create-user-role"
                 value={newUser.role}
                 onChange={(e) => setNewUser(prev => ({ ...prev, role: e.target.value }))}
                 className="input"
@@ -557,7 +555,10 @@ function UserManagementContent() {
             </button>
           </div>
         </div>
-      )}
+        </div>
+      </section>
+      ) : (
+      <section role="tabpanel" id="users-panel" aria-labelledby="users-tab" className="workspace-fill">
 
       {/* Filters */}
       <FilterBar
@@ -585,23 +586,22 @@ function UserManagementContent() {
       />
 
       {/* Users Table */}
-      <DataTable
-        columns={tableColumns}
-        data={paginatedUsers}
-        loading={loading}
-        emptyMessage="No users found"
-      />
+      <div ref={containerRef} className="workspace-scroll">
+        <DataTable columns={tableColumns} data={paginatedUsers} loading={loading} emptyMessage="No users found" />
+      </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
         <Pagination
-          currentPage={currentPage}
+          currentPage={safeCurrentPage}
           totalPages={totalPages}
           onPageChange={handlePageChange}
           itemsPerPage={itemsPerPage}
           totalItems={filteredUsers.length}
-          className="mt-6"
+          className=""
         />
+      )}
+      </section>
       )}
     </div>
   )

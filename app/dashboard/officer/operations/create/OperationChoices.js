@@ -38,12 +38,36 @@ export function OperationChoices({ items, label, children, empty, className = ''
 export function CrewChoices({ crews, selected, onChange }) {
   const prefix = useId()
   return <OperationChoices items={crews} label="Field crew" className={styles.crewChoices} empty="No field crew members available">
-    {crew => <div className={styles.crewRow}>
-      <Checkbox id={`${prefix}-${crew.id}`} labelClassName={styles.crewLabel}
-        label={<><span className={styles.crewAvatar} aria-hidden="true">{crew.avatar_url
-          ? <img src={crew.avatar_url} alt="" /> : crew.full_name?.[0]?.toUpperCase() || 'U'}</span><span>{crew.full_name}</span></>}
-        checked={selected.includes(crew.id)}
-        onChange={event => onChange(event.target.checked ? [...selected, crew.id] : selected.filter(id => id !== crew.id))} />
-    </div>}
+    {crew => {
+      const activeCount = crew.active_task_count ?? crew.assigned_tasks_count ?? 0
+      const maxTasks = crew.max_tasks_per_shift || 10
+      const isAtCapacity = crew.is_at_capacity || activeCount >= maxTasks
+      const name = crew.crew_name || crew.name || crew.full_name || 'Crew Member'
+
+      return (
+        <div className={styles.crewRow}>
+          <Checkbox id={`${prefix}-${crew.id}`} labelClassName={styles.crewLabel}
+            label={
+              <div className="flex items-center justify-between w-full pr-2">
+                <span className="flex items-center gap-2 min-w-0">
+                  <span className={styles.crewAvatar} aria-hidden="true">
+                    {crew.avatar_url ? <img src={crew.avatar_url} alt="" /> : name[0]?.toUpperCase() || 'U'}
+                  </span>
+                  <span className="truncate">{name}</span>
+                </span>
+                <span className={isAtCapacity ? styles.crewCapacityBadge : activeCount > 0 ? styles.crewActiveBadge : styles.crewAvailableBadge}>
+                  {isAtCapacity
+                    ? `At Capacity (${activeCount}/${maxTasks})`
+                    : activeCount > 0
+                    ? `${activeCount} task${activeCount > 1 ? 's' : ''} (${activeCount}/${maxTasks})`
+                    : 'Available (0 tasks)'}
+                </span>
+              </div>
+            }
+            checked={selected.includes(crew.id)}
+            onChange={event => onChange(event.target.checked ? [...selected, crew.id] : selected.filter(id => id !== crew.id))} />
+        </div>
+      )
+    }}
   </OperationChoices>
 }

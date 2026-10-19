@@ -44,7 +44,8 @@ export default function DataTable({
 
   if (loading) {
     return (
-      <div className={`ecopin-table-container ${className}`} aria-busy="true" aria-label={`Loading ${caption.toLowerCase()}`}>
+      <div className={`ecopin-table-container ${className}`} role="status" aria-busy="true" aria-label={`Loading ${caption.toLowerCase()}`}>
+        <span className="sr-only">Loading {caption.toLowerCase()}…</span>
         <table className="ecopin-table">
           <colgroup>
             {columns.map((col, index) => (
@@ -123,15 +124,15 @@ export default function DataTable({
                 onRowClick ? 'cursor-pointer table-row-interactive' : ''
               } ${typeof rowClassName === 'function' ? rowClassName(row, rowIndex) : rowClassName}`}
               onClick={event => {
-                if (event.target.closest('button, a, input, select, textarea, [role="button"]')) return
+                if (event.target.closest('button, a, input, select, textarea, label, [role="button"]')) return
                 onRowClick?.(row, rowIndex)
               }}
             >
               {columns.map((col, colIndex) => (
                 <td key={colIndex}>
                   {col.render ? col.render(row[col.key], row, rowIndex) : row[col.key]}
-                  {onRowClick && colIndex === 0 && <button type="button" className="block text-sm text-secondary min-h-11 underline underline-offset-4"
-                    aria-label={rowActionLabel(row)} onClick={() => onRowClick(row, rowIndex)}>Open details</button>}
+                  {onRowClick && colIndex === 0 && <button type="button" className="table-row-open"
+                    aria-label={rowActionLabel(row)} onClick={event => { event.stopPropagation(); onRowClick(row, rowIndex) }}><span className="sr-only">Open details</span></button>}
                 </td>
               ))}
             </tr>

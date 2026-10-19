@@ -1,8 +1,10 @@
 'use client'
 import { useEffect, useState, useCallback, useId } from 'react'
-import { UserPlus, UserMinus, Users, Search, ChevronDown, ChevronUp } from 'lucide-react'
+import Link from 'next/link'
+import { UserPlus, UserMinus, Users, Search, ChevronDown, ChevronUp, ClipboardCheck } from 'lucide-react'
 import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
+import StatusBadge from '@/components/ui/StatusBadge'
 import { SkeletonCard } from '@/components/ui/Skeleton'
 import { getCrewsWithMembers, updateCrewMembers, getUnassignedFieldCrew } from '@/lib/api/optimization'
 import { OfficerGuard } from '@/components/auth/RequireRole'
@@ -59,7 +61,12 @@ function CrewCard({ crew, onAdd, onRemove, unassigned, notification, setNotifica
   const [removing, setRemoving] = useState(null)
   const [search, setSearch] = useState('')
   const [showAddPanel, setShowAddPanel] = useState(false)
+  const [showTasksPanel, setShowTasksPanel] = useState(false)
   const addPanelId = useId()
+
+  const activeTaskCount = crew.active_task_count ?? crew.assigned_tasks_count ?? 0
+  const maxTasks = crew.max_tasks_per_shift || 10
+  const isAtCapacity = crew.is_at_capacity || activeTaskCount >= maxTasks
 
   const handleRemove = async (userId) => {
     setRemoving(userId)
@@ -105,6 +112,19 @@ function CrewCard({ crew, onAdd, onRemove, unassigned, notification, setNotifica
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {isAtCapacity ? (
+            <span className={`${styles.badge} ${styles.workloadCapacity}`}>
+              At Capacity ({activeTaskCount} / {maxTasks} tasks)
+            </span>
+          ) : activeTaskCount > 0 ? (
+            <span className={`${styles.badge} ${styles.workloadActive}`}>
+              {activeTaskCount} active task{activeTaskCount > 1 ? 's' : ''} ({activeTaskCount} / {maxTasks})
+            </span>
+          ) : (
+            <span className={`${styles.badge} ${styles.workloadAvailable}`}>
+              Available · 0 active tasks
+            </span>
+          )}
           <span className={`${styles.badge} ${statusColor}`}>
             {crew.availability_status?.replace('_', ' ')}
           </span>
@@ -181,6 +201,51 @@ function CrewCard({ crew, onAdd, onRemove, unassigned, notification, setNotifica
                     </button>
                   ))}
                 </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Assigned Tasks Section */}
+        <div className={styles.assignedTasksSection}>
+          <button
+            type="button"
+            onClick={() => setShowTasksPanel(!showTasksPanel)}
+            className={styles.assignedTasksToggle}
+            aria-expanded={showTasksPanel}
+          >
+            <span className="flex items-center gap-2">
+              <ClipboardCheck size={16} aria-hidden="true" />
+              <span>Currently Assigned Tasks ({activeTaskCount})</span>
+            </span>
+            {showTasksPanel ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+
+          {showTasksPanel && (
+            <div className={styles.assignedTaskList}>
+              {(crew.active_tasks || []).length === 0 ? (
+                <p className="text-xs text-text-muted text-center py-3">
+                  No active cleanup tasks currently assigned to this crew.
+                </p>
+              ) : (
+                (crew.active_tasks || []).map(task => (
+                  <Link
+                    key={task.id}
+                    href={`/dashboard/officer/operations/${task.id}`}
+                    className={styles.assignedTaskItem}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className={styles.assignedTaskTitle}>{task.title || `Task #${task.id?.slice(0, 8)}`}</p>
+                      {task.location_name && (
+                        <p className="text-xs text-text-muted truncate mt-0.5">{task.location_name}</p>
+                      )}
+                    </div>
+                    <div className={styles.assignedTaskMeta}>
+                      <StatusBadge status={task.status} type="task" />
+                      <span className="text-xs text-workspace-link font-medium">Open →</span>
+                    </div>
+                  </Link>
+                ))
               )}
             </div>
           )}
@@ -268,8 +333,11 @@ function CrewManagementContent() {
     (u.full_name || '').toLowerCase().includes(unassignedSearch.toLowerCase())
   )
 
+  const totalAssignedTasks = crews.reduce((acc, c) => acc + (c.active_task_count ?? c.assigned_tasks_count ?? 0), 0)
+  const atCapacityCount = crews.filter(c => c.is_at_capacity || ((c.active_task_count ?? 0) >= (c.max_tasks_per_shift || 10))).length
+
   return (
-    <div className={styles.page}>
+    <div className={`workspace-page workspace-page--flow ${styles.page}`}>
       <PageHeader
         title="Crew management"
         subtitle="Assign field crew members to their teams"
@@ -285,6 +353,33 @@ function CrewManagementContent() {
           type={notification.type}
           onClose={() => setNotification(null)}
         />
+      )}
+
+      {/* Overview Banner */}
+      {!loading && (
+        <div className={styles.summaryBanner}>
+          <div className={styles.summaryStat}>
+            <Users size={18} className="text-workspace-link" aria-hidden="true" />
+            <span><strong>{crews.length}</strong> Squads Active</span>
+          </div>
+          <span className="text-text-muted">·</span>
+          <div className={styles.summaryStat}>
+            <ClipboardCheck size={18} className="text-success" aria-hidden="true" />
+            <span><strong>{totalAssignedTasks}</strong> Total Tasks Assigned</span>
+          </div>
+          {atCapacityCount > 0 && (
+            <>
+              <span className="text-text-muted">·</span>
+              <div className={styles.summaryStat}>
+                <span className="text-error font-medium">⚠️ <strong>{atCapacityCount}</strong> squad{atCapacityCount > 1 ? 's' : ''} at capacity</span>
+              </div>
+            </>
+          )}
+          <span className="text-text-muted">·</span>
+          <div className={styles.summaryStat}>
+            <span><strong>{unassigned.length}</strong> unassigned personnel</span>
+          </div>
+        </div>
       )}
 
       {loading ? (
@@ -323,7 +418,7 @@ function CrewManagementContent() {
 
           {/* Unassigned Panel */}
           <div className="lg:col-span-1">
-            <div className={`${styles.card} lg:sticky lg:top-6`}>
+            <div className={styles.card}>
               <div className="p-4 border-b border-border">
                 <h2 className="text-lg font-semibold text-text-primary flex items-center gap-2">
                   <Users size={16} />

@@ -6,6 +6,7 @@ import { createCustomCleanupTask } from '@/lib/api'
 import { readSessionKey, triggerSessionExpired } from '@/lib/auth-token.mjs'
 import { backendFetch as fetch } from '../../../../../lib/backend-fetch.mjs'
 import PageHeader from '@/components/layout/PageHeader'
+import PageTabs from '@/components/ui/PageTabs'
 import Notification from '@/components/ui/Notification'
 import Input from '@/components/ui/Input'
 import Checkbox from '@/components/ui/Checkbox'
@@ -370,7 +371,7 @@ export default function CreateCleanupTaskPage() {
 
   return (
     <OfficerGuard>
-      <div className={styles.page}>
+      <div className={`workspace-page ${styles.page}`}>
         <PageHeader className={styles.pageHeader}
           title="Create Cleanup Task"
           subtitle="Select reports on the map manually or auto-generate cleanup tasks"
@@ -379,12 +380,10 @@ export default function CreateCleanupTaskPage() {
             { label: 'Cleanup Tasks', href: '/dashboard/officer/operations' },
             { label: 'Create Task' }
           ]}
-        >
-          <div className={styles.modes} role="group" aria-label="Task creation mode">
-            <button type="button" aria-pressed={mode === 'manual'} onClick={() => setMode('manual')}>Manual mode</button>
-            <button type="button" aria-pressed={mode === 'auto'} onClick={() => setMode('auto')}>Auto-generate tasks</button>
-          </div>
-        </PageHeader>
+        />
+        <PageTabs label="Task creation mode" value={mode} onChange={setMode}
+          tabs={[{ id: 'manual', label: 'Manual mode' }, { id: 'auto', label: 'Auto-generate tasks' }]} />
+        <div role="tabpanel" id={`${mode}-panel`} aria-labelledby={`${mode}-tab`} className="workspace-fill">
         {mode === 'manual' ? <>
           <div className={styles.viewTabs} role="group" aria-label="Manual workspace view">
             {[['map', 'Map'], ['reports', 'Reports'], ['details', 'Task details']].map(([id, label]) =>
@@ -550,6 +549,7 @@ export default function CreateCleanupTaskPage() {
           </div>
         </>}
         {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
+        </div>
       </div>
     </OfficerGuard>
   )

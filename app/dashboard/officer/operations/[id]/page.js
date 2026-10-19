@@ -629,48 +629,49 @@ function CleanupTaskDetailContent() {
   });
 
   return (
-    <div className="p-8 min-h-screen flex flex-col">
+    <div className="workspace-page workspace-page--flow">
       <PageHeader
         title={
           isEditingTitle ? (
-            <div className="flex items-center gap-2">
+            <span className="flex flex-wrap items-center gap-2">
               <input 
                 type="text" 
                 value={editingTitle} 
                 onChange={(e) => setEditingTitle(e.target.value)} 
-                className="px-2 py-1 text-2xl font-bold border border-border border-[#2563eb] focus:outline-none w-64 bg-surface text-text-primary"
+                aria-label="Operation title"
+                className="input max-w-full w-64 text-xl"
                 disabled={savingTitle}
                 autoFocus
               />
               <button 
                 onClick={handleSaveTitle}
                 disabled={savingTitle}
-                className="px-3 py-1 text-sm font-bold uppercase tracking-widest bg-accent-green text-white border border-border border-accent-green hover:bg-black hover:border-border transition-colors"
+                className="btn-primary text-sm"
               >
                 {savingTitle ? 'Saving...' : 'Save'}
               </button>
               <button 
                 onClick={() => setIsEditingTitle(false)}
                 disabled={savingTitle}
-                className="px-3 py-1 text-sm font-bold uppercase tracking-widest text-text-muted hover:text-text-primary dark:hover:text-white transition-colors"
+                className="btn-secondary text-sm"
               >
                 Cancel
               </button>
-            </div>
+            </span>
           ) : (
-            <div className="flex items-center gap-3">
+            <span className="flex items-center gap-3">
               <span>{task.title}</span>
               <button 
                 onClick={() => {
                   setEditingTitle(task.title)
                   setIsEditingTitle(true)
                 }}
-                className="text-text-muted hover:text-primary transition-colors p-1"
-                title="Rename Mission"
+                className="text-text-secondary hover:text-primary min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl"
+                aria-label="Rename operation"
               >
                 <Pen className="w-5 h-5" />
               </button>
-            </div>
+            </span>
           )
         }
         subtitle={`Operation / ${task.id.slice(0,8)}`}
@@ -681,9 +682,9 @@ function CleanupTaskDetailContent() {
         ]}
       />
 
-      <div className="flex flex-col gap-8 mt-2">
+      <div className="flex flex-col gap-6">
          
-         <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+         <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
             <section className={`xl:col-span-3 ${styles.routeCard}`} aria-labelledby="operation-route-title">
               <div className={styles.routeHeader}><h2 id="operation-route-title">Route map</h2><p>Report locations and connections for this operation.</p></div>
               <div className={styles.routeMap}><OperationsMap tasks={[{ ...task, reports }]} modern={true} /></div>
@@ -692,16 +693,16 @@ function CleanupTaskDetailContent() {
 
             <div className="xl:col-span-1 h-[400px]">
                <div className="h-full card p-6 border border-border dark:border-[#333333] rounded-xl bg-surface-elevated text-text-primary flex flex-col">
-                  <h2 className="text-lg font-bold uppercase tracking-tight mb-4 border-b border-border pb-2 text-accent-green shrink-0">Mission Status</h2>
+                  <h2 className="text-lg font-semibold mb-4 border-b border-border pb-3 shrink-0">Operation status</h2>
                   
                   <div className="space-y-4 mb-6 overflow-y-auto flex-1 pr-2">
                     <div>
-                       <span className="block text-[10px] font-mono uppercase text-text-muted mb-1">Current Status</span>
+                       <span className="block text-sm text-text-secondary mb-2">Current status</span>
                        <StatusBadge status={task.status} type="task" />
                     </div>
                     
                     <div>
-                       <span className="block text-[10px] font-mono uppercase text-text-muted mb-1">Assigned Field Crew</span>
+                       <span className="block text-sm text-text-secondary mb-2">Assigned field crew</span>
                        {task.assigned_field_crew_id ? (
                           (() => {
                              const crew = availableCrew.find(c => c.id === task.assigned_field_crew_id)
@@ -712,8 +713,8 @@ function CleanupTaskDetailContent() {
                                      <Users className="w-4 h-4 text-accent-green" />
                                    </div>
                                    <div>
-                                     <div className="font-mono text-sm font-bold">{crew ? (crew.crew_name || crew.name) : `Crew ${task.assigned_field_crew_id.slice(0, 8)}`}</div>
-                                     <div className="text-[10px] text-text-muted font-mono">{crew?.member_count || task.assigned_crew_ids?.length || 0} Members</div>
+                                     <div className="text-sm font-medium">{crew ? (crew.crew_name || crew.name) : `Crew ${task.assigned_field_crew_id.slice(0, 8)}`}</div>
+                                     <div className="text-xs text-text-secondary">{crew?.member_count || task.assigned_crew_ids?.length || 0} members</div>
                                    </div>
                                  </div>
                                </div>
@@ -728,13 +729,13 @@ function CleanupTaskDetailContent() {
                                     <div className="w-8 h-8 bg-surface-elevated rounded-full flex items-center justify-center font-bold text-xs border border-border">
                                       {crew ? (crew.crew_name || crew.name || crew.full_name || 'C')[0] : 'U'}
                                     </div>
-                                    <span className="font-mono text-sm">{crew ? (crew.crew_name || crew.name || crew.full_name) : `Unit ${id.slice(0,4)}`}</span>
+                                    <span className="text-sm">{crew ? (crew.crew_name || crew.name || crew.full_name) : `Unit ${id.slice(0,4)}`}</span>
                                   </div>
                                 )
                              })}
                           </div>
                        ) : (
-                          <div className="text-sm font-mono text-error border border-error/30 p-2 bg-error/10">UNASSIGNED</div>
+                          <div className="text-sm text-error border border-error/30 p-3 bg-error/10 rounded-xl">Unassigned</div>
                        )}
                     </div>
                   </div>
@@ -745,15 +746,15 @@ function CleanupTaskDetailContent() {
                           setSelectedCrewId(task.assigned_field_crew_id || null)
                           setShowAssignmentModal(true)
                         }}
-                        className="w-full border border-border py-3 text-xs font-bold uppercase tracking-widest text-text-primary hover:bg-black hover:text-white dark:hover:bg-surface dark:hover:text-text-primary transition-colors"
+                        className="btn-secondary w-full text-sm"
                      >
                         {task.assigned_field_crew_id || task.assigned_crew_ids?.length > 0 ? 'Reassign Crew' : 'Dispatch Crew'}
                      </button>
                      {/* Completion is triggered automatically by the field crew app
                          uploading the after photo. This panel reflects the live status. */}
                      {task.status === 'completed' && (
-                        <div className="w-full py-3 text-xs font-bold uppercase tracking-widest border border-border bg-success/20 text-success border-success/50 text-center">
-                           Mission Accomplished
+                        <div className="w-full py-3 text-sm border rounded-xl bg-success/10 text-success border-success/30 text-center">
+                           Operation completed
                         </div>
                      )}
                   </div>
@@ -762,7 +763,7 @@ function CleanupTaskDetailContent() {
          </div>
 
          <div className="flex flex-col gap-4">
-            <h2 className="text-xl font-bold text-text-primary uppercase tracking-tight">Mission Targets</h2>
+            <h2 className="text-xl font-semibold text-text-primary">Reports in this operation</h2>
             <div className="ecopin-table-container">
               <table className="ecopin-table">
                 <thead>
@@ -786,9 +787,9 @@ function CleanupTaskDetailContent() {
                       <td>
                         <button
                           onClick={() => handleViewReportDetail(report.id)}
-                          className="text-xs font-bold uppercase tracking-widest border border-border px-3 py-1 text-text-primary bg-surface hover:text-primary hover:border-primary hover:bg-surface-elevated transition-colors cursor-pointer rounded-xs"
+                          className="btn-secondary text-sm"
                         >
-                          View Data
+                          View report
                         </button>
                       </td>
                     </tr>
@@ -813,12 +814,27 @@ function CleanupTaskDetailContent() {
             <fieldset className={styles.crewList} disabled={assigning}>
               <legend className="sr-only">Available field crews</legend>
               {assignmentError && <p className={styles.assignmentError} role="alert">{assignmentError}</p>}
-              {availableCrew.length === 0 ? <p className={styles.empty}>No field crews are available.</p> : availableCrew.map(crew => (
-                <label key={crew.id} className={`${styles.crew} ${selectedCrewId === crew.id ? styles.selected : ''}`}>
-                  <input type="radio" name="fieldCrewSelection" checked={selectedCrewId === crew.id} onChange={() => setSelectedCrewId(crew.id)} />
-                  <span><strong>{crew.crew_name || crew.name || crew.full_name}</strong><small>{crew.member_count != null ? `${crew.member_count} members` : crew.status ? `Status: ${crew.status.replaceAll('_', ' ')}` : 'Field crew unit'}</small></span>
-                </label>
-              ))}
+              {availableCrew.length === 0 ? <p className={styles.empty}>No field crews are available.</p> : availableCrew.map(crew => {
+                const activeCount = crew.active_task_count ?? crew.assigned_tasks_count ?? 0
+                const maxTasks = crew.max_tasks_per_shift || 10
+                const isAtCapacity = crew.is_at_capacity || activeCount >= maxTasks
+                return (
+                  <label key={crew.id} className={`${styles.crew} ${selectedCrewId === crew.id ? styles.selected : ''}`}>
+                    <input type="radio" name="fieldCrewSelection" checked={selectedCrewId === crew.id} onChange={() => setSelectedCrewId(crew.id)} />
+                    <span className="flex-1">
+                      <strong>{crew.crew_name || crew.name || crew.full_name}</strong>
+                      <small>{crew.member_count != null ? `${crew.member_count} members` : crew.status ? `Status: ${crew.status.replaceAll('_', ' ')}` : 'Field crew unit'}</small>
+                      <span className={`${styles.crewWorkloadBadge} ${isAtCapacity ? styles.crewWorkloadCapacity : activeCount > 0 ? styles.crewWorkloadActive : styles.crewWorkloadAvailable}`}>
+                        {isAtCapacity
+                          ? `⚠️ At Capacity (${activeCount}/${maxTasks} tasks)`
+                          : activeCount > 0
+                          ? `${activeCount} active task${activeCount > 1 ? 's' : ''} (${activeCount}/${maxTasks})`
+                          : 'Available · 0 active tasks'}
+                      </span>
+                    </span>
+                  </label>
+                )
+              })}
             </fieldset>
             <div className={styles.actions}>
               <button ref={cancelAssignmentRef} type="button" disabled={assigning} onClick={() => setShowAssignmentModal(false)} className={styles.secondary}>Cancel</button>

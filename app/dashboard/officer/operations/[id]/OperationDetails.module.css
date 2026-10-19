@@ -12,6 +12,10 @@
 .crew span { min-width: 0; overflow-wrap: anywhere; }
 .crew strong { display: block; font-size: 14px; line-height: 1.5; font-weight: 600; }
 .crew small { display: block; margin-top: 4px; font-size: 12px; line-height: 1.5; color: var(--text-secondary); }
+.crewWorkloadBadge { display: inline-block; margin-top: 4px; font-size: 11px; line-height: 1.4; padding: 2px 8px; border-radius: 999px; font-weight: 500; }
+.crewWorkloadAvailable { color: var(--success); background: color-mix(in srgb, var(--success) 10%, var(--surface)); border: 1px solid color-mix(in srgb, var(--success) 25%, var(--border)); }
+.crewWorkloadActive { color: var(--workspace-link); background: color-mix(in srgb, var(--workspace-link) 10%, var(--surface)); border: 1px solid color-mix(in srgb, var(--workspace-link) 25%, var(--border)); }
+.crewWorkloadCapacity { color: var(--error); background: color-mix(in srgb, var(--error) 10%, var(--surface)); border: 1px solid color-mix(in srgb, var(--error) 25%, var(--border)); font-weight: 600; }
 .selected { border-color: var(--workspace-link); background: color-mix(in srgb, var(--workspace-link) 6%, var(--surface)); }
 .empty { font-size: 14px; color: var(--text-secondary); }
 .assignmentError { margin: 0; padding: 12px; border-radius: 12px; font-size: 14px; color: var(--error); background: color-mix(in srgb, var(--error) 8%, var(--surface)); }

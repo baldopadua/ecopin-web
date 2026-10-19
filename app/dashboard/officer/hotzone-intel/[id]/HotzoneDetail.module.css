@@ -1,0 +1,52 @@
+.detail {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.detail :global(.card) {
+  padding: 20px !important;
+  border-radius: 16px !important;
+}
+
+.detail h2 {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.detail :global(.uppercase) {
+  text-transform: none !important;
+}
+
+.detail :global(.tracking-tight),
+.detail :global(.tracking-wide),
+.detail :global(.tracking-wider),
+.detail :global(.tracking-widest) {
+  letter-spacing: normal !important;
+}
+
+.detail :global(.text-xs) {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.detail :global(.font-mono) {
+  font-family: var(--font-outfit), sans-serif;
+}
+
+.detail button {
+  min-height: 44px;
+  font-size: 14px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.detailLabel {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
