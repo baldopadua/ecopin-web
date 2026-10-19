@@ -35,6 +35,7 @@ import {
 } from 'lucide-react'
 import styles from './Profile.module.css'
 import logoutStyles from './LogoutDialog.module.css'
+import OfficerTourSettings from './OfficerTourSettings'
 import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
 import { backendFetch as fetch } from '../../../../lib/backend-fetch.mjs';
 
@@ -866,6 +867,8 @@ export default function ProfilePage() {
             </button>
           </div>
         </section>
+
+        {userCtx?.role === 'officer' && <OfficerTourSettings />}
 
         {/* 5. Session Management (Danger Zone) */}
         <section className={styles.dangerCard} aria-labelledby="session-heading">

@@ -7,6 +7,7 @@ import CommandCenterPanel from '@/components/ui/CommandCenterPanel'
 import styles from '@/components/ui/CommandCenter.module.css'
 import PageHeader from '@/components/layout/PageHeader'
 import StatusBadge from '@/components/ui/StatusBadge'
+import OfficerDispatchTour from '@/components/onboarding/OfficerDispatchTour'
 import { useUser } from '@/components/auth/UserContext'
 import { OfficerGuard } from '@/components/auth/RequireRole'
 import { Users, AlertTriangle, CloudLightning, ChevronRight, Search } from 'lucide-react'
@@ -111,7 +112,7 @@ export default function OfficerHomepage() {
     <OfficerGuard>
       <div className={`workspace-page ${styles.page}`}>
         <PageHeader title="Command Center" subtitle={`Welcome, ${user?.full_name || 'Officer'}. System status is operational.`}>
-          <Link href="/dashboard/officer/optimization" className={styles.primary}>
+          <Link href="/dashboard/officer/optimization" className={styles.primary} data-tour="route-generation">
             <CloudLightning size={16} aria-hidden="true" />Run Optimization
           </Link>
         </PageHeader>
@@ -161,6 +162,7 @@ export default function OfficerHomepage() {
             </Link>}
           </CommandCenterPanel>
         </div>
+        <OfficerDispatchTour key={user?.id} />
       </div>
     </OfficerGuard>
   )
