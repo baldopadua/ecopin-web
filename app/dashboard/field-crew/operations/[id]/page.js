@@ -5,6 +5,7 @@ import { ArrowLeft, Eye, Camera, Upload, ChevronRight, CheckCircle } from 'lucid
 import { useRouter, useParams } from 'next/navigation'
 import { fetchCleanupTaskById, uploadCleanupPhoto, markCleanupTaskComplete, updateCleanupTaskStatus, fetchReportsByClusterId, batchCompleteReportsByCluster, updateReportStatus, fetchReportsByIds, updateReportValidation, fetchReportEvidence, updateLifecycleStage, logAgencyResponse, fetchAgencyResponses, fetchAvailableCrew, updateReportDetails } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
+import DataTable from '@/components/ui/DataTable'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
 import Notification from '@/components/ui/Notification'
@@ -698,37 +699,8 @@ export default function FieldCrewCleanupTaskDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-3">
             <div className="flex flex-col gap-4">
-              <div className="ecopin-table-container">
-                <table className="ecopin-table">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left py-3 px-4"><SkeletonLine className="h-4 w-12" /></th>
-                      <th className="text-left py-3 px-4"><SkeletonLine className="h-4 w-16" /></th>
-                      <th className="text-left py-3 px-4"><SkeletonLine className="h-4 w-24" /></th>
-                      <th className="text-left py-3 px-4"><SkeletonLine className="h-4 w-16" /></th>
-                      <th className="text-left py-3 px-4"><SkeletonLine className="h-4 w-20" /></th>
-                      <th className="text-left py-3 px-4"><SkeletonLine className="h-4 w-16" /></th>
-                      <th className="text-left py-3 px-4"><SkeletonLine className="h-4 w-12" /></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <tr key={i} className="border-b border-border">
-                        <td className="py-4 px-4"><SkeletonLine className="h-4 w-32" /></td>
-                        <td className="py-4 px-4"><SkeletonLine className="h-4 w-24" /></td>
-                        <td className="py-4 px-4">
-                          <SkeletonLine className="h-4 w-full max-w-[200px] mb-2" />
-                          <SkeletonLine className="h-4 w-3/4 max-w-[150px]" />
-                        </td>
-                        <td className="py-4 px-4"><SkeletonLine className="h-6 w-20 rounded-full" /></td>
-                        <td className="py-4 px-4"><SkeletonLine className="h-6 w-24 rounded-full" /></td>
-                        <td className="py-4 px-4"><SkeletonLine className="h-6 w-24 rounded-full" /></td>
-                        <td className="py-4 px-4"><SkeletonLine className="h-8 w-24 rounded" /></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable loading caption="Reports in this operation" onRowClick={handleViewReportDetail}
+                columns={[{ key: 'title', label: 'Title' }, { key: 'issue_type', label: 'Issue type' }, { key: 'description', label: 'Description' }, { key: 'status', label: 'Status' }, { key: 'stage', label: 'Lifecycle stage' }, { key: 'validation_status', label: 'Review status' }, { key: 'actions', label: 'Actions' }]} />
             </div>
           </div>
           <div className="lg:col-span-1 space-y-6">
@@ -782,46 +754,15 @@ export default function FieldCrewCleanupTaskDetailPage() {
             <div className="lg:col-span-3">
               {/* Reports in Cluster - Table View */}
               {reports.length > 0 && (
-                <div className="ecopin-table-container">
-                  <table className="ecopin-table">
-                    <thead>
-                      <tr>
-                        <th>Title</th>
-                        <th>Issue Type</th>
-                        <th>Description</th>
-                        <th>Status</th>
-                        <th>Lifecycle Stage</th>
-                        <th>Validation Status</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {reports.map((report) => (
-                        <tr key={report.id} className={getReportCardColor(report.status)}>
-                          <td>
-                            <span className="font-bold text-text-primary">{report.title}</span>
-                          </td>
-                          <td>
-                            <span className="text-sm text-text-secondary">{report.issue_type}</span>
-                          </td>
-                          <td>
-                            <span className="text-sm text-text-muted line-clamp-2 max-w-xs">{report.description || 'N/A'}</span>
-                          </td>
-                          <td>
-                            <StatusBadge status={report.status} type="report" />
-                          </td>
-                          <td>
-                            {report.stage ? (
-                              <StatusBadge status={report.stage} type="lifecycle" />
-                            ) : (
-                              <span className="text-xs text-text-muted">N/A</span>
-                            )}
-                          </td>
-                          <td>
-                            <StatusBadge status={report.validation_status} type="validation" />
-                          </td>
-                          <td className="py-3 px-4 min-w-[200px]">
-                            <div className="flex items-center gap-2">
+                <DataTable caption="Reports in this operation" data={reports}
+                  columns={[
+                    { key: 'title', label: 'Title', render: value => <span className="font-medium">{value}</span> },
+                    { key: 'issue_type', label: 'Issue type' },
+                    { key: 'description', label: 'Description', render: value => <span className="line-clamp-2 max-w-xs text-text-secondary">{value || 'N/A'}</span> },
+                    { key: 'status', label: 'Status', render: value => <StatusBadge status={value} type="report" /> },
+                    { key: 'stage', label: 'Lifecycle stage', render: value => value ? <StatusBadge status={value} type="lifecycle" /> : 'N/A' },
+                    { key: 'validation_status', label: 'Review status', render: value => <StatusBadge status={value} type="validation" /> },
+                    { key: 'actions', label: 'Actions', render: (_, report) => (<div className="flex items-center gap-2">
                               {(!report.status || ['submitted', 'pending', 'unresolved'].includes(report.status)) && (
                                 <button
                                   onClick={() => handleUpdateStatus(report.id, 'acknowledged')}
@@ -855,20 +796,12 @@ export default function FieldCrewCleanupTaskDetailPage() {
                               {report.status === 'closed' && (
                                 <span className="text-xs text-text-muted font-semibold whitespace-nowrap">✓ Closed</span>
                               )}
-                              <button
-                                onClick={() => handleViewReportDetail(report.id)}
-                                className="px-3 py-1.5 bg-transparent border border-border border-[#1A1A1A] text-xs font-bold rounded-lg flex items-center justify-center gap-1 whitespace-nowrap hover:bg-[#1A1A1A] hover:text-white dark:hover:bg-surface dark:hover:text-text-primary transition-colors ml-auto"
-                                title="View Report Details"
-                              >
-                                <Eye className="w-3.5 h-3.5" /> Details
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                            </div>) },
+                  ]}
+                  rowClassName={report => getReportCardColor(report.status)}
+                  onRowClick={report => handleViewReportDetail(report.id)}
+                  rowActionLabel={report => `View report ${report.title || report.id}`}
+                />
               )}
 
               {/* Cleanup Task Photo Gallery */}

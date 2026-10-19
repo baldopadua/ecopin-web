@@ -28,11 +28,18 @@ export default function FieldCrewClusterDetailPage() {
         
         setCluster(clusterData)
         
-        // Filter reports for this cluster
-        const clusterReports = reportsData.filter(r => 
+        // Filter reports for this cluster and merge with cluster's member reports
+        const dbReports = clusterData?.reports || []
+        const clusterReports = (reportsData || []).filter(r => 
           String(r.cluster_id) === String(clusterId)
         )
-        setReports(clusterReports)
+        const reportsById = new Map()
+        dbReports.forEach(r => reportsById.set(String(r.id), r))
+        clusterReports.forEach(r => {
+          const existing = reportsById.get(String(r.id))
+          reportsById.set(String(r.id), { ...existing, ...r })
+        })
+        setReports(Array.from(reportsById.values()))
       } catch (error) {
         reportDiagnostic('error', 'other', 'Failed to load cluster data:', error)
       } finally {

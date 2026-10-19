@@ -134,7 +134,7 @@ function SystemLogsContent() {
     },
     { 
       key: 'ip_address', 
-      label: 'IP Address', 
+      label: 'IP address',
       width: '15%',
       render: (value) => (
         <span className="text-sm text-text-muted">{value || 'N/A'}</span>

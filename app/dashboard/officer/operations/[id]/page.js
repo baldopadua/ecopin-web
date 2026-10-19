@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { fetchCleanupTaskById, uploadCleanupPhoto, fetchReportsByClusterId, fetchReportsByIds, fetchReportEvidence, updateLifecycleStage, logAgencyResponse, fetchAgencyResponses, fetchAvailableCrew, assignCleanupTask, updateCleanupTaskTitle } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
+import DataTable from '@/components/ui/DataTable'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
 import Notification from '@/components/ui/Notification'
@@ -584,34 +585,8 @@ function CleanupTaskDetailContent() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-3">
             <div className="space-y-0">
-              <div className="ecopin-table-container">
-                <table className="ecopin-table">
-                  <thead>
-                    <tr>
-                      <th>Title</th>
-                      <th>Issue Type</th>
-                      <th>Description</th>
-                      <th>Status</th>
-                      <th>Lifecycle</th>
-                      <th>Validation</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <tr key={i} className="border-b border-border">
-                        <td className="py-3 px-4"><SkeletonLine className="h-4 w-28" /></td>
-                        <td className="py-3 px-4"><SkeletonLine className="h-4 w-20" /></td>
-                        <td className="py-3 px-4"><SkeletonLine className="h-4 w-36" /></td>
-                        <td className="py-3 px-4"><SkeletonLine className="h-5 w-20" /></td>
-                        <td className="py-3 px-4"><SkeletonLine className="h-5 w-20" /></td>
-                        <td className="py-3 px-4"><SkeletonLine className="h-5 w-24" /></td>
-                        <td className="py-3 px-4"><SkeletonLine className="h-6 w-16" /></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable loading caption="Reports in this operation" onRowClick={handleViewReportDetail}
+                columns={[{ key: 'created_at', label: 'Date / time' }, { key: 'title', label: 'Target' }, { key: 'issue_type', label: 'Type' }, { key: 'status', label: 'Status' }]} />
             </div>
           </div>
           <div className="lg:col-span-1">
@@ -764,39 +739,17 @@ function CleanupTaskDetailContent() {
 
          <div className="flex flex-col gap-4">
             <h2 className="text-xl font-semibold text-text-primary">Reports in this operation</h2>
-            <div className="ecopin-table-container">
-              <table className="ecopin-table">
-                <thead>
-                  <tr>
-                    <th>Date / Time</th>
-                    <th>Target</th>
-                    <th>Type</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reports.map((report) => (
-                    <tr key={report.id}>
-                      <td className="font-mono text-xs whitespace-nowrap">
-                        {new Date(report.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                      </td>
-                      <td className="font-bold">{report.title}</td>
-                      <td>{report.issue_type}</td>
-                      <td><StatusBadge status={report.status} type="report" /></td>
-                      <td>
-                        <button
-                          onClick={() => handleViewReportDetail(report.id)}
-                          className="btn-secondary text-sm"
-                        >
-                          View report
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <DataTable caption="Reports in this operation" data={reports}
+              columns={[
+                { key: 'created_at', label: 'Date / time', render: value => new Date(value).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) },
+                { key: 'title', label: 'Target', render: value => <span className="font-medium">{value}</span> },
+                { key: 'issue_type', label: 'Type' },
+                { key: 'status', label: 'Status', render: value => <StatusBadge status={value} type="report" /> },
+              ]}
+              onRowClick={report => handleViewReportDetail(report.id)}
+              rowActionLabel={report => `View report ${report.title || report.id}`}
+              emptyMessage="No reports in this operation."
+            />
          </div>
       </div>
 

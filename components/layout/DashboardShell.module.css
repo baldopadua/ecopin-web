@@ -72,16 +72,6 @@
 .shell :global(.input:focus) { border-color: var(--workspace-link); background: var(--surface); }
 .shell :global(.card) { border-radius: 16px; box-shadow: none; background: var(--surface); }
 .shell :global(.card:not(.p-0)) { padding: 20px; }
-.shell :global(.ecopin-table-container) { overflow: auto; border-radius: 16px; background: var(--surface); box-shadow: none; }
-.shell :global(.ecopin-table) { min-width: 640px; height: auto; font-family: inherit; }
-.shell :global(.ecopin-table th) { position: sticky; top: 0; z-index: 2; padding: 12px 16px; background: var(--surface-elevated); text-transform: none; letter-spacing: 0; font-family: inherit; font-size: 13px; }
-.shell :global(.ecopin-table td) { position: relative; padding: 12px 16px; font-family: inherit; font-size: 14px; line-height: 1.5; vertical-align: middle; }
-.shell :global(.table-row-open) { position: absolute; inset: 0; width: 100%; border-radius: 4px; }
-.shell :global(.table-row-open:focus-visible) { outline-offset: -3px; }
-.shell :global(.ecopin-table tbody tr:hover .table-row-open:hover) { background: transparent; border-color: transparent; }
-.shell :global(.table-row-interactive td:first-child :is(a, button:not(.table-row-open), input, select, textarea, [role='button'], label)) { position: relative; z-index: 1; }
-.shell :global(.ecopin-table tbody tr:hover) { background: var(--surface-elevated); }
-.shell :global(.ecopin-table tbody tr) { height: 56px; }
 .shell :global(button:focus-visible), .shell :global(a:focus-visible), .shell :global(input:focus-visible),
 .shell :global(select:focus-visible), .shell :global([tabindex]:focus-visible) {
   outline: 3px solid var(--workspace-link); outline-offset: 3px;

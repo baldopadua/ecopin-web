@@ -7,6 +7,7 @@ import DataTable from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
 import useTablePageSize from '@/components/ui/useTablePageSize'
 import StatusBadge from '@/components/ui/StatusBadge'
+import { toTitleCase } from '@/lib/helpers/statusHelpers'
 import { AdminGuard } from '@/components/auth/RequireRole'
 import ExportButton from '@/components/ui/ExportButton'
 import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
@@ -187,9 +188,7 @@ function AuditLogsContent() {
       label: 'Action', 
       width: '18%',
       render: (value) => (
-        <span className={styles.actionBadge}>
-          {value ? value.replace(/_/g, ' ') : 'Event'}
-        </span>
+        <StatusBadge status={value} type="auditAction" />
       )
     },
     { 
@@ -199,7 +198,7 @@ function AuditLogsContent() {
       render: (value, row) => (
         <div className="flex flex-col gap-0.5">
           <span className="text-sm font-medium text-text-primary capitalize">
-            {value ? value.replace(/_/g, ' ') : 'General'}
+            {value ? toTitleCase(value) : 'General'}
           </span>
           {row.entity_id && (
             <span className="text-sm font-mono text-text-muted break-all" title={row.entity_id}>
@@ -342,7 +341,7 @@ function AuditLogsContent() {
             onChange: (val) => handleFilterUpdate(prev => ({ ...prev, event_type: val })),
             options: [
               { value: '', label: 'All events' },
-              ...uniqueEventTypes.map(e => ({ value: e, label: e.replace(/_/g, ' ') }))
+              ...uniqueEventTypes.map(e => ({ value: e, label: toTitleCase(e) }))
             ]
           },
           {
@@ -351,7 +350,7 @@ function AuditLogsContent() {
             onChange: (val) => handleFilterUpdate(prev => ({ ...prev, entity_type: val })),
             options: [
               { value: '', label: 'All targets' },
-              ...uniqueEntityTypes.map(t => ({ value: t, label: t.replace(/_/g, ' ') }))
+              ...uniqueEntityTypes.map(t => ({ value: t, label: toTitleCase(t) }))
             ]
           }
         ]}

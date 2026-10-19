@@ -4,6 +4,7 @@ import { Polyline, Marker, Popup, Tooltip } from 'react-leaflet'
 import L from 'leaflet'
 import { Buffer } from 'buffer'
 import wkx from 'wkx'
+import { toTitleCase } from '@/lib/helpers/statusHelpers'
 import { reportDiagnostic } from '../../lib/diagnostics.mjs';
 
 // Parse WKB geometry
@@ -118,11 +119,11 @@ export default function MicroRouteLayer({ tasks = [], routeWaypoints = [] }) {
                 <div className="p-1 min-w-[200px]">
                   <div className="text-xs font-semibold text-blue-600 mb-1 tracking-wider uppercase">SUB-PIN {label}</div>
                   <strong className="block text-sm text-gray-800 mb-2 truncate">
-                    {report.issue_type?.replace(/_/g, ' ')}
+                    {toTitleCase(report.issue_type)}
                   </strong>
                   <p className="text-sm text-text-secondary mt-1 mb-3">{report.description?.substring(0, 80)}...</p>
                   <div className="text-sm space-y-1 text-text-secondary">
-                    <div><span className="text-text-muted">Status:</span> <span className="font-medium text-gray-800">{report.status?.replace(/_/g, ' ').toUpperCase()}</span></div>
+                    <div><span className="text-text-muted">Status:</span> <span className="font-medium text-gray-800">{toTitleCase(report.status)}</span></div>
                     <div><span className="text-text-muted">Validation:</span> <span className="font-medium text-gray-800">{report.validation_status === 'pending' ? 'Needs Validation' : 'Validated'}</span></div>
                   </div>
                 </div>

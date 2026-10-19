@@ -243,7 +243,7 @@ export default function OfficerReportsPage() {
     },
     { 
       key: 'validation_status', 
-      label: 'Review Status', 
+      label: 'Review status',
       width: '14%',
       render: (value, row) => {
         const effective = value || (row?.manual_review_id ? 'manual_review' : 'pending')

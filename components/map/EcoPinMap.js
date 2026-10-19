@@ -187,7 +187,7 @@ function MapCenter({ centerLat, centerLng }) {
   return null
 }
 
-export default function EcoPinMap({ centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode = false, selectedReports = [], onReportSelect, hideFilterPanel = false, hidePins = false, hideClusters = false, onReportClick, onClusterSelect, children, allowedClusterIds, allowedReportIds, externalStatusFilter, externalIssueTypeFilter, externalShowPins, externalShowClusters, externalShowHeatmap, externalMaxBounds, externalMinZoom, selectedTemplate = 'standard', photoPins = false }) {
+export default function EcoPinMap({ reports: externalReports, centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode = false, selectedReports = [], onReportSelect, hideFilterPanel = false, hidePins = false, hideClusters = false, onReportClick, onClusterSelect, children, allowedClusterIds, allowedReportIds, externalStatusFilter, externalIssueTypeFilter, externalShowPins, externalShowClusters, externalShowHeatmap, externalMaxBounds, externalMinZoom, selectedTemplate = 'standard', photoPins = false }) {
 
   const [mounted, setMounted] = useState(false)
   const [filteredReports, setFilteredReports] = useState([])
@@ -247,10 +247,16 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
   }
 
   const [validationStatusFilter, setValidationStatusFilter] = useState(getValidationFilterValue(initialValidationStatus))
-  const reports = useMemo(() => (reportQuery.data || []).filter(report =>
-    validationStatusFilter === 'all' || (report.validation_status || '').toLowerCase() === validationStatusFilter.toLowerCase()
-  ), [reportQuery.data, validationStatusFilter])
-  const issueTypes = useMemo(() => [...new Set((reportQuery.data || []).map(report => report.issue_type).filter(Boolean))], [reportQuery.data])
+  const reports = useMemo(() => {
+    const source = externalReports !== undefined ? externalReports : (reportQuery.data || [])
+    return source.filter(report =>
+      validationStatusFilter === 'all' || (report.validation_status || '').toLowerCase() === validationStatusFilter.toLowerCase()
+    )
+  }, [externalReports, reportQuery.data, validationStatusFilter])
+  const issueTypes = useMemo(() => {
+    const source = externalReports !== undefined ? externalReports : (reportQuery.data || [])
+    return [...new Set(source.map(report => report.issue_type).filter(Boolean))]
+  }, [externalReports, reportQuery.data])
   const [issueTypeFilter, setIssueTypeFilter] = useState('all')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
@@ -361,7 +367,10 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
         lng = report.longitude
       } else if (report.location) {
         try {
-          if (typeof report.location === 'string' && report.location.startsWith('{')) {
+          if (typeof report.location === 'object' && report.location !== null && report.location.type === 'Point' && Array.isArray(report.location.coordinates)) {
+            lng = report.location.coordinates[0]
+            lat = report.location.coordinates[1]
+          } else if (typeof report.location === 'string' && report.location.startsWith('{')) {
             const geoJSON = JSON.parse(report.location)
             if (geoJSON.type === 'Point' && geoJSON.coordinates) {
               lng = geoJSON.coordinates[0]

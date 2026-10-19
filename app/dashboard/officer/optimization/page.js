@@ -18,6 +18,7 @@ import DisassembleModal from '@/components/optimization/DisassembleModal'
 import { useTask } from '@/components/context/TaskContext'
 import { Sun, CloudRain, CloudLightning, Circle, Globe, Map, Check, CheckCircle2, XCircle, Ruler, Timer, RotateCcw, Loader2, History, AlertCircle, Info } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { formatStatusLabel } from '@/lib/helpers/statusHelpers'
 import styles from './optimization.module.css'
 import { 
   WEATHER_OPTIONS, 
@@ -451,7 +452,7 @@ export default function OptimizationPage() {
                   <span key={task.id} className="text-[11px] px-2 py-0.5 rounded-md bg-surface border border-border text-text-secondary flex items-center gap-1">
                     <span className="font-medium text-text-primary truncate max-w-[120px]">{task.title}</span>
                     <span className="text-text-muted">·</span>
-                    <span className="capitalize">{task.status.replace(/_/g, ' ')}</span>
+                    <span>{formatStatusLabel(task.status)}</span>
                     {task.crew_name && <><span className="text-text-muted">·</span><span>{task.crew_name}</span></>}
                   </span>
                 ))}
@@ -750,7 +751,7 @@ export default function OptimizationPage() {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold text-text-primary text-base m-0">Proposal metrics and routes</h3>
                   <span className={`text-xs px-3 py-1 border font-semibold font-sans normal-case tracking-normal rounded-full ${STATUS_STYLES[currentProposal.status] || STATUS_STYLES.draft}`}>
-                    {currentProposal.status?.replaceAll('_', ' ')}
+                    {formatStatusLabel(currentProposal.status)}
                   </span>
                 </div>
 
@@ -1046,7 +1047,7 @@ export default function OptimizationPage() {
                   <DataTable
                     columns={[
                       { key: 'created_at', label: 'Date', width: '18%', render: value => formatDate(value) },
-                      { key: 'status', label: 'Status', width: '15%', render: (value) => <span className={`inline-flex rounded-full border px-3 py-1 ${STATUS_STYLES[value] || ''}`}>{value}</span> },
+                      { key: 'status', label: 'Status', width: '15%', render: (value) => <span className={`inline-flex rounded-full border px-3 py-1 ${STATUS_STYLES[value] || ''}`}>{formatStatusLabel(value)}</span> },
                       { key: 'num_tasks_optimized', label: 'Tasks', width: '10%' },
                       { key: 'weather_condition', label: 'Weather', width: '17%', render: (value) => <span className="flex items-center gap-2">{WEATHER_OPTIONS.find(w => w.value === (value?.toLowerCase() || 'normal'))?.icon || <Sun className="w-4 h-4 text-warning" />}<span>{WEATHER_OPTIONS.find(w => w.value === (value?.toLowerCase() || 'normal'))?.label || 'Normal'}</span></span> },
                       { key: 'traffic_condition', label: 'Traffic', width: '17%', render: (value) => <span className="flex items-center gap-2">{TRAFFIC_OPTIONS.find(t => t.value === (value?.toLowerCase() || 'low'))?.icon || <Circle className="w-4 h-4 text-success fill-success" />}<span>{TRAFFIC_OPTIONS.find(t => t.value === (value?.toLowerCase() || 'low'))?.label || 'Low'}</span></span> },

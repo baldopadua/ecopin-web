@@ -15,6 +15,7 @@ import {
   createFieldCrew,
 } from '@/lib/api/optimization'
 import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
+import { toTitleCase } from '@/lib/helpers/statusHelpers';
 import styles from './OptimizationSettings.module.css'
 
 const LocationPickerMap = dynamic(
@@ -440,7 +441,7 @@ function OptimizationSettingsContent() {
                             ? styles.statusOnRoute
                             : styles.statusOffline
                         }`}>
-                          {(crew.availability_status || 'offline').toLowerCase().replace(/_/g, ' ').replace(/^\w/, letter => letter.toUpperCase())}
+                          {toTitleCase(crew.availability_status || 'offline')}
                         </span>
                       </div>
 

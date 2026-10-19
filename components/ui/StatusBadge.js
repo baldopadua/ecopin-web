@@ -15,7 +15,8 @@ import {
   formatStatusLabel,
   formatActionLabel,
   formatValidationStatusLabel,
-  formatLifecycleStageLabel
+  formatLifecycleStageLabel,
+  toTitleCase
 } from '@/lib/helpers/statusHelpers'
 
 /**
@@ -51,7 +52,7 @@ export default function StatusBadge({
       break
     case 'severity':
       colorClass = getSeverityColor(status)
-      displayLabel = label || (status ? status.charAt(0).toUpperCase() + status.slice(1) : 'N/A')
+      displayLabel = label || (status ? toTitleCase(status) : 'N/A')
       break
     case 'cluster':
       colorClass = getClusterStatusColor(status)
@@ -67,7 +68,7 @@ export default function StatusBadge({
       break
     case 'role':
       colorClass = getRoleBadgeColor(status)
-      displayLabel = label || (status ? status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'N/A')
+      displayLabel = label || (status ? toTitleCase(status) : 'N/A')
       break
     case 'consent':
       colorClass = getConsentStatusColor(status)

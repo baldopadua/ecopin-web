@@ -128,7 +128,7 @@ export default function ClustersPage() {
   const listColumns = [
     { 
       key: 'label', 
-      label: 'Cluster ID / Label', 
+      label: 'Cluster ID / label',
       width: '22%',
       render: (val, row) => (
         <div>

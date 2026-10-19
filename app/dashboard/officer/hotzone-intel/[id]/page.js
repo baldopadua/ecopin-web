@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { fetchValidatedReports, fetchClusterById, createCleanupTask, fetchCleanupTasks, updateClusterLabel } from '@/lib/api'
+import { fetchValidatedReports, fetchClusterById, fetchReportsByClusterId, createCleanupTask, fetchCleanupTasks, updateClusterLabel } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import styles from './HotzoneDetail.module.css'
 import Notification from '@/components/ui/Notification'
@@ -45,7 +45,9 @@ const parseLocation = (location, latitude, longitude) => {
   if (!location) return { latitude: null, longitude: null }
 
   try {
-    if (typeof location === 'string' && location.startsWith('{')) {
+    if (typeof location === 'object' && location !== null && location.type === 'Point' && Array.isArray(location.coordinates)) {
+      return { latitude: location.coordinates[1], longitude: location.coordinates[0] }
+    } else if (typeof location === 'string' && location.startsWith('{')) {
       const geoJSON = JSON.parse(location)
       if (geoJSON.type === 'Point' && geoJSON.coordinates) {
         return { latitude: geoJSON.coordinates[1], longitude: geoJSON.coordinates[0] }
@@ -91,25 +93,29 @@ export default function ClusterDetailPage() {
   useEffect(() => {
     Promise.all([
       fetchClusterById(clusterId),
+      fetchReportsByClusterId(clusterId).catch(() => []),
       fetchValidatedReports(),
       fetchCleanupTasks()
-    ]).then(([clusterData, reportsData, tasksData]) => {
+    ]).then(([clusterData, clusterReportsData, reportsData, tasksData]) => {
       setCluster(clusterData)
       const dbReports = clusterData?.reports || []
+      const explicitClusterReports = Array.isArray(clusterReportsData) ? clusterReportsData : []
       const clusterReportsFromFeed = (reportsData || []).filter(r => String(r.cluster_id) === String(clusterId))
       
       const reportsById = new Map()
       dbReports.forEach(r => reportsById.set(String(r.id), r))
+      explicitClusterReports.forEach(r => {
+        const existing = reportsById.get(String(r.id))
+        reportsById.set(String(r.id), { ...existing, ...r, validation_status: r.validation_status || existing?.validation_status })
+      })
       clusterReportsFromFeed.forEach(r => {
         const existing = reportsById.get(String(r.id))
         reportsById.set(String(r.id), { ...existing, ...r, validation_status: r.validation_status || existing?.validation_status })
       })
-      const constituentReports = reportsById.size > 0
-        ? Array.from(reportsById.values())
-        : (clusterReportsFromFeed.length > 0 ? clusterReportsFromFeed : dbReports)
+      const constituentReports = Array.from(reportsById.values())
       setReports(constituentReports)
 
-      const clusterTask = tasksData.find(task => String(task.cluster_id) === String(clusterId))
+      const clusterTask = (tasksData || []).find(task => String(task.cluster_id) === String(clusterId))
       if (clusterTask) {
         setExistingTask(clusterTask)
       }
@@ -331,8 +337,10 @@ export default function ClusterDetailPage() {
     </div>
   )
 
-  const centerLat = cluster.center_lat || (reports[0] ? parseLocation(reports[0].location, reports[0].latitude, reports[0].longitude).latitude : null)
-  const centerLng = cluster.center_lng || (reports[0] ? parseLocation(reports[0].location, reports[0].latitude, reports[0].longitude).longitude : null)
+  const clusterCoords = parseLocation(cluster?.center, cluster?.center_lat, cluster?.center_lng)
+  const firstReportCoords = reports[0] ? parseLocation(reports[0].location, reports[0].latitude, reports[0].longitude) : { latitude: null, longitude: null }
+  const centerLat = cluster?.center_lat || clusterCoords.latitude || firstReportCoords.latitude || null
+  const centerLng = cluster?.center_lng || clusterCoords.longitude || firstReportCoords.longitude || null
   
   const getPriorityLabel = (c) => {
     if (c?.priority) return c.priority;
@@ -422,7 +430,7 @@ export default function ClusterDetailPage() {
               </div>
             )
           }
-          subtitle={`Priority ${priorityScore} · ${normalizeString(priorityLabel)}`}
+          subtitle={`Priority ${priorityScore} · ${normalizeString(priorityLabel)}${cluster?.status ? ` · ${normalizeString(cluster.status)}` : ''}`}
           breadcrumbs={[
             { label: 'Hotzones', href: '/dashboard/officer/hotzone-intel' },
             { label: cluster.label || `Hotzone ${cluster.id.slice(0, 8)}` }
@@ -477,17 +485,37 @@ export default function ClusterDetailPage() {
                       <div className="text-lg font-semibold">{normalizeString(cluster.issue_type)}</div>
                    </div>
                  )}
+
+                 {cluster.status && (
+                   <div>
+                      <span className={styles.detailLabel}>Status</span>
+                      <div className="mt-1">
+                        <StatusBadge status={cluster.status} type="cluster" />
+                      </div>
+                   </div>
+                 )}
               </div>
               
               <div className="pt-5 border-t border-border mt-5">
                  {loadingTasks ? (
                     <button disabled className="btn-primary w-full opacity-50">Loading...</button>
+                 ) : existingTask ? (
+                    <button 
+                      onClick={handleDispatch}
+                      className="btn-primary w-full"
+                    >
+                      {existingTask.status === 'completed' ? 'View completed task' : 'View dispatched task'}
+                    </button>
+                 ) : cluster.status === 'resolved' ? (
+                    <div className="p-3 text-center bg-accent-green/10 text-accent-green border border-accent-green/30 rounded-xl font-semibold text-sm">
+                      Hotzone resolved
+                    </div>
                  ) : (
                     <button 
                       onClick={handleDispatch}
                       className="btn-primary w-full"
                     >
-                      {existingTask ? 'View dispatched task' : 'Dispatch field crew'}
+                      Dispatch field crew
                     </button>
                  )}
                  {dispatchError && (
@@ -508,8 +536,11 @@ export default function ClusterDetailPage() {
               </div>
               {centerLat && centerLng ? (
                  <EcoPinMap 
+                   reports={reports}
                    centerLat={centerLat}
                    centerLng={centerLng}
+                   initialValidationStatus="all"
+                   initialStatus="all"
                    hideFilterPanel={true}
                    hideClusters={true} // Only show pins for the reports in this cluster
                    allowedReportIds={reports.map(r => r.id)}

@@ -850,17 +850,7 @@ export default function ReportDetailPage() {
                 <div className="card">
                   <div className="flex items-start justify-between mb-4">
                     <h2 className="text-lg font-bold text-text-primary">Property Owner Consent</h2>
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${
-                      report.property_owner_consent_status === 'obtained'
-                        ? 'bg-success/10 text-success border-success/30'
-                        : report.property_owner_consent_status === 'pending'
-                          ? 'bg-warning/10 text-warning border-warning/30'
-                          : report.property_owner_consent_status === 'denied'
-                            ? 'bg-error/10 text-error border-error/30'
-                            : 'bg-surface-elevated text-text-muted border-border'
-                    }`}>
-                      {report.property_owner_consent_status.replace(/_/g, ' ').toUpperCase()}
-                    </span>
+                    <StatusBadge status={report.property_owner_consent_status} type="consent" size="medium" />
                   </div>
                   <div className="space-y-3">
                     <div className="grid grid-cols-3 gap-2">

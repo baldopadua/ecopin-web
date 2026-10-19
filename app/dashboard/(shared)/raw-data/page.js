@@ -186,7 +186,7 @@ export default function ReportsPage() {
       },
       { 
         key: 'issue_type', 
-        label: 'Issue Type', 
+        label: 'Issue type',
         width: isStaff ? '14%' : '20%',
         render: (value) => (
           <span className="text-sm text-text-secondary">{value || 'N/A'}</span>
@@ -194,7 +194,7 @@ export default function ReportsPage() {
       },
       { 
         key: 'status', 
-        label: 'Report Status', 
+        label: 'Report status',
         width: isStaff ? '12%' : '14%',
         render: (value) => (
           <StatusBadge status={value} type="report" />
@@ -202,7 +202,7 @@ export default function ReportsPage() {
       },
       { 
         key: 'validation_status', 
-        label: 'Review Status', 
+        label: 'Review status',
         width: isStaff ? '12%' : '14%',
         render: (value, row) => {
           const effective = value || (row?.manual_review_id ? 'manual_review' : 'pending')
@@ -219,7 +219,7 @@ export default function ReportsPage() {
       },
       { 
         key: 'stage', 
-        label: 'Operational Stage', 
+        label: 'Operational stage',
         width: isStaff ? '11%' : '12%',
         render: (value) => (
           <StatusBadge status={value} type="lifecycle" />

@@ -340,12 +340,12 @@ export default function HotspotForecastMap({ predictions, timeHorizon, viewModeO
           </div>
         </div>
 
-        <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px">
-          <tr><td style="color:#666;padding:3px 0">Reports</td><td style="text-align:right;font-weight:600">${escapePopupText(p.report_count ?? 'N/A')}</td></tr>
-          <tr><td style="color:#666;padding:3px 0">Risk Score</td><td style="text-align:right;font-weight:600">${Number.isFinite(p.risk_score) && p.risk_score >= 0 && p.risk_score <= 1 ? (p.risk_score * 100).toFixed(0) + '%' : 'N/A'}</td></tr>
-          <tr><td style="color:#666;padding:3px 0">Top Issue</td><td style="text-align:right;font-weight:600;text-transform:capitalize">${escapePopupText(typeof p.top_issue_type === 'string' ? p.top_issue_type.replace(/_/g, ' ') : 'N/A')}</td></tr>
-          <tr><td style="color:#666;padding:3px 0">Center</td><td style="text-align:right;font-size:11px;font-family:monospace">${coordinateText(p.center_lat, 90)}, ${coordinateText(p.center_lng, 180)}</td></tr>
-        </table>
+        <dl style="display:grid;grid-template-columns:auto 1fr;gap:8px 16px;font-size:14px;margin:0 0 10px;color:var(--text-primary)">
+          <dt>Reports</dt><dd style="margin:0;text-align:right;font-weight:600">${escapePopupText(p.report_count ?? 'N/A')}</dd>
+          <dt>Risk score</dt><dd style="margin:0;text-align:right;font-weight:600">${Number.isFinite(p.risk_score) && p.risk_score >= 0 && p.risk_score <= 1 ? (p.risk_score * 100).toFixed(0) + '%' : 'N/A'}</dd>
+          <dt>Top issue</dt><dd style="margin:0;text-align:right;font-weight:600;text-transform:capitalize">${escapePopupText(typeof p.top_issue_type === 'string' ? p.top_issue_type.replace(/_/g, ' ') : 'N/A')}</dd>
+          <dt>Center</dt><dd style="margin:0;text-align:right;font-size:12px">${coordinateText(p.center_lat, 90)}, ${coordinateText(p.center_lng, 180)}</dd>
+        </dl>
 
         <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:4px">Issue Breakdown</div>
         <div style="font-size:12px;border-top:1px solid #eee;padding-top:6px">${breakdownHtml}</div>

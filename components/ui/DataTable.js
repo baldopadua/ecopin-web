@@ -1,6 +1,6 @@
 'use client'
 import { SkeletonLine } from './Skeleton'
-import { ChevronUp, ChevronDown } from 'lucide-react'
+import { ChevronUp, ChevronDown, ChevronRight } from 'lucide-react'
 
 /**
  * Universal Data Table component
@@ -42,61 +42,17 @@ export default function DataTable({
     )
   }
 
-  if (loading) {
-    return (
-      <div className={`ecopin-table-container ${className}`} role="status" aria-busy="true" aria-label={`Loading ${caption.toLowerCase()}`}>
-        <span className="sr-only">Loading {caption.toLowerCase()}…</span>
-        <table className="ecopin-table">
-          <colgroup>
-            {columns.map((col, index) => (
-              <col key={index} style={{ width: col.width || 'auto' }} />
-            ))}
-          </colgroup>
-          {showHeader && (
-            <thead>
-              <tr>
-                {columns.map((col, index) => (
-                  <th key={index}>
-                    <SkeletonLine className="h-4 w-16" />
-                  </th>
-                ))}
-              </tr>
-            </thead>
-          )}
-          <tbody>
-            {Array.from({ length: 5 }).map((_, rowIndex) => (
-              <tr key={rowIndex}>
-                {columns.map((_, colIndex) => (
-                  <td key={colIndex}>
-                    <SkeletonLine className="h-4 w-24" />
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    )
-  }
-
-  if (data.length === 0) {
-    return (
-      <div role="status" className={`bg-surface border border-border rounded-2xl p-8 ${className}`}>
-        <div className="text-center py-6 text-text-secondary">
-          <p className="text-lg mb-1">{emptyMessage}</p>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className={`ecopin-table-container ${className}`} role="region" aria-label={caption} tabIndex={0}>
+    <div className={`ecopin-table-container ${className}`} role={loading ? 'status' : 'region'}
+      aria-busy={loading || undefined} aria-label={loading ? `Loading ${caption.toLowerCase()}` : caption} tabIndex={loading ? undefined : 0}>
+      {loading && <span className="sr-only">Loading {caption.toLowerCase()}…</span>}
       <table className="ecopin-table">
         <caption className="sr-only">{caption}</caption>
         <colgroup>
           {columns.map((col, index) => (
             <col key={index} style={{ width: col.width || 'auto' }} />
           ))}
+          {onRowClick && <col style={{ width: 56 }} />}
         </colgroup>
         {showHeader && (
           <thead>
@@ -107,34 +63,42 @@ export default function DataTable({
                   scope="col"
                   aria-sort={sortable && onSort && col.sortable !== false ? (sortKey === col.key ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none') : undefined}
                 >
-                  {sortable && onSort && col.sortable !== false ? <button type="button" className="flex items-center min-h-11 gap-2 text-left" onClick={() => handleSort(col.key)}>
+                  {sortable && onSort && col.sortable !== false ? <button type="button" disabled={loading} className="table-sort flex items-center min-h-11 gap-2 text-left" onClick={() => handleSort(col.key)}>
                     {col.label}
                     {renderSortIcon(col.key)}
                   </button> : col.label}
                 </th>
               ))}
+              {onRowClick && <th scope="col" className="table-row-action"><span className="sr-only">Details</span></th>}
             </tr>
           </thead>
         )}
         <tbody>
-          {data.map((row, rowIndex) => (
+          {loading ? Array.from({ length: 5 }, (_, rowIndex) => <tr key={rowIndex}>
+            {columns.map((_, colIndex) => <td key={colIndex}><SkeletonLine className="h-4 w-full max-w-24" /></td>)}
+            {onRowClick && <td className="table-row-action"><SkeletonLine className="h-4 w-4" /></td>}
+          </tr>) : data.length === 0 ? <tr className="table-empty"><td colSpan={Math.max(1, columns.length + (onRowClick ? 1 : 0))}>
+            <p role="status">{emptyMessage}</p>
+          </td></tr> : data.map((row, rowIndex) => (
             <tr
               key={getRowKey(row) ?? rowIndex}
               className={`${
                 onRowClick ? 'cursor-pointer table-row-interactive' : ''
               } ${typeof rowClassName === 'function' ? rowClassName(row, rowIndex) : rowClassName}`}
-              onClick={event => {
-                if (event.target.closest('button, a, input, select, textarea, label, [role="button"]')) return
-                onRowClick?.(row, rowIndex)
-              }}
+              onClick={onRowClick ? event => {
+                if (event.target.closest('button, a, input, select, textarea, label, summary, [role="button"], [contenteditable="true"]')) return
+                onRowClick(row, rowIndex)
+              } : undefined}
             >
               {columns.map((col, colIndex) => (
                 <td key={colIndex}>
                   {col.render ? col.render(row[col.key], row, rowIndex) : row[col.key]}
-                  {onRowClick && colIndex === 0 && <button type="button" className="table-row-open"
-                    aria-label={rowActionLabel(row)} onClick={event => { event.stopPropagation(); onRowClick(row, rowIndex) }}><span className="sr-only">Open details</span></button>}
                 </td>
               ))}
+              {onRowClick && <td className="table-row-action"><button type="button" className="table-row-open"
+                aria-label={rowActionLabel(row)} onClick={event => { event.stopPropagation(); onRowClick(row, rowIndex) }}>
+                <ChevronRight size={18} aria-hidden="true" />
+              </button></td>}
             </tr>
           ))}
         </tbody>

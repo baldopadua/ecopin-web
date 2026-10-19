@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useId } from 'react';
 import { getZoneTrend } from '../../lib/api/hotspot';
 import { buildTrendSeries, forecastDate } from '../../lib/forecast-data.mjs';
 import styles from './SpatialScan.module.css';
+import DataTable from './DataTable';
 
 function ZoneForecastChart({ zone }) {
   const [selected, setSelected] = useState(null);
@@ -40,10 +41,19 @@ function ZoneForecastChart({ zone }) {
     </svg>
     <figcaption><span>━━ Reported</span><span>┄┄ Forecast</span><span>Shaded: approximate 95% range</span></figcaption>
     <p className={styles.trendNote}>Each point represents a week. Forecast weeks may be partial. The likely range shows uncertainty in the estimate, not measured accuracy.</p>
-    <details><summary>View trend values</summary><div className={styles.trendTable}><table><thead><tr><th scope="col">Bucket start</th><th scope="col">Actual</th><th scope="col">Projected</th><th scope="col">95% interval</th></tr></thead><tbody>
-      {actual.map(point => <tr key={point.date}><th scope="row">{forecastDate(point.date)}</th><td>{point.value}</td><td>—</td><td>—</td></tr>)}
-      {projected.map(point => <tr key={point.date}><th scope="row">{forecastDate(point.date)}</th><td>—</td><td>{point.value.toFixed(1)}</td><td>{point.lower.toFixed(1)}–{point.upper.toFixed(1)}</td></tr>)}
-    </tbody></table></div></details>
+    <details><summary>View trend values</summary><DataTable
+      caption="Weekly actual and projected reports" className="ecopin-table-container--compact"
+      columns={[
+        { key: 'date', label: 'Bucket start', render: forecastDate },
+        { key: 'actual', label: 'Actual', render: value => value ?? '—' },
+        { key: 'projected', label: 'Projected', render: value => value == null ? '—' : value.toFixed(1) },
+        { key: 'range', label: '95% interval' },
+      ]}
+      data={[
+        ...actual.map(point => ({ id: `actual-${point.date}`, date: point.date, actual: point.value, range: '—' })),
+        ...projected.map(point => ({ id: `projected-${point.date}`, date: point.date, projected: point.value, range: `${point.lower.toFixed(1)}–${point.upper.toFixed(1)}` })),
+      ]}
+    /></details>
   </figure>;
 }
 

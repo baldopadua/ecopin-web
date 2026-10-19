@@ -59,6 +59,7 @@ function CustomMap({ selectedReports, allowedReportIds, onReportSelect, onCluste
   return (
     <div className={styles.map}>
       <EcoPinMap 
+        reports={reports}
         centerLat={mapCenter?.lat}
         centerLng={mapCenter?.lng}
         initialStatus="unresolved"

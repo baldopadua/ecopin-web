@@ -3,6 +3,7 @@ import { Marker, Popup } from 'react-leaflet'
 import L from 'leaflet'
 import { useRouter } from 'next/navigation'
 import ReportPhotoMarker from './ReportPhotoMarker'
+import { toTitleCase } from '@/lib/helpers/statusHelpers'
 
 export const createEcoPinIcon = (status, isRemoving = false, isSelected = false) => {
   let color = 'var(--error, #d32f2f)' // unresolved
@@ -73,7 +74,7 @@ export default function EcoPinMarker({ report, position, isRemoving = false, isS
                       report.status === 'pending_owner_consent' ? 'bg-blue-100 text-blue-700' :
                         'bg-red-100 text-red-700'
                 }`}>
-                {report.status.replace(/_/g, ' ').toUpperCase()}
+                {toTitleCase(report.status)}
               </span>
             )}
             {report.validation_status && (
@@ -85,12 +86,12 @@ export default function EcoPinMarker({ report, position, isRemoving = false, isS
                     ? 'bg-red-100 text-red-700'
                     : 'bg-yellow-100 text-yellow-700'
                 }`}>
-                {report.validation_status.replace(/_/g, ' ').toUpperCase()}
+                {toTitleCase(report.validation_status)}
               </span>
             )}
             {report.issue_type && (
                <span className="text-[10px] px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-700">
-                 {report.issue_type.replace(/_/g, ' ').toUpperCase()}
+                 {toTitleCase(report.issue_type)}
                </span>
             )}
           </div>

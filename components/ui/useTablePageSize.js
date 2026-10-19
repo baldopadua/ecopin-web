@@ -17,7 +17,7 @@ export default function useTablePageSize({ rowHeight = 64, minRows = 1, resetKey
       if (!desktop.matches) { setPageSize(10); return }
       if (container.clientWidth !== measuredWidth) { measuredWidth = container.clientWidth; measuredRowHeight = 0 }
       if (!container.querySelector('[aria-busy="true"]')) {
-        for (const row of container.querySelectorAll('tbody tr')) measuredRowHeight = Math.max(measuredRowHeight, row.getBoundingClientRect().height)
+        for (const row of container.querySelectorAll('tbody tr:not(.table-empty)')) measuredRowHeight = Math.max(measuredRowHeight, row.getBoundingClientRect().height)
       }
       const header = container.querySelector('thead')?.getBoundingClientRect().height || 48
       const available = container.clientHeight - header - 2

@@ -3,6 +3,9 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { fetchPublicReports, fetchCleanupTasks, fetchReportsByClusterId, fetchReportsByIds } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
+import DataTable from '@/components/ui/DataTable'
+import StatusBadge from '@/components/ui/StatusBadge'
+import { toTitleCase } from '@/lib/helpers/statusHelpers'
 import { SkeletonLine, SkeletonStatCard, SkeletonCard } from '@/components/ui/Skeleton'
 import { Bar, Pie, Line } from 'react-chartjs-2'
 import {
@@ -373,31 +376,7 @@ export default function DashboardPage() {
     setCurrentPage(page)
   }
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'resolved': return 'bg-success/10 text-success border-success/30'
-      case 'in_progress': return 'bg-warning/10 text-warning border-warning/30'
-      case 'completed': return 'bg-success/10 text-success border-success/30'
-      case 'pending': return 'bg-info/10 text-info border-info/30'
-      case 'waiting_for_feedback': return 'bg-info/10 text-info border-info/30'
-      case 'closed': return 'bg-surface-elevated text-text-muted border-border'
-      case 'pending_owner_consent': return 'bg-warning/10 text-warning border-warning/30'
-      default: return 'bg-error/10 text-error border-error/30'
-    }
-  }
 
-  const getValidationColor = (validationStatus) => {
-    switch (validationStatus) {
-      case 'validated':
-      case 'automatically_valid': return 'bg-success/10 text-success border-success/30'
-      case 'pending':
-      case 'pending_ai_validation': return 'bg-warning/10 text-warning border-warning/30'
-      case 'manual_review':
-      case 'Manual_Review': return 'bg-info/10 text-info border-info/30'
-      case 'rejected': return 'bg-error/10 text-error border-error/30'
-      default: return 'bg-surface-elevated text-text-muted border-border'
-    }
-  }
 
   return (
     <div className="p-8">
@@ -489,9 +468,7 @@ export default function DashboardPage() {
                   <div className="mb-4">
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="font-bold text-text-primary text-lg">{task.title}</h3>
-                      <span className={`px-2 py-1 rounded text-xs font-semibold border ${getStatusColor(task.status)}`}>
-                        {task.status.replace(/_/g, ' ').toUpperCase()}
-                      </span>
+                      <StatusBadge status={task.status} type="task" />
                     </div>
                     <p className="text-sm text-text-muted line-clamp-2">{task.description}</p>
                   </div>
@@ -585,9 +562,7 @@ export default function DashboardPage() {
                   <div className="mb-4">
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="font-bold text-text-primary text-lg">{task.title}</h3>
-                      <span className={`px-2 py-1 rounded text-xs font-semibold border ${getStatusColor(task.status)}`}>
-                        {task.status.replace(/_/g, ' ').toUpperCase()}
-                      </span>
+                      <StatusBadge status={task.status} type="task" />
                     </div>
                     <p className="text-sm text-text-muted line-clamp-2">{task.description}</p>
                   </div>
@@ -657,52 +632,17 @@ export default function DashboardPage() {
           <div className="text-center py-8 text-text-muted">No reports available</div>
         ) : (
           <>
-            <div className="ecopin-table-container">
-              <table className="ecopin-table">
-                <thead>
-                  <tr>
-                    <th>Title</th>
-                    <th>Issue Type</th>
-                    <th>Status</th>
-                    <th>Validation</th>
-                    <th>Created</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {currentReports.map((report) => (
-                    <tr key={report.id}>
-                      <td>
-                        <div className="font-bold">{report.title}</div>
-                        <div className="text-text-muted line-clamp-1">{report.description}</div>
-                      </td>
-                      <td>{report.issue_type || 'General'}</td>
-                      <td>
-                        <span className={`px-2 py-1 rounded text-xs font-semibold border ${getStatusColor(report.status)}`}>
-                          {report.status.replace(/_/g, ' ').toUpperCase()}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={`px-2 py-1 rounded text-xs font-semibold border ${getValidationColor(report.validation_status)}`}>
-                          {report.validation_status === 'approved' || report.validation_status === 'validated' ? 'APPROVED' : report.validation_status.replace(/_/g, ' ').toUpperCase()}
-                        </span>
-                      </td>
-                      <td>
-                        {new Date(report.created_at).toLocaleDateString()}
-                      </td>
-                      <td>
-                        <button
-                          onClick={() => router.push(`/dashboard/raw-data/${report.id}`)}
-                          className="font-bold underline"
-                        >
-                          View Details
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <DataTable caption="Recent reports" data={currentReports}
+              columns={[
+                { key: 'title', label: 'Title', render: (value, report) => <div><div className="font-medium">{value}</div><div className="text-text-secondary line-clamp-1">{report.description}</div></div> },
+                { key: 'issue_type', label: 'Issue type', render: value => (value ? toTitleCase(value) : 'General') },
+                { key: 'status', label: 'Status', render: value => <StatusBadge status={value} type="report" /> },
+                { key: 'validation_status', label: 'Validation', render: value => <StatusBadge status={value} type="validation" /> },
+                { key: 'created_at', label: 'Created', render: value => new Date(value).toLocaleDateString() },
+              ]}
+              onRowClick={report => router.push(`/dashboard/raw-data/${report.id}`)}
+              rowActionLabel={report => `View details for ${report.title || report.id}`}
+            />
 
             {/* Pagination */}
             {totalPages > 1 && (

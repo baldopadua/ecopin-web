@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import PageHeader from '@/components/layout/PageHeader'
+import DataTable from '@/components/ui/DataTable'
 import { AdminGuard } from '@/components/auth/RequireRole'
 import Notification from '@/components/ui/Notification'
 import {
@@ -277,53 +278,22 @@ function InfrastructureContent() {
           </button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm border-collapse">
-            <thead>
-              <tr className="border-b border-border text-text-muted text-xs uppercase tracking-wider">
-                <th className="py-3 px-4">Protected Bucket</th>
-                <th className="py-3 px-4">Versioning & Policy</th>
-                <th className="py-3 px-4">Primary Objects</th>
-                <th className="py-3 px-4">Replica Objects</th>
-                <th className="py-3 px-4">Parity Check</th>
-                <th className="py-3 px-4">Replication Lag</th>
-                <th className="py-3 px-4">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {(drStatus?.storage_replication?.buckets || [
-                { bucket_name: 'report-evidence', primary_objects: 420, replica_objects: 420, parity_percent: 100, replication_lag_seconds: 180, sync_status: 'SYNCHRONIZED' },
-                { bucket_name: 'cleanup-task-photos', primary_objects: 215, replica_objects: 215, parity_percent: 100, replication_lag_seconds: 140, sync_status: 'SYNCHRONIZED' },
-                { bucket_name: 'report-cleanup', primary_objects: 88, replica_objects: 88, parity_percent: 100, replication_lag_seconds: 120, sync_status: 'SYNCHRONIZED' }
-              ]).map((b) => (
-                <tr key={b.bucket_name} className="hover:bg-surface-elevated/50 transition-colors">
-                  <td className="py-4 px-4 font-semibold text-text-primary flex items-center gap-2">
-                    <Lock className="w-4 h-4 text-primary" />
-                    {b.bucket_name}
-                  </td>
-                  <td className="py-4 px-4 text-text-muted text-xs">
-                    <span className="font-medium text-text-primary">Enabled</span> (30-day noncurrent expiration)
-                  </td>
-                  <td className="py-4 px-4 text-text-primary font-mono">{b.primary_objects}</td>
-                  <td className="py-4 px-4 text-text-primary font-mono">{b.replica_objects}</td>
-                  <td className="py-4 px-4">
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-500">
-                      <Check className="w-3.5 h-3.5" /> {b.parity_percent}% Parity
-                    </span>
-                  </td>
-                  <td className="py-4 px-4 font-mono text-xs text-text-muted">
-                    {Math.round(b.replication_lag_seconds / 60)} min lag (SLA: ≤ 15 min)
-                  </td>
-                  <td className="py-4 px-4">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> {b.sync_status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <DataTable caption="Storage replication" getRowKey={bucket => bucket.bucket_name}
+          columns={[
+            { key: 'bucket_name', label: 'Protected bucket', render: value => <span className="flex items-center gap-2 font-medium"><Lock size={16} className="text-primary" aria-hidden="true" />{value}</span> },
+            { key: 'policy', label: 'Versioning & policy', render: () => <span><span className="font-medium">Enabled</span> (30-day noncurrent expiration)</span> },
+            { key: 'primary_objects', label: 'Primary objects' },
+            { key: 'replica_objects', label: 'Replica objects' },
+            { key: 'parity_percent', label: 'Parity check', render: value => <span className="inline-flex items-center gap-1 text-success"><Check size={14} aria-hidden="true" />{value}% parity</span> },
+            { key: 'replication_lag_seconds', label: 'Replication lag', render: value => `${Math.round(value / 60)} min lag (SLA: ≤ 15 min)` },
+            { key: 'sync_status', label: 'Status', render: value => <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-success/10 text-success border border-success/20"><CheckCircle2 size={14} aria-hidden="true" />{value}</span> },
+          ]}
+          data={drStatus?.storage_replication?.buckets || [
+            { bucket_name: 'report-evidence', primary_objects: 420, replica_objects: 420, parity_percent: 100, replication_lag_seconds: 180, sync_status: 'SYNCHRONIZED' },
+            { bucket_name: 'cleanup-task-photos', primary_objects: 215, replica_objects: 215, parity_percent: 100, replication_lag_seconds: 140, sync_status: 'SYNCHRONIZED' },
+            { bucket_name: 'report-cleanup', primary_objects: 88, replica_objects: 88, parity_percent: 100, replication_lag_seconds: 120, sync_status: 'SYNCHRONIZED' },
+          ]}
+        />
       </div>
 
       {/* Disaster Recovery Runbook & Recovery Drill Protocol */}

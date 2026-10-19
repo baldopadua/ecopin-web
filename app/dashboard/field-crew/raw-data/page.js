@@ -235,7 +235,7 @@ export default function FieldCrewReportsPage() {
             },
             { 
               key: 'issue_type', 
-              label: 'Issue Type', 
+              label: 'Issue type',
               width: '20%',
               render: (value) => (
                 <span className="text-sm text-text-secondary">{value || 'N/A'}</span>
@@ -251,7 +251,7 @@ export default function FieldCrewReportsPage() {
             },
             { 
               key: 'validation_status', 
-              label: 'Review Status', 
+              label: 'Review status',
               width: '15%',
               render: (value, row) => {
                 const effective = value || (row?.manual_review_id ? 'manual_review' : 'pending')
