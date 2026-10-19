@@ -32,6 +32,7 @@ export function SessionProvider({ children }) {
 
   useEffect(() => {
     const check = () => {
+      if (!session) return
       if (session?.expiresAt <= Date.now()) handleSessionExpired()
       else void validateSessionWithServer()
     }
@@ -46,7 +47,7 @@ export function SessionProvider({ children }) {
     }
   }, [session, handleSessionExpired, validateSessionWithServer])
 
-  return <SessionContext.Provider value={{ handleSessionExpired, validateSessionWithServer }}>
+  return <SessionContext.Provider value={{ handleSessionExpired, validateSessionWithServer, showSessionExpiredModal }}>
     {children}
     {showSessionExpiredModal && <Dialog open labelledBy="session-expired-title" dismissible={false}>
       <div className="card max-w-md w-full text-center">

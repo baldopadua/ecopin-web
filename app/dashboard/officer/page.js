@@ -1,7 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { fetchCleanupTasks, fetchPublicReports, fetchClusters, fetchWorkQueue, getOptimizationRuns } from '@/lib/api'
+import { fetchWorkQueue, getOptimizationRuns } from '@/lib/api'
+import { useDashboardReports, useDashboardTasks, useDashboardClusters } from '@/components/context/DashboardQueryProvider'
 import CommandCenterPanel from '@/components/ui/CommandCenterPanel'
 import styles from '@/components/ui/CommandCenter.module.css'
 import StatusBadge from '@/components/ui/StatusBadge'
@@ -12,39 +13,33 @@ import { reportDiagnostic } from '../../../lib/diagnostics.mjs';
 
 export default function OfficerHomepage() {
   const user = useUser()
-  const [loading, setLoading] = useState(true)
-  const [tasks, setTasks] = useState([])
-  const [reports, setReports] = useState([])
-  const [clusters, setClusters] = useState([])
+  const [queueLoading, setQueueLoading] = useState(true)
+  const taskQuery = useDashboardTasks()
+  const reportQuery = useDashboardReports()
+  const clusterQuery = useDashboardClusters()
+  const rawTasks = taskQuery.data
+  const tasks = Array.isArray(rawTasks) ? rawTasks
+    : (Array.isArray(rawTasks?.tasks) ? rawTasks.tasks : (Array.isArray(rawTasks?.data) ? rawTasks.data : []))
+  const reports = (reportQuery.data || []).filter(r => r.status !== 'resolved' && r.status !== 'closed')
+  const clusters = clusterQuery.data || []
+  const loading = queueLoading || taskQuery.isPending || reportQuery.isPending || clusterQuery.isPending
+  const dataError = taskQuery.isError || reportQuery.isError || clusterQuery.isError
   const [workQueue, setWorkQueue] = useState([])
   const [latestRun, setLatestRun] = useState(null)
   
 
   useEffect(() => {
     const loadData = async () => {
-      setLoading(true)
+      setQueueLoading(true)
       try {
         const [
-          tasksData,
-          reportsData,
-          clustersData,
           queueData,
           runsData
         ] = await Promise.all([
-          fetchCleanupTasks().catch(() => []),
-          fetchPublicReports().catch(() => []),
-          fetchClusters().catch(() => []),
           fetchWorkQueue().catch(() => []),
           getOptimizationRuns().catch(() => [])
         ])
 
-        const tasksList = Array.isArray(tasksData)
-          ? tasksData
-          : (Array.isArray(tasksData?.tasks) ? tasksData.tasks : (Array.isArray(tasksData?.data) ? tasksData.data : []))
-        setTasks(tasksList)
-        const activeReports = (Array.isArray(reportsData) ? reportsData : []).filter(r => r.status !== 'resolved' && r.status !== 'closed')
-        setReports(activeReports)
-        setClusters(clustersData || [])
         setWorkQueue(queueData || [])
         
         const approvedRuns = (runsData || []).filter(r => r.status === 'approved')
@@ -57,7 +52,7 @@ export default function OfficerHomepage() {
       } catch (error) {
         reportDiagnostic('error', 'other', 'Failed to load dashboard data:', error)
       } finally {
-        setLoading(false)
+        setQueueLoading(false)
       }
     }
     loadData()
@@ -121,6 +116,10 @@ export default function OfficerHomepage() {
           </Link>
           <p>Welcome, {user?.full_name || 'Officer'}. System status is operational.</p>
         </header>
+        {dataError && <div role="alert">
+          Some dashboard data could not refresh. Previously loaded data is shown where available.
+          <button type="button" onClick={() => { void taskQuery.refetch(); void reportQuery.refetch(); void clusterQuery.refetch() }}>Try again</button>
+        </div>}
         <div className={styles.metrics} aria-label="Operational overview">
           {[
             { title: 'Active Field Units', value: activeTasks.length, note: 'Cleanup tasks in progress', href: '/dashboard/officer/operations?status=in_progress', icon: Users },

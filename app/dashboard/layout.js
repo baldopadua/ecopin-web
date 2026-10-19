@@ -1,68 +1,59 @@
 'use client'
-import { clearSessionMetadata, loadSessionMetadata } from '@/lib/auth-token.mjs'
-import { useEffect, useState } from 'react'
+import { clearSessionMetadata, getSessionMetadata, loadSessionMetadata, subscribeSession } from '@/lib/auth-token.mjs'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Sidebar from '@/components/layout/Sidebar'
 import { UserProvider } from '@/components/auth/UserContext'
-import { SessionProvider } from '@/components/auth/SessionProvider'
+import { SessionProvider, useSession } from '@/components/auth/SessionProvider'
 import { TaskProvider } from '@/components/context/TaskContext'
+import DashboardQueryProvider from '@/components/context/DashboardQueryProvider'
 import styles from '@/components/layout/DashboardShell.module.css'
 import { reportDiagnostic } from '../../lib/diagnostics.mjs';
 
 export default function DashboardLayout({ children }) {
-  const [user, setUser] = useState(null)
-  const [isRedirecting, setIsRedirecting] = useState(false)
+  return <SessionProvider><DashboardContent>{children}</DashboardContent></SessionProvider>
+}
+
+function DashboardContent({ children }) {
+  const session = useSyncExternalStore(subscribeSession, getSessionMetadata, () => null)
+  const [authReady, setAuthReady] = useState(false)
+  const { showSessionExpiredModal } = useSession()
   const router = useRouter()
   const pathname = usePathname()
+  const user = session?.state === 'full' ? session.user : null
+  const role = user?.role || 'citizen'
+  const redirectTo = !authReady || showSessionExpiredModal ? null
+    : !user || role === 'citizen' || role === 'field_crew' ? '/auth'
+      : pathname.startsWith('/dashboard/admin') && role !== 'admin' && role !== 'sysadmin' ? '/dashboard/officer'
+        : pathname === '/dashboard' && (role === 'admin' || role === 'sysadmin') ? '/dashboard/admin'
+          : pathname === '/dashboard' && role === 'officer' ? '/dashboard/officer'
+            : null
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const session = await loadSessionMetadata()
-        if (session?.state !== 'full') {
-          clearSessionMetadata()
-          router.push('/auth')
-          return
-        }
-
-        const data = { user: session.user }
-        const userRole = data.user?.role || 'citizen'
-
-        if (userRole === 'citizen' || userRole === 'field_crew') {
-          // Immediately block citizen and field crew from any web dashboard pages
-          clearSessionMetadata()
-          router.push('/auth')
-          return
-        }
-
-        if (pathname.startsWith('/dashboard/admin') && userRole !== 'admin' && userRole !== 'sysadmin') {
-          setIsRedirecting(true)
-          router.push('/dashboard/officer')
-          return
-        }
-
-        setUser(data.user)
-
-        if ((userRole === 'admin' || userRole === 'sysadmin') && pathname === '/dashboard') {
-          setIsRedirecting(true)
-          router.push('/dashboard/admin')
-        } else if (userRole === 'officer' && pathname === '/dashboard') {
-          setIsRedirecting(true)
-          router.push('/dashboard/officer')
-        } else {
-          setIsRedirecting(false)
-        }
-      } catch (error) {
+    let active = true
+    const cached = getSessionMetadata()
+    const validCachedSession = cached?.state === 'full' && cached.expiresAt > Date.now()
+    void Promise.resolve(validCachedSession ? cached : loadSessionMetadata()).then((loadedSession) => {
+      if (!active) return
+      if (loadedSession?.state === 'full' && loadedSession.expiresAt <= Date.now()) clearSessionMetadata()
+      setAuthReady(true)
+    }).catch((error) => {
+      if (active) {
         reportDiagnostic('error', 'other', 'Failed to fetch user data:', error)
         clearSessionMetadata()
-        router.push('/auth')
+        setAuthReady(true)
       }
-    }
+    })
+    return () => { active = false }
+  }, [])
 
-    checkAuth()
-  }, [pathname, router])
+  useEffect(() => {
+    if (!authReady) return
+    if (session && (!user || role === 'citizen' || role === 'field_crew')) clearSessionMetadata()
+    if (redirectTo) router.push(redirectTo)
+  }, [authReady, redirectTo, role, router, session, user])
 
-  if (!user || isRedirecting) return (
+  if (!authReady || !user || redirectTo) return (
     <div className={styles.shell} aria-busy="true" aria-label="Loading workspace">
       <div className={styles.mobileBar} aria-hidden="true"><div className="h-7 w-28 rounded-lg bg-border/50 animate-pulse" /></div>
             <aside className={`${styles.sidebar} ${styles.desktopSidebar} animate-pulse`}>
@@ -110,8 +101,8 @@ export default function DashboardLayout({ children }) {
   )
 
   return (
-    <SessionProvider>
       <UserProvider user={user}>
+        <DashboardQueryProvider>
         <TaskProvider>
           <div className={styles.shell}>
             <a href="#workspace-content" className={styles.skip}>Skip to workspace</a>
@@ -121,7 +112,7 @@ export default function DashboardLayout({ children }) {
             </main>
           </div>
         </TaskProvider>
+        </DashboardQueryProvider>
       </UserProvider>
-    </SessionProvider>
   )
 }

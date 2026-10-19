@@ -8,7 +8,9 @@ import 'leaflet/dist/leaflet.css'
 import 'leaflet.heat'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
-import { fetchValidatedReports, fetchIssueTypes, fetchClusters } from '@/lib/api'
+import { useQueryClient } from '@tanstack/react-query'
+import { useDashboardReports, useDashboardClusters } from '@/components/context/DashboardQueryProvider'
+import { DASHBOARD_QUERY_KEY } from '@/lib/dashboard-query-client.mjs'
 import { supabase } from '@/lib/supabase'
 import Button from '@/components/ui/Button'
 import OutlierClusterLayer from './OutlierClusterLayer'
@@ -102,7 +104,7 @@ function MapResizer() {
 
   useEffect(() => {
     const resizeObserver = new ResizeObserver(() => {
-      map.invalidateSize()
+      if (container.clientWidth > 0 && container.clientHeight > 0) map.invalidateSize()
     })
 
     const container = map.getContainer()
@@ -121,24 +123,31 @@ function HeatmapLayer({ heatPoints, showHeatmap }) {
   const heatLayerRef = useRef(null)
 
   useEffect(() => {
-    if (showHeatmap && heatPoints.length > 0) {
-      if (!heatLayerRef.current) {
-        heatLayerRef.current = L.heatLayer(heatPoints, {
-          radius: 25,
-          blur: 15,
-          maxZoom: 17,
-          max: 1.0,
-          gradient: { 0.4: 'blue', 0.65: 'lime', 1: 'red' }
-        }).addTo(map)
-      } else {
-        heatLayerRef.current.setLatLngs(heatPoints)
+    const container = map.getContainer()
+    const update = () => {
+      if (showHeatmap && heatPoints.length > 0 && container.clientWidth > 0 && container.clientHeight > 0) {
+        if (!heatLayerRef.current) {
+          heatLayerRef.current = L.heatLayer(heatPoints, {
+            radius: 25,
+            blur: 15,
+            maxZoom: 17,
+            max: 1.0,
+            gradient: { 0.4: 'blue', 0.65: 'lime', 1: 'red' }
+          }).addTo(map)
+        } else {
+          heatLayerRef.current.setLatLngs(heatPoints)
+        }
+      } else if (heatLayerRef.current) {
+        heatLayerRef.current.remove()
+        heatLayerRef.current = null
       }
-    } else if (heatLayerRef.current) {
-      heatLayerRef.current.remove()
-      heatLayerRef.current = null
     }
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(container)
 
     return () => {
+      observer.disconnect()
       try {
         if (heatLayerRef.current && map) {
           map.removeLayer(heatLayerRef.current)
@@ -181,13 +190,13 @@ function MapCenter({ centerLat, centerLng }) {
 export default function EcoPinMap({ centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode = false, selectedReports = [], onReportSelect, hideFilterPanel = false, hidePins = false, hideClusters = false, onReportClick, onClusterSelect, children, allowedClusterIds, allowedReportIds, externalStatusFilter, externalIssueTypeFilter, externalShowPins, externalShowClusters, externalShowHeatmap, externalMaxBounds, externalMinZoom, selectedTemplate = 'standard', photoPins = false }) {
 
   const [mounted, setMounted] = useState(false)
-  const [reports, setReports] = useState([])
   const [filteredReports, setFilteredReports] = useState([])
   const [removingIds, setRemovingIds] = useState(new Set())
-  const [issueTypes, setIssueTypes] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [clusters, setClusters] = useState([])
-  const [clusterReports, setClusterReports] = useState({}) // Map of cluster_id -> array of reports
+  const reportQuery = useDashboardReports()
+  const clusterQuery = useDashboardClusters()
+  const queryClient = useQueryClient()
+  const clusters = useMemo(() => clusterQuery.data || [], [clusterQuery.data])
+  const loading = reportQuery.isPending || clusterQuery.isPending
   const [zoom, setZoom] = useState(DEFAULT_ZOOM)
   const [mapBounds, setMapBounds] = useState(null)
   const mapRef = useRef(null)
@@ -238,6 +247,10 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
   }
 
   const [validationStatusFilter, setValidationStatusFilter] = useState(getValidationFilterValue(initialValidationStatus))
+  const reports = useMemo(() => (reportQuery.data || []).filter(report =>
+    validationStatusFilter === 'all' || (report.validation_status || '').toLowerCase() === validationStatusFilter.toLowerCase()
+  ), [reportQuery.data, validationStatusFilter])
+  const issueTypes = useMemo(() => [...new Set((reportQuery.data || []).map(report => report.issue_type).filter(Boolean))], [reportQuery.data])
   const [issueTypeFilter, setIssueTypeFilter] = useState('all')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
@@ -267,32 +280,6 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
     import('@/lib/leaflet-fix')
     setMounted(true)
 
-    // Fetch data when component mounts
-    Promise.all([
-      fetchValidatedReports({ validationStatus: validationStatusFilter }),
-      fetchIssueTypes(),
-      fetchClusters()
-    ]).then(([reportsData, typesData, clustersData]) => {
-      setReports(reportsData)
-      setFilteredReports(reportsData)
-      setIssueTypes(typesData)
-      setClusters(clustersData)
-
-      // Group reports by cluster_id
-      const reportsByCluster = {}
-      reportsData.forEach(report => {
-        if (report.cluster_id) {
-          if (!reportsByCluster[report.cluster_id]) {
-            reportsByCluster[report.cluster_id] = []
-          }
-          reportsByCluster[report.cluster_id].push(report)
-        }
-      })
-      setClusterReports(reportsByCluster)
-
-      setLoading(false)
-    })
-
     // Set up real-time subscription for reports table
     const subscription = supabase
       .channel('reports-changes')
@@ -304,26 +291,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
           table: 'reports'
         },
         (payload) => {
-          // Refetch reports when changes occur
-          Promise.all([
-            fetchValidatedReports({ validationStatus: validationStatusFilter }),
-            fetchClusters()
-          ]).then(([reportsData, clustersData]) => {
-            setReports(reportsData)
-            setClusters(clustersData)
-
-            // Group reports by cluster_id
-            const reportsByCluster = {}
-            reportsData.forEach(report => {
-              if (report.cluster_id) {
-                if (!reportsByCluster[report.cluster_id]) {
-                  reportsByCluster[report.cluster_id] = []
-                }
-                reportsByCluster[report.cluster_id].push(report)
-              }
-            })
-            setClusterReports(reportsByCluster)
-          })
+          void queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY })
         }
       )
       .subscribe()
@@ -332,7 +300,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
     return () => {
       subscription.unsubscribe()
     }
-  }, [])
+  }, [queryClient])
 
   // Apply filters
   useEffect(() => {
@@ -382,28 +350,6 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
       setFilteredReports(filtered)
     }
   }, [statusFilter, issueTypeFilter, startDate, endDate, reports, allowedClusterIds, allowedReportIds])
-
-  // Refetch reports when validation status filter changes
-  useEffect(() => {
-    if (mounted) {
-      fetchValidatedReports({ validationStatus: validationStatusFilter }).then(reportsData => {
-        setReports(reportsData)
-        setFilteredReports(reportsData)
-
-        // Update clusterReports when validation status filter changes
-        const reportsByCluster = {}
-        reportsData.forEach(report => {
-          if (report.cluster_id) {
-            if (!reportsByCluster[report.cluster_id]) {
-              reportsByCluster[report.cluster_id] = []
-            }
-            reportsByCluster[report.cluster_id].push(report)
-          }
-        })
-        setClusterReports(reportsByCluster)
-      })
-    }
-  }, [validationStatusFilter])
 
   // Pre-process reports to handle exactly overlapping pins (Spiderfy pattern)
   const processedReportsInfo = useMemo(() => {
@@ -581,6 +527,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
           key={centerLat && centerLng ? `map-${centerLat}-${centerLng}` : 'ecopin-map'}
           center={centerLat && centerLng ? [centerLat, centerLng] : PLP_CENTER}
           zoom={centerLat && centerLng ? 17 : DEFAULT_ZOOM}
+          trackResize={false}
           // maxBounds={externalMaxBounds}
           // minZoom={externalMinZoom}
           style={{ height: '100%', width: '100%' }}

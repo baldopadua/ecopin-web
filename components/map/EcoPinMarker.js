@@ -62,25 +62,29 @@ export default function EcoPinMarker({ report, position, isRemoving = false, isS
           )}
 
           <div className="mt-3 flex gap-2 flex-wrap">
-            <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${report.status === 'resolved' ? 'bg-green-100 text-green-700' :
-              report.status === 'in_progress' ? 'bg-orange-100 text-orange-700' :
-                report.status === 'waiting_for_feedback' ? 'bg-purple-100 text-purple-700' :
-                  report.status === 'closed' ? 'bg-gray-100 text-gray-700' :
-                    report.status === 'pending_owner_consent' ? 'bg-blue-100 text-blue-700' :
-                      'bg-red-100 text-red-700'
-              }`}>
-              {report.status?.replace(/_/g, ' ').toUpperCase()}
-            </span>
-            <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${report.validation_status === 'approved' || report.validation_status === 'validated'
-              ? 'bg-green-100 text-green-700'
-              : report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review'
-                ? 'bg-purple-100 text-purple-700'
-                : report.validation_status === 'rejected'
-                  ? 'bg-red-100 text-red-700'
-                  : 'bg-yellow-100 text-yellow-700'
-              }`}>
-              {report.validation_status?.replace(/_/g, ' ').toUpperCase()}
-            </span>
+            {report.status && (
+              <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${report.status === 'resolved' ? 'bg-green-100 text-green-700' :
+                report.status === 'in_progress' ? 'bg-orange-100 text-orange-700' :
+                  report.status === 'waiting_for_feedback' ? 'bg-purple-100 text-purple-700' :
+                    report.status === 'closed' ? 'bg-gray-100 text-gray-700' :
+                      report.status === 'pending_owner_consent' ? 'bg-blue-100 text-blue-700' :
+                        'bg-red-100 text-red-700'
+                }`}>
+                {report.status.replace(/_/g, ' ').toUpperCase()}
+              </span>
+            )}
+            {report.validation_status && (
+              <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${report.validation_status === 'approved' || report.validation_status === 'validated'
+                ? 'bg-green-100 text-green-700'
+                : report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review'
+                  ? 'bg-purple-100 text-purple-700'
+                  : report.validation_status === 'rejected'
+                    ? 'bg-red-100 text-red-700'
+                    : 'bg-yellow-100 text-yellow-700'
+                }`}>
+                {report.validation_status.replace(/_/g, ' ').toUpperCase()}
+              </span>
+            )}
             {report.issue_type && (
                <span className="text-[10px] px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-700">
                  {report.issue_type.replace(/_/g, ' ').toUpperCase()}

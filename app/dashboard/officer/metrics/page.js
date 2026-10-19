@@ -10,8 +10,6 @@ import usePublicTheme from '@/components/landing/usePublicTheme'
 import styles from './Metrics.module.css'
 import { creationWeekKey } from '@/lib/report-analytics.mjs'
 import { Bar, Doughnut, Line } from 'react-chartjs-2'
-import jsPDF from 'jspdf'
-import autoTable from 'jspdf-autotable'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -366,6 +364,10 @@ export default function AnalyticsPage() {
     if (exporting || loading || !loaded || error) return
     setExporting(true)
     try {
+      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable'),
+      ])
       const doc = new jsPDF()
       doc.setFontSize(22)
       doc.text('EcoPin report analytics', 14, 22)

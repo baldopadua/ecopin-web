@@ -1,18 +1,23 @@
 'use client'
-import { useEffect, useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { fetchClusters } from '@/lib/api'
+import { useDashboardClusters } from '@/components/context/DashboardQueryProvider'
 import PageHeader from '@/components/layout/PageHeader'
 import { OfficerGuard } from '@/components/auth/RequireRole'
 import FilterBar from '@/components/ui/FilterBar'
 import DataTable from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
-import { reportDiagnostic } from '../../../../lib/diagnostics.mjs'
 import styles from './HotzoneIntel.module.css'
 
 export default function ClustersPage() {
-  const [clusters, setClusters] = useState([])
-  const [loading, setLoading] = useState(true)
+  const clusterQuery = useDashboardClusters()
+  const loading = clusterQuery.isPending
+  const clusters = useMemo(() => {
+    const severityRank = { high: 3, medium: 2, low: 1 }
+    return (clusterQuery.data || []).filter(c => c.report_count > 0).sort((a, b) =>
+      (severityRank[b.severity] || 0) - (severityRank[a.severity] || 0) || (b.report_count || 0) - (a.report_count || 0)
+    )
+  }, [clusterQuery.data])
   
   // List view states
   const [searchQuery, setSearchQuery] = useState('')
@@ -23,35 +28,6 @@ export default function ClustersPage() {
   const itemsPerPage = 5
   
   const router = useRouter()
-
-  useEffect(() => {
-    let active = true
-    fetchClusters()
-      .then(clustersData => {
-        if (!active) return
-        const severityRank = { high: 3, medium: 2, low: 1 }
-        const sorted = (clustersData || [])
-          .filter(c => c.report_count > 0)
-          .sort((a, b) => {
-            const rankA = severityRank[a.severity] || 0
-            const rankB = severityRank[b.severity] || 0
-            if (rankA !== rankB) return rankB - rankA
-            return (b.report_count || 0) - (a.report_count || 0)
-          })
-        setClusters(sorted)
-      })
-      .catch(error => {
-        if (!active) return
-        reportDiagnostic('error', 'other', 'Error fetching clusters:', error)
-      })
-      .finally(() => {
-        if (!active) return
-        setLoading(false)
-      })
-    return () => {
-      active = false
-    }
-  }, [])
 
   const filteredClusters = useMemo(() => {
     let result = clusters
@@ -220,6 +196,11 @@ export default function ClustersPage() {
         />
 
         <div className={styles.tableWorkspace}>
+          {clusterQuery.isError && <div role="alert">
+            Hotzones could not refresh. Previously loaded hotzones remain below if available.
+            <button type="button" onClick={() => { void clusterQuery.refetch() }}>Try again</button>
+          </div>}
+          {(!clusterQuery.isError || clusterQuery.data) && <>
           <DataTable 
             columns={listColumns}
             data={paginatedClusters}
@@ -241,6 +222,7 @@ export default function ClustersPage() {
               className={styles.pagination}
             />
           )}
+          </>}
         </div>
       </div>
     </OfficerGuard>

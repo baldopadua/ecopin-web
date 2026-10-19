@@ -1,9 +1,9 @@
 'use client'
-import { Suspense, useEffect, useState, useRef, useId } from 'react'
+import { Suspense, useState, useRef, useId } from 'react'
 import dynamic from 'next/dynamic'
 import { useSearchParams } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
-import { fetchValidatedReports, fetchCleanupTasks } from '@/lib/api'
+import { useDashboardReports, useDashboardTasks } from '@/components/context/DashboardQueryProvider'
 import { OfficerGuard } from '@/components/auth/RequireRole'
 import { Map, SlidersHorizontal, X, AlertTriangle, RotateCcw } from 'lucide-react'
 import styles from './MapGrid.module.css'
@@ -20,8 +20,10 @@ const CrewTaskLayer = dynamic(
 
 function OfficerMapContent() {
   const searchParams = useSearchParams()
-  const [reports, setReports] = useState([])
-  const [tasks, setTasks] = useState([])
+  const reportQuery = useDashboardReports()
+  const taskQuery = useDashboardTasks()
+  const reports = reportQuery.data || []
+  const tasks = taskQuery.data || []
 
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'all')
   const [typeFilter, setTypeFilter] = useState('all')
@@ -32,42 +34,16 @@ function OfficerMapContent() {
   const [showTaskPins, setShowTaskPins] = useState(true)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [activeView, setActiveView] = useState('map')
-  const [dataError, setDataError] = useState(false)
+  const dataError = reportQuery.isError || taskQuery.isError
   const controlsRef = useRef(null)
 
   const statusSelectId = useId()
   const typeSelectId = useId()
 
-  const fetchControlData = () => {
-    return Promise.all([fetchValidatedReports(), fetchCleanupTasks()])
-      .then(([reportsData, tasksData]) => {
-        setReports(reportsData || [])
-        setTasks(tasksData || [])
-      })
-      .catch(() => setDataError(true))
-  }
-
   const handleRetry = () => {
-    setDataError(false)
-    void fetchControlData()
+    void reportQuery.refetch()
+    void taskQuery.refetch()
   }
-
-  useEffect(() => {
-    let active = true
-    Promise.all([fetchValidatedReports(), fetchCleanupTasks()])
-      .then(([reportsData, tasksData]) => {
-        if (!active) return
-        setReports(reportsData || [])
-        setTasks(tasksData || [])
-      })
-      .catch(() => {
-        if (!active) return
-        setDataError(true)
-      })
-    return () => {
-      active = false
-    }
-  }, [])
 
   const issueTypes = [...new Set(reports.map(r => r.issue_type).filter(Boolean))]
 
@@ -139,7 +115,7 @@ function OfficerMapContent() {
 
       {dataError && (
         <div className={styles.notice} role="alert">
-          <p>Map filter options and cleanup task pins could not refresh. The report map loads separately.</p>
+          <p>Some map data could not refresh. Previously loaded information remains where available.</p>
           <button type="button" onClick={handleRetry}>Try again</button>
         </div>
       )}
