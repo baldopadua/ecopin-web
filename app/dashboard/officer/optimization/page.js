@@ -39,6 +39,7 @@ import {
   getOptimizationOptions,
   createOptimizationTemplate,
   deleteOptimizationTemplate,
+  getIncompleteTasks,
 } from '@/lib/api/optimization'
 import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
 
@@ -117,6 +118,9 @@ export default function OptimizationPage() {
   const [dispatchSuccess, setDispatchSuccess] = useState(null)
   const [disassembleTargetId, setDisassembleTargetId] = useState(null)
   const [isDisassembleModalOpen, setIsDisassembleModalOpen] = useState(false)
+  /** WT-80: prior-run incomplete task carryover state */
+  const [incompleteTasks, setIncompleteTasks] = useState(null)   // null = not loaded, {} = loaded
+  const [carryoverIncomplete, setCarryoverIncomplete] = useState(false)
   const { containerRef: runsContainerRef, pageSize: runsPerPage } = useTablePageSize({ rowHeight: 64 })
   const totalRunPages = Math.max(1, Math.ceil(previousRuns.length / runsPerPage))
   const safeRunPage = Math.min(currentPage, totalRunPages)
@@ -161,6 +165,17 @@ export default function OptimizationPage() {
     }
   }, [])
 
+  /** WT-80: load incomplete prior-run tasks on mount */
+  const loadIncompleteTasks = useCallback(async () => {
+    try {
+      const data = await getIncompleteTasks()
+      setIncompleteTasks(data)
+    } catch (err) {
+      reportDiagnostic('warn', 'dispatch', 'Failed to load incomplete prior tasks', err)
+      setIncompleteTasks({ hasPriorIncomplete: false, count: 0, tasks: [], cluster_ids_to_carry: [], affected_crew_ids: [] })
+    }
+  }, [])
+
   const fetchLiveWeather = useCallback(async () => {
     try {
       const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=14.561433&longitude=121.075636&current_weather=true')
@@ -192,8 +207,9 @@ export default function OptimizationPage() {
       void fetchLiveWeather()
       void loadTemplates()
       void loadOptions()
+      void loadIncompleteTasks()
     })
-  }, [loadPreviousRuns, loadPendingClusters, fetchLiveWeather, loadTemplates, loadOptions])
+  }, [loadPreviousRuns, loadPendingClusters, fetchLiveWeather, loadTemplates, loadOptions, loadIncompleteTasks])
 
   useEffect(() => {
     if (!draftPlan) return
@@ -218,14 +234,24 @@ export default function OptimizationPage() {
       mode: selectedTemplate
     }
 
+    // WT-80: inject incomplete prior-task cluster IDs as priority constraints when carryover is enabled
+    if (carryoverIncomplete && incompleteTasks?.cluster_ids_to_carry?.length) {
+      const existing = Array.isArray(activeSettings.cluster_ids) ? activeSettings.cluster_ids : []
+      activeSettings.cluster_ids = [
+        ...new Set([...incompleteTasks.cluster_ids_to_carry, ...existing])
+      ]
+    }
+
     await startOptimization(
       activeSettings,
       (result) => {
         if (result.plan) {
           setCurrentProposal({ ...result.plan, status: 'draft_plan', selectedCount: result.selectedCount, omittedCount: result.omittedLoggedCount })
-          setCurrentProposalRoutes(result.proposedRoutes || result.plan.proposedRoutes || []) 
+          setCurrentProposalRoutes(result.proposedRoutes || result.plan.proposedRoutes || [])
           loadPendingClusters()
           loadPreviousRuns()
+          // Reload incomplete tasks after a new run — some tasks may now be covered
+          void loadIncompleteTasks()
         }
       }
     )
@@ -399,6 +425,60 @@ export default function OptimizationPage() {
             >
               Review and dispatch
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* WT-80: Prior-run incomplete tasks warning banner */}
+      {incompleteTasks?.hasPriorIncomplete && (
+        <div className={`${styles.banner} border border-orange-500/40 bg-orange-500/10`}>
+          <div className="flex items-start gap-2.5 flex-1">
+            <AlertCircle className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-orange-600 dark:text-orange-400 font-semibold normal-case tracking-normal text-xs m-0">
+                  {incompleteTasks.count} unfinished task{incompleteTasks.count !== 1 ? 's' : ''} from a prior run
+                </h3>
+                <span className="text-[11px] px-2.5 py-0.5 font-medium rounded-full bg-orange-500/20 text-orange-700 dark:text-orange-300 border border-orange-500/30 shrink-0">
+                  {incompleteTasks.count} task{incompleteTasks.count !== 1 ? 's' : ''} pending
+                </span>
+              </div>
+              <p className="text-xs text-text-secondary mt-0.5 mb-2 font-sans">
+                Field crews still have tasks dispatched in a previous run but not yet completed. Generating a new plan without including these may leave sites unattended. Enable carryover to automatically include their clusters.
+              </p>
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {incompleteTasks.tasks.slice(0, 6).map(task => (
+                  <span key={task.id} className="text-[11px] px-2 py-0.5 rounded-md bg-surface border border-border text-text-secondary flex items-center gap-1">
+                    <span className="font-medium text-text-primary truncate max-w-[120px]">{task.title}</span>
+                    <span className="text-text-muted">·</span>
+                    <span className="capitalize">{task.status.replace(/_/g, ' ')}</span>
+                    {task.crew_name && <><span className="text-text-muted">·</span><span>{task.crew_name}</span></>}
+                  </span>
+                ))}
+                {incompleteTasks.tasks.length > 6 && (
+                  <span className="text-[11px] px-2 py-0.5 rounded-md bg-surface border border-border text-text-muted">
+                    +{incompleteTasks.tasks.length - 6} more
+                  </span>
+                )}
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <div
+                  onClick={() => setCarryoverIncomplete(v => !v)}
+                  role="switch"
+                  aria-checked={carryoverIncomplete}
+                  tabIndex={0}
+                  onKeyDown={e => (e.key === ' ' || e.key === 'Enter') && setCarryoverIncomplete(v => !v)}
+                  className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer ${carryoverIncomplete ? 'bg-orange-500' : 'bg-border'}`}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${carryoverIncomplete ? 'translate-x-4' : 'translate-x-0'}`} />
+                </div>
+                <span className="text-xs text-text-primary font-medium">
+                  {carryoverIncomplete
+                    ? `Include ${incompleteTasks.cluster_ids_to_carry.length} prior cluster${incompleteTasks.cluster_ids_to_carry.length !== 1 ? 's' : ''} in new run`
+                    : 'Include prior incomplete tasks in new run'}
+                </span>
+              </label>
+            </div>
           </div>
         </div>
       )}
