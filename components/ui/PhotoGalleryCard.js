@@ -50,7 +50,7 @@ export default function PhotoGalleryCard({ task, reports }) {
           {task.before_photo_url && (
             <div className="relative cursor-pointer" onClick={() => setLightboxImage({ url: task.before_photo_url, type: 'before', index: 0 })}>
               <SecureImage src={task.before_photo_url} alt="Before cleanup" className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity border border-border" />
-              <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">Task Before</span>
+              <span className="absolute bottom-2 left-2 z-20 bg-black/70 text-white text-xs px-2 py-1 rounded">Task Before</span>
             </div>
           )}
           {reports.filter(r => r.before_photo_url).map((report, idx) => (
@@ -60,7 +60,7 @@ export default function PhotoGalleryCard({ task, reports }) {
               onClick={() => setLightboxImage({ url: report.before_photo_url, type: 'before', index: (task.before_photo_url ? 1 : 0) + idx })}
             >
               <SecureImage src={report.before_photo_url} alt={`Report ${report.title} Before`} className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity border border-border" />
-              <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded truncate max-w-[90%]">{report.title}</span>
+              <span className="absolute bottom-2 left-2 z-20 bg-black/70 text-white text-xs px-2 py-1 rounded truncate max-w-[90%]">{report.title}</span>
             </div>
           ))}
         </div>
@@ -78,7 +78,7 @@ export default function PhotoGalleryCard({ task, reports }) {
           {task.after_photo_url && (
             <div className="relative cursor-pointer" onClick={() => setLightboxImage({ url: task.after_photo_url, type: 'after', index: 0 })}>
               <SecureImage src={task.after_photo_url} alt="After cleanup" className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity border border-border" />
-              <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">Task After</span>
+              <span className="absolute bottom-2 left-2 z-20 bg-black/70 text-white text-xs px-2 py-1 rounded">Task After</span>
             </div>
           )}
           {reports.filter(r => r.after_photo_url).map((report, idx) => (
@@ -88,7 +88,7 @@ export default function PhotoGalleryCard({ task, reports }) {
               onClick={() => setLightboxImage({ url: report.after_photo_url, type: 'after', index: (task.after_photo_url ? 1 : 0) + idx })}
             >
               <SecureImage src={report.after_photo_url} alt={`Report ${report.title} After`} className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity border border-border" />
-              <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded truncate max-w-[90%]">{report.title}</span>
+              <span className="absolute bottom-2 left-2 z-20 bg-black/70 text-white text-xs px-2 py-1 rounded truncate max-w-[90%]">{report.title}</span>
             </div>
           ))}
         </div>
@@ -126,6 +126,7 @@ export default function PhotoGalleryCard({ task, reports }) {
               src={lightboxImage.url} 
               alt="Lightbox" 
               className="max-w-full max-h-[90vh] object-contain rounded-lg"
+              wrapperClassName="min-w-[280px] min-h-[280px] md:min-w-[480px] md:min-h-[400px] flex items-center justify-center"
             />
             <button 
               type="button"

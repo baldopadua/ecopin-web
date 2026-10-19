@@ -55,17 +55,18 @@ export default function ReportDetailModal({ report, evidence = [], agencyRespons
                   src={getOptimizedImageUrl(images[currentImageIndex]?.url, { width: 1200 })} 
                   alt={images[currentImageIndex]?.label || 'Report Evidence'} 
                   className="max-w-full max-h-full object-contain cursor-pointer"
+                  wrapperClassName="w-full h-full flex items-center justify-center"
                   onClick={() => setIsLightboxOpen(true)}
                 />
                 
                 {/* Photo Label Pill */}
-                <div className="absolute top-3 left-3 bg-black/70 text-white px-2.5 py-1 text-[11px] font-mono font-bold uppercase tracking-wider rounded border border-white/20">
+                <div className="absolute top-3 left-3 z-20 bg-black/70 text-white px-2.5 py-1 text-[11px] font-mono font-bold uppercase tracking-wider rounded border border-white/20">
                   {images[currentImageIndex]?.label}
                 </div>
 
                 {/* Counter Pill */}
                 {images.length > 1 && (
-                  <div className="absolute top-3 right-12 md:right-14 bg-black/70 text-white px-2.5 py-1 text-[11px] font-mono tracking-wider rounded border border-white/20">
+                  <div className="absolute top-3 right-12 md:right-14 z-20 bg-black/70 text-white px-2.5 py-1 text-[11px] font-mono tracking-wider rounded border border-white/20">
                     {currentImageIndex + 1} / {images.length}
                   </div>
                 )}
@@ -74,7 +75,7 @@ export default function ReportDetailModal({ report, evidence = [], agencyRespons
                 <button
                   type="button"
                   onClick={() => setIsLightboxOpen(true)}
-                  className="absolute top-3 left-3 md:left-auto md:right-3 bg-black/70 text-white p-2 min-h-11 min-w-11 rounded-xl border border-white/20 hover:border-primary hover:text-primary transition-colors"
+                  className="absolute top-3 left-3 md:left-auto md:right-3 z-20 bg-black/70 text-white p-2 min-h-11 min-w-11 rounded-xl border border-white/20 hover:border-primary hover:text-primary transition-colors"
                   title="Expand to Fullscreen"
                   aria-label="Expand photo"
                 >
@@ -90,7 +91,7 @@ export default function ReportDetailModal({ report, evidence = [], agencyRespons
                         e.stopPropagation()
                         setCurrentImageIndex(prev => prev > 0 ? prev - 1 : images.length - 1)
                       }} 
-                      className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/60 text-white p-2 min-h-11 min-w-11 rounded-full opacity-100 transition-opacity hover:bg-black/90"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 z-20 bg-black/60 text-white p-2 min-h-11 min-w-11 rounded-full opacity-100 transition-opacity hover:bg-black/90"
                       aria-label="Previous photo"
                     >
                       <ChevronLeft className="w-5 h-5" />
@@ -101,14 +102,14 @@ export default function ReportDetailModal({ report, evidence = [], agencyRespons
                         e.stopPropagation()
                         setCurrentImageIndex(prev => prev < images.length - 1 ? prev + 1 : 0)
                       }} 
-                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/60 text-white p-2 min-h-11 min-w-11 rounded-full opacity-100 transition-opacity hover:bg-black/90"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 z-20 bg-black/60 text-white p-2 min-h-11 min-w-11 rounded-full opacity-100 transition-opacity hover:bg-black/90"
                       aria-label="Next photo"
                     >
                       <ChevronRight className="w-5 h-5" />
                     </button>
 
                     {/* Bottom Thumbnail Strip */}
-                    <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 px-2 overflow-x-auto">
+                    <div className="absolute bottom-2 left-0 right-0 z-20 flex justify-center gap-1.5 px-2 overflow-x-auto">
                       {images.map((img, idx) => (
                         <button
                           key={idx}
