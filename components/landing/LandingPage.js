@@ -134,7 +134,12 @@ export default function LandingPage() {
             (<a href="https://www.facebook.com/jonah.talagtag.77" target="_blank" rel="noopener noreferrer">Jonah Talagtag</a>)
           </p>
         </div>
-        <nav aria-label="Footer navigation"><Link href="/explore">Map</Link><Link href="/explore?view=gallery">Gallery</Link><a href="#how-it-works">Citizen guide</a></nav>
+        <nav aria-label="Footer navigation">
+          <Link href="/explore">Map</Link>
+          <Link href="/explore?view=gallery">Gallery</Link>
+          <a href="#how-it-works">Citizen guide</a>
+          <Link href="/delete-account">Delete account</Link>
+        </nav>
         <span>EcoPin · Pasig City</span>
       </footer>
     </div>
