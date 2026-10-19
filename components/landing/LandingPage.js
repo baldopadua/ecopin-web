@@ -75,7 +75,15 @@ export default function LandingPage() {
           <div className={styles.photoStory}>
             <figure className={styles.photoLead} data-reveal>
               <div className={styles.photoFrame}><Image src="/images/community/street-cleanup.jpg" alt="A Pasig cleanup vehicle collecting roadside waste beside a blue fence" fill sizes="(max-width: 767px) 100vw, 65vw" /></div>
-              <figcaption><span>Pasig Solid Waste Management Office</span><strong>On the ground. Getting it done.</strong></figcaption>
+              <figcaption>
+                <span>Pasig Solid Waste Management Office</span>
+                <strong>On the ground. Getting it done.</strong>
+                <span className={styles.leadCredit}>
+                  Photo:{' '}
+                  <a href="https://www.facebook.com/share/p/19hk6BA5W8/" target="_blank" rel="noopener noreferrer">Pasig Tayo</a>{' '}
+                  (<a href="https://www.facebook.com/jonah.talagtag.77" target="_blank" rel="noopener noreferrer">Jonah Talagtag</a>)
+                </span>
+              </figcaption>
             </figure>
             <div className={styles.photoDetails}>
               <figure data-reveal="100"><div className={styles.photoFrame}><Image src="/images/community/neighborhood-team.jpg" alt="SWMO field crew members lifting collected waste into a truck" fill sizes="(max-width: 767px) 100vw, 35vw" /></div><figcaption>SWMO crews collecting waste.</figcaption></figure>
@@ -116,7 +124,19 @@ export default function LandingPage() {
 
         <section className={styles.closing}><div data-reveal><Leaf size={28} /><h2>A better Pasig begins<br />with the people in it.</h2><a href="#mobile-app" className={styles.primaryButton}>Take the first step <ArrowRight size={18} /></a></div></section>
       </main>
-      <footer className={styles.footer}><Link href="/" aria-label="EcoPin home"><Image src={isDark ? '/Full Logo Dark.png' : '/Full Logo Light.png'} alt="EcoPin" width="100" height="28" /></Link><p>Small actions. A cleaner Pasig.</p><nav aria-label="Footer navigation"><Link href="/explore">Map</Link><Link href="/explore?view=gallery">Gallery</Link><a href="#how-it-works">Citizen guide</a></nav><span>EcoPin · Pasig City</span></footer>
+      <footer className={styles.footer}>
+        <Link href="/" aria-label="EcoPin home"><Image src={isDark ? '/Full Logo Dark.png' : '/Full Logo Light.png'} alt="EcoPin" width="100" height="28" /></Link>
+        <div className={styles.footerCopy}>
+          <p>Small actions. A cleaner Pasig.</p>
+          <p className={styles.photoCredit}>
+            Photography courtesy of{' '}
+            <a href="https://www.facebook.com/share/p/19hk6BA5W8/" target="_blank" rel="noopener noreferrer">Pasig Tayo</a>{' '}
+            (<a href="https://www.facebook.com/jonah.talagtag.77" target="_blank" rel="noopener noreferrer">Jonah Talagtag</a>)
+          </p>
+        </div>
+        <nav aria-label="Footer navigation"><Link href="/explore">Map</Link><Link href="/explore?view=gallery">Gallery</Link><a href="#how-it-works">Citizen guide</a></nav>
+        <span>EcoPin · Pasig City</span>
+      </footer>
     </div>
   )
 }

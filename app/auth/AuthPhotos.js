@@ -27,7 +27,17 @@ export default function AuthPhotos() {
   if (!desktop) return null
   return <figure className={styles.photoCycle} aria-label="SWMO field crews at work">
     {photos.map((photo, index) => <Image key={photo.src} src={photo.src} alt={index === active ? photo.alt : ''} aria-hidden={index !== active} fill sizes="50vw" className={index === active ? styles.photoActive : styles.photoInactive} />)}
-    <figcaption><ShieldCheck size={18} /><span>Pasig SWMO field crews in action</span></figcaption>
+    <figcaption>
+      <div className={styles.captionHeader}>
+        <ShieldCheck size={18} />
+        <span>Pasig SWMO field crews in action</span>
+      </div>
+      <span className={styles.photoCredit}>
+        Photo:{' '}
+        <a href="https://www.facebook.com/share/p/19hk6BA5W8/" target="_blank" rel="noopener noreferrer">Pasig Tayo</a>{' '}
+        (<a href="https://www.facebook.com/jonah.talagtag.77" target="_blank" rel="noopener noreferrer">Jonah Talagtag</a>)
+      </span>
+    </figcaption>
     <div className={styles.photoControls}><span aria-label={`Photo ${active + 1} of ${photos.length}`}>{active + 1} / {photos.length}</span><button type="button" onClick={() => setPaused(playing)} aria-label={playing ? 'Pause slideshow' : 'Play slideshow'}>{playing ? <Pause size={18} /> : <Play size={18} />}</button></div>
   </figure>
 }

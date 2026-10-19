@@ -14,7 +14,11 @@
 .photoCycle img { object-fit: cover; transition: opacity 1.6s ease, transform 8s ease; }
 .photoActive { opacity: 1; transform: scale(1.025); }
 .photoInactive { opacity: 0; transform: scale(1); }
-.photoCycle figcaption { padding-right: 112px; font-size: 12px; }
+.photoCycle figcaption { padding-right: 112px; font-size: 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.captionHeader { display: flex; align-items: center; gap: 8px; }
+.photoCredit { font-size: 11px; color: #ffffffcc; }
+.photoCredit a { color: #ffffff; text-decoration: underline; text-underline-offset: 2px; }
+.photoCredit a:hover { opacity: 0.85; }
 .photoControls { position: absolute; right: 16px; bottom: 12px; display: flex; align-items: center; gap: 8px; z-index: 1; color: white; font-size: 12px; }
 .photoControls button { width: 44px; height: 44px; background: #101e2b99; border: 1px solid #ffffff30; border-radius: 50%; display: grid; place-items: center; }
 .formSection h1 { font-size: clamp(32px, 3vw, 44px); font-weight: 500; letter-spacing: -.035em; line-height: 1.15; margin: 0; }
@@ -39,6 +43,9 @@
 .citizenNote p { color: var(--landing-muted); font-size: 13px; line-height: 1.7; margin: 8px 0 4px; }
 .citizenNote a { color: var(--landing-blue); min-height: 44px; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; }
 .help { color: var(--landing-muted); font-size: 12px; line-height: 1.7; margin-top: 24px; }
+.authPhotoCredit { color: var(--landing-muted); font-size: 11px; line-height: 1.6; margin-top: 16px; }
+.authPhotoCredit a { color: var(--landing-muted); text-decoration: underline; text-underline-offset: 2px; }
+.authPhotoCredit a:hover { color: var(--landing-text); }
 @media (max-width: 1024px) { .main { padding: 48px 24px; gap: 48px; } }
 @media (max-width: 767px) { .topBar { padding: 16px 24px; } .main { padding: 24px; grid-template-columns: 1fr; gap: 24px; } .formSection { max-width: 480px; margin: auto; order: 1; } .story { order: 2; align-items: center; } .citizenNote { padding: 20px; } }
 @media (prefers-reduced-motion: reduce) { .photoCycle img { transition: none; } }

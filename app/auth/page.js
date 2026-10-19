@@ -61,6 +61,11 @@ export default function AuthPage() {
         </form>}
         <div className={styles.citizenNote}><Smartphone size={22} /><div><h2>Here to report a concern?</h2><p>Use the EcoPin Android app to send and track your reports.</p><Link href="/#mobile-app">Get the app <ArrowRight size={16} /></Link></div></div>
         <p className={styles.help}>Need access to a workspace? Contact your EcoPin administrator.</p>
+        <p className={styles.authPhotoCredit}>
+          Photography courtesy of{' '}
+          <a href="https://www.facebook.com/share/p/19hk6BA5W8/" target="_blank" rel="noopener noreferrer">Pasig Tayo</a>{' '}
+          (<a href="https://www.facebook.com/jonah.talagtag.77" target="_blank" rel="noopener noreferrer">Jonah Talagtag</a>)
+        </p>
       </section>
       <section className={styles.story} aria-label="Pasig field crews">
         <AuthPhotos />
