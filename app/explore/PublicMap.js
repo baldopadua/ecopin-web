@@ -14,6 +14,7 @@ import PublicSelect from '@/components/ui/PublicSelect'
 import PublicReportPopup from '@/components/landing/PublicReportPopup'
 import landingStyles from '@/components/landing/LandingPage.module.css'
 import { exploreUrl } from '@/lib/explore-url.mjs'
+import { formatReportAddress } from '@/lib/format-location.mjs'
 
 import PublicLoadingState from '@/components/ui/PublicLoadingState'
 import { 
@@ -527,7 +528,7 @@ export default function PublicMap({ theme = 'light' }) {
   
   const [evidenceCache, setEvidenceCache] = useState({})
    // 'before' | 'after' | 'split'
-  const [copiedLink, setCopiedLink] = useState(false)
+  const [copiedLinkId, setCopiedLinkId] = useState(null)
   
   // Floating dropdown states
   const [activeFilterDropdown, setActiveFilterDropdown] = useState(null)
@@ -822,14 +823,27 @@ export default function PublicMap({ theme = 'light' }) {
       list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
     } else if (sortBy === 'severity') {
       const score = (r) => {
-        if (r.status === 'urgent' || r.severity_level === 'high') return 3
-        if (r.severity_level === 'medium') return 2
-        return 1
+        const level = (r.severity_level || '').toLowerCase()
+        const numScore = Number(r.severity_score) || 0
+        const isUrgent = r.status === 'urgent'
+        if (isUrgent || level === 'critical' || level === 'high' || (numScore > 5 ? numScore >= 60 : numScore >= 4)) {
+          return 300 + numScore
+        }
+        if (level === 'medium' || level === 'moderate' || (numScore > 5 ? (numScore >= 40 && numScore < 60) : numScore === 3)) {
+          return 200 + numScore
+        }
+        return 100 + numScore
       }
-      list.sort((a, b) => score(b) - score(a))
+      list.sort((a, b) => score(b) - score(a) || new Date(b.created_at) - new Date(a.created_at))
     } else if (sortBy === 'status') {
-      const order = { unresolved: 1, in_progress: 2, resolved: 3 }
-      list.sort((a, b) => (order[a.status] || 9) - (order[b.status] || 9))
+      const getStatusRank = (status) => {
+        const s = (status || '').toLowerCase()
+        if (s === 'unresolved' || s === 'pending') return 1
+        if (s === 'in_progress' || s === 'investigating' || s === 'dispatched') return 2
+        if (s === 'resolved' || s === 'completed') return 3
+        return 4
+      }
+      list.sort((a, b) => getStatusRank(a.status) - getStatusRank(b.status) || new Date(b.created_at) - new Date(a.created_at))
     }
     return list
   }, [filteredReports, sortBy])
@@ -1024,14 +1038,36 @@ export default function PublicMap({ theme = 'light' }) {
   // Fetch evidence immediately when lightbox opens on an item
   
 
-  // Share report link handler
-  const handleShareReport = (report) => {
-    if (typeof window !== 'undefined') {
-      const url = window.location.origin + exploreUrl('map', { report: String(report.id) })
-      navigator.clipboard?.writeText(url).then(() => {
-        setCopiedLink(true)
-        setTimeout(() => setCopiedLink(false), 2000)
-      })
+  // Share report link handler — uses Web Share API if supported, falls back to clipboard copy
+  const handleShareReport = async (report, e) => {
+    if (e) e.stopPropagation()
+    if (typeof window === 'undefined') return
+    const url = window.location.origin + exploreUrl('map', { report: String(report.id) })
+    const reportId = report.id
+    const shareData = {
+      title: `EcoPin Report: ${report.title || 'Environmental Incident'}`,
+      text: `Citizen report in Pasig City — track resolution progress on EcoPin!`,
+      url,
+    }
+    try {
+      if (navigator.share && navigator.canShare?.(shareData)) {
+        await navigator.share(shareData)
+      } else {
+        await navigator.clipboard.writeText(url)
+        setCopiedLinkId(reportId)
+        setTimeout(() => setCopiedLinkId(id => id === reportId ? null : id), 2200)
+      }
+    } catch (err) {
+      // User cancelled share or clipboard unavailable — try clipboard as last resort
+      if (err?.name !== 'AbortError') {
+        try {
+          await navigator.clipboard.writeText(url)
+          setCopiedLinkId(reportId)
+          setTimeout(() => setCopiedLinkId(id => id === reportId ? null : id), 2200)
+        } catch {
+          // Silent fail — clipboard not available (e.g. non-https)
+        }
+      }
     }
   }
 
@@ -1462,11 +1498,24 @@ export default function PublicMap({ theme = 'light' }) {
           <div className="flex items-center gap-1">
             <button
               type="button"
-              onClick={() => handleShareReport(detailedReport)}
-              className="p-2 rounded-full text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
-              title="Share link to report"
+              onClick={(e) => handleShareReport(detailedReport, e)}
+              className={`relative p-2 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer ${
+                copiedLinkId === detailedReport?.id
+                  ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40'
+                  : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
+              }`}
+              title={copiedLinkId === detailedReport?.id ? 'Link copied!' : 'Share link to report'}
+              aria-label={copiedLinkId === detailedReport?.id ? 'Link copied!' : 'Share link to report'}
             >
-              <Share2 className="w-4 h-4" />
+              {copiedLinkId === detailedReport?.id
+                ? <Check className="w-4 h-4" />
+                : <Share2 className="w-4 h-4" />
+              }
+              {copiedLinkId === detailedReport?.id && (
+                <span className="absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-semibold bg-gray-900 text-white px-2 py-0.5 rounded-md pointer-events-none shadow-lg">
+                  Copied!
+                </span>
+              )}
             </button>
 
             
@@ -1611,14 +1660,17 @@ export default function PublicMap({ theme = 'light' }) {
               <div 
                 onClick={() => handleJumpToMap(detailedReport)}
                 className="p-3 bg-gray-50/80 dark:bg-[#242424] hover:bg-blue-50/80 dark:hover:bg-[#0052CC]/15 rounded-2xl border border-gray-100 dark:border-[#2A2A2A] hover:border-blue-200 dark:hover:border-[#0052CC]/40 flex items-center gap-2.5 cursor-pointer transition-all group shadow-xs hover:shadow-sm"
-                title="Click to view pin on map"
+                title="Click to center pin on map"
               >
                 <div className="w-8 h-8 rounded-xl bg-blue-100/70 dark:bg-[#0052CC]/20 flex items-center justify-center flex-shrink-0 text-[var(--landing-blue)] group-hover:scale-105 transition-transform">
                   <MapPin className="w-4 h-4" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wider group-hover:text-[#0052CC] dark:group-hover:text-[#60A5FA] transition-colors">Coordinates</p>
-                  <p className="font-mono text-gray-800 dark:text-gray-200 font-semibold truncate text-xs mt-0.5">
+                  <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wider group-hover:text-[#0052CC] dark:group-hover:text-[#60A5FA] transition-colors">Location</p>
+                  <p className="text-gray-800 dark:text-gray-200 font-semibold truncate text-xs mt-0.5" title={formatReportAddress(detailedReport)}>
+                    {formatReportAddress(detailedReport)}
+                  </p>
+                  <p className="font-mono text-[10px] text-gray-400 dark:text-gray-500 truncate mt-0.5">
                     {detailedReport.latitude?.toFixed(4)}, {detailedReport.longitude?.toFixed(4)}
                   </p>
                 </div>
@@ -1742,29 +1794,14 @@ export default function PublicMap({ theme = 'light' }) {
         <div className="p-4 border-t border-gray-200/80 dark:border-[#2A2A2A] bg-white/95 dark:bg-[#1C1C1C]/95 backdrop-blur-md flex flex-col gap-2.5 flex-shrink-0">
           <button
             type="button"
-            onClick={() => handleJumpToMap(detailedReport)}
-            className="w-full py-2.5 px-4 rounded-xl font-bold text-xs bg-[#0052CC] hover:bg-[#0042A3] active:scale-[0.99] text-white flex items-center justify-center gap-2 shadow-sm hover:shadow transition-all cursor-pointer"
+            onClick={() => {
+              setPhotoSelection({ report: detailedReport, index: 0 })
+            }}
+            className="w-full py-2.5 px-4 rounded-xl font-semibold text-xs border border-gray-200 dark:border-[#333] text-gray-700 dark:text-gray-200 bg-gray-50/80 dark:bg-[#242424] hover:bg-gray-100 dark:hover:bg-[#2A2A2A] transition-colors flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99] shadow-xs"
           >
-            <MapPin className="w-4 h-4" />
-            <span>{activeNavTab === 'reports' ? 'Center Pin on Map' : 'Locate Pin on Map'}</span>
+            <Maximize2 className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+            <span>View full photos & evidence</span>
           </button>
-
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                
-                setPhotoSelection({ report: detailedReport, index: 0 })
-                
-              }}
-              className="py-2 px-3 rounded-xl font-semibold text-xs border border-gray-200 dark:border-[#333] text-gray-700 dark:text-gray-200 bg-gray-50/80 dark:bg-[#242424] hover:bg-gray-100 dark:hover:bg-[#2A2A2A] transition-colors flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.98]"
-            >
-              <Maximize2 className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
-              <span>View photos</span>
-            </button>
-
-            
-          </div>
         </div>
       </div>
     )
@@ -2424,7 +2461,7 @@ export default function PublicMap({ theme = 'light' }) {
               ) : (
                 /* DEFAULT VIEWPORT REPORTS LIST VIEW */
                 <>
-                  <div className="px-5 py-3.5 border-b border-gray-200/80 dark:border-[#2A2A2A] flex items-center justify-between gap-3 bg-white dark:bg-[#1C1C1C] flex-shrink-0">
+                  <div className="relative z-10 px-5 py-3.5 border-b border-gray-200/80 dark:border-[#2A2A2A] flex items-center justify-between gap-3 bg-white dark:bg-[#1C1C1C] flex-shrink-0">
                     <div className="flex flex-col min-w-0">
                       <div className="flex items-baseline gap-2 min-w-0">
                         <h2 className="font-bold text-base text-gray-900 dark:text-white tracking-tight truncate">
@@ -2526,15 +2563,31 @@ export default function PublicMap({ theme = 'light' }) {
                                 {report.issue_type?.replace(/_/g, ' ')} • {new Date(report.created_at).toLocaleDateString()}
                               </p>
 
-                              <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 truncate flex items-center gap-1">
-                                <MapPin className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                                <span>
-                                  {report.location_precision === 'approximate' 
-                                    ? 'Pasig City District' 
-                                    : `${report.latitude?.toFixed(4)}, ${report.longitude?.toFixed(4)}`}
+                              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 truncate flex items-center gap-1" title={formatReportAddress(report)}>
+                                <MapPin className="w-3 h-3 text-[var(--landing-blue)] flex-shrink-0" />
+                                <span className="font-medium text-gray-700 dark:text-gray-300">
+                                  {formatReportAddress(report)}
                                 </span>
                               </p>
                             </div>
+
+                            {/* Share button — hover-reveal on card */}
+                            <button
+                              type="button"
+                              aria-label="Copy share link"
+                              title={copiedLinkId === report.id ? 'Link copied!' : 'Copy share link'}
+                              onClick={(e) => handleShareReport(report, e)}
+                              className={`absolute top-2 right-2 p-1.5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-150 cursor-pointer z-10 ${
+                                copiedLinkId === report.id
+                                  ? 'opacity-100 bg-emerald-500 text-white shadow-md'
+                                  : 'bg-white/90 dark:bg-black/60 text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-black/80 shadow-sm backdrop-blur-sm border border-gray-200/60 dark:border-white/10'
+                              }`}
+                            >
+                              {copiedLinkId === report.id
+                                ? <Check className="w-3 h-3" />
+                                : <Share2 className="w-3 h-3" />
+                              }
+                            </button>
                           </div>
                         )
                       })
@@ -2691,10 +2744,10 @@ export default function PublicMap({ theme = 'light' }) {
                                 <Calendar className="w-3.5 h-3.5" />
                                 {new Date(report.created_at).toLocaleDateString()}
                               </span>
-                              <span className="flex items-center gap-1 truncate max-w-[140px] text-gray-600 dark:text-gray-300">
+                              <span className="flex items-center gap-1 truncate max-w-[170px] text-gray-600 dark:text-gray-300" title={formatReportAddress(report)}>
                                 <MapPin className="w-3.5 h-3.5 text-[#0052CC] flex-shrink-0" />
-                                <span className="truncate">
-                                  {report.location_precision === 'approximate' ? 'Pasig District' : `${report.latitude?.toFixed(3)}, ${report.longitude?.toFixed(3)}`}
+                                <span className="truncate font-medium">
+                                  {formatReportAddress(report, { short: true })}
                                 </span>
                               </span>
                             </div>

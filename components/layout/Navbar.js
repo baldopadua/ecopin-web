@@ -16,18 +16,26 @@ export default function Navbar({
   className = '' 
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isExiting, setIsExiting] = useState(false);
+  const [transitionState, setTransitionState] = useState(null); // 'in' | 'out' | null
   const pathname = usePathname();
   const router = useRouter();
+
+  const navigateWithTransition = (targetPath) => {
+    setTransitionState('in');
+    setTimeout(() => {
+      setIsMenuOpen(false);
+      router.push(targetPath);
+      setTransitionState('out');
+      setTimeout(() => {
+        setTransitionState(null);
+      }, 380);
+    }, 420);
+  };
 
   const handleLogoClick = (e) => {
     e.preventDefault();
     if (pathname !== '/') {
-      setIsExiting(true);
-      setTimeout(() => {
-        router.push('/');
-        setTimeout(() => setIsExiting(false), 100);
-      }, 900);
+      navigateWithTransition('/');
     } else {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -36,12 +44,7 @@ export default function Navbar({
   const handleLinkClick = (e, path) => {
     e.preventDefault();
     if (pathname !== path) {
-      setIsExiting(true);
-      setTimeout(() => {
-        setIsMenuOpen(false);
-        router.push(path);
-        setTimeout(() => setIsExiting(false), 100);
-      }, 900);
+      navigateWithTransition(path);
     } else {
       setIsMenuOpen(false);
     }
@@ -49,7 +52,7 @@ export default function Navbar({
 
   const navContent = (
     <>
-      {isExiting && <LoadingScreen mode="in" />}
+      {transitionState && <LoadingScreen mode={transitionState} variant="iris" label="Opening view" />}
       <button onClick={handleLogoClick} className="cursor-pointer transition-all bg-transparent border-none p-0 outline-none">
         <img src="/Full Logo Light.png" alt="EcoPin" className="h-8 md:h-10 w-auto dark:hidden" />
         <img src="/Full Logo Dark.png" alt="EcoPin" className="h-8 md:h-10 w-auto hidden dark:block" />

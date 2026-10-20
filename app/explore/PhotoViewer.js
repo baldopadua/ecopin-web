@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, MapPin, X } from 'lucide-react'
 import SecureImage from '@/components/ui/SecureImage'
 import { fetchBatchReportEvidence, getCachedEvidence, hasCachedEvidence } from '@/lib/api/reports'
+import { formatReportAddress } from '@/lib/format-location.mjs'
 import useDialogFocus from './useDialogFocus'
 import styles from './PhotoViewer.module.css'
 
@@ -313,6 +314,12 @@ export default function PhotoViewer({
                 <dt>Photo source</dt>
                 <dd>{illustration ? 'Category illustration' : 'Report evidence'}</dd>
               </div>
+              {currentReport && (
+                <div>
+                  <dt>Location</dt>
+                  <dd>{formatReportAddress(currentReport)}</dd>
+                </div>
+              )}
             </dl>
             {illustration && (
               <p className={styles.disclosure}>This picture illustrates the concern category. It is not evidence of this report.</p>
