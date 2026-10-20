@@ -760,6 +760,24 @@ Search has a label, a leading search icon, an explicit clear button, and a match
 
 Gallery photo buttons open the new photo viewer; report-title buttons still open details. Category fallback images must say “Category illustration,” never report evidence.
 
+### Unified toolbar and card design consistency
+
+Map view and Gallery view share a unified UI contract to ensure visual consistency across modes:
+
+1. **Unified Filter Toolbar**:
+   - Both modes share the same semantic toolbar tokens from [Explore.module.css](app/explore/Explore.module.css) (`.mapToolbar`, `.mapFilters`, `.mapPresentation`, `.filterPill`, `.filterPillActive`, `.statusTabs`, `.filterResetBtn`).
+   - Status filtering uses an identical segmented control (`All reports`, `Unresolved`, `In progress`, `Resolved`) with `aria-pressed`, 44px min touch targets, Outfit typography, and a prominent animated sliding active indicator pill (`#0052cc` background, white text, 600 weight, 0.25s cubic-bezier ease).
+   - Filter dropdowns (Layers, Location/Barangay, Date, Category, Severity) use unified pill buttons with 16px Lucide leading icons, active count indicators, and 14px chevron indicators.
+   - The view mode switch (Map view vs Gallery view) is positioned consistently on the right side of the primary toolbar across both views.
+   - When filters are applied, a consistent "Reset filters" button appears with an `X` icon and active filter count badge.
+
+2. **Unified Report Card Presentation**:
+   - Photo thumbnails use 12px–16px rounded corners, object-cover aspect ratios, and smooth hover scaling.
+   - Status badges are anchored at the top-left of the photo frame as rounded-full pills with Lucide icons (`CheckCircle` for resolved, `AlertCircle` for high priority/urgent, `Clock` for in progress, amber pill for unresolved).
+   - Citizen publisher identity strictly follows consent disclosure: citizen name is shown when `data_consent` is granted; otherwise defaults to `Anonymous`.
+   - Incident location consistently displays the reverse-geocoded or translated street/barangay address with a civic blue `MapPin` icon rather than raw coordinates.
+   - Share actions provide one-click URL copying with visual feedback (`Link copied!` checkmark badge).
+
 ### Photo viewer
 
 Delete the old Inspector layout and state. The replacement is a centered, theme-aware modal card with a readable title, close control, an uncropped contain-fit image stage, Previous/Next photo buttons, photo count, caption, and selectable thumbnails. Show public description, category, written status, report date, and truthful photo source beside the image. Retain View on map and Previous/Next report actions when applicable.

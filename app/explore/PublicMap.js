@@ -16,6 +16,7 @@ import styles from './Explore.module.css'
 import PhotoViewer from './PhotoViewer'
 import ViewModeSwitch from './ViewModeSwitch'
 import GalleryToolbar from './GalleryToolbar'
+import StatusTabs from './StatusTabs'
 import PublicSelect from '@/components/ui/PublicSelect'
 import PublicReportPopup from '@/components/landing/PublicReportPopup'
 import landingStyles from '@/components/landing/LandingPage.module.css'
@@ -1955,47 +1956,31 @@ export default function PublicMap({ theme = 'light' }) {
       {activeNavTab === 'reports' && (
         <>
           {/* FILTER BAR (Below Navigation) */}
-          <section className="bg-white dark:bg-[#1C1C1C] border-b border-gray-200/90 dark:border-[#2A2A2A] px-4 sm:px-6 py-2 flex flex-wrap items-center justify-between gap-2.5 z-[900] relative flex-shrink-0 transition-colors duration-300">
+          <section className={styles.mapToolbar}>
             {/* Left: Pill Filters */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 flex-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-2 py-0.5">
-                {/* Status Lifecycle Segmented Control (matching Incident Gallery) */}
-                <div className="flex items-center bg-gray-200/60 dark:bg-[#242424] p-0.5 rounded-full border border-gray-200 dark:border-[#333] text-xs font-semibold mr-1">
-                  {[
-                    { id: 'all', label: 'All Reports' },
-                    { id: 'unresolved', label: 'Unresolved' },
-                    { id: 'in_progress', label: 'In Progress' },
-                    { id: 'resolved', label: 'Resolved' }
-                  ].map(st => (
-                    <button
-                      key={st.id}
-                      type="button"
-                      onClick={() => setStatusFilter(st.id)}
-                      className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                        statusFilter === st.id 
-                          ? 'bg-white dark:bg-[#1C1C1C] text-[var(--landing-blue)] shadow-xs font-semibold' 
-                          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                      }`}
-                    >
-                      {st.label}
-                    </button>
-                  ))}
-                </div>
+            <div className={styles.mapFilters}>
+              {/* Status Lifecycle Segmented Control (matching Incident Gallery) */}
+              <StatusTabs
+                value={statusFilter}
+                onChange={setStatusFilter}
+                options={[
+                  ['all', 'All reports'],
+                  ['unresolved', 'Unresolved'],
+                  ['in_progress', 'In progress'],
+                  ['resolved', 'Resolved']
+                ]}
+              />
 
                 {/* 1. Layers Toggle Pill */}
                 <div className="relative" data-filter-dropdown="true">
                   <button 
                     type="button"
                     onClick={() => setActiveFilterDropdown(activeFilterDropdown === 'layers' ? null : 'layers')}
-                    className={`px-3 py-1.5 rounded-full border text-xs font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap ${
-                      !showPins || !showClusters || showHeatmap
-                        ? 'bg-blue-50 dark:bg-[#0052CC]/25 text-blue-900 dark:text-[#60A5FA] border-blue-200 dark:border-[#0052CC]/50 shadow-xs' 
-                        : 'bg-white dark:bg-[#242424] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-[#333] hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-[#2A2A2A]'
-                    }`}
+                    className={`${styles.filterPill} ${(!showPins || !showClusters || showHeatmap) ? styles.filterPillActive : ''}`}
                   >
-                    <Layers className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+                    <Layers size={16} />
                     <span>Layers</span>
-                    <ChevronDown className="w-3 h-3 text-gray-400" />
+                    <ChevronDown size={14} />
                   </button>
 
                   {activeFilterDropdown === 'layers' && (
@@ -2036,15 +2021,11 @@ export default function PublicMap({ theme = 'light' }) {
                   <button 
                     type="button"
                     onClick={() => setActiveFilterDropdown(activeFilterDropdown === 'location' ? null : 'location')}
-                    className={`px-3 py-1.5 rounded-full border text-xs font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap ${
-                      locationFilter !== 'all' 
-                        ? 'bg-blue-50 dark:bg-[#0052CC]/25 text-blue-900 dark:text-[#60A5FA] border-blue-200 dark:border-[#0052CC]/50 shadow-xs' 
-                        : 'bg-white dark:bg-[#242424] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-[#333] hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-[#2A2A2A]'
-                    }`}
+                    className={`${styles.filterPill} ${locationFilter !== 'all' ? styles.filterPillActive : ''}`}
                   >
-                    <MapPin className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+                    <MapPin size={16} />
                     <span>{locationFilter === 'all' ? 'All Locations' : locationFilter}</span>
-                    <ChevronDown className="w-3 h-3 text-gray-400" />
+                    <ChevronDown size={14} />
                   </button>
                   
                   {activeFilterDropdown === 'location' && (
@@ -2096,13 +2077,9 @@ export default function PublicMap({ theme = 'light' }) {
                   <button 
                     type="button"
                     onClick={() => setActiveFilterDropdown(activeFilterDropdown === 'date' ? null : 'date')}
-                    className={`px-3 py-1.5 rounded-full border text-xs font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap ${
-                      dateFilter !== 'all' || startDate || endDate
-                        ? 'bg-blue-50 dark:bg-[#0052CC]/25 text-blue-900 dark:text-[#60A5FA] border-blue-200 dark:border-[#0052CC]/50 shadow-xs' 
-                        : 'bg-white dark:bg-[#242424] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-[#333] hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-[#2A2A2A]'
-                    }`}
+                    className={`${styles.filterPill} ${(dateFilter !== 'all' || startDate || endDate) ? styles.filterPillActive : ''}`}
                   >
-                    <Calendar className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+                    <Calendar size={16} />
                     <span>
                       {startDate || endDate
                         ? `${startDate || '...'} to ${endDate || '...'}`
@@ -2114,7 +2091,7 @@ export default function PublicMap({ theme = 'light' }) {
                         ? 'Last 30 Days'
                         : 'All Dates'}
                     </span>
-                    <ChevronDown className="w-3 h-3 text-gray-400" />
+                    <ChevronDown size={14} />
                   </button>
                   
                   {activeFilterDropdown === 'date' && (
@@ -2200,15 +2177,11 @@ export default function PublicMap({ theme = 'light' }) {
                   <button 
                     type="button"
                     onClick={() => setActiveFilterDropdown(activeFilterDropdown === 'category' ? null : 'category')}
-                    className={`px-3 py-1.5 rounded-full border text-xs font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap ${
-                      issueTypeFilter !== 'all' 
-                        ? 'bg-blue-50 dark:bg-[#0052CC]/25 text-blue-900 dark:text-[#60A5FA] border-blue-200 dark:border-[#0052CC]/50 shadow-xs' 
-                        : 'bg-white dark:bg-[#242424] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-[#333] hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-[#2A2A2A]'
-                    }`}
+                    className={`${styles.filterPill} ${issueTypeFilter !== 'all' ? styles.filterPillActive : ''}`}
                   >
-                    <SlidersHorizontal className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+                    <SlidersHorizontal size={16} />
                     <span className="capitalize">{issueTypeFilter === 'all' ? 'Category' : issueTypeFilter.replace(/_/g, ' ')}</span>
-                    <ChevronDown className="w-3 h-3 text-gray-400" />
+                    <ChevronDown size={14} />
                   </button>
 
                   {activeFilterDropdown === 'category' && (
@@ -2256,15 +2229,11 @@ export default function PublicMap({ theme = 'light' }) {
                   <button 
                     type="button"
                     onClick={() => setActiveFilterDropdown(activeFilterDropdown === 'severity' ? null : 'severity')}
-                    className={`px-3 py-1.5 rounded-full border text-xs font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap ${
-                      severityFilter !== 'all' 
-                        ? 'bg-blue-50 dark:bg-[#0052CC]/25 text-blue-900 dark:text-[#60A5FA] border-blue-200 dark:border-[#0052CC]/50 shadow-xs' 
-                        : 'bg-white dark:bg-[#242424] text-gray-700 dark:text-gray-200 border-gray-200 dark:border-[#333] hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-[#2A2A2A]'
-                    }`}
+                    className={`${styles.filterPill} ${severityFilter !== 'all' ? styles.filterPillActive : ''}`}
                   >
-                    <AlertCircle className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+                    <AlertCircle size={16} />
                     <span className="capitalize">{severityFilter === 'all' ? 'Severity' : severityFilter}</span>
-                    <ChevronDown className="w-3 h-3 text-gray-400" />
+                    <ChevronDown size={14} />
                   </button>
 
                   {activeFilterDropdown === 'severity' && (
@@ -2310,38 +2279,28 @@ export default function PublicMap({ theme = 'light' }) {
                   <button
                     type="button"
                     onClick={handleResetFilters}
-                    className="px-3 py-1.5 rounded-full border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-xs"
+                    className={styles.filterResetBtn}
                     title="Reset all active filters"
                   >
                     <X className="w-3.5 h-3.5" />
                     <span>Reset</span>
                   </button>
                 )}
-              </div>
             </div>
 
-            
-            <div className="flex items-center gap-2">
-              <div className="md:hidden flex items-center bg-gray-100 dark:bg-[#262626] rounded-full p-0.5 border border-gray-200 dark:border-[#333] text-xs font-semibold">
+            <div className={styles.mapPresentation}>
+              <div className={styles.mobileViewToggle} role="group" aria-label="Mobile view mode">
                 <button 
                   type="button"
+                  aria-pressed={mobileTab === 'map'}
                   onClick={() => setMobileTab('map')}
-                  className={`px-2.5 py-1 rounded-full transition-all ${
-                    mobileTab === 'map' 
-                      ? 'bg-white dark:bg-[#1C1C1C] text-[var(--landing-blue)] shadow-xs' 
-                      : 'text-gray-600 dark:text-gray-400'
-                  }`}
                 >
                   Map
                 </button>
                 <button 
                   type="button"
+                  aria-pressed={mobileTab === 'list'}
                   onClick={() => setMobileTab('list')}
-                  className={`px-2.5 py-1 rounded-full transition-all ${
-                    mobileTab === 'list' 
-                      ? 'bg-white dark:bg-[#1C1C1C] text-[var(--landing-blue)] shadow-xs' 
-                      : 'text-gray-600 dark:text-gray-400'
-                  }`}
                 >
                   List ({sortedReports.length})
                 </button>
@@ -2579,23 +2538,29 @@ export default function PublicMap({ theme = 'light' }) {
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
                               />
 
-                              {report.status === 'urgent' || report.severity_level === 'high' ? (
-                                <div className="absolute top-1.5 left-1.5 bg-gray-900/90 text-white text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider backdrop-blur-sm">
-                                  URGENT
-                                </div>
-                              ) : report.status === 'resolved' ? (
-                                <div className="absolute top-1.5 left-1.5 bg-emerald-600/90 text-white text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider backdrop-blur-sm">
-                                  RESOLVED
-                                </div>
-                              ) : report.status === 'in_progress' ? (
-                                <div className="absolute top-1.5 left-1.5 bg-[#0052CC]/90 text-white text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider backdrop-blur-sm">
-                                  IN PROGRESS
-                                </div>
-                              ) : (
-                                <div className="absolute top-1.5 left-1.5 bg-amber-500/90 text-white text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider backdrop-blur-sm shadow-xs">
-                                  UNRESOLVED
-                                </div>
-                              )}
+                              {/* Status Badge */}
+                              <div className="absolute top-1.5 left-1.5">
+                                {report.status === 'resolved' ? (
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-emerald-600 text-white shadow-xs flex items-center gap-1">
+                                    <CheckCircle className="w-2.5 h-2.5 text-white" />
+                                    <span>Resolved</span>
+                                  </span>
+                                ) : report.status === 'urgent' || report.severity_level === 'high' ? (
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-red-600 text-white shadow-xs flex items-center gap-1">
+                                    <AlertCircle className="w-2.5 h-2.5 text-white" />
+                                    <span>High Priority</span>
+                                  </span>
+                                ) : report.status === 'in_progress' ? (
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-[#0052CC] text-white shadow-xs flex items-center gap-1">
+                                    <Clock className="w-2.5 h-2.5 text-white" />
+                                    <span>In Progress</span>
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200 shadow-xs">
+                                    {report.status?.replace(/_/g, ' ') || 'Unresolved'}
+                                  </span>
+                                )}
+                              </div>
 
                               
                             </div>

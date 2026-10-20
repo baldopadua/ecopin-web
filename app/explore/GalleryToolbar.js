@@ -1,4 +1,5 @@
 import { LayoutGrid, PanelsTopLeft, Search, X } from 'lucide-react'
+import StatusTabs from './StatusTabs'
 import PublicSelect from '@/components/ui/PublicSelect'
 import ViewModeSwitch from './ViewModeSwitch'
 import styles from './Explore.module.css'
@@ -7,7 +8,11 @@ export default function GalleryToolbar({ status, onStatus, category, onCategory,
   return <section className={styles.galleryToolbar} aria-label="Gallery controls">
     <div className={styles.toolbarRow}>
       <div className={styles.galleryFilters}>
-        <div className={styles.statusTabs} role="group" aria-label="Report status">{[['all','All reports'],['unresolved','Unresolved'],['in_progress','In progress'],['resolved','Resolved']].map(([value, label]) => <button key={value} type="button" aria-pressed={status === value} onClick={() => onStatus(value)}>{label}</button>)}</div>
+        <StatusTabs
+          value={status}
+          onChange={onStatus}
+          options={[['all','All reports'],['unresolved','Unresolved'],['in_progress','In progress'],['resolved','Resolved']]}
+        />
         <PublicSelect id="gallery-category" label="Gallery category" hideLabel value={category} onChange={onCategory} options={[{ value: 'all', label: 'All categories' }, ...categories.map(value => ({ value, label: value.replaceAll('_', ' ').replace(/^./, character => character.toUpperCase()) }))]} className={styles.filterSelect} />
         <PublicSelect id="gallery-priority" label="Gallery priority" hideLabel value={priority} onChange={onPriority} options={[{ value: 'all', label: 'All priorities' }, { value: 'high', label: 'High priority' }, { value: 'medium', label: 'Medium priority' }, { value: 'low', label: 'Low priority' }]} className={styles.filterSelect} />
       </div>

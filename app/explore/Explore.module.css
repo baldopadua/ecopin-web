@@ -21,9 +21,12 @@
 .galleryToolbar { position: relative; z-index: 900; padding: 12px 24px; background: var(--landing-bg); border-bottom: 1px solid var(--landing-border); display: flex; flex-direction: column; gap: 12px; flex-shrink: 0; }
 .toolbarRow { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .galleryFilters { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.statusTabs { display: flex; align-items: center; padding: 4px; gap: 4px; border: 1px solid var(--landing-border); border-radius: 12px; background: var(--landing-soft); }
-.statusTabs button { min-height: 44px; padding: 8px 12px; border-radius: 8px; color: var(--landing-muted); font-size: 12px; }
-.statusTabs button[aria-pressed='true'] { color: var(--landing-blue); background: var(--landing-bg); }
+.statusTabs { position: relative; display: flex; align-items: center; padding: 4px; gap: 4px; border: 1px solid var(--landing-border); border-radius: 12px; background: var(--landing-soft); isolation: isolate; }
+.statusTabsIndicator { position: absolute; top: 4px; bottom: 4px; left: 0; background: #0052cc; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 82, 204, 0.35); transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), width 0.25s cubic-bezier(0.16, 1, 0.3, 1); z-index: 1; pointer-events: none; }
+.statusTabs button { position: relative; z-index: 2; min-height: 44px; padding: 8px 12px; border-radius: 8px; color: var(--landing-muted); font-size: 12px; font-weight: 500; background: transparent; transition: color 0.2s ease; cursor: pointer; }
+.statusTabs button:hover { color: var(--landing-text); }
+.statusTabs button[aria-pressed='true'] { color: #ffffff; font-weight: 600; }
+@media (prefers-reduced-motion: reduce) { .statusTabsIndicator { transition: none; } }
 .filterSelect { width: 160px; }
 .sortSelect { width: 160px; max-width: 100%; }
 .searchField { flex: 1; max-width: 520px; min-width: 200px; display: flex; align-items: center; gap: 12px; background: var(--landing-soft); color: var(--landing-muted); border: 1px solid var(--landing-border); border-radius: 12px; padding: 0 12px; }
@@ -36,7 +39,19 @@
 .galleryState { max-width: 440px; margin: 48px auto; padding: 32px; text-align: center; background: var(--landing-soft); border-radius: 16px; border: 1px solid var(--landing-border); }
 .galleryState p { color: var(--landing-muted); font-size: 14px; line-height: 1.7; margin: 16px 0; }
 .galleryState button { display: inline-flex; align-items: center; gap: 8px; color: var(--landing-blue); padding: 8px 16px; border: 1px solid var(--landing-border); border-radius: 999px; }
+.mapToolbar { position: relative; z-index: 900; padding: 12px 24px; background: var(--landing-bg); border-bottom: 1px solid var(--landing-border); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; flex-shrink: 0; }
+.mapFilters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1; min-width: 0; }
+.mapPresentation { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.filterPill { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--landing-border); background: var(--landing-bg); color: var(--landing-text); font-size: 13px; font-weight: 500; transition: border-color .15s ease, background-color .15s ease, color .15s ease; cursor: pointer; white-space: nowrap; }
+.filterPill:hover { border-color: var(--landing-muted); background: var(--landing-soft); }
+.filterPillActive { border-color: color-mix(in srgb, var(--landing-blue) 40%, transparent); background: color-mix(in srgb, var(--landing-blue) 10%, transparent); color: var(--landing-blue); }
+.filterResetBtn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 8px 14px; border-radius: 999px; border: 1px solid #fecaca; background: #fef2f2; color: #dc2626; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; cursor: pointer; transition: background-color .15s ease; }
+:global(.dark) .filterResetBtn { border-color: #7f1d1d80; background: #450a0a40; color: #f87171; }
+.filterResetBtn:hover { background: #fee2e2; }
+:global(.dark) .filterResetBtn:hover { background: #7f1d1d60; }
+.mobileViewToggle { display: none; }
+@media (max-width: 767px) { .mobileViewToggle { display: inline-flex; align-items: center; padding: 4px; gap: 4px; border: 1px solid var(--landing-border); border-radius: 999px; background: var(--landing-soft); } .mobileViewToggle button { min-height: 36px; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 500; color: var(--landing-muted); } .mobileViewToggle button[aria-pressed='true'] { color: var(--landing-blue); background: var(--landing-bg); box-shadow: 0 1px 4px #0000000a; } }
 @keyframes enter { from { opacity: .3; } to { opacity: 1; } }
-@media (max-width: 767px) { .galleryToolbar { padding: 12px 16px; } .galleryFilters { width: 100%; gap: 8px; } .statusTabs { width: 100%; } .statusTabs button { padding: 8px; flex: 1; } .filterSelect { flex: 1; width: auto; min-width: 120px; } .toolbarRow > .modes { width: 100%; } .modes button { flex: 1; padding: 8px 12px; } .searchField { max-width: none; width: 100%; flex-basis: 100%; } .galleryPresentation { width: 100%; gap: 8px; } .galleryPresentation .sortSelect { flex: 1; } .layoutSwitch button { padding: 8px; font-size: 12px; } .sortSelect { width: 144px; } }
+@media (max-width: 767px) { .galleryToolbar, .mapToolbar { padding: 12px 16px; } .galleryFilters, .mapFilters { width: 100%; gap: 8px; } .statusTabs { width: 100%; } .statusTabs button { padding: 8px; flex: 1; } .filterSelect { flex: 1; width: auto; min-width: 120px; } .toolbarRow > .modes, .mapPresentation > .modes { width: 100%; } .modes button { flex: 1; padding: 8px 12px; } .searchField { max-width: none; width: 100%; flex-basis: 100%; } .galleryPresentation { width: 100%; gap: 8px; } .galleryPresentation .sortSelect { flex: 1; } .layoutSwitch button { padding: 8px; font-size: 12px; } .sortSelect { width: 144px; } }
 @media (prefers-reduced-motion: reduce) { .browser { animation: none; } }
 @media (max-width: 400px) { .galleryPresentation .sortSelect { flex: 0 0 100%; width: 100%; } .galleryPresentation .layoutSwitch { width: 100%; } .galleryPresentation .layoutSwitch button { flex: 1; } }
