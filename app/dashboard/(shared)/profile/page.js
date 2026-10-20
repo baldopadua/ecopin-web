@@ -429,9 +429,11 @@ export default function ProfilePage() {
                 className={styles.avatarImg}
               />
             ) : (
-              <div className={styles.avatarFallback} aria-hidden="true">
-                {formData.full_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
-              </div>
+              <img
+                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(formData.full_name || user?.email || 'User')}&background=random&color=fff&size=256`}
+                alt=""
+                className={styles.avatarImg}
+              />
             )}
           </div>
 

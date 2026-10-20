@@ -121,7 +121,7 @@ export default function Sidebar() {
             <Link href="/dashboard/profile" className={styles.profile} onClick={mobile ? closeDrawer : undefined}
                 aria-label={collapsed ? `Profile for ${user?.full_name || user?.email || 'your account'}` : undefined}>
                 {user?.avatar_url ? <SecureImage src={user.avatar_url} alt="" className={styles.avatar} />
-                    : <span aria-hidden="true" className={styles.avatar}>{user?.full_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}</span>}
+                    : <img src={`https://ui-avatars.com/api/?name=${user?.full_name || user?.email || 'User'}&background=random&color=fff&size=128`} alt="" className={styles.avatar} />}
                 {!collapsed && <span className={styles.identity}>{user?.full_name || user?.email || 'Your account'}
                     <small>{user?.role?.replaceAll('_', ' ')}</small></span>}
             </Link>

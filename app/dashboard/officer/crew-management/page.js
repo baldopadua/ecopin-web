@@ -10,11 +10,6 @@ import { getCrewsWithMembers, updateCrewMembers, getUnassignedFieldCrew } from '
 import { OfficerGuard } from '@/components/auth/RequireRole'
 import styles from './CrewManagement.module.css'
 
-function getInitials(name) {
-  if (!name) return '?'
-  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-}
-
 function Avatar({ user, size = 'md' }) {
   const sizeClass = size === 'sm' ? 'w-8 h-8 text-xs' : 'w-10 h-10 text-sm'
   if (user.avatar_url) {
@@ -27,9 +22,11 @@ function Avatar({ user, size = 'md' }) {
     )
   }
   return (
-    <div className={`${sizeClass} ${styles.avatar} ${styles.initials}`}>
-      {getInitials(user.full_name)}
-    </div>
+    <img
+      src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.full_name || user.email || 'User')}&background=random&color=fff&size=${size === 'sm' ? '64' : '80'}`}
+      alt={user.full_name}
+      className={`${sizeClass} ${styles.avatar}`}
+    />
   )
 }
 

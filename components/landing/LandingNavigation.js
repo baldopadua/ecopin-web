@@ -26,7 +26,7 @@ export default function LandingNavigation({ heroRef, isDark, toggleTheme, active
   const accountLabel = hasSession ? `Open account${user?.full_name ? ` for ${user.full_name}` : ''}` : 'Sign in'
   const themeLabel = isDark ? 'Switch to light mode' : 'Switch to dark mode'
   const ThemeIcon = isDark ? Sun : Moon
-  const avatar = <span className={styles.accountAvatar}><SecureImage src={user?.avatar_url || '/icons/users.png'} alt="" /></span>
+  const avatar = <span className={styles.accountAvatar}><SecureImage src={user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.full_name || user?.email || 'User')}&background=random&color=fff&size=64`} alt="" /></span>
 
   useEffect(() => {
     if (!heroRef?.current) return

@@ -849,17 +849,11 @@ export default function FieldCrewCleanupTaskDetailPage() {
                     <div className="space-y-2">
                       {availableCrew.filter(crew => task.assigned_crew_ids.includes(crew.id)).map(crew => (
                         <div key={crew.id} className="flex items-center space-x-3 p-2 bg-surface-elevated rounded-lg">
-                          {crew.avatar_url ? (
-                            <SecureImage
-                              src={crew.avatar_url}
-                              alt={crew.full_name}
-                              className="w-10 h-10 rounded-full object-cover border border-border"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 rounded-full bg-surface-elevated border border-border flex items-center justify-center text-text-muted font-medium">
-                              {crew.full_name?.[0]?.toUpperCase() || 'U'}
-                            </div>
-                          )}
+                          <img
+                            src={crew.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(crew.full_name || crew.email || 'User')}&background=random&color=fff&size=80`}
+                            alt={crew.full_name}
+                            className="w-10 h-10 rounded-full object-cover border border-border"
+                          />
                           <div className="flex-1">
                             <p className="text-sm font-medium text-text-primary">{crew.full_name}</p>
                           </div>

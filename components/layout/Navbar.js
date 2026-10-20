@@ -83,7 +83,7 @@ export default function Navbar({
 
           {hasSession ? (
             <a href="/dashboard" className="w-9 h-9 rounded-full border border-border overflow-hidden hover:opacity-80 transition-opacity flex-shrink-0 bg-black" title="Dashboard">
-              <img src={user?.avatar_url || `https://ui-avatars.com/api/?name=${user?.full_name || 'User'}&background=random&color=fff`} alt="Profile" className="w-full h-full object-cover" />
+              <img src={user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.full_name || user?.email || 'User')}&background=random&color=fff&size=128`} alt="Profile" className="w-full h-full object-cover" />
             </a>
           ) : (
             <Link href="/auth" className="text-xs font-bold uppercase tracking-widest text-text-primary  hover:text-white hover:bg-black dark:hover:bg-surface dark:hover:text-text-primary rounded-full px-6 py-2 border border-border  transition-all">LOGIN</Link>
@@ -124,7 +124,7 @@ export default function Navbar({
 
         {hasSession ? (
           <a href="/dashboard" onClick={() => setIsMenuOpen(false)} className="w-16 h-16 rounded-full border border-border overflow-hidden hover:opacity-80 transition-opacity mt-4 mx-auto bg-black" title="Dashboard">
-            <img src={user?.avatar_url || `https://ui-avatars.com/api/?name=${user?.full_name || 'User'}&background=random&color=fff`} alt="Profile" className="w-full h-full object-cover" />
+            <img src={user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.full_name || user?.email || 'User')}&background=random&color=fff&size=128`} alt="Profile" className="w-full h-full object-cover" />
           </a>
         ) : (
           <Link href="/auth" onClick={() => setIsMenuOpen(false)} className="w-full text-center mt-4 p-4 text-xl font-bold uppercase tracking-widest bg-black text-white rounded-full border border-border">LOGIN</Link>

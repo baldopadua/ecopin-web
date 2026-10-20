@@ -14,8 +14,6 @@
   background: color-mix(in srgb, var(--warning) 8%, var(--surface)); }
 .unavailable { color: var(--text-secondary); }
 .avatar { border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border); }
-.initials { display: flex; align-items: center; justify-content: center; font-weight: 600;
-  color: var(--workspace-link); background: color-mix(in srgb, var(--workspace-link) 10%, var(--surface)); }
 .member { display: flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; padding: 8px 12px;
   border: 1px solid var(--border); border-radius: 12px; background: var(--surface-elevated); }
 .remove { display: inline-flex; align-items: center; justify-content: center; width: 44px; min-width: 44px; height: 44px;
