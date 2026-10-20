@@ -55,10 +55,36 @@
   margin-top: 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
 .summaryStat { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-secondary); }
 .summaryStat strong { font-weight: 600; color: var(--text-primary); }
+.viewToggle { display: inline-flex; align-items: center; gap: 4px; padding: 4px;
+  border: 1px solid var(--border); border-radius: 12px; background: var(--surface-elevated); }
+.toggleButton { display: inline-flex; align-items: center; justify-content: center; min-height: 36px;
+  padding: 8px 16px; border: none; border-radius: 10px; font: inherit; font-size: 13px; font-weight: 500;
+  color: var(--text-secondary); background: transparent; cursor: pointer; transition: all 0.15s ease; }
+.toggleButton:hover { color: var(--text-primary); background: color-mix(in srgb, var(--workspace-link) 8%, var(--surface-elevated)); }
+.toggleButtonActive { color: var(--text-primary); background: var(--surface); font-weight: 600; }
+.tasksView { min-width: 0; }
+.crewTasksHeader { display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px; padding: 20px; border-bottom: 1px solid var(--border); }
+.crewTasksHeader > div { min-width: 0; }
+.workloadBadge { color: var(--workspace-link); border-color: color-mix(in srgb, var(--workspace-link) 25%, var(--border));
+  background: color-mix(in srgb, var(--workspace-link) 8%, var(--surface)); }
+.tasksList { display: flex; flex-direction: column; gap: 8px; padding: 16px 20px 20px; }
+.taskRow { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface);
+  text-decoration: none; transition: border-color 0.15s ease; }
+.taskRow:hover { border-color: var(--workspace-link); }
+.taskTitle { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+.taskMeta { display: flex; align-items: center; gap: 8px; }
 @media (max-width: 767px) {
   .page { padding: 20px 16px; }
   .crewHeader { padding: 16px; }
   .member { width: 100%; }
   .member > div:not(.avatar) { flex: 1; }
   .addPanel { padding: 12px; }
+  .viewToggle { width: 100%; justify-content: stretch; }
+  .toggleButton { flex: 1; }
+  .crewTasksHeader { padding: 16px; }
+  .tasksList { padding: 12px 16px 16px; }
+  .taskRow { flex-direction: column; align-items: flex-start; }
+  .taskMeta { width: 100%; justify-content: space-between; margin-top: 8px; }
 }

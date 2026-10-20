@@ -255,12 +255,92 @@ function CrewCard({ crew, onAdd, onRemove, unassigned, notification, setNotifica
   )
 }
 
+function TasksView({ crews }) {
+  const crewsWithTasks = crews.filter(c => (c.active_tasks || []).length > 0)
+  const totalTasks = crews.reduce((acc, c) => acc + (c.active_tasks || []).length, 0)
+
+  return (
+    <div className={styles.tasksView}>
+      {crewsWithTasks.length === 0 ? (
+        <div className={`${styles.card} p-8 text-center`}>
+          <ClipboardCheck size={32} className="mx-auto text-text-muted mb-3" />
+          <p className="text-text-muted">No tasks currently assigned to any crew.</p>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {crewsWithTasks.map(crew => (
+            <div key={crew.id} className={styles.card}>
+              <div className={styles.crewTasksHeader}>
+                <div>
+                  <h3 className="font-semibold text-text-primary text-lg">{crew.name}</h3>
+                  <p className="text-sm text-text-muted mt-1">
+                    {(crew.active_tasks || []).length} task{(crew.active_tasks || []).length > 1 ? 's' : ''} assigned
+                  </p>
+                </div>
+                <span className={`${styles.badge} ${styles.workloadBadge}`}>
+                  {(crew.active_tasks || []).length} / {crew.max_tasks_per_shift || 10}
+                </span>
+              </div>
+              <div className={styles.tasksList}>
+                {(crew.active_tasks || []).map(task => (
+                  <Link
+                    key={task.id}
+                    href={`/dashboard/officer/operations/${task.id}`}
+                    className={styles.taskRow}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className={styles.taskTitle}>{task.title || `Task #${task.id?.slice(0, 8)}`}</p>
+                      {task.location_name && (
+                        <p className="text-xs text-text-muted truncate mt-0.5">{task.location_name}</p>
+                      )}
+                    </div>
+                    <div className={styles.taskMeta}>
+                      <StatusBadge status={task.status} type="task" />
+                      <span className="text-xs text-workspace-link font-medium">Open →</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function MembersView({ crews, unassigned, onAdd, onRemove, notification, setNotification }) {
+  return (
+    <div className="space-y-4">
+      {crews.length === 0 ? (
+        <div className={`${styles.card} p-8 text-center`}>
+          <Users size={32} className="mx-auto text-text-muted mb-3" />
+          <p className="text-text-muted">No crews found. Create one in Optimization Settings.</p>
+        </div>
+      ) : (
+        crews.map(crew => (
+          <CrewCard
+            key={crew.id}
+            crew={crew}
+            unassigned={unassigned}
+            onAdd={onAdd}
+            onRemove={onRemove}
+            notification={notification}
+            setNotification={setNotification}
+          />
+        ))
+      )}
+    </div>
+  )
+}
+
 function CrewManagementContent() {
   const [crews, setCrews] = useState([])
   const [unassigned, setUnassigned] = useState([])
   const [loading, setLoading] = useState(true)
   const [notification, setNotification] = useState(null)
   const [unassignedSearch, setUnassignedSearch] = useState('')
+  const [viewMode, setViewMode] = useState('tasks')
 
   const loadData = useCallback(async () => {
     try {
@@ -339,13 +419,28 @@ function CrewManagementContent() {
   return (
     <div className={`workspace-page workspace-page--flow ${styles.page}`}>
       <PageHeader
-        title="Crew management"
-        subtitle="Assign field crew members to their teams"
+        title="Crew Tasks"
+        subtitle="View and manage tasks assigned to each crew"
         breadcrumbs={[
           { label: 'Officer', href: '/dashboard/officer' },
-          { label: 'Crew management' }
+          { label: 'Crew Tasks' }
         ]}
-      />
+      >
+        <div className={styles.viewToggle}>
+          <button
+            onClick={() => setViewMode('tasks')}
+            className={`${styles.toggleButton} ${viewMode === 'tasks' ? styles.toggleButtonActive : ''}`}
+          >
+            Tasks View
+          </button>
+          <button
+            onClick={() => setViewMode('members')}
+            className={`${styles.toggleButton} ${viewMode === 'members' ? styles.toggleButtonActive : ''}`}
+          >
+            Manage Members
+          </button>
+        </div>
+      </PageHeader>
 
       {notification && (
         <Notification
@@ -359,13 +454,13 @@ function CrewManagementContent() {
       {!loading && (
         <div className={styles.summaryBanner}>
           <div className={styles.summaryStat}>
-            <Users size={18} className="text-workspace-link" aria-hidden="true" />
-            <span><strong>{crews.length}</strong> Squads Active</span>
+            <ClipboardCheck size={18} className="text-success" aria-hidden="true" />
+            <span><strong>{totalAssignedTasks}</strong> Total Tasks Assigned</span>
           </div>
           <span className="text-text-muted">·</span>
           <div className={styles.summaryStat}>
-            <ClipboardCheck size={18} className="text-success" aria-hidden="true" />
-            <span><strong>{totalAssignedTasks}</strong> Total Tasks Assigned</span>
+            <Users size={18} className="text-workspace-link" aria-hidden="true" />
+            <span><strong>{crews.length}</strong> Squads Active</span>
           </div>
           {atCapacityCount > 0 && (
             <>
@@ -375,10 +470,14 @@ function CrewManagementContent() {
               </div>
             </>
           )}
-          <span className="text-text-muted">·</span>
-          <div className={styles.summaryStat}>
-            <span><strong>{unassigned.length}</strong> unassigned personnel</span>
-          </div>
+          {viewMode === 'members' && (
+            <>
+              <span className="text-text-muted">·</span>
+              <div className={styles.summaryStat}>
+                <span><strong>{unassigned.length}</strong> unassigned personnel</span>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -393,31 +492,26 @@ function CrewManagementContent() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-          {/* Crew Cards */}
-          <div className="lg:col-span-2 min-w-0 space-y-4">
-            {crews.length === 0 ? (
-              <div className={`${styles.card} p-8 text-center`}>
-                <Users size={32} className="mx-auto text-text-muted mb-3" />
-                <p className="text-text-muted">No crews found. Create one in Optimization Settings.</p>
-              </div>
+        <div className={viewMode === 'tasks' ? 'mt-6' : 'grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6'}>
+          {/* Main Content Area */}
+          <div className={viewMode === 'tasks' ? 'min-w-0' : 'lg:col-span-2 min-w-0'}>
+            {viewMode === 'tasks' ? (
+              <TasksView crews={crews} />
             ) : (
-              crews.map(crew => (
-                <CrewCard
-                  key={crew.id}
-                  crew={crew}
-                  unassigned={unassigned}
-                  onAdd={handleAdd}
-                  onRemove={handleRemove}
-                  notification={notification}
-                  setNotification={setNotification}
-                />
-              ))
+              <MembersView
+                crews={crews}
+                unassigned={unassigned}
+                onAdd={handleAdd}
+                onRemove={handleRemove}
+                notification={notification}
+                setNotification={setNotification}
+              />
             )}
           </div>
 
-          {/* Unassigned Panel */}
-          <div className="lg:col-span-1">
+          {/* Unassigned Panel - only in Members view */}
+          {viewMode === 'members' && (
+            <div className="lg:col-span-1">
             <div className={styles.card}>
               <div className="p-4 border-b border-border">
                 <h2 className="text-lg font-semibold text-text-primary flex items-center gap-2">
@@ -470,6 +564,7 @@ function CrewManagementContent() {
               </div>
             </div>
           </div>
+          )}
         </div>
       )}
     </div>
