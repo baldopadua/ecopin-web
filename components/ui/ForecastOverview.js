@@ -35,17 +35,23 @@ function OverviewTrend({ actual, projected }) {
   </figure>;
 }
 
-export default function ForecastOverview({ summary, horizon, unavailable, loading, filter, onFilterChange, observed, actualCount, observedError }) {
+export default function ForecastOverview({ summary, horizon, unavailable, loading, filter, onFilterChange, observed, actualCount, observedError, isHistorical, snapshotDate }) {
   const value = number => loading ? '…' : unavailable ? '—' : number.toLocaleString('en-PH', { maximumFractionDigits: 0 });
   if (observed) return <section className={styles.observedSummary} aria-label="Today’s report summary"><div><span>Reports today</span><strong>{observedError || actualCount === null ? '—' : actualCount}</strong></div><p>Reported locations for today, Manila time.<br />Switch to Forecast map to see where reports may increase.</p></section>;
   return <section className={styles.overview} aria-label="Forecast overview" aria-busy={loading}>
     <div className={styles.overviewMetrics}>
-      <div className={styles.forecastMetric}><span>Expected reports</span><strong>{value(summary.total)}</strong><small>Next {parseInt(horizon, 10)} days · estimate</small></div>
+      <div className={styles.forecastMetric}>
+        <span>{isHistorical ? 'Archived prediction' : 'Expected reports'}</span>
+        <strong>{value(summary.total)}</strong>
+        <small>{isHistorical ? `${parseInt(horizon, 10)}-day projection as of ${forecastDate(snapshotDate)}` : `Next ${parseInt(horizon, 10)} days · estimate`}</small>
+      </div>
       <button type="button" className={styles.forecastMetric} aria-label="View high-risk areas" aria-pressed={filter === 'high'} onClick={() => onFilterChange(filter === 'high' ? 'all' : 'high')} disabled={loading || unavailable}>
-        <span><TriangleAlert size={14} aria-hidden="true" />High-risk areas</span><strong className={styles.high}>{value(summary.high)}</strong><small>Review for inspection</small>
+        <span><TriangleAlert size={14} aria-hidden="true" />High-risk areas</span><strong className={styles.high}>{value(summary.high)}</strong>
+        <small>{isHistorical ? 'Flagged critical zones' : 'Review for inspection'}</small>
       </button>
       <button type="button" className={styles.forecastMetric} aria-label="View areas with rising activity" aria-pressed={filter === 'rising'} onClick={() => onFilterChange(filter === 'rising' ? 'all' : 'rising')} disabled={loading || unavailable}>
-        <span><ArrowUpRight size={15} aria-hidden="true" />Rising activity</span><strong>{value(summary.rising)}</strong><small>Areas above prior period</small>
+        <span><ArrowUpRight size={15} aria-hidden="true" />Rising activity</span><strong>{value(summary.rising)}</strong>
+        <small>{isHistorical ? 'Growth recorded at snapshot' : 'Areas above prior period'}</small>
       </button>
     </div>
     <OverviewTrend actual={loading || unavailable ? [] : summary.actual} projected={loading || unavailable ? [] : summary.projected} />
