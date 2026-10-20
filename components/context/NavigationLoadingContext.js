@@ -1,6 +1,6 @@
 'use client'
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react'
-import { usePathname, useSearchParams } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 
 const NavigationLoadingContext = createContext({
   isLoading: false,
@@ -58,7 +58,6 @@ export function getRouteTitle(urlPath) {
 
 export function NavigationLoadingProvider({ children }) {
   const pathname = usePathname()
-  const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
   const [targetName, setTargetName] = useState('Workspace')
   const safetyTimeoutRef = useRef(null)
@@ -85,7 +84,7 @@ export function NavigationLoadingProvider({ children }) {
     }, 4000)
   }, [])
 
-  // When pathname or searchParams change, the new route has mounted.
+  // When pathname changes, the new route has mounted.
   // Immediately dismiss the loading overlay on the next animation frame for snappy navigation.
   useEffect(() => {
     if (!isNavigatingRef.current) return
@@ -98,7 +97,7 @@ export function NavigationLoadingProvider({ children }) {
     })
 
     return () => cancelAnimationFrame(frame)
-  }, [pathname, searchParams])
+  }, [pathname])
 
   // Global click interceptor for internal links targeting /dashboard routes
   useEffect(() => {

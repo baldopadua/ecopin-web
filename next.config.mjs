@@ -15,6 +15,30 @@ const nextConfig = {
   reactStrictMode: false,
   reactCompiler: false,
   compiler: { removeConsole: { exclude: ['error', 'warn'] } },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'ui-avatars.com',
+        pathname: '/**',
+      }
+    ],
+  },
   async headers() {
     const backend = serviceOrigin(process.env.NEXT_PUBLIC_BACKEND_API_URL);
     const database = serviceOrigin(process.env.NEXT_PUBLIC_SUPABASE_URL);

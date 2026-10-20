@@ -1,7 +1,6 @@
 'use client'
-import { Suspense, useState, useRef, useId } from 'react'
+import { useState, useRef, useId, useEffect } from 'react'
 import dynamic from 'next/dynamic'
-import { useSearchParams } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import { useDashboardReports, useDashboardTasks } from '@/components/context/DashboardQueryProvider'
 import { OfficerGuard } from '@/components/auth/RequireRole'
@@ -19,14 +18,23 @@ const CrewTaskLayer = dynamic(
 )
 
 function OfficerMapContent() {
-  const searchParams = useSearchParams()
   const reportQuery = useDashboardReports()
   const taskQuery = useDashboardTasks()
   const reports = reportQuery.data || []
   const tasks = taskQuery.data || []
 
-  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'all')
+  const [statusFilter, setStatusFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState('all')
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const initialStatus = params.get('status')
+      if (initialStatus) {
+        setStatusFilter(initialStatus)
+      }
+    }
+  }, [])
 
   const [showPins, setShowPins] = useState(true)
   const [showClusters, setShowClusters] = useState(true)
@@ -289,10 +297,11 @@ function OfficerMapContent() {
 
 export default function OfficerMapGridPage() {
   return (
-    <OfficerGuard>
-      <Suspense fallback={<div className={styles.loading} role="status">Loading map grid…</div>}>
+    <Suspense fallback={<div className={styles.loading} role="status">Loading map grid…</div>}>
+      <OfficerGuard>
         <OfficerMapContent />
-      </Suspense>
-    </OfficerGuard>
+      </OfficerGuard>
+    </Suspense>
   )
 }
+

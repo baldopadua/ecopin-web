@@ -1,14 +1,15 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { ArrowDown, ArrowRight, Camera, CheckCircle2, Download, Leaf, MapPin, ShieldCheck, Smartphone, Send } from 'lucide-react'
+import { ArrowDown, ArrowRight, Camera, CheckCircle2, Download, Leaf, MapPin, ShieldCheck, Smartphone, Send, Megaphone, Info, AlertTriangle } from 'lucide-react'
 import styles from './LandingPage.module.css'
 import usePublicTheme from './usePublicTheme'
 import useLandingMotion from './useLandingMotion'
 import LandingNavigation from './LandingNavigation'
+import { getPublicCmsSettings } from '@/lib/api'
 
 const LandingMap = dynamic(() => import('./LandingMap'), {
   ssr: false,
@@ -26,6 +27,43 @@ export default function LandingPage() {
   const heroRef = useRef(null)
   const pageRef = useRef(null)
   useLandingMotion(pageRef)
+
+  const [cms, setCms] = useState({
+    contact_support_email: 'ecopinmail@gmail.com',
+    contact_office_email: 'swmo@pasigcity.gov.ph',
+    contact_phone: '09173726888',
+    contact_office_name: 'Pasig Solid Waste Management Office (SWMO)',
+    contact_operating_hours: 'Monday – Friday: 8:00 AM – 5:00 PM',
+    lead_story_title: 'From reports to response.',
+    lead_story_subtitle: 'Meet the field crews of Pasig’s Solid Waste Management Office (SWMO), working on the ground to collect waste and clear neighborhood streets.',
+    lead_photo_url: '/images/community/street-cleanup.jpg',
+    lead_photo_caption: 'Pasig Solid Waste Management Office',
+    lead_photo_tagline: 'On the ground. Getting it done.',
+    lead_photo_credit_name: 'Pasig Tayo (Jonah Talagtag)',
+    lead_photo_credit_url: 'https://www.facebook.com/share/p/19hk6BA5W8/',
+    gallery_photo_1_url: '/images/community/neighborhood-team.jpg',
+    gallery_photo_1_caption: 'SWMO crews collecting waste.',
+    gallery_photo_2_url: '/images/community/working-together.jpg',
+    gallery_photo_2_caption: 'Working together to clear bulky debris.',
+    announcement_enabled: false,
+    announcement_title: '',
+    announcement_message: '',
+    announcement_severity: 'info',
+    announcement_link_url: '',
+    announcement_link_text: 'Read advisory',
+    app_download_url: '/ecopin-app-release.apk',
+    app_version_name: 'v1.0.0'
+  })
+
+  useEffect(() => {
+    let mounted = true
+    getPublicCmsSettings().then(data => {
+      if (mounted && data) {
+        setCms(prev => ({ ...prev, ...data }))
+      }
+    }).catch(() => {})
+    return () => { mounted = false }
+  }, [])
 
   const [emailForm, setEmailForm] = useState({
     name: '',
@@ -116,7 +154,41 @@ export default function LandingPage() {
   return (
     <div className={styles.page} ref={pageRef} data-motion="full">
       <a href="#main-content" className={styles.skipLink}>Skip to content</a>
-      <LandingNavigation heroRef={heroRef} isDark={isDark} toggleTheme={toggleTheme} />
+      <LandingNavigation
+        heroRef={heroRef}
+        isDark={isDark}
+        toggleTheme={toggleTheme}
+        banner={
+          cms.announcement_enabled && cms.announcement_message ? (
+            <aside
+              className={`${styles.announcementBanner} ${
+                cms.announcement_severity === 'urgent'
+                  ? styles.announcementBannerUrgent
+                  : cms.announcement_severity === 'warning'
+                  ? styles.announcementBannerWarning
+                  : styles.announcementBannerInfo
+              }`}
+              role="alert"
+            >
+              <Megaphone size={16} className="shrink-0" />
+              <span>
+                {cms.announcement_title ? <strong>{cms.announcement_title}: </strong> : null}
+                {cms.announcement_message}
+              </span>
+              {cms.announcement_link_url && (
+                <a
+                  href={cms.announcement_link_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.announcementLink}
+                >
+                  {cms.announcement_link_text || 'Learn more'} <ArrowRight size={13} />
+                </a>
+              )}
+            </aside>
+          ) : null
+        }
+      />
 
       <main id="main-content">
         <section ref={heroRef} className={styles.hero} aria-labelledby="hero-heading">
@@ -155,25 +227,32 @@ export default function LandingPage() {
 
         <section className={styles.community} aria-labelledby="community-heading">
           <div className={styles.communityHeading} data-reveal>
-            <div><span className={styles.sectionLabel}><Leaf size={16} /> SWMO field crews in action</span><h2 id="community-heading">From reports to response.</h2></div>
-            <p>Meet the field crews of Pasig’s Solid Waste Management Office (SWMO), working on the ground to collect waste and clear neighborhood streets.</p>
+            <div><span className={styles.sectionLabel}><Leaf size={16} /> SWMO field crews in action</span><h2 id="community-heading">{cms.lead_story_title || 'From reports to response.'}</h2></div>
+            <p>{cms.lead_story_subtitle || 'Meet the field crews of Pasig’s Solid Waste Management Office (SWMO), working on the ground to collect waste and clear neighborhood streets.'}</p>
           </div>
           <div className={styles.photoStory}>
             <figure className={styles.photoLead} data-reveal>
-              <div className={styles.photoFrame}><Image src="/images/community/street-cleanup.jpg" alt="A Pasig cleanup vehicle collecting roadside waste beside a blue fence" fill sizes="(max-width: 767px) 100vw, 65vw" /></div>
+              <div className={styles.photoFrame}><Image src={cms.lead_photo_url || '/images/community/street-cleanup.jpg'} alt="A Pasig cleanup vehicle collecting roadside waste beside a blue fence" fill sizes="(max-width: 767px) 100vw, 65vw" /></div>
               <figcaption>
-                <span>Pasig Solid Waste Management Office</span>
-                <strong>On the ground. Getting it done.</strong>
-                <span className={styles.leadCredit}>
-                  Photo:{' '}
-                  <a href="https://www.facebook.com/share/p/19hk6BA5W8/" target="_blank" rel="noopener noreferrer">Pasig Tayo</a>{' '}
-                  (<a href="https://www.facebook.com/jonah.talagtag.77" target="_blank" rel="noopener noreferrer">Jonah Talagtag</a>)
-                </span>
+                <span>{cms.lead_photo_caption || 'Pasig Solid Waste Management Office'}</span>
+                <strong>{cms.lead_photo_tagline || 'On the ground. Getting it done.'}</strong>
+                {cms.lead_photo_credit_name && (
+                  <span className={styles.leadCredit}>
+                    Photo:{' '}
+                    {cms.lead_photo_credit_url ? (
+                      <a href={cms.lead_photo_credit_url} target="_blank" rel="noopener noreferrer">
+                        {cms.lead_photo_credit_name}
+                      </a>
+                    ) : (
+                      cms.lead_photo_credit_name
+                    )}
+                  </span>
+                )}
               </figcaption>
             </figure>
             <div className={styles.photoDetails}>
-              <figure data-reveal="100"><div className={styles.photoFrame}><Image src="/images/community/neighborhood-team.jpg" alt="SWMO field crew members lifting collected waste into a truck" fill sizes="(max-width: 767px) 100vw, 35vw" /></div><figcaption>SWMO crews collecting waste.</figcaption></figure>
-              <figure data-reveal="200"><div className={styles.photoFrame}><Image src="/images/community/working-together.jpg" alt="Two SWMO field crew members carrying a large piece of wood together beside a collection truck" fill sizes="(max-width: 767px) 100vw, 35vw" /></div><figcaption>Working together to clear bulky debris.</figcaption></figure>
+              <figure data-reveal="100"><div className={styles.photoFrame}><Image src={cms.gallery_photo_1_url || '/images/community/neighborhood-team.jpg'} alt="SWMO field crew members lifting collected waste into a truck" fill sizes="(max-width: 767px) 100vw, 35vw" /></div><figcaption>{cms.gallery_photo_1_caption || 'SWMO crews collecting waste.'}</figcaption></figure>
+              <figure data-reveal="200"><div className={styles.photoFrame}><Image src={cms.gallery_photo_2_url || '/images/community/working-together.jpg'} alt="Two SWMO field crew members carrying a large piece of wood together beside a collection truck" fill sizes="(max-width: 767px) 100vw, 35vw" /></div><figcaption>{cms.gallery_photo_2_caption || 'Working together to clear bulky debris.'}</figcaption></figure>
             </div>
           </div>
           <div className={styles.communityFoot} data-reveal><p>Notice a concern in your area? Give it a place on the map.</p><a href="#mobile-app" className={styles.textButton}>Start with the EcoPin app <ArrowRight size={18} /></a></div>
@@ -196,7 +275,7 @@ export default function LandingPage() {
             <h2 id="mobile-heading">Notice something?<br /><span className={styles.blueText}>Make it count.</span></h2>
             <p>Turn a photo into a report. With the EcoPin Android app, you can share environmental concerns and follow what happens next.</p>
             <ul><li><CheckCircle2 /> Add a photo and the location</li><li><CheckCircle2 /> Describe the issue in your own words</li><li><CheckCircle2 /> Keep track of your reports</li></ul>
-            <a href="/ecopin-app-release.apk" download className={styles.primaryButton}><Download size={18} /> Download for Android <ArrowRight size={18} /></a>
+            <a href={cms.app_download_url || '/ecopin-app-release.apk'} download className={styles.primaryButton}><Download size={18} /> Download for Android {cms.app_version_name ? `(${cms.app_version_name})` : ''} <ArrowRight size={18} /></a>
             <span className={styles.downloadNote}>Free Android app · Direct APK download</span>
             <a href="/downloads" className={styles.installHelp}>Need help installing? <ArrowRight size={14} /></a>
           </div>
@@ -214,20 +293,24 @@ export default function LandingPage() {
         <div className={styles.contactContent}>
           <h2 className={styles.contactHeading}>Contact Us</h2>
           <div className={styles.contactGrid}>
-            <div className={styles.contactCard} onClick={() => handleContactCardClick('ecopinmail@gmail.com')}>
+            <div className={styles.contactCard} onClick={() => handleContactCardClick(cms.contact_support_email || 'ecopinmail@gmail.com')}>
               <div className={styles.contactCardContent}>
                 <span className={styles.contactCardLabel}>EcoPin Support</span>
-                <span className={styles.contactCardLink}>ecopinmail@gmail.com</span>
+                <span className={styles.contactCardLink}>{cms.contact_support_email || 'ecopinmail@gmail.com'}</span>
               </div>
               <ArrowRight size={16} className={styles.clickIndicator} />
             </div>
-            <div className={styles.contactCard} onClick={() => handleContactCardClick('swmo@pasigcity.gov.ph')}>
+            <div className={styles.contactCard} onClick={() => handleContactCardClick(cms.contact_office_email || 'swmo@pasigcity.gov.ph')}>
               <div className={styles.contactCardContent}>
-                <span className={styles.contactCardLabel}>Solid Waste Management Office</span>
+                <span className={styles.contactCardLabel}>{cms.contact_office_name || 'Solid Waste Management Office'}</span>
                 <div className={styles.contactCardDetails}>
-                  <span className={styles.contactCardLink}>swmo@pasigcity.gov.ph</span>
-                  <span className={styles.contactSeparator}>·</span>
-                  <a href="tel:09173726888" className={styles.contactCardLink} onClick={(e) => e.stopPropagation()}>09173726888</a>
+                  <span className={styles.contactCardLink}>{cms.contact_office_email || 'swmo@pasigcity.gov.ph'}</span>
+                  {cms.contact_phone && (
+                    <>
+                      <span className={styles.contactSeparator}>·</span>
+                      <a href={`tel:${cms.contact_phone}`} className={styles.contactCardLink} onClick={(e) => e.stopPropagation()}>{cms.contact_phone}</a>
+                    </>
+                  )}
                 </div>
               </div>
               <ArrowRight size={16} className={styles.clickIndicator} />

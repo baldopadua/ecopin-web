@@ -19,7 +19,7 @@ function NavLink({ href, children, ...props }) {
   return href.startsWith('#') ? <a href={href} {...props}>{children}</a> : <Link href={href} {...props}>{children}</Link>
 }
 
-export default function LandingNavigation({ heroRef, isDark, toggleTheme, activePage }) {
+export default function LandingNavigation({ heroRef, isDark, toggleTheme, activePage, banner }) {
   const [rail, setRail] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const { user, hasSession } = usePublicAccount()
@@ -38,18 +38,21 @@ export default function LandingNavigation({ heroRef, isDark, toggleTheme, active
   const destinations = links.map(item => ({ ...item, href: !heroRef && item.href.startsWith('#') ? `/${item.href === '#main-content' ? '' : item.href}` : item.href }))
 
   return <>
-    <div className={styles.navSpacer} />
-    <header className={`${styles.header} ${rail ? styles.headerHidden : ''}`} inert={rail} aria-hidden={rail}>
-      <Link href="/" className={styles.brand} aria-label="EcoPin home"><Image src={isDark ? '/Full Logo Dark.png' : '/Full Logo Light.png'} alt="EcoPin" width={112} height={32} /></Link>
-      <nav className={`${styles.nav} ${menuOpen ? styles.navOpen : ''}`} aria-label="Main navigation" onClick={() => setMenuOpen(false)}>
-        {destinations.map(item => <NavLink key={item.label} href={item.href} aria-current={activePage === item.label ? 'page' : undefined}>{item.label}</NavLink>)}
-      </nav>
-      <div className={styles.headerActions}>
-        <button onClick={toggleTheme} className={styles.iconButton} aria-label={themeLabel}><ThemeIcon size={19} /></button>
-        <Link href={hasSession ? '/dashboard' : '/auth'} className={hasSession ? styles.profileButton : styles.signIn} aria-label={accountLabel}>
-          {hasSession ? avatar : <>Sign in <ArrowRight size={16} /></>}
-        </Link>
-        <button className={`${styles.iconButton} ${styles.menuButton}`} aria-label={menuOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X size={22} /> : <Menu size={22} />}</button>
+    <div className={`${styles.navSpacer} ${banner ? styles.navSpacerWithBanner : ''}`} />
+    <header className={`${styles.header} ${banner ? styles.headerWithBanner : ''} ${rail ? styles.headerHidden : ''}`} inert={rail} aria-hidden={rail}>
+      {banner}
+      <div className={styles.headerBar}>
+        <Link href="/" className={styles.brand} aria-label="EcoPin home"><Image src={isDark ? '/Full Logo Dark.png' : '/Full Logo Light.png'} alt="EcoPin" width={112} height={32} /></Link>
+        <nav className={`${styles.nav} ${menuOpen ? styles.navOpen : ''}`} aria-label="Main navigation" onClick={() => setMenuOpen(false)}>
+          {destinations.map(item => <NavLink key={item.label} href={item.href} aria-current={activePage === item.label ? 'page' : undefined}>{item.label}</NavLink>)}
+        </nav>
+        <div className={styles.headerActions}>
+          <button onClick={toggleTheme} className={styles.iconButton} aria-label={themeLabel}><ThemeIcon size={19} /></button>
+          <Link href={hasSession ? '/dashboard' : '/auth'} className={hasSession ? styles.profileButton : styles.signIn} aria-label={accountLabel}>
+            {hasSession ? avatar : <>Sign in <ArrowRight size={16} /></>}
+          </Link>
+          <button className={`${styles.iconButton} ${styles.menuButton}`} aria-label={menuOpen ? 'Close navigation' : 'Open navigation'} aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X size={22} /> : <Menu size={22} />}</button>
+        </div>
       </div>
     </header>
     {heroRef && <nav className={`${styles.sideNav} ${rail ? styles.sideNavVisible : ''}`} aria-label="Quick navigation" inert={!rail} aria-hidden={!rail}>
