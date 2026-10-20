@@ -374,7 +374,7 @@ export default function CreateCleanupTaskPage() {
       return
     }
     if (selectedCrewIds.length === 0) {
-      setNotification({ message: 'Please assign at least one field crew member', type: 'warning' })
+      setNotification({ message: 'Please assign a field crew', type: 'warning' })
       return
     }
 
@@ -636,7 +636,7 @@ export default function CreateCleanupTaskPage() {
                 <span className={styles.fieldLabel}>Assign to Field Crew *</span>
                 <CrewChoices crews={availableCrew} selected={selectedCrewIds} onChange={setSelectedCrewIds} />
               </div>
-              <div className={styles.summary} role="status"><span>Reports selected: <strong>{selectedReports.size}</strong></span><span>Crew assigned: <strong>{selectedCrewIds.length}</strong></span></div>
+              <div className={styles.summary} role="status"><span>Reports selected: <strong>{selectedReports.size}</strong></span><span>Crew assigned: <strong>{selectedCrewIds.length > 0 ? (availableCrew.find(c => c.id === selectedCrewIds[0])?.name || 'Selected') : 'None'}</strong></span></div>
               <button type="button" onClick={handleCreateTask} className={styles.primary}
                 disabled={creating || !selectedReports.size || !taskTitle.trim() || !selectedCrewIds.length}>
                 {creating ? 'Creating Task…' : 'Create Cleanup Task'}

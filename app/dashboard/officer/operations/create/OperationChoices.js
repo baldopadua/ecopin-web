@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useId, useRef, useState } from 'react'
-import Checkbox from '@/components/ui/Checkbox'
+import Radio from '@/components/ui/Radio'
 import styles from './OperationCreate.module.css'
 
 export function OperationChoices({ items, label, children, empty, className = '' }) {
@@ -46,13 +46,10 @@ export function CrewChoices({ crews, selected, onChange }) {
 
       return (
         <div className={styles.crewRow}>
-          <Checkbox id={`${prefix}-${crew.id}`} labelClassName={styles.crewLabel}
+          <Radio id={`${prefix}-${crew.id}`} labelClassName={styles.crewLabel}
             label={
               <div className="flex items-center justify-between w-full pr-2">
                 <span className="flex items-center gap-2 min-w-0">
-                  <span className={styles.crewAvatar} aria-hidden="true">
-                    {crew.avatar_url ? <img src={crew.avatar_url} alt="" /> : name[0]?.toUpperCase() || 'U'}
-                  </span>
                   <span className="truncate">{name}</span>
                 </span>
                 <span className={isAtCapacity ? styles.crewCapacityBadge : activeCount > 0 ? styles.crewActiveBadge : styles.crewAvailableBadge}>
@@ -65,7 +62,7 @@ export function CrewChoices({ crews, selected, onChange }) {
               </div>
             }
             checked={selected.includes(crew.id)}
-            onChange={event => onChange(event.target.checked ? [...selected, crew.id] : selected.filter(id => id !== crew.id))} />
+            onChange={event => onChange(event.target.checked ? [crew.id] : [])} />
         </div>
       )
     }}
