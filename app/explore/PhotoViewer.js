@@ -3,7 +3,13 @@
 import { useEffect, useState, useRef } from 'react'
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, MapPin, X } from 'lucide-react'
 import SecureImage from '@/components/ui/SecureImage'
-import { fetchBatchReportEvidence, getCachedEvidence, hasCachedEvidence } from '@/lib/api/reports'
+import { 
+  fetchBatchReportEvidence, 
+  getCachedEvidence, 
+  hasCachedEvidence,
+  fetchBatchReportPublishers,
+  getCachedPublisher
+} from '@/lib/api/reports'
 import { formatReportAddress } from '@/lib/format-location.mjs'
 import useDialogFocus from './useDialogFocus'
 import styles from './PhotoViewer.module.css'
@@ -123,6 +129,16 @@ export default function PhotoViewer({
               preloadImage(item.url)
             }
           }
+        }
+
+        // Also fetch publishers for visible window if not cached
+        const missingPubIds = windowReports
+          .filter(r => r.id && !getCachedPublisher(r.id))
+          .map(r => r.id)
+        if (missingPubIds.length) {
+          fetchBatchReportPublishers(missingPubIds, controller.signal).then(() => {
+            setEvidenceTick(t => t + 1)
+          }).catch(() => {})
         }
 
         setEvidenceTick(t => t + 1)
@@ -300,6 +316,10 @@ export default function PhotoViewer({
             <span className={styles.category}>{currentReport?.issue_type?.replaceAll('_', ' ') || 'Environmental concern'}</span>
             <p>{currentReport?.description || 'No description was provided for this public report.'}</p>
             <dl>
+              <div>
+                <dt>Publisher</dt>
+                <dd>{currentReport?.publisher_name || getCachedPublisher(currentReport?.id)?.publisher_name || 'Anonymous'}</dd>
+              </div>
               <div>
                 <dt>Status</dt>
                 <dd>{(currentReport?.status || 'Under review').replaceAll('_', ' ')}</dd>

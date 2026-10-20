@@ -14,7 +14,8 @@ import {
   AlertCircle,
   Share2,
   CheckCircle2,
-  Clock
+  Clock,
+  User
 } from 'lucide-react'
 import LandingNavigation from '@/components/landing/LandingNavigation'
 import usePublicTheme from '@/components/landing/usePublicTheme'
@@ -265,6 +266,16 @@ export default function PublicReportPage() {
                       {report.latitude && report.longitude 
                         ? `${Number(report.latitude).toFixed(4)} N, ${Number(report.longitude).toFixed(4)} E` 
                         : 'Pasig City, Metro Manila'}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <User size={18} color="#64748b" />
+                  <div>
+                    <div style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>Publisher</div>
+                    <div style={{ fontSize: '13px', fontWeight: 600 }}>
+                      {report.publisher_name || 'Anonymous'}
                     </div>
                   </div>
                 </div>

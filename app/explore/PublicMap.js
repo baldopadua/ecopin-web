@@ -4,7 +4,13 @@ import { publicReportSearchText, matchesGallerySearch } from '@/lib/public-galle
 import Link from 'next/link'
 import Image from 'next/image'
 import { createPinIcon } from '@/components/landing/pinIcon'
-import { fetchBatchReportEvidence, getCachedEvidence, hasCachedEvidence } from '@/lib/api/reports'
+import { 
+  fetchBatchReportEvidence, 
+  getCachedEvidence, 
+  hasCachedEvidence,
+  fetchBatchReportPublishers,
+  getCachedPublisher
+} from '@/lib/api/reports'
 import { useSearchParams } from 'next/navigation'
 import styles from './Explore.module.css'
 import PhotoViewer from './PhotoViewer'
@@ -70,7 +76,8 @@ import {
   Wind,
   Building,
   TreePine,
-  CheckCircle
+  CheckCircle,
+  User
 } from 'lucide-react'
 import { reportDiagnostic } from '../../lib/diagnostics.mjs';
 
@@ -527,6 +534,7 @@ export default function PublicMap({ theme = 'light' }) {
   const closePhotoViewer = useCallback(() => setPhotoSelection(null), [setPhotoSelection])
   
   const [evidenceCache, setEvidenceCache] = useState({})
+  const [publisherMap, setPublisherMap] = useState({})
    // 'before' | 'after' | 'split'
   const [copiedLinkId, setCopiedLinkId] = useState(null)
   
@@ -1032,6 +1040,20 @@ export default function PublicMap({ theme = 'light' }) {
     }).catch(() => {})
     return () => controller.abort()
   }, [evidenceReports])
+
+  // Batch fetch publisher names and consent for visible public reports
+  useEffect(() => {
+    const reportIds = evidenceReports.slice(0, 36)
+      .filter(report => report?.id && !publisherMap[report.id])
+      .map(report => report.id)
+    if (!reportIds.length) return
+    const controller = new AbortController()
+    fetchBatchReportPublishers(reportIds, controller.signal).then(publishers => {
+      if (controller.signal.aborted) return
+      setPublisherMap(previous => ({ ...previous, ...publishers }))
+    }).catch(() => {})
+    return () => controller.abort()
+  }, [evidenceReports, publisherMap])
   // Keyboard navigation for Lightbox and Details Drawer
   
 
@@ -1391,7 +1413,17 @@ export default function PublicMap({ theme = 'light' }) {
   // Detailed Sidebar View / Evidence fetching
   const handleViewDetails = async (report) => {
     if (!report) return
-    setDetailedReport(report)
+    const cachedPub = publisherMap[report.id] || getCachedPublisher(report.id)
+    const enrichedReport = cachedPub ? { ...report, ...cachedPub } : report
+    setDetailedReport(enrichedReport)
+    if (!cachedPub) {
+      fetchBatchReportPublishers([report.id]).then(pubData => {
+        if (pubData && pubData[report.id]) {
+          setPublisherMap(prev => ({ ...prev, [report.id]: pubData[report.id] }))
+          setDetailedReport(prev => (prev?.id === report.id ? { ...prev, ...pubData[report.id] } : prev))
+        }
+      }).catch(() => {})
+    }
     if (mobileTab === 'map') {
       setMobileTab('list')
     }
@@ -1674,6 +1706,29 @@ export default function PublicMap({ theme = 'light' }) {
                     {detailedReport.latitude?.toFixed(4)}, {detailedReport.longitude?.toFixed(4)}
                   </p>
                 </div>
+              </div>
+
+              <div className="col-span-2 p-3 bg-gray-50/80 dark:bg-[#242424] rounded-2xl border border-gray-100 dark:border-[#2A2A2A] flex items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-xl bg-purple-100/70 dark:bg-purple-950/40 flex items-center justify-center flex-shrink-0 text-purple-600 dark:text-purple-400">
+                    <User className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wider">Reported By</p>
+                    <p className="font-semibold text-gray-800 dark:text-gray-200 truncate text-xs mt-0.5">
+                      {detailedReport.publisher_name || publisherMap[detailedReport.id]?.publisher_name || getCachedPublisher(detailedReport.id)?.publisher_name || 'Anonymous'}
+                    </p>
+                  </div>
+                </div>
+                {(detailedReport.has_consent || detailedReport.publisher_disclosed || publisherMap[detailedReport.id]?.has_consent || getCachedPublisher(detailedReport.id)?.has_consent) ? (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/40 whitespace-nowrap">
+                    Disclosed
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 dark:bg-[#333] text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-[#444] whitespace-nowrap">
+                    Anonymous
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -2561,6 +2616,7 @@ export default function PublicMap({ theme = 'light' }) {
 
                               <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 capitalize truncate">
                                 {report.issue_type?.replace(/_/g, ' ')} • {new Date(report.created_at).toLocaleDateString()}
+                                <span className="normal-case"> • By {publisherMap[report.id]?.publisher_name || getCachedPublisher(report.id)?.publisher_name || report.publisher_name || 'Anonymous'}</span>
                               </p>
 
                               <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 truncate flex items-center gap-1" title={formatReportAddress(report)}>
@@ -2738,7 +2794,7 @@ export default function PublicMap({ theme = 'light' }) {
                             </p>
                           </div>
 
-                          <div className="mt-4 pt-3 border-t border-gray-100 dark:border-[#2A2A2A] space-y-2.5 text-xs text-gray-500 dark:text-gray-400">
+                          <div className="mt-4 pt-3 border-t border-gray-100 dark:border-[#2A2A2A] space-y-2 text-xs text-gray-500 dark:text-gray-400">
                             <div className="flex items-center justify-between text-[11px]">
                               <span className="flex items-center gap-1 text-gray-400">
                                 <Calendar className="w-3.5 h-3.5" />
@@ -2750,6 +2806,20 @@ export default function PublicMap({ theme = 'light' }) {
                                   {formatReportAddress(report, { short: true })}
                                 </span>
                               </span>
+                            </div>
+
+                            <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
+                              <span className="flex items-center gap-1 truncate">
+                                <User className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                                <span className="truncate font-medium text-gray-700 dark:text-gray-300">
+                                  {publisherMap[report.id]?.publisher_name || getCachedPublisher(report.id)?.publisher_name || report.publisher_name || 'Anonymous'}
+                                </span>
+                              </span>
+                              {(publisherMap[report.id]?.has_consent || report.publisher_disclosed || getCachedPublisher(report.id)?.has_consent) && (
+                                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold px-1.5 py-0.2 rounded bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/40">
+                                  Citizen
+                                </span>
+                              )}
                             </div>
 
                             {/* Action Buttons */}
@@ -2808,7 +2878,10 @@ export default function PublicMap({ theme = 'light' }) {
 
       {photoSelection?.report && (
         <PhotoViewer
-          report={photoSelection.report}
+          report={{
+            ...photoSelection.report,
+            publisher_name: publisherMap[photoSelection.report.id]?.publisher_name || getCachedPublisher(photoSelection.report.id)?.publisher_name || photoSelection.report.publisher_name
+          }}
           initialIndex={photoSelection.index}
           evidenceCache={evidenceCache}
           reports={activeNavTab === 'gallery' ? galleryReports : (sortedReports.length ? sortedReports : (galleryReports.length ? galleryReports : [photoSelection.report]))}
