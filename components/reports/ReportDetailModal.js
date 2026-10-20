@@ -1,13 +1,15 @@
 'use client'
 import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import SecureImage from '@/components/ui/SecureImage'
 import StatusBadge from '@/components/ui/StatusBadge'
 import ImageLightbox from '@/components/ui/ImageLightbox'
 import Dialog from '@/components/ui/Dialog'
 import { getOptimizedImageUrl } from '@/components/ui/EvidenceGallery'
-import { X, ChevronLeft, ChevronRight, Maximize2, MapPin, Calendar, Tag, AlertCircle, FileText } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, Maximize2, MapPin, Calendar, Tag, AlertCircle, FileText, ExternalLink } from 'lucide-react'
 
 export default function ReportDetailModal({ report, evidence = [], agencyResponses = [], onClose, className = '' }) {
+  const router = useRouter()
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isLightboxOpen, setIsLightboxOpen] = useState(false)
 
@@ -245,7 +247,18 @@ export default function ReportDetailModal({ report, evidence = [], agencyRespons
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-border bg-surface flex justify-end shrink-0">
+            <div className="p-4 border-t border-border bg-surface flex items-center justify-between gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  if (onClose) onClose()
+                  router.push(`/dashboard/raw-data/${report.id}`)
+                }}
+                className="btn-primary inline-flex items-center gap-2 px-4 py-2 text-sm font-medium min-h-11"
+              >
+                <span>View Detailed Report</span>
+                <ExternalLink className="w-4 h-4" />
+              </button>
               <button
                 type="button"
                 onClick={onClose}
