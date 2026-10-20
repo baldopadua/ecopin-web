@@ -1,10 +1,10 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { ArrowDown, ArrowRight, Camera, CheckCircle2, Download, Leaf, MapPin, ShieldCheck, Smartphone, } from 'lucide-react'
+import { ArrowDown, ArrowRight, Camera, CheckCircle2, Download, Leaf, MapPin, ShieldCheck, Smartphone, Send } from 'lucide-react'
 import styles from './LandingPage.module.css'
 import usePublicTheme from './usePublicTheme'
 import useLandingMotion from './useLandingMotion'
@@ -26,6 +26,92 @@ export default function LandingPage() {
   const heroRef = useRef(null)
   const pageRef = useRef(null)
   useLandingMotion(pageRef)
+
+  const [emailForm, setEmailForm] = useState({
+    name: '',
+    subject: '',
+    message: '',
+    recipient: 'ecopinmail@gmail.com'
+  })
+  const [emailSending, setEmailSending] = useState(false)
+  const [emailSent, setEmailSent] = useState(false)
+  const [showEmailForm, setShowEmailForm] = useState(false)
+  const [emailError, setEmailError] = useState(null)
+  const [emailSuccess, setEmailSuccess] = useState(null)
+  const formRef = useRef(null)
+
+  const handleEmailSubmit = async (e) => {
+    e.preventDefault()
+    setEmailSending(true)
+    setEmailError(null)
+
+    try {
+      const API_BASE = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:3000'
+      console.log('Contact form submitting to:', `${API_BASE}/api/contact/send`)
+
+      const response = await fetch(`${API_BASE}/api/contact/send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: emailForm.name,
+          email: 'no-reply@ecopin.com',
+          subject: emailForm.subject,
+          message: emailForm.message,
+          recipient: emailForm.recipient
+        })
+      })
+
+      let data
+      try {
+        data = await response.json()
+      } catch {
+        data = { message: 'Server error. Please try again.' }
+      }
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to send message')
+      }
+
+      setEmailSuccess('Message sent successfully! We\'ll get back to you soon.')
+      setEmailForm({
+        name: '',
+        subject: '',
+        message: '',
+        recipient: 'ecopinmail@gmail.com'
+      })
+
+      setTimeout(() => {
+        setEmailSuccess(null)
+        setShowEmailForm(false)
+      }, 3000)
+    } catch (error) {
+      console.error('Error sending contact form:', error)
+
+      // Better error messages based on error type
+      let errorMessage = 'Failed to send message. Please try again or email us directly.'
+      if (error.message === 'Failed to fetch') {
+        errorMessage = 'Unable to connect to server. Please email us directly at ' + emailForm.recipient
+      }
+
+      setEmailError(errorMessage)
+    } finally {
+      setEmailSending(false)
+    }
+  }
+
+  const handleEmailChange = (e) => {
+    setEmailForm({ ...emailForm, [e.target.name]: e.target.value })
+  }
+
+  const handleContactCardClick = (recipient) => {
+    setShowEmailForm(true)
+    setEmailForm({ ...emailForm, recipient })
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 100)
+  }
 
   return (
     <div className={styles.page} ref={pageRef} data-motion="full">
@@ -124,6 +210,110 @@ export default function LandingPage() {
 
         <section className={styles.closing}><div data-reveal><Leaf size={28} /><h2>A better Pasig begins<br />with the people in it.</h2><a href="#mobile-app" className={styles.primaryButton}>Take the first step <ArrowRight size={18} /></a></div></section>
       </main>
+      <section className={styles.contactSection}>
+        <div className={styles.contactContent}>
+          <h2 className={styles.contactHeading}>Contact Us</h2>
+          <div className={styles.contactGrid}>
+            <div className={styles.contactCard} onClick={() => handleContactCardClick('ecopinmail@gmail.com')}>
+              <div className={styles.contactCardContent}>
+                <span className={styles.contactCardLabel}>EcoPin Support</span>
+                <span className={styles.contactCardLink}>ecopinmail@gmail.com</span>
+              </div>
+              <ArrowRight size={16} className={styles.clickIndicator} />
+            </div>
+            <div className={styles.contactCard} onClick={() => handleContactCardClick('swmo@pasigcity.gov.ph')}>
+              <div className={styles.contactCardContent}>
+                <span className={styles.contactCardLabel}>Solid Waste Management Office</span>
+                <div className={styles.contactCardDetails}>
+                  <span className={styles.contactCardLink}>swmo@pasigcity.gov.ph</span>
+                  <span className={styles.contactSeparator}>·</span>
+                  <a href="tel:09173726888" className={styles.contactCardLink} onClick={(e) => e.stopPropagation()}>09173726888</a>
+                </div>
+              </div>
+              <ArrowRight size={16} className={styles.clickIndicator} />
+            </div>
+          </div>
+
+          {showEmailForm && (
+            <div className={styles.emailFormContainer} ref={formRef}>
+              <div className={styles.emailFormHeader}>
+                <h3 className={styles.emailFormHeading}>Send us a message</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowEmailForm(false)}
+                  className={styles.closeFormButton}
+                  aria-label="Close form"
+                >
+                  ×
+                </button>
+              </div>
+              <div className={styles.recipientBadge}>
+                To: {emailForm.recipient}
+              </div>
+              {emailError && (
+                <div className={styles.errorMessage}>
+                  {emailError}
+                </div>
+              )}
+              {emailSuccess && (
+                <div className={styles.successMessage}>
+                  {emailSuccess}
+                </div>
+              )}
+              <form onSubmit={handleEmailSubmit} className={styles.emailForm}>
+              <div className={styles.formRow}>
+                <div className={styles.formField}>
+                  <label htmlFor="contact-name" className={styles.formLabel}>Name</label>
+                  <input
+                    id="contact-name"
+                    name="name"
+                    type="text"
+                    value={emailForm.name}
+                    onChange={handleEmailChange}
+                    className={styles.formInput}
+                    placeholder="Your name"
+                    required
+                  />
+                </div>
+              </div>
+              <div className={styles.formField}>
+                <label htmlFor="contact-subject" className={styles.formLabel}>Subject</label>
+                <input
+                  id="contact-subject"
+                  name="subject"
+                  type="text"
+                  value={emailForm.subject}
+                  onChange={handleEmailChange}
+                  className={styles.formInput}
+                  placeholder="What is this about?"
+                  required
+                />
+              </div>
+              <div className={styles.formField}>
+                <label htmlFor="contact-message" className={styles.formLabel}>Message</label>
+                <textarea
+                  id="contact-message"
+                  name="message"
+                  value={emailForm.message}
+                  onChange={handleEmailChange}
+                  className={styles.formTextarea}
+                  placeholder="Tell us more..."
+                  rows={5}
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                className={styles.submitButton}
+                disabled={emailSending}
+              >
+                {emailSending ? 'Sending...' : emailSent ? 'Sent!' : <><Send size={18} /> Send Message</>}
+              </button>
+            </form>
+            </div>
+          )}
+        </div>
+      </section>
       <footer className={styles.footer}>
         <Link href="/" aria-label="EcoPin home"><Image src={isDark ? '/Full Logo Dark.png' : '/Full Logo Light.png'} alt="EcoPin" width="100" height="28" /></Link>
         <div className={styles.footerCopy}>
