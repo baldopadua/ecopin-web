@@ -78,7 +78,8 @@ import {
   Building,
   TreePine,
   CheckCircle,
-  User
+  User,
+  ImageOff
 } from 'lucide-react'
 import { reportDiagnostic } from '../../lib/diagnostics.mjs';
 
@@ -128,16 +129,11 @@ const isReportVerified = (report) => {
   )
 }
 
-const CATEGORY_IMAGES = {
-  waste: 'https://images.unsplash.com/photo-1530587191325-3db32d826c18?auto=format&fit=crop&w=600&q=80',
-  flooding: 'https://images.unsplash.com/photo-1547683905-f686c993aae5?auto=format&fit=crop&w=600&q=80',
-  pollution: 'https://images.unsplash.com/photo-1611273426858-450d8e3c9fce?auto=format&fit=crop&w=600&q=80',
-  infrastructure: 'https://images.unsplash.com/photo-1590486803833-1c5dc8ddd4c8?auto=format&fit=crop&w=600&q=80',
-  illegal_logging: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=600&q=80',
-  others: 'https://images.unsplash.com/photo-1473448912268-2022ce9509d8?auto=format&fit=crop&w=600&q=80',
-}
-
 const getReportImage = (report, evidenceMap = {}) => {
+  // Return null if evidence is being fetched but not loaded yet
+  if (report?.id && evidenceMap[report.id] === undefined) {
+    return null
+  }
   if (report?.id && evidenceMap[report.id]?.length > 0) {
     const firstImg = evidenceMap[report.id].find(e => e.resource_type === 'image' || !e.resource_type)
     if (firstImg?.url) return firstImg.url
@@ -149,8 +145,8 @@ const getReportImage = (report, evidenceMap = {}) => {
   }
   if (report?.before_photo_url) return report.before_photo_url
   if (report?.after_photo_url) return report.after_photo_url
-  const category = report?.issue_type || 'others'
-  return CATEGORY_IMAGES[category] || CATEGORY_IMAGES.others
+  // Return null instead of misleading category fallback
+  return null
 }
 
 // Environmental Severity Metric formatter: properly formats 0-100 scale vs legacy 1-5 scale
@@ -1031,7 +1027,7 @@ export default function PublicMap({ theme = 'light' }) {
   // Fetch only the first visible page of exact public photos, in one request.
   useEffect(() => {
     const photoIds = evidenceReports.slice(0, 24)
-      .filter(report => report.location_precision === 'exact' && !hasCachedEvidence(report.id) && evidenceCache[report.id] === undefined)
+      .filter(report => !hasCachedEvidence(report.id) && evidenceCache[report.id] === undefined)
       .map(report => report.id)
     if (!photoIds.length) return
     const controller = new AbortController()
@@ -1590,11 +1586,21 @@ export default function PublicMap({ theme = 'light' }) {
             }}
             className="relative w-full aspect-[16/10] rounded-2xl overflow-hidden bg-gray-100 dark:bg-[#222] border border-gray-200/80 dark:border-[#2A2A2A] shadow-sm cursor-pointer group select-none"
           >
-            <SecureImage 
-              src={getReportImage(detailedReport, evidenceCache)} 
-              alt={detailedReport.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
-            />
+            {(() => {
+              const heroImg = getReportImage(detailedReport, evidenceCache)
+              return heroImg === null ? (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-gray-200 dark:bg-[#333]">
+                  <ImageOff className="w-12 h-12 text-gray-400" />
+                  <span className="text-sm text-gray-400 mt-2">No photo available</span>
+                </div>
+              ) : (
+                <SecureImage
+                  src={heroImg}
+                  alt={detailedReport.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+                />
+              )
+            })()}
             
             {/* Elegant Gradient overlays for maximum badge contrast */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/40 pointer-events-none" />
@@ -1801,11 +1807,20 @@ export default function PublicMap({ theme = 'light' }) {
               </div>
             ) : (
               <div className="p-3 bg-gray-50 dark:bg-[#242424] rounded-2xl border border-gray-100 dark:border-[#2A2A2A] flex items-center gap-3">
-                <SecureImage 
-                  src={getReportImage(detailedReport, evidenceCache)} 
-                  alt="Category preview" 
-                  className="w-16 h-12 rounded-xl object-cover flex-shrink-0 border border-gray-200 dark:border-[#333]" 
-                />
+                {(() => {
+                  const previewImg = getReportImage(detailedReport, evidenceCache)
+                  return previewImg === null ? (
+                    <div className="w-16 h-12 rounded-xl bg-gray-200 dark:bg-[#333] flex items-center justify-center flex-shrink-0 border border-gray-200 dark:border-[#333]">
+                      <ImageOff className="w-4 h-4 text-gray-400" />
+                    </div>
+                  ) : (
+                    <SecureImage
+                      src={previewImg}
+                      alt="Category preview"
+                      className="w-16 h-12 rounded-xl object-cover flex-shrink-0 border border-gray-200 dark:border-[#333]"
+                    />
+                  )
+                })()}
                 <div className="text-[11px] text-gray-500 dark:text-gray-400 min-w-0">
                   <p className="font-semibold text-gray-800 dark:text-gray-200 truncate">Baseline reference photo</p>
                   <p className="truncate text-gray-400">Field baseline observation logged at coordinate.</p>
@@ -2347,9 +2362,9 @@ export default function PublicMap({ theme = 'light' }) {
                   if (!cluster.centerLat || !cluster.centerLng) return null
                   const isClusterSelected = (cluster.reports || []).some(r => r.id === selectedReportId)
                   const clusterFirstReport = cluster.reports && cluster.reports[0]
-                  const clusterImage = clusterFirstReport 
-                    ? getReportImage(clusterFirstReport, evidenceCache) 
-                    : (CATEGORY_IMAGES[cluster.issue_type] || CATEGORY_IMAGES.others)
+                  const clusterImage = clusterFirstReport
+                    ? getReportImage(clusterFirstReport, evidenceCache)
+                    : null
 
                   return (
                     <Marker
@@ -2414,7 +2429,7 @@ export default function PublicMap({ theme = 'light' }) {
                     }
 
                     const isSelected = selectedReportId === report.id
-                    
+
                     const reportImage = getReportImage(report, evidenceCache)
 
                     return (
@@ -2440,7 +2455,7 @@ export default function PublicMap({ theme = 'light' }) {
                             click: () => handleSelectReport(report, [latitude, longitude])
                           }}
                         >
-                          <Popup closeButton autoPan={false}><PublicReportPopup report={report} illustration={!evidenceCache[report.id]?.some(item => !item.resource_type || item.resource_type === "image")} onOpen={() => handleViewDetails(report)} /></Popup>
+                          <Popup closeButton autoPan={false}><PublicReportPopup report={report} onOpen={() => handleViewDetails(report)} /></Popup>
                         </Marker>
                       </React.Fragment>
                     )
@@ -2515,7 +2530,7 @@ export default function PublicMap({ theme = 'light' }) {
                       sortedReports.map((report) => {
                         const isSelected = selectedReportId === report.id
                         
-                        const thumbImg = getReportImage(report)
+                        const thumbImg = getReportImage(report, evidenceCache)
 
                         return (
                           <div
@@ -2532,11 +2547,18 @@ export default function PublicMap({ theme = 'light' }) {
                             }`}
                           >
                             <div className="relative w-28 h-20 sm:w-32 sm:h-24 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 flex-shrink-0">
-                              <SecureImage 
-                                src={thumbImg} 
-                                alt={report.title} 
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
-                              />
+                              {thumbImg === null ? (
+                                <div className="w-full h-full flex flex-col items-center justify-center bg-gray-200 dark:bg-[#333]">
+                                  <ImageOff className="w-5 h-5 text-gray-400" />
+                                  <span className="text-[10px] text-gray-400 mt-1">No photo</span>
+                                </div>
+                              ) : (
+                                <SecureImage
+                                  src={thumbImg}
+                                  alt={report.title}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                />
+                              )}
 
                               {/* Status Badge */}
                               <div className="absolute top-1.5 left-1.5">
@@ -2676,13 +2698,20 @@ export default function PublicMap({ theme = 'light' }) {
                       >
                         {/* Photo Container */}
                         <button type="button" aria-label={`View photos for ${report.title || "Environmental concern"}`} onClick={() => setPhotoSelection({ report, index: 0 })} className={`w-full relative ${galleryViewMode === 'showcase' ? 'aspect-[16/9]' : 'aspect-[16/10]'} bg-gray-100 dark:bg-gray-800 overflow-hidden`}>
-                          <SecureImage 
-                            src={imgUrl} 
-                            alt={report.title} 
-                            loading="lazy"
-                            decoding="async"
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
-                          />
+                          {imgUrl === null ? (
+                            <div className="w-full h-full flex flex-col items-center justify-center bg-gray-200 dark:bg-[#333]">
+                              <ImageOff className="w-8 h-8 text-gray-400" />
+                              <span className="text-xs text-gray-400 mt-2">No photo available</span>
+                            </div>
+                          ) : (
+                            <SecureImage
+                              src={imgUrl}
+                              alt={report.title}
+                              loading="lazy"
+                              decoding="async"
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          )}
                           
                           {/* Status Badge */}
                           <div className="absolute top-2.5 left-2.5">
@@ -2731,7 +2760,7 @@ export default function PublicMap({ theme = 'light' }) {
                               </span>
                             ) : (
                               <span className="bg-black/70 text-gray-300 px-2 py-0.5 rounded-full text-[9px] font-medium shadow-xs">
-                                Category illustration
+                                No photo
                               </span>
                             )}
                           </div>

@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, MapPin, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, MapPin, X, ImageOff } from 'lucide-react'
 import SecureImage from '@/components/ui/SecureImage'
-import { 
-  fetchBatchReportEvidence, 
-  getCachedEvidence, 
+import {
+  fetchBatchReportEvidence,
+  getCachedEvidence,
   hasCachedEvidence,
   fetchBatchReportPublishers,
   getCachedPublisher
@@ -13,29 +13,6 @@ import {
 import { formatReportAddress } from '@/lib/format-location.mjs'
 import useDialogFocus from './useDialogFocus'
 import styles from './PhotoViewer.module.css'
-
-const CATEGORY_IMAGES = {
-  waste: 'https://images.unsplash.com/photo-1530587191325-3db32d826c18?auto=format&fit=crop&w=600&q=80',
-  flooding: 'https://images.unsplash.com/photo-1547683905-f686c993aae5?auto=format&fit=crop&w=600&q=80',
-  pollution: 'https://images.unsplash.com/photo-1611273426858-450d8e3c9fce?auto=format&fit=crop&w=600&q=80',
-  infrastructure: 'https://images.unsplash.com/photo-1590486803833-1c5dc8ddd4c8?auto=format&fit=crop&w=600&q=80',
-  illegal_logging: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=600&q=80',
-  others: 'https://images.unsplash.com/photo-1473448912268-2022ce9509d8?auto=format&fit=crop&w=600&q=80',
-  // Aliases and specific subcategories
-  illegal_dumping: 'https://images.unsplash.com/photo-1530587191325-3db32d826c18?auto=format&fit=crop&w=600&q=80',
-  water_pollution: 'https://images.unsplash.com/photo-1611273426858-450d8e3c9fce?auto=format&fit=crop&w=600&q=80',
-  air_pollution: 'https://images.unsplash.com/photo-1611273426858-450d8e3c9fce?auto=format&fit=crop&w=600&q=80',
-  noise_pollution: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=600&q=80',
-  hazardous_waste: 'https://images.unsplash.com/photo-1530587191325-3db32d826c18?auto=format&fit=crop&w=600&q=80',
-  deforestation: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=600&q=80',
-}
-
-export function getReportIllustration(rep) {
-  if (!rep) return CATEGORY_IMAGES.others
-  if (rep.image) return rep.image
-  const cat = (rep.issue_type || 'others').toLowerCase().trim()
-  return CATEGORY_IMAGES[cat] || CATEGORY_IMAGES.others
-}
 
 // Global browser image cache tracker to avoid re-triggering decode/downloads
 const preloadedImageUrls = new Set()
@@ -79,7 +56,7 @@ export default function PhotoViewer({
   const reportIndex = Math.max(0, reportList.findIndex(r => String(r.id) === String(activeReportId)))
   const currentReport = reportList[reportIndex] || report
 
-  // Preload immediate neighbors' illustrations & direct photos
+  // Preload immediate neighbors' direct photos
   useEffect(() => {
     const immediateNeighbors = [
       reportList[reportIndex + 1],
@@ -91,8 +68,6 @@ export default function PhotoViewer({
       if (neighbor.before_photo_url) preloadImage(neighbor.before_photo_url)
       if (neighbor.after_photo_url) preloadImage(neighbor.after_photo_url)
       if (neighbor.image) preloadImage(neighbor.image)
-      const illus = getReportIllustration(neighbor)
-      if (illus) preloadImage(illus)
       const neighborEvidence = (evidenceCache && evidenceCache[neighbor.id]) || getCachedEvidence(neighbor.id)
       if (neighborEvidence?.length) {
         for (const ev of neighborEvidence) {
@@ -115,7 +90,7 @@ export default function PhotoViewer({
         ].filter(Boolean)
 
         const missingIds = windowReports
-          .filter(r => r.location_precision === 'exact' && !hasCachedEvidence(r.id))
+          .filter(r => !hasCachedEvidence(r.id))
           .map(r => r.id)
 
         if (!missingIds.length) return
@@ -175,19 +150,15 @@ export default function PhotoViewer({
     }
   }
 
-  const illustration = photos.length === 0
-  if (illustration) {
-    const illustrationUrl = getReportIllustration(currentReport)
-    photos.push({ url: illustrationUrl, label: 'Category illustration' })
-  }
+  const hasNoPhotos = photos.length === 0
 
   // Preload photos for active report
   for (const p of photos) {
     if (p.url) preloadImage(p.url)
   }
 
-  const safePhotoIndex = Math.min(Math.max(0, photoIndex), photos.length - 1)
-  const activePhoto = photos[safePhotoIndex] || photos[0]
+  const safePhotoIndex = hasNoPhotos ? 0 : Math.min(Math.max(0, photoIndex), photos.length - 1)
+  const activePhoto = hasNoPhotos ? null : (photos[safePhotoIndex] || photos[0])
 
   const handlePreviousReport = () => {
     if (reportIndex > 0) {
@@ -210,7 +181,9 @@ export default function PhotoViewer({
   }
 
   const handlePreviousPhoto = () => {
-    if (photos.length > 1 && safePhotoIndex > 0) {
+    if (hasNoPhotos) {
+      handlePreviousReport()
+    } else if (photos.length > 1 && safePhotoIndex > 0) {
       setPhotoIndex(safePhotoIndex - 1)
     } else {
       handlePreviousReport()
@@ -218,14 +191,16 @@ export default function PhotoViewer({
   }
 
   const handleNextPhoto = () => {
-    if (photos.length > 1 && safePhotoIndex < photos.length - 1) {
+    if (hasNoPhotos) {
+      handleNextReport()
+    } else if (photos.length > 1 && safePhotoIndex < photos.length - 1) {
       setPhotoIndex(safePhotoIndex + 1)
     } else {
       handleNextReport()
     }
   }
 
-  const loading = currentReport?.location_precision === 'exact' && !hasCachedEvidence(currentReport.id) && cachedEvidence.length === 0
+  const loading = !hasCachedEvidence(currentReport.id) && cachedEvidence.length === 0 && photos.length === 0
 
   const keyDown = event => {
     if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') return
@@ -260,18 +235,25 @@ export default function PhotoViewer({
         <div className={styles.body}>
           <div className={styles.photos}>
             <div className={styles.imageStage}>
-              <SecureImage
-                key={activePhoto.url}
-                src={activePhoto.url}
-                alt={illustration ? `Category illustration for ${currentReport?.issue_type?.replaceAll('_', ' ') || 'an environmental concern'}` : `${activePhoto.label}: ${currentReport?.title || 'Environmental concern'}`}
-                className={styles.image}
-              />
-              {(photos.length > 1 || reportList.length > 1) && (
+              {hasNoPhotos ? (
+                <div className={styles.noPhotoPlaceholder}>
+                  <ImageOff size={48} />
+                  <span>No photos available for this report</span>
+                </div>
+              ) : (
+                <SecureImage
+                  key={activePhoto?.url}
+                  src={activePhoto?.url}
+                  alt={`${activePhoto?.label}: ${currentReport?.title || 'Environmental concern'}`}
+                  className={styles.image}
+                />
+              )}
+              {reportList.length > 1 && (
                 <>
                   <button
                     type="button"
                     className={`${styles.photoArrow} ${styles.previous}`}
-                    aria-label="Previous photo or report"
+                    aria-label="Previous report"
                     disabled={!canGoPrevious}
                     onClick={handlePreviousPhoto}
                   >
@@ -280,7 +262,7 @@ export default function PhotoViewer({
                   <button
                     type="button"
                     className={`${styles.photoArrow} ${styles.next}`}
-                    aria-label="Next photo or report"
+                    aria-label="Next report"
                     disabled={!canGoNext}
                     onClick={handleNextPhoto}
                   >
@@ -289,14 +271,14 @@ export default function PhotoViewer({
                 </>
               )}
               <span className={styles.counter} aria-live="polite">
-                {photos.length > 1 ? `${safePhotoIndex + 1} / ${photos.length}` : `${reportIndex + 1} / ${reportList.length}`}
+                {hasNoPhotos ? `${reportIndex + 1} / ${reportList.length}` : (photos.length > 1 ? `${safePhotoIndex + 1} / ${photos.length}` : `${reportIndex + 1} / ${reportList.length}`)}
               </span>
             </div>
             <div className={styles.caption}>
-              <span>{activePhoto.label}</span>
+              <span>{hasNoPhotos ? 'No photos available' : activePhoto.label}</span>
               {loading && <span role="status">Loading photos…</span>}
             </div>
-            {photos.length > 1 && (
+            {!hasNoPhotos && photos.length > 1 && (
               <div className={styles.thumbnails} data-native-scroll>
                 {photos.map((photo, pIdx) => (
                   <button
@@ -332,7 +314,7 @@ export default function PhotoViewer({
               )}
               <div>
                 <dt>Photo source</dt>
-                <dd>{illustration ? 'Category illustration' : 'Report evidence'}</dd>
+                <dd>{hasNoPhotos ? 'No photos' : 'Report evidence'}</dd>
               </div>
               {currentReport && (
                 <div>
@@ -341,9 +323,7 @@ export default function PhotoViewer({
                 </div>
               )}
             </dl>
-            {illustration && (
-              <p className={styles.disclosure}>This picture illustrates the concern category. It is not evidence of this report.</p>
-            )}
+
             {onMap && (
               <button type="button" className={styles.mapAction} onClick={() => onMap(currentReport)}>
                 <MapPin size={18} /> View on map <ArrowRight size={16} />

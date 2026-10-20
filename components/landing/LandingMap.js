@@ -21,15 +21,6 @@ const LOCATIONS = {
   kapasigan: { label: 'Kapasigan', center: [14.5595, 121.0805], zoom: 15 },
 }
 const TYPES = { all: 'All concerns', waste: 'Waste', flooding: 'Flooding', pollution: 'Pollution', infrastructure: 'Infrastructure', illegal_logging: 'Illegal logging', others: 'Other concerns' }
-// Category imagery matches the existing full map when public evidence is unavailable.
-const CATEGORY_IMAGES = {
-  waste: 'https://images.unsplash.com/photo-1530587191325-3db32d826c18?auto=format&fit=crop&w=120&q=70',
-  flooding: 'https://images.unsplash.com/photo-1547683905-f686c993aae5?auto=format&fit=crop&w=120&q=70',
-  pollution: 'https://images.unsplash.com/photo-1611273426858-450d8e3c9fce?auto=format&fit=crop&w=120&q=70',
-  infrastructure: 'https://images.unsplash.com/photo-1590486803833-1c5dc8ddd4c8?auto=format&fit=crop&w=120&q=70',
-  illegal_logging: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=120&q=70',
-  others: 'https://images.unsplash.com/photo-1473448912268-2022ce9509d8?auto=format&fit=crop&w=120&q=70',
-}
 
 function ReportLayer({ location, issueType, retry, onState, isDark }) {
   const [reports, setReports] = useState([])
@@ -95,8 +86,8 @@ function ReportLayer({ location, issueType, retry, onState, isDark }) {
       }
       return <Fragment key={pin.key}>
         {pin.separated && <Polyline positions={[pin.original, pin.position]} color="#0052CC" weight={1.5} opacity={.6} dashArray="3 3" />}
-        <PhotoReportMarker report={report} position={pin.position} image={photo || CATEGORY_IMAGES[report.issue_type] || CATEGORY_IMAGES.others} selected={selectedId === report.id} isCluster={pin.isCluster} isDark={isDark} onSelect={select}>
-          <PublicReportPopup report={report} illustration={!photo} />
+        <PhotoReportMarker report={report} position={pin.position} image={photo} selected={selectedId === report.id} isCluster={pin.isCluster} isDark={isDark} onSelect={select}>
+          <PublicReportPopup report={report} />
         </PhotoReportMarker>
       </Fragment>
     })

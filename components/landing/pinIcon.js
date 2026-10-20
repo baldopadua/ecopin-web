@@ -1,16 +1,16 @@
 import L from 'leaflet'
 import { resolvePrivateMedia } from '@/lib/api/private-media.mjs'
 
-// Same cached icon structure, sizes, anchors and selection states as PublicMap.
-const CATEGORY_IMAGES = { others: 'https://images.unsplash.com/photo-1473448912268-2022ce9509d8?auto=format&fit=crop&w=120&q=70' }
-const getReportImage = report => report?.image || CATEGORY_IMAGES.others
+// No-photo placeholder icon (ImageOff style - square with diagonal line)
+const NO_PHOTO_ICON = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iOCIgZmlsbD0iI0U1RTdFQiIvPgo8cGF0aCBkPSJNMTAgMTBoMjB2MjBIMTB6IiBzdHJva2U9IiM5Q0EzQUYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CjxwYXRoIGQ9Ik04IDhsMjQgMjQiIHN0cm9rZT0iIzlDQTNBRiIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+'
+
 const pinIconCache = new Map()
 
 class PhotoPinIcon extends L.DivIcon {
   createIcon(oldIcon) {
     const element = super.createIcon(oldIcon)
     const image = element.querySelector('img')
-    image?.addEventListener('error', () => { image.src = CATEGORY_IMAGES.others }, { once: true })
+    image?.addEventListener('error', () => { image.src = NO_PHOTO_ICON }, { once: true })
     return element
   }
 }
@@ -19,13 +19,16 @@ class PhotoPinIcon extends L.DivIcon {
 export const createPinIcon = (imageOrUrl, isSelected = false, isDark = false, status = null, isCluster = false) => {
   let imageUrl = imageOrUrl
   if (typeof imageOrUrl === 'object' && imageOrUrl !== null) {
-    imageUrl = getReportImage(imageOrUrl)
+    imageUrl = imageOrUrl?.image || null
     if (!status && imageOrUrl.status) status = imageOrUrl.status
-  } else if (typeof imageOrUrl === 'number' || !imageOrUrl) {
-    imageUrl = CATEGORY_IMAGES.others
   }
 
-  const fallbackImage = CATEGORY_IMAGES.others
+  // Use no-photo placeholder if no image available
+  if (!imageUrl) {
+    imageUrl = NO_PHOTO_ICON
+  }
+
+  const fallbackImage = NO_PHOTO_ICON
   let isPublicImage = false
   try {
     isPublicImage = ['http:', 'https:'].includes(new URL(imageUrl, window.location.origin).protocol) && resolvePrivateMedia(imageUrl, process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_BACKEND_API_URL) === undefined

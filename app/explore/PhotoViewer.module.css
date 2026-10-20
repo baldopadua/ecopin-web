@@ -9,6 +9,8 @@
 .photos { min-width: 0; padding: 24px; background: var(--landing-soft); }
 .imageStage { position: relative; height: clamp(280px, 48vh, 540px); display: grid; place-items: center; background: var(--landing-bg); border: 1px solid var(--landing-border); border-radius: 16px; overflow: hidden; }
 .image { width: 100%; height: 100%; object-fit: contain; }
+.noPhotoPlaceholder { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: var(--landing-muted); }
+.noPhotoPlaceholder span { font-size: 14px; }
 .viewer .photoArrow { position: absolute; top: 50%; translate: 0 -50%; width: 44px; height: 44px; background: var(--landing-bg); color: var(--landing-text); border: 1px solid var(--landing-border); border-radius: 50%; box-shadow: 0 4px 16px #00000015; display: grid; place-items: center; }
 .previous { left: 12px; }
 .next { right: 12px; }
