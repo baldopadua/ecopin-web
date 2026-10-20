@@ -7,6 +7,7 @@ const hooks = registerHooks({ resolve(specifier, context, next) {
   return next(specifier, context);
 } });
 const route = await import('../app/api/session/[[...action]]/route.js');
+const proxy = await import('../app/api/backend/[...path]/route.js');
 hooks.deregister();
 
 const envKeys = ['SESSION_REDIS_REST_URL', 'SESSION_REDIS_REST_TOKEN', 'SESSION_ENCRYPTION_KEY', 'FRONTEND_URL', 'UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN', 'BACKEND_API_URL'];
@@ -27,7 +28,7 @@ function fakeServices(t, { loginFailure = false, temporary = false } = {}) {
   const calls = [];
   t.mock.method(globalThis, 'fetch', async (url, options) => {
     const target = new URL(String(url));
-    const body = JSON.parse(options.body || 'null');
+    const body = JSON.parse(options.body instanceof Uint8Array ? new TextDecoder().decode(options.body) : options.body || 'null');
     calls.push({ target: target.href, options, body });
     if (target.hostname === 'quota.example.invalid') return Response.json({ result: [1, 0] });
     if (target.hostname === 'sessions.example.invalid') {
@@ -39,6 +40,8 @@ function fakeServices(t, { loginFailure = false, temporary = false } = {}) {
       return Response.json({ result });
     }
     if (target.hostname === 'backend.example.invalid') {
+      if (target.pathname === '/api/cleanup-tasks/custom') return Response.json({ message: 'synthetic private backend detail', status: 'conflict', reason: 'stale_or_blocked_report' }, { status: 409 });
+      if (target.pathname === '/api/optimization/blocks') return Response.json([]);
       if (target.pathname === '/api/auth/login') {
         if (loginFailure) return Response.json({ error: 'synthetic upstream secret detail', stack: 'synthetic stack' }, { status: 500 });
         return Response.json({ token: 'synthetic-access-token', session: { refresh_token: 'synthetic-refresh-token' }, requirePasswordChange: temporary });
@@ -57,6 +60,28 @@ const loginRequest = (body, origin = 'https://web.example.invalid') => new Reque
   method: 'POST', headers: { Origin: origin, 'Content-Type': 'application/json' }, body: JSON.stringify(body),
 });
 const context = action => ({ params: Promise.resolve({ action }) });
+
+test('dispatch conflicts remain 409 with safe refresh guidance, not a gateway failure', async t => {
+  fakeServices(t);
+  const login = await route.POST(loginRequest({ email: 'person@example.invalid', password: 'synthetic-password' }), context(['login']));
+  const cookie = login.headers.get('set-cookie').split(';', 1)[0];
+  const response = await proxy.POST(new Request('https://web.example.invalid/api/backend/api/cleanup-tasks/custom', {
+    method: 'POST', headers: { Cookie: cookie, Origin: 'https://web.example.invalid', 'Content-Type': 'application/json' }, body: JSON.stringify({ report_ids: ['report-1'] }),
+  }));
+  assert.equal(response.status, 409);
+  const text = await response.text();
+  assert.match(text, /refresh/i);
+  assert.doesNotMatch(text, /synthetic private backend detail|stale_or_blocked_report/);
+});
+
+test('dispatch block lookup reaches the authenticated backend', async t => {
+  const { calls } = fakeServices(t);
+  const login = await route.POST(loginRequest({ email: 'person@example.invalid', password: 'synthetic-password' }), context(['login']));
+  const cookie = login.headers.get('set-cookie').split(';', 1)[0];
+  const response = await proxy.GET(new Request('https://web.example.invalid/api/backend/api/optimization/blocks', { headers: { Cookie: cookie } }));
+  assert.equal(response.status, 200);
+  assert.ok(calls.some(call => call.target.endsWith('/api/optimization/blocks') && call.options.headers.Authorization === 'Bearer synthetic-access-token'));
+});
 
 test('login returns only public session metadata, never backend tokens', async t => {
   const { calls } = fakeServices(t);

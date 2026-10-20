@@ -11,7 +11,7 @@ const now = new Date().toISOString()
 const users = Array.from({ length: 40 }, (_, i) => ({ id: `user-${i}`, full_name: `Pasig Staff ${i + 1}`, email: `staff${i + 1}@example.test`, role: i % 2 ? 'officer' : 'citizen', created_at: now }))
 const reports = Array.from({ length: 40 }, (_, i) => ({ id: `report-${i}`, title: `Reported waste near residential block ${i + 1}`, description: 'Waste near a neighborhood drainage inlet.', issue_type: 'waste', status: i % 2 ? 'unresolved' : 'in_progress', validation_status: 'approved', created_at: now, latitude: 14.6, longitude: 121.08, cluster_id: `zone-${i % 12}`, lifecycle_stage: 'assigned' }))
 const clusters = Array.from({ length: 20 }, (_, i) => ({ id: `zone-${i}`, label: `Neighborhood hotzone ${i + 1}`, severity: 'high', issue_type: 'waste', status: 'unresolved', report_count: 4, priority_score: 80, radius_meters: 80, centroid_lat: 14.6, centroid_lng: 121.08, report_ids: ['report-0'], reports: reports.slice(0, 4) }))
-const tasks = Array.from({ length: 16 }, (_, i) => ({ id: `task-${i}`, title: `Neighborhood cleanup ${i + 1}`, description: 'Inspect the drainage inlet and clear reported waste.', status: 'in_progress', created_at: now, report_ids: ['report-0'], assigned_crew_ids: ['user-1'], reports: reports.slice(0, 2) }))
+const tasks = Array.from({ length: 16 }, (_, i) => ({ id: `task-${i}`, title: `Neighborhood cleanup ${i + 1}`, cluster_id: 'zone-0', description: 'Inspect the drainage inlet and clear reported waste.', status: 'in_progress', created_at: now, report_ids: ['report-0'], assigned_crew_ids: ['user-1'], reports: reports.slice(0, 2) }))
 const logs = Array.from({ length: 60 }, (_, i) => ({ id: `log-${i}`, created_at: now, user_name: 'Pasig Staff', user_id: 'user-1', event_type: 'profile_updated', entity_type: 'profile', entity_id: 'user-1', event_data: { action: 'Role updated' }, profiles: users[1], action_type: 'profile_update', action_details: 'Updated account information', ip_address: '127.0.0.1' }))
 const runs = Array.from({ length: 30 }, (_, i) => ({ id: `run-${i}`, status: 'approved', created_at: now, num_tasks_optimized: 4, num_crews: 2, routes: [], weather_condition: 'normal', traffic_condition: 'low' }))
 const workTimes = { waste: 30, flooding: 45, pollution: 20, infrastructure: 35, illegal_logging: 25, pending: 40, others: 15 }
@@ -43,6 +43,7 @@ async function fixtures(context, role) {
     if (pathname.endsWith('/optimization/crews')) return json([{ id: 'crew-1', name: 'Pasig cleanup team', status: 'available', shift_start: '08:00', shift_end: '17:00', max_tasks_per_shift: 10, members: [users[1]], supports_standard: true }])
     if (pathname.endsWith('/cleanup-tasks')) return json(tasks)
     if (pathname.match(/\/cleanup-tasks\/task-\d+$/)) return json({ ...tasks[0], reports: reports.slice(0, 2) })
+    if (pathname.match(/\/reports\/cluster\/zone-\d+$/)) return json(reports.slice(0, 4))
     if (pathname.endsWith('/clusters')) return json(clusters)
     if (pathname.match(/\/clusters\/zone-\d+$/)) return json({ ...clusters[0], reports: reports.slice(0, 4) })
     if (/work-queue|\/queue$/.test(pathname)) return json(clusters)
@@ -182,7 +183,9 @@ async function run() {
           if (route === 'officer/reports') {
             const open = page.getByRole('button', { name: 'Open Reported waste near residential block 1 details', exact: true })
             await open.hover()
-            assert.equal(await open.evaluate(element => getComputedStyle(element).backgroundColor), 'rgba(0, 0, 0, 0)', 'Row action does not cover its title on hover')
+            const titleCell = await open.locator('xpath=ancestor::tr/td[1]').boundingBox()
+            const action = await open.boundingBox()
+            assert.ok(action.x >= titleCell.x + titleCell.width, 'Detail action does not cover the title')
             await open.focus()
             await page.keyboard.press('Enter')
             await page.waitForURL('**/dashboard/raw-data/report-0')
@@ -197,4 +200,5 @@ async function run() {
     await browser.close()
   }
 }
-run().catch(error => { console.error(error); process.exitCode = 1 })
+module.exports = { fixtures }
+if (require.main === module) run().catch(error => { console.error(error); process.exitCode = 1 })

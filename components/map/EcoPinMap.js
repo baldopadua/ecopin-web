@@ -559,6 +559,7 @@ export default function EcoPinMap({ reports: externalReports, centerLat, centerL
               selectionMode={selectionMode}
               onClusterSelect={onClusterSelect}
               clusterReportsMap={filteredClusterReports}
+              selectedReports={selectedReports}
               onClusterClick={(clusterId) => {
                 if (selectionMode && onClusterSelect) {
                   const memberReports = filteredClusterReports[clusterId]
