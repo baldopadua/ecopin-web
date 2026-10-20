@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation'
 import { useUser } from '../auth/UserContext'
 import styles from './DashboardShell.module.css'
 import { useTask } from '../context/TaskContext'
+import { useNavigationLoading } from '../context/NavigationLoadingContext'
 import {
     Menu,
     X,
@@ -77,6 +78,7 @@ export default function Sidebar() {
     const [drawerOpen, setDrawerOpen] = useState(false)
     const drawer = useRef(null)
     const menuButton = useRef(null)
+    const { startLoading } = useNavigationLoading()
     const navigation = user?.role === 'admin' ? adminNavigation
         : user?.role === 'officer' ? officerNavigation
         : user?.role === 'field_crew' ? fieldCrewNavigation : citizenNavigation
@@ -89,6 +91,13 @@ export default function Sidebar() {
         desktop.addEventListener('change', closeOnDesktop)
         return () => desktop.removeEventListener('change', closeOnDesktop)
     }, [])
+
+    const handleNavClick = (href, mobile = false) => {
+        if (mobile) closeDrawer()
+        if (pathname !== href) {
+            startLoading(href)
+        }
+    }
 
     const content = (collapsed, mobile = false) => <aside className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''}`}>
         <div className={styles.brand}>
@@ -110,7 +119,7 @@ export default function Sidebar() {
                 const Icon = isOpt ? Loader2 : item.icon
                 return <Link key={item.href} href={item.href} aria-current={active ? 'page' : undefined}
                     aria-label={collapsed ? item.name : undefined} title={collapsed ? item.name : undefined}
-                    onClick={mobile ? closeDrawer : undefined} className={`${styles.navLink} ${active ? styles.active : ''}`}>
+                    onClick={() => handleNavClick(item.href, mobile)} className={`${styles.navLink} ${active ? styles.active : ''}`}>
                     <Icon aria-hidden="true" size={20} strokeWidth={1.75} className={isOpt ? 'animate-spin' : ''} />
                     {!collapsed && <span>{item.name}</span>}
                     {isOpt && <span className="sr-only">Planning in progress</span>}
@@ -118,7 +127,7 @@ export default function Sidebar() {
             })}
         </nav>
         <div className={styles.account}>
-            <Link href="/dashboard/profile" className={styles.profile} onClick={mobile ? closeDrawer : undefined}
+            <Link href="/dashboard/profile" className={styles.profile} onClick={() => handleNavClick('/dashboard/profile', mobile)}
                 aria-label={collapsed ? `Profile for ${user?.full_name || user?.email || 'your account'}` : undefined}>
                 {user?.avatar_url ? <SecureImage src={user.avatar_url} alt="" className={styles.avatar} />
                     : <img src={`https://ui-avatars.com/api/?name=${user?.full_name || user?.email || 'User'}&background=random&color=fff&size=128`} alt="" className={styles.avatar} />}

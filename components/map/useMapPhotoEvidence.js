@@ -4,7 +4,8 @@ import { fetchBatchReportEvidence } from '@/lib/api/reports'
 export default function useMapPhotoEvidence(reports, enabled) {
   const [photos, setPhotos] = useState({})
   const loaded = useRef(new Set())
-  const idsKey = JSON.stringify(enabled ? [...new Set(reports.map(report => report.id).filter(Boolean))].sort() : [])
+  const eligibleReports = reports.filter(report => report.location_precision !== 'approximate')
+  const idsKey = JSON.stringify(enabled ? [...new Set(eligibleReports.map(report => report.id).filter(Boolean))].sort() : [])
   
   console.log('[useMapPhotoEvidence] enabled:', enabled, 'reports count:', reports.length, 'idsKey:', idsKey.substring(0, 100))
   
