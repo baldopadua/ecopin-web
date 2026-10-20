@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { fetchFilteredReports, fetchAvailableCrew, fetchReportsByClusterId, fetchCleanupTasks, fetchDispatchBlocks } from '@/lib/api'
 import { createCustomCleanupTask } from '@/lib/api'
 import { readSessionKey, triggerSessionExpired } from '@/lib/auth-token.mjs'
+import { getPreviewReportIds } from '@/lib/cleanup-task-dispatch.mjs'
 import { backendFetch as fetch } from '../../../../../lib/backend-fetch.mjs'
 import PageHeader from '@/components/layout/PageHeader'
 import PageTabs from '@/components/ui/PageTabs'
@@ -60,6 +61,7 @@ function CustomMap({ selectedReports, allowedReportIds, onReportSelect, onCluste
     <div className={styles.map}>
       <EcoPinMap 
         reports={reports}
+        photoPins={true}
         centerLat={mapCenter?.lat}
         centerLng={mapCenter?.lng}
         initialStatus="unresolved"
@@ -487,29 +489,7 @@ export default function CreateCleanupTaskPage() {
         const pScore = task.primary_priority;
         const priorityStr = pScore >= 15 ? 'high' : pScore >= 8 ? 'medium' : 'low';
         
-        let primaryReportIds = []
-        if (task.primary_target_is_cluster) {
-          // If primary target is a cluster, resolve it to its constituent reports
-          try {
-            const clusterReports = await fetchReportsByClusterId(task.primary_target_id)
-            if (Array.isArray(clusterReports) && clusterReports.length > 0) {
-              primaryReportIds = clusterReports.map(r => r.id)
-            } else if (Array.isArray(task.included_reports) && task.included_reports.length > 0) {
-              primaryReportIds = task.included_reports.map(r => r.report_id)
-            } else {
-              primaryReportIds = [task.primary_target_id]
-            }
-          } catch {
-            primaryReportIds = Array.isArray(task.included_reports) && task.included_reports.length > 0
-              ? task.included_reports.map(r => r.report_id)
-              : [task.primary_target_id]
-          }
-        } else {
-          primaryReportIds = [task.primary_target_id]
-        }
-
-        const detourReportIds = (task.included_reports || []).map(r => r.report_id)
-        const combinedReportIds = [...new Set([...primaryReportIds, ...detourReportIds])]
+        const combinedReportIds = getPreviewReportIds(task)
 
         // Resolve crew team IDs to individual member profile IDs
         const taskMemberIds = []
@@ -531,6 +511,7 @@ export default function CreateCleanupTaskPage() {
           field_crew_id: task.assigned_crew_ids[0] || null,
           assigned_crew_ids: uniqueCrewMemberIds
         })
+        setGeneratedTasks(previous => previous?.filter(proposal => proposal !== task) || [])
       }
       
       setNotification({ message: 'Tasks dispatched successfully!', type: 'success' })
@@ -539,6 +520,10 @@ export default function CreateCleanupTaskPage() {
       }, 1500)
     } catch (error) {
       reportDiagnostic('error', 'dispatch', error)
+      if (error?.status === 409) {
+        setGeneratedTasks(null)
+        setAutoView('setup')
+      }
       const message = error?.message || 'Error dispatching tasks'
       setNotification({ message, type: 'error' })
     } finally {

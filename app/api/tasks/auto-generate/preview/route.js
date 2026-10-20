@@ -37,7 +37,7 @@ async function authorizePreview(req) {
       return deny(503, 'Unable to verify session')
     }
     if (user.role !== 'officer') return deny(403, 'Officer access required')
-    return { id: user.id }
+    return { id: user.id, accessToken: session.accessToken }
   } catch {
     return deny(503, 'Unable to verify session')
   }
@@ -307,6 +307,13 @@ export function validateAndSanitizeTasks(tasks, authorizedTargets, authorizedRep
         priority_score: priority
       })
     }
+    if (isCluster) {
+      for (const reportId of targetInfo.report_ids || []) {
+        if (!sanitizedIncluded.some(report => report.report_id === reportId)) {
+          sanitizedIncluded.push({ report_id: reportId, detour_time_minutes: 0, priority_score: primaryPriority })
+        }
+      }
+    }
 
     sanitized.push({
       primary_target_id: primaryTargetId,
@@ -363,18 +370,25 @@ export async function POST(req) {
     }
 
     const backendUrl = (process.env.NEXT_PUBLIC_BACKEND_API_URL || '').replace(/\/$/, '')
-    const authHeader = req.headers.get('authorization') || ''
-
-    const [tasksRes, blocksRes] = await Promise.all([
-      fetch(`${backendUrl}/api/cleanup-tasks`, {
-        headers: { Authorization: authHeader },
-        cache: 'no-store'
-      }).then(r => r.ok ? r.json() : []).catch(() => []),
-      fetch(`${backendUrl}/api/optimization/blocks`, {
-        headers: { Authorization: authHeader },
-        cache: 'no-store'
-      }).then(r => r.ok ? r.json() : []).catch(() => [])
-    ])
+    const availabilityDeadline = AbortSignal.any([AbortSignal.timeout(5000), req.signal])
+    const readAvailability = async path => {
+      const response = await fetch(`${backendUrl}${path}`, {
+        headers: { Authorization: `Bearer ${authorization.accessToken}` },
+        cache: 'no-store', redirect: 'error', signal: availabilityDeadline
+      })
+      if (!response.ok) throw new Error('Report availability lookup failed')
+      const data = await readBoundedJson(response.body, 2 * 1024 * 1024, availabilityDeadline)
+      if (!Array.isArray(data)) throw new Error('Invalid report availability response')
+      return data
+    }
+    let tasksRes, blocksRes
+    try {
+      ;[tasksRes, blocksRes] = await Promise.all([
+        readAvailability('/api/cleanup-tasks'), readAvailability('/api/optimization/blocks')
+      ])
+    } catch (error) {
+      return previewFailure(503, 'Unable to verify report availability. Please try generating the preview again.', error)
+    }
 
     const activeTasks = Array.isArray(tasksRes) ? tasksRes.filter(t => !['completed', 'cancelled'].includes(t.status)) : []
     const claimedReportIds = new Set(activeTasks.flatMap(t => t.report_ids || []))
@@ -480,7 +494,7 @@ export async function POST(req) {
     const authorizedReportIds = new Set()
 
     for (const c of clusterTargets) {
-      authorizedTargets.set(c.id, { is_cluster: true })
+      authorizedTargets.set(c.id, { is_cluster: true, report_ids: c.report_ids })
       for (const rid of c.report_ids) {
         authorizedReportIds.add(rid)
       }

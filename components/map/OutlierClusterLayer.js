@@ -1,6 +1,6 @@
 import React from 'react';
-import { Marker, Popup } from 'react-leaflet';
-import L from 'leaflet';
+import { Popup } from 'react-leaflet';
+import ClusterMarker from './ClusterMarker';
 import wkx from 'wkx';
 import { Buffer } from 'buffer';
 
@@ -45,60 +45,14 @@ const normalizeString = (str) => {
 import { useRouter } from 'next/navigation';
 import { reportDiagnostic } from '../../lib/diagnostics.mjs';
 
-export default function OutlierClusterLayer({ clusters, selectedTemplate, onClusterClick, selectionMode, onClusterSelect, clusterReportsMap }) {
+export default function OutlierClusterLayer({ clusters, selectedTemplate, onClusterClick, selectionMode, onClusterSelect, clusterReportsMap, selectedReports = [] }) {
   const router = useRouter();
+  const selectedIds = new Set(selectedReports.map(String));
 
   if (!clusters || clusters.length === 0) return null;
 
   return (
     <>
-      <style jsx global>{`
-        .cluster-marker {
-          position: relative;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .cluster-border.red {
-          border: 3px solid #dc3545;
-          border-radius: 50%;
-          background: rgba(220, 53, 69, 0.2);
-          width: 40px;
-          height: 40px;
-        }
-
-        .cluster-border.blue {
-          border: 3px solid #007bff;
-          border-radius: 50%;
-          background: rgba(0, 123, 255, 0.2);
-          width: 40px;
-          height: 40px;
-        }
-
-        .cluster-content {
-          position: absolute;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 100%;
-          height: 100%;
-          font-weight: bold;
-          color: white;
-        }
-
-        .alert-icon {
-          position: absolute;
-          top: -5px;
-          right: -5px;
-          background: #ffc107;
-          border-radius: 50%;
-          padding: 2px;
-          font-size: 12px;
-          line-height: 1;
-        }
-      `}</style>
-
       {clusters.map((cluster) => {
         const center = parseGeometry(cluster.center || cluster.location)
         if (!center) return null
@@ -111,40 +65,18 @@ export default function OutlierClusterLayer({ clusters, selectedTemplate, onClus
         let opacity = 1.0;
         if (selectedTemplate === 'sweeper' && !hasSlaBreach) opacity = 0.3;
 
-        let iconHtml;
-        if (hasSlaBreach) {
-          iconHtml = `
-            <div class="cluster-marker outlier" style="opacity: ${opacity};">
-              <div class="cluster-border red"></div>
-              <div class="cluster-content">
-                <span class="alert-icon">⚠</span>
-                <span class="cluster-count text-white text-sm font-bold shadow-sm" style="text-shadow: 0 1px 3px rgba(0,0,0,0.8);">${cluster.report_count || 0}</span>
-              </div>
-            </div>
-          `;
-        } else {
-          iconHtml = `
-            <div class="cluster-marker standard" style="opacity: ${opacity};">
-              <div class="cluster-border blue"></div>
-              <div class="cluster-content">
-                <span class="cluster-count text-white text-sm font-bold shadow-sm" style="text-shadow: 0 1px 3px rgba(0,0,0,0.8);">${cluster.report_count || 0}</span>
-              </div>
-            </div>
-          `;
-        }
-
-        const icon = L.divIcon({
-          className: hasSlaBreach ? 'breached-cluster-marker' : 'standard-cluster-marker',
-          html: iconHtml,
-          iconSize: [40, 40],
-          iconAnchor: [20, 20]
-        });
+        const members = clusterReportsMap?.[cluster.id] || [];
+        const selectedCount = members.filter(report => selectedIds.has(String(report.id))).length;
 
         return (
-          <Marker
+          <ClusterMarker
             key={cluster.id}
             position={center}
-            icon={icon}
+            count={members.length || cluster.report_count || 0}
+            selectedCount={selectedCount}
+            overdue={hasSlaBreach}
+            label={`${normalizeString(cluster.issue_type) || 'Report'} cluster`}
+            opacity={opacity}
             eventHandlers={{
               click: (e) => {
                 e.originalEvent.stopPropagation();
@@ -202,7 +134,7 @@ export default function OutlierClusterLayer({ clusters, selectedTemplate, onClus
                 </div>
               </div>
             </Popup>
-          </Marker>
+          </ClusterMarker>
         );
       })}
     </>

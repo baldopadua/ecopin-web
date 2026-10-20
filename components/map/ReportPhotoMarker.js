@@ -12,8 +12,8 @@ import styles from './ReportPhotoMarker.module.css'
 function PinPhoto({ source }) {
   const [failed, setFailed] = useState(false)
   return <>
-    <ImageOff size={20} aria-hidden="true" />
-    {source && !failed && <SecureImage src={source} alt="" loading="lazy" onError={() => setFailed(true)} />}
+    {(!source || failed) && <ImageOff size={20} aria-hidden="true" />}
+    {source && !failed && <SecureImage src={source} alt="" loading="lazy" style={{ position: 'absolute', inset: 0 }} onError={() => setFailed(true)} />}
   </>
 }
 

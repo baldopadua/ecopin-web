@@ -432,6 +432,8 @@ Specialized map views in the authenticated staff portals (Officer & Field Crew: 
    - **Evidence Loading Safety**: `useMapPhotoEvidence` queries photo evidence for all reports whose location precision is not `'approximate'`, preserving privacy for private-property reports while ensuring internal task and cluster reports reliably resolve images. `ReportPhotoMarker` and `EcoPinMarker` safely fall back to preloaded `report.photo_url` / `report.image_url` / `report.image` attributes.
    - **Fallback Marker**: `createEcoPinIcon` aligns with the unified status palette (`error`, `warning`, `success`, `info`, `muted`) whenever photo rendering is disabled or unsupported.
 
+Cluster markers use the same pointed silhouette, with a 54px circular count face, an offset backing circle, and a Layers badge. SLA-breached groups retain a red border and a TriangleAlert badge. Full selection uses a blue ring; partial selection uses a dashed ring. The marker title announces the eligible report count, selected count, and overdue state. See [ClusterMarker.js](components/map/ClusterMarker.js). Group selection, popup actions, and sweeper dimming remain unchanged.
+
 ## 10. SWMO photo story
 
 Source: [LandingPage.js](components/landing/LandingPage.js) and the community styles in [LandingPage.module.css](components/landing/LandingPage.module.css).

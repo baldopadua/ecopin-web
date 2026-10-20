@@ -71,3 +71,6 @@ graphify-out/
 !/tests/role-layout.browser.cjs
 !/tests/table-design.browser.cjs
 !/tests/map-pin-consistency.test.mjs
+!/tests/cluster-markers.browser.cjs
+!/tests/dispatch-preview.test.mjs
+!/tests/web-session-routes.test.mjs
