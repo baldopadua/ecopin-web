@@ -163,8 +163,93 @@
   border-radius: 999px;
 }
 
+.viewButton {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid transparent !important;
+  border-radius: 9999px;
+  background: #0052cc !important;
+  color: white !important;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  transition: background-color 0.15s ease;
+}
+
+.viewButton:hover {
+  background: #003d99 !important;
+  color: white !important;
+}
+
+:global(.ecopin-table tbody tr:hover) .viewButton {
+  background: #0052cc !important;
+  border-color: transparent !important;
+  color: white !important;
+}
+
+:global(.ecopin-table tbody tr:hover) .viewButton:hover {
+  background: #003d99 !important;
+  color: white !important;
+}
+
+.disassembleButton {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid var(--border) !important;
+  border-radius: 9999px;
+  background: var(--surface-elevated) !important;
+  color: var(--error, #ef4444) !important;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.disassembleButton:hover {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: var(--error, #ef4444) !important;
+  color: var(--error, #ef4444) !important;
+}
+
+:global(.ecopin-table tbody tr:hover) .disassembleButton {
+  background: var(--surface-elevated) !important;
+  border-color: var(--border) !important;
+  color: var(--error, #ef4444) !important;
+}
+
+:global(.ecopin-table tbody tr:hover) .disassembleButton:hover {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: var(--error, #ef4444) !important;
+  color: var(--error, #ef4444) !important;
+}
+
+.viewButton:focus-visible,
+.disassembleButton:focus-visible {
+  outline: 3px solid var(--workspace-link, #0052cc);
+  outline-offset: 2px;
+}
+
 @media (max-width: 767px) {
   .settingsCard {
     padding: 12px;
   }
 }
+

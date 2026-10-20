@@ -1,7 +1,7 @@
 'use client'
 import SecureImage from '@/components/ui/SecureImage'
 import ImageLightbox from '@/components/ui/ImageLightbox'
-import { useEffect, useState, useRef, useMemo } from 'react'
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
   fetchReportById,
@@ -18,7 +18,7 @@ import useConfirmation from '@/components/ui/useConfirmation'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
 import { useUser } from '@/components/auth/UserContext'
-import { RefreshCw, Upload, Image as ImageIcon } from 'lucide-react'
+import { RefreshCw, Upload, Image as ImageIcon, Loader2 } from 'lucide-react'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
 import { reportDiagnostic } from '../../../../../lib/diagnostics.mjs';
@@ -61,7 +61,7 @@ export default function ReportDetailPage() {
   const [activityLogPage, setActivityLogPage] = useState(1)
   const activityLogPerPage = 10
 
-  const loadReportData = async () => {
+  const loadReportData = useCallback(async () => {
     setLoading(true)
     try {
       const [reportData, evidenceData, tasksData] = await Promise.all([
@@ -112,7 +112,7 @@ export default function ReportDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [reportId, user])
 
   const allReportPhotos = useMemo(() => {
     const list = []
@@ -139,8 +139,10 @@ export default function ReportDetailPage() {
   }
 
   useEffect(() => {
-    loadReportData()
-  }, [reportId])
+    queueMicrotask(() => {
+      void loadReportData()
+    })
+  }, [loadReportData])
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -619,7 +621,12 @@ export default function ReportDetailPage() {
               {/* Evidence Photos */}
               <div className="card">
                 <h2 className="text-xl font-bold text-text-primary mb-4">Evidence Photos</h2>
-                {evidence.length === 0 ? (
+                {loading ? (
+                  <div className="h-48 bg-surface-elevated rounded-lg flex flex-col items-center justify-center border border-dashed border-border gap-2">
+                    <Loader2 className="w-8 h-8 text-[var(--primary)] animate-spin" aria-hidden="true" />
+                    <p className="text-sm text-text-muted">Loading evidence photos...</p>
+                  </div>
+                ) : evidence.length === 0 ? (
                   <div className="h-48 bg-surface-elevated rounded-lg flex items-center justify-center border border-dashed border-border">
                     <div className="text-center">
                       <ImageIcon size={48} className="text-text-muted mx-auto mb-2" aria-hidden="true" />

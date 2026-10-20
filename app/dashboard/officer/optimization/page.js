@@ -16,7 +16,7 @@ import OptimizationSettings, { normalizeCapacitySettings } from '@/components/op
 import TemplateSelector from '@/components/ui/TemplateSelector'
 import DisassembleModal from '@/components/optimization/DisassembleModal'
 import { useTask } from '@/components/context/TaskContext'
-import { Sun, CloudRain, CloudLightning, Circle, Globe, Map, Check, CheckCircle2, XCircle, Ruler, Timer, RotateCcw, Loader2, History, AlertCircle, Info } from 'lucide-react'
+import { Sun, CloudRain, CloudLightning, Circle, Globe, Map, Check, CheckCircle2, XCircle, Ruler, Timer, RotateCcw, Loader2, History, AlertCircle, Info, Eye } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { formatStatusLabel } from '@/lib/helpers/statusHelpers'
 import styles from './optimization.module.css'
@@ -1051,7 +1051,43 @@ export default function OptimizationPage() {
                       { key: 'num_tasks_optimized', label: 'Tasks', width: '10%' },
                       { key: 'weather_condition', label: 'Weather', width: '17%', render: (value) => <span className="flex items-center gap-2">{WEATHER_OPTIONS.find(w => w.value === (value?.toLowerCase() || 'normal'))?.icon || <Sun className="w-4 h-4 text-warning" />}<span>{WEATHER_OPTIONS.find(w => w.value === (value?.toLowerCase() || 'normal'))?.label || 'Normal'}</span></span> },
                       { key: 'traffic_condition', label: 'Traffic', width: '17%', render: (value) => <span className="flex items-center gap-2">{TRAFFIC_OPTIONS.find(t => t.value === (value?.toLowerCase() || 'low'))?.icon || <Circle className="w-4 h-4 text-success fill-success" />}<span>{TRAFFIC_OPTIONS.find(t => t.value === (value?.toLowerCase() || 'low'))?.label || 'Low'}</span></span> },
-                      { key: 'actions', label: 'Actions', width: '23%', render: (_, run) => <div className="flex flex-wrap items-center gap-2"><button type="button" className="btn-secondary" onClick={() => handleViewRun(run.id)}>View</button>{run.status !== 'discarded' && <button type="button" className="btn-secondary text-error" onClick={() => handleOpenDisassemble(run.id)} title="Disassemble plan and restore backlog"><RotateCcw className="w-4 h-4" /> Disassemble</button>}</div> },
+                      { 
+                        key: 'actions', 
+                        label: 'Actions', 
+                        width: '23%', 
+                        render: (_, run) => (
+                          <div className="flex flex-wrap items-center gap-2">
+                            <button 
+                              type="button" 
+                              className={styles.viewButton} 
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleViewRun(run.id)
+                              }}
+                              aria-label={`View optimization run from ${formatDate(run.created_at)}`}
+                              title="View optimization run"
+                            >
+                              <Eye size={14} className="shrink-0" aria-hidden="true" />
+                              <span>View</span>
+                            </button>
+                            {run.status !== 'discarded' && (
+                              <button 
+                                type="button" 
+                                className={styles.disassembleButton} 
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleOpenDisassemble(run.id)
+                                }} 
+                                aria-label="Disassemble plan and restore backlog"
+                                title="Disassemble plan and restore backlog"
+                              >
+                                <RotateCcw size={14} className="shrink-0" aria-hidden="true" />
+                                <span>Disassemble</span>
+                              </button>
+                            )}
+                          </div>
+                        ) 
+                      },
                     ]}
                     data={paginatedRuns}
                     emptyMessage="No optimization runs yet. Generate your first proposal in Dispatch Settings."

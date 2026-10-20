@@ -110,20 +110,20 @@ export default function ImageLightbox({
           <button
             type="button"
             onClick={toggleZoom}
-            className="p-2 min-h-11 min-w-11 bg-black/60 text-white hover:text-secondary transition-colors rounded-full border border-white/20 hover:border-secondary"
+            className="p-2 min-h-11 min-w-11 inline-flex items-center justify-center bg-black/60 text-white hover:text-secondary transition-colors rounded-full border border-white/20 hover:border-secondary"
             aria-label={isZoomed ? 'Zoom out' : 'Zoom in'}
             title={isZoomed ? 'Zoom out' : 'Zoom in'}
           >
-            {isZoomed ? <ZoomOut className="w-5 h-5" /> : <ZoomIn className="w-5 h-5" />}
+            {isZoomed ? <ZoomOut className="w-5 h-5 shrink-0" /> : <ZoomIn className="w-5 h-5 shrink-0" />}
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="p-2 min-h-11 min-w-11 bg-black/60 text-white hover:text-secondary transition-colors rounded-full border border-white/20 hover:border-secondary"
+            className="p-2 min-h-11 min-w-11 inline-flex items-center justify-center bg-black/60 text-white hover:text-secondary transition-colors rounded-full border border-white/20 hover:border-secondary"
             aria-label="Close lightbox"
             title="Close (Esc)"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5 shrink-0" />
           </button>
         </div>
 
@@ -132,11 +132,11 @@ export default function ImageLightbox({
           <button
             type="button"
             onClick={handlePrev}
-            className="absolute left-2 sm:left-4 z-50 min-h-11 min-w-11 p-2 sm:p-3 bg-black/60 text-white hover:text-secondary transition-colors rounded-full border border-white/20 hover:border-secondary"
+            className="absolute left-2 sm:left-4 z-50 min-h-11 min-w-11 p-2 sm:p-3 inline-flex items-center justify-center bg-black/60 text-white hover:text-secondary transition-colors rounded-full border border-white/20 hover:border-secondary"
             aria-label="Previous photo"
             title="Previous (Left arrow)"
           >
-            <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8" />
+            <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8 shrink-0" />
           </button>
         )}
 
@@ -160,11 +160,11 @@ export default function ImageLightbox({
           <button
             type="button"
             onClick={handleNext}
-            className="absolute right-2 sm:right-4 z-50 min-h-11 min-w-11 p-2 sm:p-3 bg-black/60 text-white hover:text-secondary transition-colors rounded-full border border-white/20 hover:border-secondary"
+            className="absolute right-2 sm:right-4 z-50 min-h-11 min-w-11 p-2 sm:p-3 inline-flex items-center justify-center bg-black/60 text-white hover:text-secondary transition-colors rounded-full border border-white/20 hover:border-secondary"
             aria-label="Next photo"
             title="Next (Right arrow)"
           >
-            <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8" />
+            <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8 shrink-0" />
           </button>
         )}
 
