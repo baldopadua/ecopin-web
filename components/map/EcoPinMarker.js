@@ -42,6 +42,9 @@ export default function EcoPinMarker({ report, position, isRemoving = false, isS
   const photoSource = photo || report?.photo_url || report?.file_url || report?.image_url || report?.image
   const MarkerView = photoPin ? ReportPhotoMarker : Marker
   const photoProps = photoPin ? { report, image: photoSource, selected: isSelected, removing: isRemoving } : {}
+  
+  console.log(`[EcoPinMarker] Report ${report.id}: photoPin=${photoPin}, photoSource=${photoSource ? 'has photo' : 'no photo'}`)
+  
   return (
     <MarkerView {...photoProps}
       position={position}

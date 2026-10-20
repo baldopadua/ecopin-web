@@ -454,6 +454,8 @@ export default function EcoPinMap({ reports: externalReports, centerLat, centerL
     !(report.cluster_id && renderedClusterIds.has(report.cluster_id) && !hideClusters && showClusters && zoom <= 15)
   ), [photoPins, showPins, mapBounds, processedReportsInfo, renderedClusterIds, hideClusters, showClusters, zoom])
   const pinPhotos = useMapPhotoEvidence(visiblePhotoReports, photoPins)
+  
+  console.log('[EcoPinMap] photoPins:', photoPins, 'visiblePhotoReports:', visiblePhotoReports.length, 'pinPhotos:', Object.keys(pinPhotos).length)
 
   if (!mounted) return (
     <div className="h-full w-full flex items-center justify-center bg-surface dark:bg-[#000000] transition-colors duration-300">
