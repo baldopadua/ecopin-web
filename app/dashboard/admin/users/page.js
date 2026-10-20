@@ -11,7 +11,7 @@ import PageTabs from '@/components/ui/PageTabs'
 import useTablePageSize from '@/components/ui/useTablePageSize'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { getAllUsers, updateUserRole, deleteUser, createUser, getSystemSettings, changeUserPassword } from '@/lib/api'
-import { Eye, EyeOff, KeyRound, Trash2, Loader2, Users, UserPlus } from 'lucide-react'
+import { Eye, EyeOff, KeyRound, Trash2, Loader2, Users, UserPlus, Shield, UserCheck, AlertCircle, Sparkles, CheckCircle2, RotateCcw } from 'lucide-react'
 import styles from './UserActions.module.css'
 import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
 
@@ -32,6 +32,7 @@ function UserManagementContent() {
   const [deletingUser, setDeletingUser] = useState(null)
   const [creatingUser, setCreatingUser] = useState(false)
   const [newUser, setNewUser] = useState({ email: '', password: '', full_name: '', role: 'citizen' })
+  const [showCreateConfirmModal, setShowCreateConfirmModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [userToDelete, setUserToDelete] = useState(null)
   const [passwordSettings, setPasswordSettings] = useState({
@@ -150,11 +151,19 @@ function UserManagementContent() {
     }
   }
 
-  const handleCreateUser = async () => {
-    const { email, password, full_name, role } = newUser
+  const handleInitiateCreateUser = (e) => {
+    if (e) e.preventDefault()
+    const { email, full_name, password } = newUser
 
     if (!email || !full_name) {
       setNotification({ message: 'Please fill in all required fields (Email and Full Name)', type: 'error' })
+      return
+    }
+
+    // Basic email format check
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      setNotification({ message: 'Please enter a valid email address', type: 'error' })
       return
     }
 
@@ -166,11 +175,18 @@ function UserManagementContent() {
       }
     }
 
+    setShowCreateConfirmModal(true)
+  }
+
+  const handleConfirmCreateUser = async () => {
+    const { email, password, full_name, role } = newUser
+
     try {
       setCreatingUser(true)
       await createUser({ email, password, full_name, role })
-      setNotification({ message: 'User created successfully', type: 'success' })
+      setNotification({ message: `User "${full_name}" registered successfully as ${role}`, type: 'success' })
       setNewUser({ email: '', password: '', full_name: '', role: 'citizen' })
+      setShowCreateConfirmModal(false)
       setActiveTab('users')
       loadUsers()
     } catch (err) {
@@ -451,110 +467,272 @@ function UserManagementContent() {
         </div>
       )}
 
+      {/* Create User Confirmation Modal */}
+      {showCreateConfirmModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="card max-w-lg w-full shadow-2xl border border-border p-6 bg-surface">
+            <div className="flex items-center gap-3 mb-4 text-primary">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <UserCheck size={22} className="text-primary" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-text-primary">Confirm Account Registration</h3>
+                <p className="text-xs text-text-secondary">Please review and verify user credentials before provisioning access.</p>
+              </div>
+            </div>
+
+            <div className="space-y-3 bg-surface-elevated/70 p-4 rounded-xl border border-border/80 my-4 text-sm">
+              <div className="flex justify-between items-center py-1 border-b border-border/50">
+                <span className="text-text-secondary font-medium">Full Name</span>
+                <span className="text-text-primary font-semibold">{newUser.full_name}</span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-border/50">
+                <span className="text-text-secondary font-medium">Email Address</span>
+                <span className="text-text-primary font-mono">{newUser.email}</span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-border/50">
+                <span className="text-text-secondary font-medium">Assigned Role</span>
+                <StatusBadge type="role" status={newUser.role} label={newUser.role.replace('_', ' ').toUpperCase()} />
+              </div>
+              <div className="flex justify-between items-center py-1">
+                <span className="text-text-secondary font-medium">Initial Password</span>
+                <span className="text-text-primary text-xs">
+                  {newUser.password ? (
+                    <span className="font-mono bg-surface px-2 py-0.5 rounded border border-border">Custom Specified</span>
+                  ) : (
+                    <span className="text-text-muted italic">System Default (12345678Aa@)</span>
+                  )}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2.5 p-3 rounded-lg bg-info/10 text-info text-xs mb-5">
+              <AlertCircle size={16} className="shrink-0 mt-0.5" />
+              <span>The account will be activated immediately. The user will be required to change their temporary password upon their initial login.</span>
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() => setShowCreateConfirmModal(false)}
+                disabled={creatingUser}
+                className="btn-secondary"
+              >
+                Back to Edit
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmCreateUser}
+                disabled={creatingUser}
+                className="btn-primary flex items-center gap-2"
+              >
+                {creatingUser ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Provisioning Account...
+                  </>
+                ) : (
+                  <>
+                    <UserPlus size={16} />
+                    Confirm & Create User
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <PageTabs label="User management" tabs={[{ id: 'users', label: 'Users', icon: Users }, { id: 'create', label: 'Create user', icon: UserPlus }]} value={activeTab} onChange={setActiveTab} />
 
       {activeTab === 'create' ? (
-      <section role="tabpanel" id="create-panel" aria-labelledby="create-tab" className="workspace-panel workspace-fill">
-        <div className="workspace-scroll">
-        <div>
-          <h2 className="text-lg font-semibold text-text-primary mb-4">Create new user</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="create-user-email" className="block text-sm font-medium text-text-secondary mb-2">Email *</label>
-              <input
-                id="create-user-email"
-                type="email"
-                value={newUser.email}
-                onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
-                className="input"
-                placeholder="user@example.com"
-              />
-            </div>
-            <div>
-              <label htmlFor="create-user-password" className="block text-sm font-medium text-text-secondary mb-2">Password</label>
-              <div className="relative">
-                <input
-                  id="create-user-password"
-                  type={showCreatePassword ? 'text' : 'password'}
-                  value={newUser.password}
-                  onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
-                  className="input pr-10"
-                  placeholder="Leave blank for default: 12345678Aa@"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowCreatePassword(!showCreatePassword)}
-                  aria-label={showCreatePassword ? 'Hide password' : 'Show password'}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors flex items-center justify-center p-1"
-                >
-                  {showCreatePassword ? (
-                    <EyeOff size={20} aria-hidden="true" />
-                  ) : (
-                    <Eye size={20} aria-hidden="true" />
-                  )}
-                </button>
+      <section role="tabpanel" id="create-panel" aria-labelledby="create-tab" className="workspace-fill overflow-hidden">
+        <div className="card p-6 w-full flex-1 flex flex-col justify-between overflow-hidden">
+          <form onSubmit={handleInitiateCreateUser} className="flex-1 flex flex-col justify-between gap-5">
+            {/* Header info */}
+            <div className="border-b border-border pb-4 flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-bold text-text-primary flex items-center gap-2">
+                  <UserPlus size={20} className="text-primary" />
+                  Register New User Account
+                </h2>
+                <p className="text-xs text-text-secondary mt-0.5">
+                  Provision new credentials for Pasig City personnel, field responders, or local residents.
+                </p>
               </div>
-              <p className="text-xs text-error mt-1">
-                This will be a temporary password. The user will be required to change it on their next login.
-              </p>
-            </div>
-            <div>
-              <label htmlFor="create-user-name" className="block text-sm font-medium text-text-secondary mb-2">Full name</label>
-              <input
-                id="create-user-name"
-                type="text"
-                value={newUser.full_name}
-                onChange={(e) => setNewUser(prev => ({ ...prev, full_name: e.target.value }))}
-                className="input"
-                placeholder="John Doe"
-              />
-            </div>
-            <div>
-              <label htmlFor="create-user-role" className="block text-sm font-medium text-text-secondary mb-2">Role *</label>
-              <select
-                id="create-user-role"
-                value={newUser.role}
-                onChange={(e) => setNewUser(prev => ({ ...prev, role: e.target.value }))}
-                className="input"
+              <button
+                type="button"
+                onClick={() => setNewUser({ email: '', password: '', full_name: '', role: 'citizen' })}
+                className="btn-secondary text-xs py-1.5 px-3 min-h-0 flex items-center gap-1.5"
               >
-                <option value="citizen">Citizen</option>
-                <option value="officer">Officer</option>
-                <option value="field_crew">Field Crew</option>
-                <option value="admin">Admin</option>
-              </select>
+                <RotateCcw size={13} />
+                Clear Form
+              </button>
             </div>
-          </div>
 
-          {newUser.password && (
-            <div className="mt-4">
-              <p className="text-sm font-medium text-text-secondary mb-2">Password Requirements:</p>
-              <ul className="text-sm space-y-1">
-                {validatePassword(newUser.password).requirements.map((req, i) => (
-                  <li key={i} className={`flex items-center gap-2 ${req.met ? 'text-success' : 'text-error'}`}>
-                    <span>{req.met ? '✓' : '✗'}</span>
-                    {req.text}
-                  </li>
-                ))}
-              </ul>
+            {/* Basic Info (Full Name + Email) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label htmlFor="create-user-name" className="block text-xs font-semibold text-text-primary mb-1.5">
+                  Full Name <span className="text-error">*</span>
+                </label>
+                <input
+                  id="create-user-name"
+                  type="text"
+                  required
+                  value={newUser.full_name}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, full_name: e.target.value }))}
+                  className="input w-full text-sm"
+                  placeholder="e.g. Maria Santos"
+                />
+                <p className="text-[11px] text-text-muted mt-1">Official display name for records and dispatch rosters.</p>
+              </div>
+
+              <div>
+                <label htmlFor="create-user-email" className="block text-xs font-semibold text-text-primary mb-1.5">
+                  Email Address <span className="text-error">*</span>
+                </label>
+                <input
+                  id="create-user-email"
+                  type="email"
+                  required
+                  value={newUser.email}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+                  className="input w-full text-sm"
+                  placeholder="e.g. maria.santos@pasigcity.gov.ph"
+                />
+                <p className="text-[11px] text-text-muted mt-1">Direct login identifier for authentication and notifications.</p>
+              </div>
             </div>
-          )}
 
-          <div className="mt-6 flex gap-3">
-            <button
-              onClick={handleCreateUser}
-              disabled={creatingUser}
-              className="btn-primary"
-            >
-              {creatingUser ? 'Creating...' : 'Create User'}
-            </button>
-            <button
-              onClick={() => setShowCreateForm(false)}
-              className="btn-secondary"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
+            {/* Role Selection with Cards */}
+            <div>
+              <label className="block text-xs font-semibold text-text-primary mb-2">
+                Account Role & Access Level <span className="text-error">*</span>
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {[
+                  {
+                    id: 'citizen',
+                    label: 'Citizen',
+                    badge: 'bg-emerald-500/10 text-emerald-600',
+                    desc: 'Submit incident reports, track statuses, and view community map pins.'
+                  },
+                  {
+                    id: 'field_crew',
+                    label: 'Field Crew',
+                    badge: 'bg-amber-500/10 text-amber-600',
+                    desc: 'Accept field workorders, perform cleanups, and submit photo evidence.'
+                  },
+                  {
+                    id: 'officer',
+                    label: 'Officer',
+                    badge: 'bg-blue-500/10 text-blue-600',
+                    desc: 'Validate citizen reports, dispatch field crews, and generate hotzone runs.'
+                  },
+                  {
+                    id: 'admin',
+                    label: 'Administrator',
+                    badge: 'bg-purple-500/10 text-purple-600',
+                    desc: 'Full platform privileges, user management, audit logs, and system settings.'
+                  }
+                ].map((roleOption) => {
+                  const isSelected = newUser.role === roleOption.id
+                  return (
+                    <button
+                      type="button"
+                      key={roleOption.id}
+                      onClick={() => setNewUser(prev => ({ ...prev, role: roleOption.id }))}
+                      className={`text-left p-3.5 rounded-xl border-2 transition-all flex flex-col justify-between ${
+                        isSelected
+                          ? 'border-primary bg-primary/5 shadow-xs'
+                          : 'border-border bg-surface hover:border-border-hover hover:bg-surface-elevated/40'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="font-semibold text-text-primary text-xs">{roleOption.label}</span>
+                        {isSelected ? (
+                          <CheckCircle2 size={16} className="text-primary" />
+                        ) : (
+                          <span className={`w-2 h-2 rounded-full ${roleOption.badge}`} />
+                        )}
+                      </div>
+                      <p className="text-[11px] text-text-secondary leading-snug">{roleOption.desc}</p>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Password Configuration */}
+            <div className="rounded-xl border border-border bg-surface-elevated/30 p-4 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-xs font-semibold text-text-primary flex items-center gap-1.5">
+                    <KeyRound size={15} className="text-primary" />
+                    Temporary Password Provisioning
+                  </h3>
+                  <p className="text-[11px] text-text-secondary mt-0.5">
+                    Leave blank to assign system default: <code className="bg-surface px-1.5 py-0.5 rounded border border-border font-mono text-text-primary">12345678Aa@</code>
+                  </p>
+                </div>
+
+                <div className="relative w-full sm:w-80">
+                  <input
+                    id="create-user-password"
+                    type={showCreatePassword ? 'text' : 'password'}
+                    value={newUser.password}
+                    onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
+                    className="input pr-9 w-full text-xs"
+                    placeholder="Optional custom temporary password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCreatePassword(!showCreatePassword)}
+                    aria-label={showCreatePassword ? 'Hide password' : 'Show password'}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors flex items-center justify-center p-1"
+                  >
+                    {showCreatePassword ? (
+                      <EyeOff size={16} aria-hidden="true" />
+                    ) : (
+                      <Eye size={16} aria-hidden="true" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {newUser.password ? (
+                <div className="bg-surface p-2.5 rounded-lg border border-border">
+                  <ul className="text-[11px] grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                    {validatePassword(newUser.password).requirements.map((req, i) => (
+                      <li key={i} className={`flex items-center gap-1.5 ${req.met ? 'text-success font-medium' : 'text-text-muted'}`}>
+                        <span>{req.met ? '✓' : '•'}</span>
+                        <span className="truncate">{req.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
+              <div className="flex items-center gap-2 text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 px-3 py-2 rounded-lg">
+                <Shield size={14} className="shrink-0" />
+                <span>Temporary passwords require an immediate mandatory reset by the user upon their first authentication.</span>
+              </div>
+            </div>
+
+            {/* Action Bar */}
+            <div className="pt-3 flex items-center justify-between border-t border-border">
+              <span className="text-[11px] text-text-muted">Account provisioning events are permanently logged in audit trails.</span>
+              <button
+                type="submit"
+                disabled={creatingUser}
+                className="btn-primary py-2 px-6 font-medium flex items-center gap-2 text-xs min-h-[40px] shadow-sm"
+              >
+                <UserPlus size={16} />
+                Continue to Review
+              </button>
+            </div>
+          </form>
         </div>
       </section>
       ) : (
