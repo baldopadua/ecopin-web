@@ -65,7 +65,7 @@ function createTaskReportIcon(label, color, isCompleted) {
   })
 }
 
-export default function CrewTaskLayer({ tasks = [], basePath, photoPins = false, routeColor }) {
+export default function CrewTaskLayer({ tasks = [], basePath, photoPins = false, routeColor, reportLinks = false }) {
   const user = useUser()
   const map = useMapEvents({ moveend: () => { if (photoPins) setBounds(map.getBounds()) } })
   const [bounds, setBounds] = useState(() => map.getBounds())
@@ -131,14 +131,15 @@ export default function CrewTaskLayer({ tasks = [], basePath, photoPins = false,
                 photoPin={photoPins}
                 photo={photos[report.id]}
                 position={coords}
-                customUrl={`${effectiveBasePath}/${task.id}`}
+                customUrl={reportLinks ? `/dashboard/raw-data/${report.id}` : `${effectiveBasePath}/${task.id}`}
+                buttonLabel={reportLinks ? 'View Report' : undefined}
               />
             )
           })}
         </div>
       )
     })
-  }, [tasks, effectiveBasePath, photoPins, photos, routeColor])
+  }, [tasks, effectiveBasePath, photoPins, photos, routeColor, reportLinks])
 
   return <>{renderedTasks}</>
 }

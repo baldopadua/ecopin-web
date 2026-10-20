@@ -27,7 +27,7 @@ export const createEcoPinIcon = (status, isRemoving = false, isSelected = false)
   })
 }
 
-export default function EcoPinMarker({ report, position, isRemoving = false, isSelected = false, selectionMode = false, onReportSelect, customUrl, photoPin = false, photo }) {
+export default function EcoPinMarker({ report, position, isRemoving = false, isSelected = false, selectionMode = false, onReportSelect, customUrl, photoPin = false, photo, buttonLabel }) {
   const router = useRouter()
 
   const handlePopupRouting = (e, reportId) => {
@@ -104,7 +104,7 @@ export default function EcoPinMarker({ report, position, isRemoving = false, isS
                 onClick={(e) => handlePopupRouting(e, report.id)}
                 className="w-full bg-blue-600 text-white font-medium text-sm py-2 rounded shadow-sm hover:bg-blue-700 transition-colors"
               >
-                {customUrl ? 'View Operation' : 'View Full Details'}
+                {buttonLabel || (customUrl ? 'View Operation' : 'View Full Details')}
               </button>
             </div>
           )}

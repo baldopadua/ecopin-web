@@ -662,7 +662,7 @@ function CleanupTaskDetailContent() {
          <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
             <section className={`xl:col-span-3 ${styles.routeCard}`} aria-labelledby="operation-route-title">
               <div className={styles.routeHeader}><h2 id="operation-route-title">Route map</h2><p>Report locations and connections for this operation.</p></div>
-              <div className={styles.routeMap}><OperationsMap tasks={[{ ...task, reports }]} modern={true} /></div>
+              <div className={styles.routeMap}><OperationsMap tasks={[{ ...task, reports }]} modern={true} reportLinks={true} /></div>
             </section>
 
 
