@@ -3,6 +3,7 @@ import SecureImage from '@/components/ui/SecureImage'
 import ImageLightbox from '@/components/ui/ImageLightbox'
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { useNavigationLoading } from '@/components/context/NavigationLoadingContext'
 import {
   fetchReportById,
   fetchReportEvidence,
@@ -37,11 +38,11 @@ export default function ReportDetailPage() {
   const params = useParams()
   const router = useRouter()
   const user = useUser()
-  const reportId = params.id
-
+  const { isLoading: isNavigating } = useNavigationLoading()
   const [report, setReport] = useState(null)
   const [evidence, setEvidence] = useState([])
   const [loading, setLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState(null)
   const [lightboxIndex, setLightboxIndex] = useState(null)
   const [showStatusDropdown, setShowStatusDropdown] = useState(false)
@@ -61,12 +62,18 @@ export default function ReportDetailPage() {
   const [activityLogPage, setActivityLogPage] = useState(1)
   const activityLogPerPage = 10
 
-  const loadReportData = useCallback(async () => {
-    setLoading(true)
+  const loadReportData = useCallback(async (isManualRefresh = false) => {
+    const id = params?.id
+    if (!id) return
+    if (isManualRefresh) {
+      setIsRefreshing(true)
+    } else {
+      setLoading(true)
+    }
     try {
       const [reportData, evidenceData, tasksData] = await Promise.all([
-        fetchReportById(reportId),
-        fetchReportEvidence(reportId),
+        fetchReportById(id),
+        fetchReportEvidence(id),
         fetchCleanupTasks().catch((err) => {
           reportDiagnostic('warn', 'tasks', 'Failed to fetch tasks for report detail:', err)
           return []
@@ -82,13 +89,13 @@ export default function ReportDetailPage() {
         const activeTasks = (tasksData || []).filter(t => t.status !== 'cancelled')
         const reportClusterId = reportData.cluster_id ? String(reportData.cluster_id) : null
         const directTaskId = reportData.cleanup_task_id ? String(reportData.cleanup_task_id) : null
-        const currentReportId = String(reportId)
+        const currentReportId = String(id)
 
         const matchedTask = activeTasks.find(t => {
           if (directTaskId && String(t.id) === directTaskId) return true
-          const inReportIds = Array.isArray(t.report_ids) && t.report_ids.some(id => String(id) === currentReportId)
-          const inSequence = Array.isArray(t.report_sequence) && t.report_sequence.some(id => String(id) === currentReportId)
-          const inSatellites = Array.isArray(t.satellite_report_ids) && t.satellite_report_ids.some(id => String(id) === currentReportId)
+          const inReportIds = Array.isArray(t.report_ids) && t.report_ids.some(tid => String(tid) === currentReportId)
+          const inSequence = Array.isArray(t.report_sequence) && t.report_sequence.some(tid => String(tid) === currentReportId)
+          const inSatellites = Array.isArray(t.satellite_report_ids) && t.satellite_report_ids.some(tid => String(tid) === currentReportId)
           const inReports = Array.isArray(t.reports) && t.reports.some(r => String(r.id || r) === currentReportId)
           if (inReportIds || inSequence || inSatellites || inReports) return true
 
@@ -111,8 +118,9 @@ export default function ReportDetailPage() {
       setError('Failed to load report')
     } finally {
       setLoading(false)
+      setIsRefreshing(false)
     }
-  }, [reportId, user])
+  }, [params?.id, user])
 
   const allReportPhotos = useMemo(() => {
     const list = []
@@ -393,7 +401,7 @@ export default function ReportDetailPage() {
     }
   }
 
-  if (loading) {
+  if (loading && !report && !isNavigating) {
     return (
       <div className="workspace-page workspace-page--flow">
         <PageHeader
@@ -503,12 +511,12 @@ export default function ReportDetailPage() {
         ]}
       >
         <button
-          onClick={loadReportData}
-          disabled={loading}
+          onClick={() => loadReportData(true)}
+          disabled={loading || isRefreshing}
           className="btn-secondary flex items-center gap-2 text-sm"
         >
-          <RefreshCw size={16} aria-hidden="true" className={loading ? 'animate-spin' : ''} />
-          {loading ? 'Refreshing...' : 'Refresh'}
+          <RefreshCw size={16} aria-hidden="true" className={isRefreshing ? 'animate-spin' : ''} />
+          {isRefreshing ? 'Refreshing...' : 'Refresh'}
         </button>
       </PageHeader>
 
@@ -621,7 +629,7 @@ export default function ReportDetailPage() {
               {/* Evidence Photos */}
               <div className="card">
                 <h2 className="text-xl font-bold text-text-primary mb-4">Evidence Photos</h2>
-                {loading ? (
+                {(loading || isRefreshing) ? (
                   <div className="h-48 bg-surface-elevated rounded-lg flex flex-col items-center justify-center border border-dashed border-border gap-2">
                     <Loader2 className="w-8 h-8 text-[var(--primary)] animate-spin" aria-hidden="true" />
                     <p className="text-sm text-text-muted">Loading evidence photos...</p>

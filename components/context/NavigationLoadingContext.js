@@ -30,6 +30,11 @@ export function getRouteTitle(urlPath) {
     '/dashboard/officer/reports': 'Reports Archive',
     '/dashboard/officer/metrics': 'System Metrics',
     '/dashboard/spatial-scan': 'Spatial Scan',
+    '/dashboard/field-crew': 'Field Operations',
+    '/dashboard/field-crew/tasks': 'Operations',
+    '/dashboard/field-crew/my-route': 'My Route',
+    '/dashboard/field-crew/raw-data': 'Raw Data',
+    '/dashboard/map-grid': 'Map Grid',
     '/dashboard/admin': 'Admin Console',
     '/dashboard/admin/users': 'User Management',
     '/dashboard/admin/settings': 'System Settings',
@@ -43,6 +48,7 @@ export function getRouteTitle(urlPath) {
   }
 
   if (routeMap[path]) return routeMap[path]
+  if (path.startsWith('/dashboard/field-crew/operations/')) return 'Operation Details'
   if (path.startsWith('/dashboard/officer/operations/')) return 'Operation Details'
   if (path.startsWith('/dashboard/officer/hotzone-intel/')) return 'Hotzone Analysis'
   if (path.startsWith('/dashboard/officer/optimization/')) return 'Optimization Run'
@@ -76,45 +82,22 @@ export function NavigationLoadingProvider({ children }) {
     safetyTimeoutRef.current = setTimeout(() => {
       isNavigatingRef.current = false
       setIsLoading(false)
-    }, 10000)
+    }, 4000)
   }, [])
 
   // When pathname or searchParams change, the new route has mounted.
-  // We inspect document.readyState and let the browser complete its initial render & layout
-  // before gently dismissing the loading overlay.
+  // Immediately dismiss the loading overlay on the next animation frame for snappy navigation.
   useEffect(() => {
     if (!isNavigatingRef.current) return
 
-    let isSubscribed = true
+    if (safetyTimeoutRef.current) clearTimeout(safetyTimeoutRef.current)
 
-    const checkAndComplete = () => {
-      if (!isSubscribed) return
+    const frame = requestAnimationFrame(() => {
+      isNavigatingRef.current = false
+      setIsLoading(false)
+    })
 
-      // Give modern frameworks & browser render pipeline time to paint the page content
-      // (minimum 500ms ensures components finished their initial mount & fetch requests)
-      const dismissTimer = setTimeout(() => {
-        if (!isSubscribed) return
-        isNavigatingRef.current = false
-        setIsLoading(false)
-      }, 550)
-
-      return () => clearTimeout(dismissTimer)
-    }
-
-    if (typeof document !== 'undefined' && document.readyState !== 'complete') {
-      const handleLoad = () => checkAndComplete()
-      window.addEventListener('load', handleLoad, { once: true })
-      return () => {
-        isSubscribed = false
-        window.removeEventListener('load', handleLoad)
-      }
-    } else {
-      const cleanup = checkAndComplete()
-      return () => {
-        isSubscribed = false
-        if (cleanup) cleanup()
-      }
-    }
+    return () => cancelAnimationFrame(frame)
   }, [pathname, searchParams])
 
   // Global click interceptor for internal links targeting /dashboard routes
@@ -146,6 +129,47 @@ export function NavigationLoadingProvider({ children }) {
     return () => {
       document.removeEventListener('click', handleClick, { capture: true })
       if (safetyTimeoutRef.current) clearTimeout(safetyTimeoutRef.current)
+    }
+  }, [startLoading])
+
+  // Intercept Next.js router.push & router.replace via window.history to catch programmatic transitions
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const originalPushState = window.history.pushState
+    const originalReplaceState = window.history.replaceState
+
+    const handleNavigation = (urlArg) => {
+      if (!urlArg) return
+      try {
+        const dest = new URL(String(urlArg), window.location.href)
+        if (dest.origin === window.location.origin && dest.pathname.startsWith('/dashboard')) {
+          if (dest.pathname !== window.location.pathname) {
+            // Next.js App Router performs history manipulations during React render/insertion phase.
+            // Defer React state dispatch out of the synchronous render/insertion call stack.
+            queueMicrotask(() => {
+              startLoading(dest.pathname)
+            })
+          }
+        }
+      } catch {
+        // Ignore parsing errors
+      }
+    }
+
+    window.history.pushState = function (state, title, url) {
+      handleNavigation(url)
+      return originalPushState.apply(this, arguments)
+    }
+
+    window.history.replaceState = function (state, title, url) {
+      handleNavigation(url)
+      return originalReplaceState.apply(this, arguments)
+    }
+
+    return () => {
+      window.history.pushState = originalPushState
+      window.history.replaceState = originalReplaceState
     }
   }, [startLoading])
 
