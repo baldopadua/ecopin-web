@@ -24,6 +24,7 @@ export default function DeleteAccountPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [confirmation, setConfirmation] = useState('')
   const [acknowledged, setAcknowledged] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -31,7 +32,7 @@ export default function DeleteAccountPage() {
 
   async function handleDelete(event) {
     event.preventDefault()
-    if (!acknowledged || loading) return
+    if (!acknowledged || confirmation !== 'I confirm' || loading) return
 
     const confirmed = window.confirm(
       'Are you sure you want to permanently delete your EcoPin citizen account? This action cannot be undone.'
@@ -50,7 +51,8 @@ export default function DeleteAccountPage() {
         },
         body: JSON.stringify({
           email: email.trim().toLowerCase(),
-          password
+          password,
+          confirmation
         })
       })
 
@@ -179,6 +181,13 @@ export default function DeleteAccountPage() {
                     </span>
                   </label>
 
+                  <div className={styles.field}>
+                    <label htmlFor="delete-confirmation">Type exactly &quot;I confirm&quot; to continue</label>
+                    <input type="text" id="delete-confirmation" value={confirmation}
+                      onChange={event => setConfirmation(event.target.value)}
+                      autoComplete="off" disabled={loading} required />
+                  </div>
+
                   {error && (
                     <div role="alert" className={styles.errorMessage}>
                       <AlertCircle size={20} />
@@ -189,7 +198,7 @@ export default function DeleteAccountPage() {
                   <button
                     type="submit"
                     className={styles.deleteButton}
-                    disabled={!acknowledged || !email || !password || loading}
+                    disabled={!acknowledged || confirmation !== 'I confirm' || !email || !password || loading}
                   >
                     <Trash2 size={18} />
                     {loading ? 'Deleting account…' : 'Permanently Delete Account'}
