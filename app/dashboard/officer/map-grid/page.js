@@ -1,12 +1,14 @@
 'use client'
-import { useState, useRef, useId, useEffect } from 'react'
+import { useState, useRef, useId, useEffect, Suspense } from 'react'
 import dynamic from 'next/dynamic'
+import { useSearchParams } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import { useDashboardReports, useDashboardTasks } from '@/components/context/DashboardQueryProvider'
 import { OfficerGuard } from '@/components/auth/RequireRole'
 import { Map, SlidersHorizontal, X, AlertTriangle, RotateCcw } from 'lucide-react'
 import styles from './MapGrid.module.css'
 import { REPORT_PIN_STATUSES } from '@/components/map/reportPinStatus'
+
 
 const EcoPinMap = dynamic(
   () => import('@/components/map/EcoPinMap'),
@@ -18,6 +20,7 @@ const CrewTaskLayer = dynamic(
 )
 
 function OfficerMapContent() {
+  const searchParams = useSearchParams()
   const reportQuery = useDashboardReports()
   const taskQuery = useDashboardTasks()
   const reports = reportQuery.data || []

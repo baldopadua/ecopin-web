@@ -43,6 +43,7 @@ import {
   getIncompleteTasks,
 } from '@/lib/api/optimization'
 import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
+import { dispatchResultNotice } from '../../../../lib/dispatch-result-notice.mjs';
 
 // Default settings applied when no template is selected
 const DEFAULT_SETTINGS = {
@@ -297,21 +298,9 @@ export default function OptimizationPage() {
         const isPending = result.routing_status === 'routing'
         const isEmpty = result.routing_status === 'empty' || !result.tasks?.length
 
-        if (isEmpty) {
-          setNotification({
-            message: 'No tasks were dispatched. Please verify that field crews are available and active on shift.',
-            type: 'warning'
-          })
-        } else if (isFailed) {
-          setNotification({
-            message: result.warning || 'Could not finalize routes due to shift schedule limits. All reports were safely returned to your backlog.',
-            type: 'error'
-          })
-        } else if (isPending) {
-          setNotification({
-            message: 'Routes are currently being computed in the background. Please check back shortly.',
-            type: 'info'
-          })
+        const notice = dispatchResultNotice(result)
+        if (notice) {
+          setNotification(notice)
         } else {
           setNotification({
             message: `Dispatch Confirmed! ${result.tasks?.length || 0} tasks assigned and routes published to field crews.`,
@@ -702,7 +691,7 @@ export default function OptimizationPage() {
                 {/* Residual Capacity Filter Notification Banner */}
                 {(() => {
                   const capFilter = currentProposal.capacity_filtering || currentProposal.capacity?.capacity_filtering || currentProposal.solver_diagnostics?.capacity_filtering || null;
-                  if (!capFilter || (!capFilter.filtered_oversized_count && !capFilter.has_active_tasks)) return null;
+                  if (!capFilter || (!capFilter.filtered_oversized_count && !capFilter.has_active_tasks && !capFilter.load_readiness_issues?.length)) return null;
                   return (
                     <div className="p-4 mb-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
                       <div className="flex items-start gap-2.5">
@@ -721,6 +710,11 @@ export default function OptimizationPage() {
                           <p className="text-xs text-text-secondary mt-1 mb-2">
                             {capFilter.alert_message || "These are the only viable tasks that fit within the field crew's remaining shift capacity. Tasks exceeding remaining time or vehicle limits were automatically deferred to prevent plan cancellation."}
                           </p>
+                          {capFilter.load_readiness_issues?.length > 0 && (
+                            <ul className="text-sm text-text-secondary my-2 pl-5 list-disc">
+                              {capFilter.load_readiness_issues.map(issue => <li key={issue.crew_id}>{issue.message}. Excluded from this plan until corrected.</li>)}
+                            </ul>
+                          )}
                           {capFilter.crew_residual_capacities?.length > 0 && (
                             <div className="flex flex-wrap gap-2 pt-2 border-t border-amber-500/20">
                               {capFilter.crew_residual_capacities.map((crewCap) => (
