@@ -22,7 +22,7 @@ async function run() {
           return route.fulfill({ status: failSave ? 503 : 200, contentType: 'application/json', body: JSON.stringify(failSave ? { message: 'Synthetic save failure' } : { success: true }) })
         }
         reads++
-        return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ password_min_length: 12, daily_report_quota: 15, cms: { contact_support_email: 'support@example.test' } }) })
+        return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ password_min_length: 12, daily_report_quota: 15, report_video_max_seconds: 8, cms: { contact_support_email: 'support@example.test' } }) })
       })
       const page = await context.newPage()
       page.setDefaultTimeout(30000)
@@ -46,6 +46,8 @@ async function run() {
       await announcements.click()
       await panel.locator('input[placeholder="v1.2.0"]').fill('v2.5.0')
       await security.click()
+      assert.equal(await page.getByLabel('Maximum video duration (seconds)').inputValue(), '8')
+      await page.getByLabel('Maximum video duration (seconds)').fill('7')
       await panel.locator('input[type=number]').first().fill('16')
       await panel.locator('input[type=number]').last().fill('25')
       await contact.click()
@@ -70,6 +72,7 @@ async function run() {
       assert.deepEqual(writes[0], writes[1], 'A failed save must preserve the complete draft')
       assert.equal(writes[1].password_min_length, 16)
       assert.equal(writes[1].daily_report_quota, 25)
+      assert.equal(writes[1].report_video_max_seconds, 7)
       assert.equal(writes[1].cms.contact_support_email, 'draft@example.test')
       assert.equal(writes[1].cms.lead_story_title, 'Draft community headline')
       assert.equal(writes[1].cms.app_version_name, 'v2.5.0')

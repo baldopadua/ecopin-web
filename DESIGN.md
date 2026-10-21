@@ -937,3 +937,15 @@ Use a compact, divided settings surface with explanatory copy beside labeled con
 Loading hides forms until configuration is available. A failed load shows an explicit Retry action. Deadline changes greater than 25% use the shared native modal with initial Cancel focus, Escape dismissal, and focus return. Confirm sends the backend confirmation flag; Cancel sends no write. The server remains authoritative for relationships between maturation periods and the SLA threshold. Policy changes must not be presented as rewriting historical deadlines. The page does not alter role access, database schema, or crew scheduling.
 
 Verification: `npm run test:sweeper-settings` and `node tests/sweeper-settings.browser.cjs` (workspace Playwright paths may be required). Browser checks intercept synthetic administrator data and cover retry, save/cancel/confirm, retained edits on rejection, both themes, and 320/768/1024/1440px layouts.
+
+
+## 25. Administrator report video limits
+
+System Settings > Security includes a labeled Maximum video duration (seconds) control. Load `report_video_max_seconds` from the existing administrator settings endpoint, retain the settings row ID, and save a whole number from 5 through 10. Explain that the minimum clip length remains 5 seconds and the saved maximum applies to new submissions, including previously recorded clips. Reject blank, fractional, and out-of-range drafts without sending a write; preserve edits after failed saves. Keep the native app's System settings and web control on the same persisted field.
+
+The Flutter report flow records videos through the camera and has no gallery-video selector. Its dedicated authenticated media-policy endpoint exposes only duration limits; server byte probing independently enforces the current database value. Duration validation is separate from environmental AI approval. See [the backend policy](../ecopin_backend_node/docs/report-video-policy.md) for rollout and verification. The settings browser fixture covers the loaded value, saved payload, and retry in both themes.
+
+
+### Dispatch publication feedback and load readiness
+
+Route publication failures take precedence over an empty task array in officer feedback. Display the supplied failure reason; do not infer shift-hours exhaustion or assert rollback from a generic failure. Pending routing remains pending even when no task list is returned. Mixed planning excludes crews with incomplete vehicle capacity/starting loads or missing load estimates on unfinished assigned tasks, and lists those crews with an actionable explanation in the capacity panel. A saved older draft must pass the same readiness check before claims/tasks are committed. Ready crews may still participate. Keep final database capacity/time checks authoritative; never invent missing live task estimates or crew capacities to force publication.

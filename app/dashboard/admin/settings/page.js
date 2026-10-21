@@ -81,7 +81,8 @@ function SystemSettingsContent() {
     password_require_numbers: true,
     password_require_special_chars: true,
     session_timeout_minutes: 60,
-    daily_report_quota: 10
+    daily_report_quota: 10,
+    report_video_max_seconds: 10
   })
   const [cms, setCms] = useState(DEFAULT_CMS)
   const [loading, setLoading] = useState(true)
@@ -99,7 +100,9 @@ function SystemSettingsContent() {
         password_require_lowercase: data.password_require_lowercase ?? true,
         password_require_numbers: data.password_require_numbers ?? true,
         password_require_special_chars: data.password_require_special_chars ?? true,
-        daily_report_quota: data.daily_report_quota ?? 10
+        daily_report_quota: data.daily_report_quota ?? 10,
+        report_video_max_seconds: data.report_video_max_seconds ?? 10,
+        ...(data.id ? { id: data.id } : {})
       }))
       if (data.cms && typeof data.cms === 'object') {
         setCms(prev => ({ ...prev, ...data.cms }))
@@ -120,10 +123,16 @@ function SystemSettingsContent() {
 
   const handleSave = async () => {
     if (saving || uploadingField) return
+    const videoMaximum = Number(settings.report_video_max_seconds)
+    if (!Number.isInteger(videoMaximum) || videoMaximum < 5 || videoMaximum > 10) {
+      setNotification({ message: 'Maximum video duration must be a whole number from 5 to 10 seconds', type: 'error' })
+      return
+    }
     try {
       setSaving(true)
       await updateSystemSettings({
         ...settings,
+        report_video_max_seconds: videoMaximum,
         cms
       })
       setNotification({ message: 'All configuration settings updated successfully', type: 'success' })
@@ -898,6 +907,22 @@ function SystemSettingsContent() {
                 </div>
               </div>
 
+              <hr className="border-border" />
+
+              <div>
+                <h3 className="text-md font-semibold text-text-primary mb-2">Report videos</h3>
+                <label htmlFor="report-video-maximum" className="block text-sm font-medium text-text-primary mb-2">
+                  Maximum video duration (seconds)
+                </label>
+                <input id="report-video-maximum" type="number" min="5" max="10" step="1"
+                  value={settings.report_video_max_seconds}
+                  onChange={e => handleSettingChange('report_video_max_seconds', e.target.value)}
+                  disabled={saving}
+                  className="w-full p-3 border border-border rounded-lg bg-surface-elevated text-text-primary focus:outline-none focus:ring-2 focus:ring-primary" />
+                <p className="text-sm text-text-secondary mt-1">
+                  Choose 5–10 seconds. Every clip must be at least 5 seconds. The saved limit applies to new submissions, including previously recorded clips.
+                </p>
+              </div>
               <hr className="border-border" />
 
               {/* Citizen Submission Quota */}
