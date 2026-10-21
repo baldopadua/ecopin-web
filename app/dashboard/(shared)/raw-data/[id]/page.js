@@ -36,6 +36,13 @@ if (typeof window !== 'undefined' && !window.Buffer) {
 export default function ReportDetailPage() {
   const { confirm: confirmAction, confirmation } = useConfirmation()
   const params = useParams()
+  /*
+   * Investigation - Issue #6 (Report Detail Page Error on Page 4 San Miguel):
+   * Reports requiring manual review evaluate `validatingReport === reportId` (and map button & action handlers
+   * reference `reportId`), but `reportId` was never declared in ReportDetailPage scope, triggering an uncaught
+   * `ReferenceError: reportId is not defined` whenever manual_review reports loaded.
+   */
+  const reportId = params?.id || report?.id
   const router = useRouter()
   const user = useUser()
   const { isLoading: isNavigating } = useNavigationLoading()

@@ -7,6 +7,7 @@ import PageTabs from '@/components/ui/PageTabs'
 import { AdminGuard } from '@/components/auth/RequireRole'
 import Notification from '@/components/ui/Notification'
 import Dialog from '@/components/ui/Dialog'
+import useConfirmation from '@/components/ui/useConfirmation'
 import { SkeletonForm } from '@/components/ui/Skeleton'
 import {
   getOptimizationSettings,
@@ -14,6 +15,7 @@ import {
   getFieldCrews,
   updateFieldCrew,
   createFieldCrew,
+  deleteFieldCrew,
 } from '@/lib/api/optimization'
 import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
 import { toTitleCase } from '@/lib/helpers/statusHelpers';
@@ -33,8 +35,9 @@ const NEW_CREW_DEFAULTS = {
 }
 
 function OptimizationSettingsContent() {
+  const { confirm: confirmAction, confirmation } = useConfirmation()
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(null) // null | 'depot' | 'crew-<id>'
+  const [saving, setSaving] = useState(null) // null | 'depot' | 'crew-<id>' | 'delete-<id>'
   const [isEditingDepot, setIsEditingDepot] = useState(false)
   const [notification, setNotification] = useState(null)
   const [activeTab, setActiveTab] = useState('depot') // 'depot' | 'crew'
@@ -233,6 +236,47 @@ function OptimizationSettingsContent() {
 
   const handleCrewChange = (crewId, field, value) => {
     setCrews(prev => prev.map(c => c.id === crewId ? { ...c, [field]: value } : c))
+  }
+
+  const handleDeleteCrew = async (crew) => {
+    // Safety constraint 1: Check if tasks are assigned
+    const activeTasks = Number(crew.active_task_count ?? crew.assigned_tasks_count ?? 0)
+    if (activeTasks > 0) {
+      setNotification({
+        message: `Cannot delete "${crew.name}": There are ${activeTasks} task(s) assigned to this crew. Reassign or resolve all tasks first to prevent system errors.`,
+        type: 'error'
+      })
+      return
+    }
+
+    // Safety constraint 2: Check if field crew members or a lead are attached
+    const memberCount = (crew.members?.length || crew.member_profile_ids?.length || 0)
+    if (memberCount > 0 || crew.team_lead_profile_id) {
+      setNotification({
+        message: `Cannot delete "${crew.name}": Crew has ${memberCount} attached member(s) or an assigned team lead. Unassign all members in Crew Management first.`,
+        type: 'error'
+      })
+      return
+    }
+
+    // Confirmation dialog before proceeding
+    const confirmed = await confirmAction({
+      title: `Delete Crew "${crew.name}"?`,
+      description: `Are you sure you want to delete ${crew.name}? This field crew configuration will be permanently removed.`,
+      action: 'Delete Crew'
+    })
+    if (!confirmed) return
+
+    try {
+      setSaving(`delete-${crew.id}`)
+      await deleteFieldCrew(crew.id)
+      setCrews(prev => prev.filter(c => c.id !== crew.id))
+      setNotification({ message: `Field crew "${crew.name}" was successfully deleted.`, type: 'success' })
+    } catch (err) {
+      setNotification({ message: err.message || 'Failed to delete field crew', type: 'error' })
+    } finally {
+      setSaving(null)
+    }
   }
 
   if (loading) {
@@ -506,8 +550,16 @@ function OptimizationSettingsContent() {
                       <div className={styles.actionRow}>
                         <button
                           type="button"
+                          onClick={() => handleDeleteCrew(crew)}
+                          disabled={saving === `delete-${crew.id}` || saving === `crew-${crew.id}`}
+                          className={styles.btnDanger}
+                        >
+                          {saving === `delete-${crew.id}` ? 'Deleting…' : 'Delete crew'}
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => handleSaveCrew(crew)}
-                          disabled={saving === `crew-${crew.id}`}
+                          disabled={saving === `crew-${crew.id}` || saving === `delete-${crew.id}`}
                           className={styles.btnPrimary}
                         >
                           {saving === `crew-${crew.id}` ? 'Saving…' : `Save ${crew.name}`}
@@ -521,6 +573,7 @@ function OptimizationSettingsContent() {
           </section>
         )}
       </div>
+      {confirmation}
     </div>
   )
 }

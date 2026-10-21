@@ -182,18 +182,33 @@ function SystemSettingsContent() {
 
   if (loading) {
     return (
-      <div className="workspace-page">
-        <PageHeader
-          title="System & CMS Settings"
-          subtitle="Loading configuration..."
-          breadcrumbs={[
-            { label: 'Dashboard', href: '/dashboard' },
-            { label: 'Admin', href: '/dashboard/admin' },
-            { label: 'Settings' }
-          ]}
-        />
-        <div className="workspace-fill workspace-scroll">
-          <div className="card">
+      <div
+        className="workspace-page h-full max-h-full min-h-0 flex-1 overflow-hidden flex flex-col"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          boxSizing: 'border-box',
+          height: '100%',
+          maxHeight: '100%',
+          minHeight: 0,
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
+        <div className="shrink-0 flex-shrink-0">
+          <PageHeader
+            title="System & CMS Settings"
+            subtitle="Loading configuration..."
+            breadcrumbs={[
+              { label: 'Dashboard', href: '/dashboard' },
+              { label: 'Admin', href: '/dashboard/admin' },
+              { label: 'Settings' }
+            ]}
+          />
+        </div>
+        <div className="workspace-fill flex-1 min-h-0 overflow-hidden flex flex-col" style={{ flex: 1, minHeight: 0 }}>
+          <div className="card border border-border flex-1 min-h-0 overflow-hidden">
             <SkeletonForm fields={8} />
           </div>
         </div>
@@ -202,26 +217,41 @@ function SystemSettingsContent() {
   }
 
   return (
-    <div className="workspace-page">
-      <PageHeader
-        title="System & CMS Settings"
-        subtitle="Manage content and policies. Save changes applies updates from every tab."
-        breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Admin', href: '/dashboard/admin' },
-          { label: 'Settings' }
-        ]}
-      >
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving || Boolean(uploadingField)}
-          className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+    <div
+      className="workspace-page h-full max-h-full min-h-0 flex-1 overflow-hidden flex flex-col"
+      style={{
+        position: 'absolute',
+        inset: 0,
+        boxSizing: 'border-box',
+        height: '100%',
+        maxHeight: '100%',
+        minHeight: 0,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column'
+      }}
+    >
+      <div className="shrink-0 flex-shrink-0">
+        <PageHeader
+          title="System & CMS Settings"
+          subtitle="Manage content and policies. Save changes applies updates from every tab."
+          breadcrumbs={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Admin', href: '/dashboard/admin' },
+            { label: 'Settings' }
+          ]}
         >
-          {saving ? <Loader2 size={18} className="animate-spin" aria-hidden="true" /> : <Save size={18} aria-hidden="true" />}
-          <span>{saving ? 'Saving changes...' : 'Save changes'}</span>
-        </button>
-      </PageHeader>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving || Boolean(uploadingField)}
+            className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {saving ? <Loader2 size={18} className="animate-spin" aria-hidden="true" /> : <Save size={18} aria-hidden="true" />}
+            <span>{saving ? 'Saving changes...' : 'Save changes'}</span>
+          </button>
+        </PageHeader>
+      </div>
 
       {notification && (
         <Notification
@@ -231,12 +261,24 @@ function SystemSettingsContent() {
         />
       )}
 
-      <PageTabs label="System settings" tabs={SETTINGS_TABS} value={activeTab} onChange={setActiveTab} />
+      <div className="shrink-0 flex-shrink-0">
+        <PageTabs label="System settings" tabs={SETTINGS_TABS} value={activeTab} onChange={setActiveTab} />
+      </div>
 
-      <div className="workspace-fill workspace-scroll">
+      <div
+        className="workspace-fill flex-1 min-h-0 overflow-hidden flex flex-col"
+        style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}
+      >
         {/* Tab 1: Contact & Office Info */}
         {activeTab === 'contact' && (
-          <section role="tabpanel" id="contact-panel" aria-labelledby="contact-tab" tabIndex={0} className="card space-y-6">
+          <section
+            role="tabpanel"
+            id="contact-panel"
+            aria-labelledby="contact-tab"
+            tabIndex={0}
+            className="card border border-border flex-1 min-h-0 overflow-y-auto space-y-6 overscroll-contain"
+            style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}
+          >
             <div>
               <h2 className="text-xl font-bold text-text-primary">Contact & Office Information</h2>
               <p className="text-sm text-text-muted mt-1">
@@ -352,7 +394,14 @@ function SystemSettingsContent() {
 
         {/* Tab 2: Media & Community Gallery */}
         {activeTab === 'media' && (
-          <section role="tabpanel" id="media-panel" aria-labelledby="media-tab" tabIndex={0} className="card space-y-6">
+          <section
+            role="tabpanel"
+            id="media-panel"
+            aria-labelledby="media-tab"
+            tabIndex={0}
+            className="card border border-border flex-1 min-h-0 overflow-y-auto space-y-6 overscroll-contain"
+            style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}
+          >
             <div>
               <h2 className="text-xl font-bold text-text-primary">Media & Community Showcase</h2>
               <p className="text-sm text-text-muted mt-1">
@@ -595,7 +644,14 @@ function SystemSettingsContent() {
 
         {/* Tab 3: Announcements & App Distribution */}
         {activeTab === 'announcements' && (
-          <section role="tabpanel" id="announcements-panel" aria-labelledby="announcements-tab" tabIndex={0} className="card space-y-6">
+          <section
+            role="tabpanel"
+            id="announcements-panel"
+            aria-labelledby="announcements-tab"
+            tabIndex={0}
+            className="card border border-border flex-1 min-h-0 overflow-y-auto space-y-6 overscroll-contain"
+            style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}
+          >
             <div>
               <h2 className="text-xl font-bold text-text-primary">Advisories & App Distribution</h2>
               <p className="text-sm text-text-muted mt-1">
@@ -826,7 +882,14 @@ function SystemSettingsContent() {
 
         {/* Tab 4: Security & Citizen Quotas */}
         {activeTab === 'security' && (
-          <section role="tabpanel" id="security-panel" aria-labelledby="security-tab" tabIndex={0} className="card space-y-6">
+          <section
+            role="tabpanel"
+            id="security-panel"
+            aria-labelledby="security-tab"
+            tabIndex={0}
+            className="card border border-border flex-1 min-h-0 overflow-y-auto space-y-6 overscroll-contain"
+            style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}
+          >
             <h2 className="text-xl font-bold text-text-primary">Password Requirements & Citizen Quotas</h2>
 
             <div className="space-y-6">

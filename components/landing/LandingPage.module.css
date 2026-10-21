@@ -18,11 +18,11 @@
 .page button, .page a { transition: background-color .2s, color .2s; }
 .page button { cursor: pointer; }
 .page section[id] { scroll-margin-top: 32px; }
-.navSpacer { height: 104px; }
-.navSpacerWithBanner { height: 148px; }
-.header { width: 100%; padding: 24px 48px; display: flex; align-items: center; justify-content: space-between; gap: 24px; position: fixed; left: 0; right: 0; top: 0; z-index: 1000; border-bottom: 1px solid var(--landing-border); background: color-mix(in srgb, var(--landing-bg) 90%, transparent); backdrop-filter: blur(16px); transition: transform .5s, opacity .5s; }
+.navSpacer { height: 68px; }
+.navSpacerWithBanner { height: 112px; }
+.header { width: 100%; padding: 0; display: flex; flex-direction: column; position: fixed; left: 0; right: 0; top: 0; z-index: 1000; border-bottom: 1px solid var(--landing-border); background: color-mix(in srgb, var(--landing-bg) 90%, transparent); backdrop-filter: blur(16px); transition: transform .5s, opacity .5s; }
 .headerWithBanner { flex-direction: column; padding: 0; gap: 0; }
-.headerBar { width: 100%; padding: 20px 48px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.headerBar { width: 100%; padding: 12px 48px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
 .headerHidden { transform: translateY(-110%); opacity: 0; pointer-events: none; }
 .sideNav { position: fixed; right: 24px; top: 50%; transform: translate(100px, -50%); opacity: 0; pointer-events: none; z-index: 1000; display: flex; flex-direction: column; padding: 8px; gap: 4px; border: 1px solid var(--landing-border); border-radius: 999px; background: color-mix(in srgb, var(--landing-bg) 94%, transparent); box-shadow: 0 8px 32px #00000012; backdrop-filter: blur(16px); transition: transform .6s cubic-bezier(.22,1,.36,1), opacity .4s; }
 .sideNavVisible { transform: translate(0, -50%); opacity: 1; pointer-events: auto; }
@@ -53,7 +53,7 @@
 .menuButton { display: none; }
 .skipLink { position: fixed; top: 8px; left: 8px; transform: translateY(-200%); background: var(--landing-bg); color: var(--landing-blue); padding: 16px; z-index: 1000; }
 .skipLink:focus { transform: none; }
-.hero { position: relative; width: 100%; min-height: max(880px, calc(100svh - 104px)); }
+.hero { position: relative; width: 100%; min-height: max(880px, calc(100svh - 68px)); }
 .heroCopy { position: relative; z-index: 5; text-align: center; padding: 64px 24px 0; pointer-events: none; }
 .heroCopy a { pointer-events: auto; }
 .eyebrow { display: inline-flex; align-items: center; gap: 8px; color: var(--landing-green); font-size: 13px; min-height: 44px; }
@@ -244,8 +244,8 @@
 }
 @media (max-width: 1024px) {
   .brand span { display: none; }
-  .header { padding: 24px; gap: 16px; }
-  .headerBar { padding: 18px 24px; gap: 16px; }
+  .header { padding: 0; gap: 0; }
+  .headerBar { padding: 12px 24px; gap: 16px; }
   .nav { gap: 16px; }
   .about { grid-template-columns: 1fr 1.1fr; gap: 32px; }
   .mobileSection { padding: 48px 32px; gap: 32px; }
@@ -255,16 +255,16 @@
   .promiseStrip > a { display: none; }
 }
 @media (max-width: 767px) {
-  .header { padding: 16px; }
+  .header { padding: 0; }
   .headerWithBanner { padding: 0; }
-  .headerBar { padding: 12px 16px; }
+  .headerBar { padding: 10px 16px; }
   .brand img { height: 26px; }
   .headerActions { gap: 4px; }
   .signIn { padding: 12px 16px; gap: 8px; }
   .menuButton { display: grid; }
-  .nav { display: none; position: absolute; left: 16px; right: 16px; top: 76px; padding: 16px; background: var(--landing-bg); border: 1px solid var(--landing-border); box-shadow: 0 8px 24px #00000010; border-radius: 16px; }
-  .headerWithBanner .nav { top: 120px; }
-  .navSpacerWithBanner { height: 160px; }
+  .nav { display: none; position: absolute; left: 16px; right: 16px; top: 64px; padding: 16px; background: var(--landing-bg); border: 1px solid var(--landing-border); box-shadow: 0 8px 24px #00000010; border-radius: 16px; }
+  .headerWithBanner .nav { top: 108px; }
+  .navSpacerWithBanner { height: 120px; }
   .navOpen { display: flex; flex-direction: column; align-items: stretch; gap: 0; }
   .nav a { padding: 12px; }
   .heroCopy { padding: 40px 16px 0; }
@@ -275,7 +275,7 @@
   .heroActions { gap: 8px; flex-wrap: wrap; margin-top: 24px; }
   .heroActions .primaryButton { padding: 12px 20px; }
   .heroActions .textButton { font-size: 13px; }
-  .hero { min-height: max(800px, calc(100svh - 76px)); }
+  .hero { min-height: max(800px, calc(100svh - 60px)); }
   .mapSection { top: -76px; }
   .mapToolbar { top: 496px; gap: 12px; padding: 12px 16px; border-radius: 20px; }
   .toolbarPin { display: none; }
@@ -368,7 +368,7 @@
   .community { padding-right: 104px; }
 }
 @media (max-width: 767px) {
-  .navSpacer { height: 76px; }
+  .navSpacer { height: 60px; }
   .desktopMotion { display: none; }
   .mobileMotion { display: flex; align-items: center; gap: 8px; padding: 12px; min-height: 44px; font-size: 14px; color: var(--landing-muted); }
   .sideNav { right: 8px; padding: 4px; gap: 0; }

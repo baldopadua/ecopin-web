@@ -84,22 +84,32 @@ export function NavigationLoadingProvider({ children }) {
     }, 4000)
   }, [])
 
+  const previousPathnameRef = useRef(pathname)
+
   // When pathname changes, the new route has mounted.
-  // Immediately dismiss the loading overlay on the next animation frame for snappy navigation.
+  // Dismiss the loading overlay smoothly after route change completes.
   useEffect(() => {
-    if (!isNavigatingRef.current) return
+    if (previousPathnameRef.current !== pathname) {
+      previousPathnameRef.current = pathname
+      if (isNavigatingRef.current || isLoading) {
+        if (safetyTimeoutRef.current) clearTimeout(safetyTimeoutRef.current)
+        const timer = setTimeout(() => {
+          isNavigatingRef.current = false
+          setIsLoading(false)
+        }, 150)
+        return () => clearTimeout(timer)
+      }
+    }
+  }, [pathname, isLoading])
 
-    if (safetyTimeoutRef.current) clearTimeout(safetyTimeoutRef.current)
-
-    const frame = requestAnimationFrame(() => {
-      isNavigatingRef.current = false
-      setIsLoading(false)
-    })
-
-    return () => cancelAnimationFrame(frame)
-  }, [pathname])
-
-  // Global click interceptor for internal links targeting /dashboard routes
+  // Global click interceptor for internal links targeting /dashboard routes.
+  // INVESTIGATION NOTE (Redundant loading bug):
+  // Previously checked `url.pathname !== currentUrl.pathname || url.search !== currentUrl.search`.
+  // Triggering the full-screen page navigation overlay on query-only changes (like table pagination
+  // ?page=2, 3, 4 or filter toggles) broke UX: because pathname remained identical, the dismissal
+  // effect above never fired, leaving the loading screen hung until the 4s safety timeout, which
+  // gave the impression of a slow duplicate load/reload of the exact same page.
+  // We now restrict startLoading strictly to inter-route transitions where pathname differs.
   useEffect(() => {
     const handleClick = (e) => {
       if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
@@ -115,7 +125,8 @@ export function NavigationLoadingProvider({ children }) {
         const url = new URL(href, window.location.href)
         if (url.origin === window.location.origin) {
           const currentUrl = new URL(window.location.href)
-          if (url.pathname !== currentUrl.pathname || url.search !== currentUrl.search) {
+          // Strictly navigate between different pathnames to prevent reload flashes on table pagination
+          if (url.pathname !== currentUrl.pathname && url.pathname.startsWith('/dashboard')) {
             startLoading(url.pathname)
           }
         }

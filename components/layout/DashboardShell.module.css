@@ -42,10 +42,23 @@
   --info: #82b6ff;
   --shadow-dialog: 0 24px 64px #00000066;
 }
-.main { flex: 1; min-width: 0; min-height: 0; overflow: auto; position: relative; }
+.main {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: auto;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.main:has(:global(.workspace-page:not(.workspace-page--flow))) {
+  overflow: hidden;
+}
 .shell :global(.workspace-page) {
   display: flex; flex-direction: column; gap: 20px; padding: 24px;
   width: 100%; min-width: 0; color: var(--text-primary); font-size: 14px; line-height: 1.5;
+  box-sizing: border-box;
 }
 .shell :global(.workspace-page > header) { margin: 0; }
 .shell :global(.workspace-fill) { display: flex; flex-direction: column; gap: 16px; flex: 1; min-width: 0; min-height: 0; }
@@ -57,11 +70,25 @@
 .shell :global(.workspace-filter-fields > div) { flex: 1; min-width: 140px; }
 .shell :global(.workspace-filter-fields > div:first-child) { flex: 1.5; min-width: min(200px, 100%); }
 .shell :global(.workspace-filter-summary) { margin-top: 12px; padding-top: 12px; }
-@media (min-width: 1024px) and (min-height: 700px) {
-  .shell :global(.workspace-page:not(.workspace-page--flow)) { height: 100%; min-height: 0; }
+.shell :global(.workspace-page:not(.workspace-page--flow)) {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  flex: 1;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 @media (max-width: 767px) {
   .shell :global(.workspace-page) { padding: 16px; }
+  .shell :global(.workspace-page:not(.workspace-page--flow)) {
+    position: relative;
+    inset: auto;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
 }
 .shell :global(.btn-primary), .shell :global(.btn-secondary) {
   min-height: 44px; padding: 8px 20px; font-weight: 500;

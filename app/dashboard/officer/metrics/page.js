@@ -95,11 +95,18 @@ export default function AnalyticsPage() {
         setLoaded(true)
 
         const total = reportsData.length
-        const unresolved = reportsData.filter(r => r.status !== 'resolved' && r.status !== 'closed').length
-        const inProgress = reportsData.filter(r => r.status === 'in_progress').length
-        const resolved = reportsData.filter(r => r.status === 'resolved').length
-        const closed = reportsData.filter(r => r.status === 'closed').length
-        const waitingForFeedback = reportsData.filter(r => r.status === 'waiting_for_feedback').length
+        /*
+         * Investigation - Issue #7 (Officer Metrics Unresolved Reports Alignment):
+         * Previously, `unresolved` was calculated as `r.status !== 'resolved' && r.status !== 'closed'`,
+         * which grouped 'in_progress' and 'waiting_for_feedback' together with 'unresolved', causing a
+         * discrepancy with the Officer Dashboard Command Center which strictly counts reports with
+         * `status === 'unresolved'`. We align this filter to strictly match the dashboard's definition.
+         */
+        const unresolved = reportsData.filter(r => (r.status || '').toLowerCase() === 'unresolved').length
+        const inProgress = reportsData.filter(r => (r.status || '').toLowerCase() === 'in_progress').length
+        const resolved = reportsData.filter(r => (r.status || '').toLowerCase() === 'resolved').length
+        const closed = reportsData.filter(r => (r.status || '').toLowerCase() === 'closed').length
+        const waitingForFeedback = reportsData.filter(r => (r.status || '').toLowerCase() === 'waiting_for_feedback').length
         const overdue = reportsData.filter(r => {
           if (r.status === 'resolved' || r.status === 'closed') return false;
           if (r.is_overdue) return true;
@@ -341,7 +348,7 @@ export default function AnalyticsPage() {
   const pieOptions = { maintainAspectRatio: false, animation: false, plugins: chartOptions.plugins }
   const summaryRows = [
     ['Public reports loaded', stats.total],
-    ['Not resolved or closed', stats.unresolved],
+    ['Unresolved reports', stats.unresolved],
     ['In progress', stats.inProgress],
     ['Resolved or closed today', stats.resolvedToday],
     ['Average resolution time', stats.avgResolutionTime],
