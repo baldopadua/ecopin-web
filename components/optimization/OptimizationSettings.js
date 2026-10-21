@@ -115,11 +115,11 @@ export default function OptimizationSettings({
 
   return (
     <div className="space-y-4">
-      {/* ── 2. Fleet transport mode ─────────────────── */}
+      {/* ── 2. Route transport mode ─────────────────── */}
       <div>
         <div className="flex items-center justify-between mb-2">
           <p className="block text-sm font-semibold text-text-primary">
-            2. Fleet transport mode
+            2. Route transport mode
           </p>
           <span className="text-xs font-sans text-text-muted">
             Speed heuristics & route matrix adjust automatically
@@ -150,6 +150,7 @@ export default function OptimizationSettings({
             )
           })}
         </div>
+        <p className="text-sm text-text-muted mt-3">This controls travel-time calculations for this plan. Crew vehicle type in Admin settings describes the actual equipment and load capacity; it does not automatically change this mode. Use Vehicle for pickup or compactor trucks, and match Walking, Bicycle, or Motorcycle to the crews you dispatch.</p>
       </div>
 
       {/* ── Advanced Settings Accordion ───────────────────── */}

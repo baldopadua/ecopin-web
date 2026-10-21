@@ -74,3 +74,9 @@ graphify-out/
 !/tests/cluster-markers.browser.cjs
 !/tests/dispatch-preview.test.mjs
 !/tests/web-session-routes.test.mjs
+!/tests/system-settings.browser.cjs
+!/tests/infrastructure.browser.cjs
+!/tests/depot-settings.browser.cjs
+!/tests/crew-creation.browser.cjs
+!/tests/sweeper-settings.browser.cjs
+!/tests/operations-crews.browser.cjs

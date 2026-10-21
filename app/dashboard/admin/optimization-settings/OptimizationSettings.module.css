@@ -39,6 +39,7 @@
   justify-content: space-between;
   gap: 12px;
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
 
 .panelHeader h2 {
@@ -116,7 +117,7 @@
 
 .input {
   width: 100%;
-  min-height: 40px;
+  min-height: 44px;
   padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -155,7 +156,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: 40px;
+  min-height: 44px;
   padding: 8px 18px;
   border: 1px solid transparent;
   border-radius: 9999px;
@@ -177,7 +178,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: 40px;
+  min-height: 44px;
   padding: 8px 18px;
   border: 1px solid var(--border);
   border-radius: 9999px;
@@ -219,23 +220,20 @@
   border: 1px solid var(--border);
   border-radius: 14px;
   background: var(--surface-elevated);
-  padding: 14px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.crewCard fieldset,
-.newCrewBox fieldset {
+.crewCard fieldset {
   border-radius: 12px;
   background: var(--surface);
 }
 
 .crewCard fieldset input,
-.crewCard fieldset select,
-.newCrewBox fieldset input,
-.newCrewBox fieldset select {
-  border-radius: 8px;
+.crewCard fieldset select {
+  border-radius: 12px;
 }
 
 .crewHeader {
@@ -284,20 +282,39 @@
   gap: 10px;
 }
 
-.newCrewBox {
-  border: 1px solid color-mix(in srgb, #0052cc 30%, transparent);
-  border-radius: 14px;
-  background: color-mix(in srgb, #0052cc 4%, var(--surface));
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
 .newCrewGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 20px;
+}
+.newCrewGrid > div:first-child { grid-column: 1 / -1; }
+
+.crewDialog {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 960px);
+  max-height: calc(100dvh - 32px);
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--surface);
+  color: var(--text-primary);
+  overflow: hidden;
+}
+.crewDialogHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 24px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.crewDialogHeader h2 { margin: 0; font-size: 24px; font-weight: 500; }
+.crewDialogHeader p, .help { margin: 4px 0 0; font-size: 14px; line-height: 1.5; color: var(--text-secondary); }
+.crewDialogHeader button { flex-shrink: 0; }
+.crewDialogBody { display: grid; gap: 24px; padding: 24px; margin: 0; border: 0; min-width: 0; min-height: 0; overflow-y: auto; }
+.crewDialogFields { display: grid; gap: 24px; padding: 0; margin: 0; border: 0; min-width: 0; }
+.crewDialogFooter { padding: 16px 24px; border-top: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
+.crewDialogFooter .actionRow { padding: 0; }
+.createError { margin: 0 0 12px; color: var(--error); font-size: 14px; line-height: 1.5; }
+
+@media (max-width: 767px) {
+  .crewDialogHeader, .crewDialogBody { padding: 16px; }
+  .crewDialogHeader { flex-wrap: wrap; gap: 12px; }
+  .crewDialogFooter { padding: 16px; }
 }
 
 @media (max-width: 1023px) {
@@ -305,9 +322,6 @@
     grid-template-columns: minmax(0, 1fr);
   }
   .crewGrid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .newCrewGrid {
     grid-template-columns: minmax(0, 1fr);
   }
 }

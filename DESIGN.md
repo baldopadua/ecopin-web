@@ -820,6 +820,12 @@ Apply this contract across the officer command center, map grid, spatial scan, h
 
 The Users workspace has **Users** and **Create user** tabs. Changing tabs must preserve entered user drafts, validation feedback, and the create form's current state. Switching tabs must not silently submit, reset, or discard the draft.
 
+Admin System Settings uses the shared tabs for contact, media, advisories/app distribution, and security/quotas. Keep one draft across tabs and one **Save changes** action in the page header that submits every section together. Switching tabs must not save or reload data; failed saves retain all edits. Keep the save action disabled while saving or uploading media.
+
+Admin Infrastructure uses Recovery overview, Storage replication, Monitoring & alerts, and Environment isolation tabs. Main panels occupy the full tab width; only summary metrics and runbook steps use responsive grids with readable minimum widths. Let content grow naturally inside the panel scroll region rather than compressing cards. Wrap section actions and long check results when needed. Tab changes preserve check results and must not trigger checks or reloads.
+
+Optimization Settings creates crews in the shared modal dialog, independent of list scroll position. Focus the crew name on open, keep actions visible while the form scrolls, and preserve drafts when closing or after a failed request. Required basics are name, a valid same-day shift, task cap, vehicle type, and performance factors. Standard/sweeper capabilities are selectable qualifications, not mandatory acknowledgments; require at least one for ordinary crews. Preserve the existing unconfigured hazmat-unit registration exception. Hazardous-material certification is optional and must reflect verified qualifications. Default new crews to 08:00–17:00, 10 tasks, standard capability, compactor, and 1.0 factors. Label physical capacity and measured loads as optional; never fabricate measured values. Explain the planner's capacity estimates/zero-load fallback and require a measurement time for any entered starting load. Distinguish crew equipment from the plan-level transport mode used for travel calculations. New-crew validation runs in both the form and the backend policy.
+
 ### Shared ownership and visual language
 
 Use [DashboardShell.module.css](components/layout/DashboardShell.module.css) for workspace tokens, shell behavior, and common page, panel, input, button, focus, and table rules. Use [PageHeader.js](components/layout/PageHeader.js) for page headings and breadcrumbs, [PageTabs.js](components/ui/PageTabs.js) with [PageTabs.module.css](components/ui/PageTabs.module.css) for tab strips, and [useTablePageSize.js](components/ui/useTablePageSize.js) for viewport-aware table pagination. Make cross-page changes in these shared owners; do not create slightly different page-local versions of the same pattern.
@@ -843,6 +849,8 @@ The sticky header preserves its initial top gutter while the workspace scrolls: 
 ### Tabs and panel semantics
 
 All workspace tab strips use `PageTabs`. The track has a tinted elevated surface, 1px border, 16px radius, 4px inset, and 8px gap. A selected tab has a surface fill, 1px border, 12px radius, and blue text; each tab has a 44px minimum height. On narrow screens the strip scrolls horizontally without shrinking or wrapping tab labels.
+
+Keep tab focus outlines inset within the rounded button; the generic shell focus rule must not override this and push the outline into the rail's overflow clipping. Sweeper Settings uses a padded outer panel with a separate inner scroll region and 6px focus clearance. Work-time forms are responsive cards with their own rounded borders and readable spacing; narrow layouts stack the save action rather than squeezing or clipping controls.
 
 Use the shared tab keyboard behavior: Left/Right Arrow moves between tabs, Home selects the first, End selects the last, and focus follows selection. Keep the tablist named. Each tab's `aria-controls` points to a matching `tabpanel`; each panel names its tab with `aria-labelledby`. Only the active panel is exposed. Preserve focus and panel state when changing tabs.
 

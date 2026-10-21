@@ -1,11 +1,12 @@
 'use client'
 import FleetCapabilities from '@/components/optimization/FleetCapabilities'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import PageHeader from '@/components/layout/PageHeader'
 import PageTabs from '@/components/ui/PageTabs'
 import { AdminGuard } from '@/components/auth/RequireRole'
 import Notification from '@/components/ui/Notification'
+import Dialog from '@/components/ui/Dialog'
 import { SkeletonForm } from '@/components/ui/Skeleton'
 import {
   getOptimizationSettings,
@@ -22,6 +23,14 @@ const LocationPickerMap = dynamic(
   () => import('@/components/map/LocationPickerMap'),
   { ssr: false }
 )
+
+const NEW_CREW_DEFAULTS = {
+  name: '', shift_start: '08:00', shift_end: '17:00', max_tasks_per_shift: 10,
+  supports_standard: true, supports_sweeper: false, speed_factor: 1, service_time_factor: 1,
+  vehicle_type: 'compactor', hazmat_certified: false,
+  max_volume_m3: null, max_weight_kg: null, starting_volume_m3: null, starting_weight_kg: null,
+  load_measured_at: null
+}
 
 function OptimizationSettingsContent() {
   const [loading, setLoading] = useState(true)
@@ -40,12 +49,13 @@ function OptimizationSettingsContent() {
   // Crew settings
   const [crews, setCrews] = useState([])
   const [showAddCrew, setShowAddCrew] = useState(false)
-  const [newCrew, setNewCrew] = useState({
-    name: '',
-    shift_start: '08:00',
-    shift_end: '17:00',
-    max_tasks_per_shift: 10,
-  })
+  const newCrewNameRef = useRef(null)
+  const [newCrew, setNewCrew] = useState({ ...NEW_CREW_DEFAULTS })
+  const [createError, setCreateError] = useState(null)
+
+  useEffect(() => {
+    if (showAddCrew) newCrewNameRef.current?.focus()
+  }, [showAddCrew])
 
   const fleetPayload = crew => ({
     supports_standard: crew.supports_standard ?? true,
@@ -61,20 +71,37 @@ function OptimizationSettingsContent() {
     load_measured_at: crew.load_measured_at ?? null,
   })
 
-  const validateFleet = crew => {
+  const validateFleet = (crew, showError = message => setNotification({ message, type: 'error' })) => {
+    const invalid = message => { showError(message); return false }
+    if (!(crew.supports_standard ?? true) && !crew.supports_sweeper && crew.vehicle_type !== 'hazmat_unit') {
+      return invalid('Select at least one dispatch capability: Standard clusters or Sweeper reports.')
+    }
+    if (!['compactor', 'pickup', 'tricycle', 'motorcycle', 'hazmat_unit', 'walking', 'bicycle'].includes(crew.vehicle_type ?? 'compactor')) {
+      return invalid('Choose a valid crew vehicle type')
+    }
+    for (const [key, label] of [['speed_factor', 'Travel speed factor'], ['service_time_factor', 'Service time factor']]) {
+      const value = crew[key] ?? 1
+      if (value === '' || !Number.isFinite(Number(value)) || Number(value) < 0.1 || Number(value) > 3) {
+        return invalid(`${label} is required and must be between 0.1 and 3.0`)
+      }
+    }
     for (const [load, maximum, label] of [
       ['starting_volume_m3', 'max_volume_m3', 'volume'],
       ['starting_weight_kg', 'max_weight_kg', 'weight'],
     ]) {
+      for (const key of [load, maximum]) {
+        if (crew[key] != null && (!Number.isFinite(Number(crew[key])) || Number(crew[key]) < (key === load ? 0 : 0.001))) {
+          return invalid(`${key === load ? 'Starting' : 'Maximum'} ${label} must be a valid ${key === load ? 'nonnegative' : 'positive'} number`)
+        }
+      }
       if (crew[maximum] != null && crew[load] != null && Number(crew[load]) > Number(crew[maximum])) {
-        setNotification({ message: `Starting ${label} exceeds vehicle capacity`, type: 'error' })
-        return false
+        return invalid(`Starting ${label} exceeds vehicle capacity`)
       }
     }
     if ((crew.starting_volume_m3 != null || crew.starting_weight_kg != null) && !crew.load_measured_at) {
-      setNotification({ message: 'Enter when the starting load was measured', type: 'error' })
-      return false
+      return invalid('Enter when the starting load was measured')
     }
+    if (crew.load_measured_at && !Number.isFinite(Date.parse(crew.load_measured_at))) return invalid('Enter a valid load measurement time')
     return true
   }
 
@@ -169,39 +196,38 @@ function OptimizationSettingsContent() {
   }
 
   const handleCreateCrew = async () => {
-    if (!newCrew.name.trim()) {
-      setNotification({ message: 'Crew name is required', type: 'error' })
+    if (saving) return
+    setCreateError(null)
+    if (!newCrew.name.trim() || newCrew.name.trim().length > 100) {
+      setCreateError('Crew name is required and must contain 1 to 100 characters')
       return
     }
-    if (!newCrew.shift_start || !newCrew.shift_end) {
-      setNotification({ message: 'Shift start and end times are required', type: 'error' })
+    if (!newCrew.shift_start || !newCrew.shift_end || newCrew.shift_end <= newCrew.shift_start) {
+      setCreateError('Enter both shift times. Shift end must be after shift start on the same day.')
       return
     }
-    if (newCrew.shift_end <= newCrew.shift_start) {
-      setNotification({ message: 'Shift end must be after shift start', type: 'error' })
+    if (!Number.isInteger(Number(newCrew.max_tasks_per_shift)) || Number(newCrew.max_tasks_per_shift) < 1 || Number(newCrew.max_tasks_per_shift) > 50) {
+      setCreateError('Max tasks per shift must be a whole number between 1 and 50')
       return
     }
-    if (!newCrew.max_tasks_per_shift || newCrew.max_tasks_per_shift < 1 || newCrew.max_tasks_per_shift > 50) {
-      setNotification({ message: 'Max tasks must be between 1 and 50', type: 'error' })
-      return
-    }
-    if (!validateFleet(newCrew)) return
+    if (!validateFleet(newCrew, setCreateError)) return
 
     try {
       setSaving('new-crew')
-      const created = await createFieldCrew({ ...newCrew, ...fleetPayload(newCrew) })
+      const created = await createFieldCrew({ ...newCrew, name: newCrew.name.trim(), max_tasks_per_shift: Number(newCrew.max_tasks_per_shift), ...fleetPayload(newCrew) })
       setCrews(prev => [...prev, created])
       setShowAddCrew(false)
-      setNewCrew({ name: '', shift_start: '08:00', shift_end: '17:00', max_tasks_per_shift: 10 })
-      setNotification({ message: 'Crew created successfully', type: 'success' })
+      setNewCrew({ ...NEW_CREW_DEFAULTS })
+      setNotification({ message: 'Crew created successfully. Assign crew members in Crew Management before dispatching.', type: 'success' })
     } catch (err) {
-      setNotification({ message: err.message || 'Failed to create crew', type: 'error' })
+      setCreateError(err.message || 'Failed to create crew')
     } finally {
       setSaving(null)
     }
   }
 
   const handleDepotChange = (field, value) => {
+    setIsEditingDepot(true)
     setDepot(prev => ({ ...prev, [field]: value }))
   }
 
@@ -248,6 +274,59 @@ function OptimizationSettingsContent() {
         />
       )}
 
+      <Dialog open={showAddCrew} onClose={() => setShowAddCrew(false)} labelledBy="create-crew-title" dismissible={saving !== 'new-crew'}>
+        {showAddCrew && (
+          <form className={styles.crewDialog} onSubmit={event => { event.preventDefault(); void handleCreateCrew() }}>
+            <div className={styles.crewDialogHeader}>
+              <div>
+                <h2 id="create-crew-title">Create field crew</h2>
+                <p>Required fields have defaults where appropriate. Select only capabilities the crew actually has.</p>
+              </div>
+              <button type="button" className={styles.btnSecondary} onClick={() => setShowAddCrew(false)} disabled={saving === 'new-crew'} aria-label="Close crew creation">Close</button>
+            </div>
+            <div className={styles.crewDialogBody}>
+              <fieldset className={styles.crewDialogFields} disabled={saving === 'new-crew'}>
+              <div className={styles.newCrewGrid}>
+                <div className={styles.field}>
+                  <label htmlFor="new-crew-name">Crew name · Required</label>
+                  <input ref={newCrewNameRef} id="new-crew-name" autoFocus required maxLength={100} type="text" value={newCrew.name}
+                    onChange={event => setNewCrew(prev => ({ ...prev, name: event.target.value }))}
+                    className={styles.input} placeholder="e.g., Barangay collection team 1" aria-describedby="new-crew-name-help" />
+                  <p id="new-crew-name-help" className={styles.help}>Use a recognizable, specific team name. Assign members separately in Crew Management after creation.</p>
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="new-crew-start">Shift start · Required</label>
+                  <input id="new-crew-start" type="time" required value={newCrew.shift_start}
+                    onChange={event => setNewCrew(prev => ({ ...prev, shift_start: event.target.value }))} className={styles.input} />
+                  <p className={styles.help}>Default 08:00. Use the crew’s actual daily start time.</p>
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="new-crew-end">Shift end · Required</label>
+                  <input id="new-crew-end" type="time" required value={newCrew.shift_end}
+                    onChange={event => setNewCrew(prev => ({ ...prev, shift_end: event.target.value }))} className={styles.input} />
+                  <p className={styles.help}>Default 17:00. Must be later than the start on the same day.</p>
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="new-crew-tasks">Max tasks per shift · Required</label>
+                  <input id="new-crew-tasks" type="number" required min="1" max="50" step="1" value={newCrew.max_tasks_per_shift}
+                    onChange={event => setNewCrew(prev => ({ ...prev, max_tasks_per_shift: event.target.value === '' ? '' : Number(event.target.value) }))} className={styles.input} />
+                  <p className={styles.help}>Default 10; accepted range 1–50. Reduce this for long or demanding cleanup tasks. This is a cap, not a target.</p>
+                </div>
+              </div>
+              <FleetCapabilities crew={newCrew} onChange={(key, value) => setNewCrew(prev => ({ ...prev, [key]: value }))} />
+              </fieldset>
+            </div>
+            <div className={styles.crewDialogFooter}>
+              {createError && <p role="alert" className={styles.createError}>{createError}</p>}
+              <div className={styles.actionRow}>
+                <button type="button" className={styles.btnSecondary} onClick={() => setShowAddCrew(false)} disabled={saving === 'new-crew'}>Cancel</button>
+                <button type="submit" className={styles.btnPrimary} disabled={saving === 'new-crew'}>{saving === 'new-crew' ? 'Creating…' : 'Create crew'}</button>
+              </div>
+            </div>
+          </form>
+        )}
+      </Dialog>
+
       {/* Tabs Switcher */}
       <PageTabs label="Optimization settings" tabs={[{ id: 'depot', label: 'SWMO Depot Location' }, { id: 'crew', label: 'Field Crew Configuration' }]} value={activeTab} onChange={setActiveTab} />
 
@@ -272,7 +351,7 @@ function OptimizationSettingsContent() {
                 <div className={styles.mapWrapper}>
                   <LocationPickerMap
                     position={{ lat: depot.latitude, lng: depot.longitude }}
-                    readOnly={!isEditingDepot}
+                    readOnly={!isEditingDepot || saving === 'depot'}
                     onChange={(latlng) => {
                       setDepot(prev => ({
                         ...prev,
@@ -292,7 +371,7 @@ function OptimizationSettingsContent() {
                       maxLength={100}
                       value={depot.name}
                       onChange={(e) => handleDepotChange('name', e.target.value)}
-                      disabled={!isEditingDepot}
+                      disabled={saving === 'depot'}
                       className={styles.input}
                       placeholder="e.g., SWMO Depot (PLP Center)"
                     />
@@ -360,71 +439,15 @@ function OptimizationSettingsContent() {
               </div>
               <button 
                 type="button"
-                onClick={() => setShowAddCrew(!showAddCrew)}
+                onClick={() => { setCreateError(null); setShowAddCrew(true) }}
                 className={styles.btnSecondary}
               >
-                {showAddCrew ? 'Cancel' : '+ Add crew'}
+                + Add crew
               </button>
             </div>
 
             <div className={styles.panelBody}>
-              {showAddCrew && (
-                <div className={styles.newCrewBox}>
-                  <h3 className="font-semibold text-text-primary text-sm">New field crew</h3>
-                  <div className={styles.newCrewGrid}>
-                    <div className={styles.field}>
-                      <label>Crew name</label>
-                      <input
-                        type="text"
-                        value={newCrew.name}
-                        onChange={(e) => setNewCrew(prev => ({ ...prev, name: e.target.value }))}
-                        className={styles.input}
-                        placeholder="e.g., Team Alpha"
-                      />
-                    </div>
-                    <div className={styles.field}>
-                      <label>Shift start</label>
-                      <input
-                        type="time"
-                        value={newCrew.shift_start}
-                        onChange={(e) => setNewCrew(prev => ({ ...prev, shift_start: e.target.value }))}
-                        className={styles.input}
-                      />
-                    </div>
-                    <div className={styles.field}>
-                      <label>Shift end</label>
-                      <input
-                        type="time"
-                        value={newCrew.shift_end}
-                        onChange={(e) => setNewCrew(prev => ({ ...prev, shift_end: e.target.value }))}
-                        className={styles.input}
-                      />
-                    </div>
-                    <div className={styles.field}>
-                      <label>Max tasks</label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="50"
-                        value={newCrew.max_tasks_per_shift}
-                        onChange={(e) => setNewCrew(prev => ({ ...prev, max_tasks_per_shift: parseInt(e.target.value) || 10 }))}
-                        className={styles.input}
-                      />
-                    </div>
-                  </div>
-                  <FleetCapabilities crew={newCrew} onChange={(key,value)=>setNewCrew(prev=>({...prev,[key]:value}))} />
-                  <div className={styles.actionRow}>
-                    <button
-                      type="button"
-                      onClick={handleCreateCrew}
-                      disabled={saving === 'new-crew'}
-                      className={styles.btnPrimary}
-                    >
-                      {saving === 'new-crew' ? 'Creating…' : 'Create crew'}
-                    </button>
-                  </div>
-                </div>
-              )}
+
 
               {crews.length === 0 ? (
                 <p className="text-text-muted text-sm py-4">No field crews found. Click &quot;+ Add crew&quot; to configure one.</p>

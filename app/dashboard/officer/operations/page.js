@@ -2,6 +2,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { fetchCleanupTasks } from '@/lib/api'
+import { getFieldCrews } from '@/lib/api/optimization'
 import PageHeader from '@/components/layout/PageHeader'
 import FilterBar from '@/components/ui/FilterBar'
 import DataTable from '@/components/ui/DataTable'
@@ -15,6 +16,7 @@ import styles from './Operations.module.css'
 
 export default function CleanupTasksPage() {
   const [tasks, setTasks] = useState([])
+  const [crews, setCrews] = useState([])
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
@@ -34,11 +36,17 @@ export default function CleanupTasksPage() {
 
   useEffect(() => {
     let active = true
-    fetchCleanupTasks()
-      .then(data => {
+    Promise.allSettled([fetchCleanupTasks(), getFieldCrews()])
+      .then(([taskResult, crewResult]) => {
         if (!active) return
-        const taskList = Array.isArray(data) ? data : (data?.tasks || [])
-        setTasks(taskList)
+        if (taskResult.status === 'fulfilled') {
+          const data = taskResult.value
+          setTasks(Array.isArray(data) ? data : (data?.tasks || []))
+        } else {
+          reportDiagnostic('error', 'dispatch', 'Failed to load cleanup tasks:', taskResult.reason)
+        }
+        if (crewResult.status === 'fulfilled') setCrews(crewResult.value || [])
+        else reportDiagnostic('error', 'dispatch', 'Failed to load crew names:', crewResult.reason)
       })
       .catch(error => {
         if (!active) return
@@ -52,6 +60,8 @@ export default function CleanupTasksPage() {
       active = false
     }
   }, [])
+
+  const crewNames = useMemo(() => new Map(crews.map(crew => [crew.id, crew.name])), [crews])
 
   // Apply filters with useMemo
   const filteredTasks = useMemo(() => {
@@ -160,14 +170,15 @@ export default function CleanupTasksPage() {
               )
             },
             {
-              key: 'assigned_crew_ids',
+              key: 'assigned_field_crew_id',
               label: 'Assigned crew',
               width: '20%',
-              render: (value) => {
-                const count = value && value.length > 0 ? value.length : 0
+              render: (value, task) => {
+                const ids = value ? [value] : (task.assigned_crew_ids || [])
+                const names = [...new Set(ids.map(id => crewNames.get(id)).filter(Boolean))]
                 return (
-                  <span className={`text-sm font-medium ${count > 0 ? 'text-accent-green' : 'text-text-muted'}`}>
-                    {count > 0 ? `${count} crew member${count > 1 ? 's' : ''}` : 'Unassigned'}
+                  <span className={`text-sm font-medium whitespace-normal ${names.length ? 'text-accent-green' : 'text-text-muted'}`}>
+                    {names.length ? names.join(', ') : ids.length ? 'Crew name unavailable' : 'Unassigned'}
                   </span>
                 )
               }

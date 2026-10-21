@@ -29,4 +29,4 @@
 }
 .tab:hover { color: var(--text-primary); }
 .tab[aria-selected='true'] { color: var(--workspace-link); border-color: var(--border); background: var(--surface); }
-.tab:focus-visible { outline: 2px solid var(--workspace-link); outline-offset: -3px; }
+.tabs .tab:focus-visible { outline: 2px solid var(--workspace-link); outline-offset: -3px; }

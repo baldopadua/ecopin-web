@@ -8,6 +8,7 @@ const hooks = registerHooks({ resolve(specifier, context, next) {
 } });
 const route = await import('../app/api/session/[[...action]]/route.js');
 const proxy = await import('../app/api/backend/[...path]/route.js');
+const { authorityFetch } = await import('../lib/server/session-http.mjs');
 hooks.deregister();
 
 const envKeys = ['SESSION_REDIS_REST_URL', 'SESSION_REDIS_REST_TOKEN', 'SESSION_ENCRYPTION_KEY', 'FRONTEND_URL', 'UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN', 'BACKEND_API_URL'];
@@ -23,7 +24,7 @@ Object.assign(process.env, {
 });
 after(() => { for (const [key, value] of Object.entries(saved)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; } });
 
-function fakeServices(t, { loginFailure = false, temporary = false } = {}) {
+function fakeServices(t, { loginFailure = false, temporary = false, commitDelay = 0 } = {}) {
   const sessions = new Map();
   const calls = [];
   t.mock.method(globalThis, 'fetch', async (url, options) => {
@@ -40,6 +41,11 @@ function fakeServices(t, { loginFailure = false, temporary = false } = {}) {
       return Response.json({ result });
     }
     if (target.hostname === 'backend.example.invalid') {
+      if (/^\/api\/optimization\/plan\/[^/]+\/commit$/.test(target.pathname)) {
+        const { setTimeout } = await import('node:timers/promises');
+        await setTimeout(commitDelay, undefined, { signal: options.signal });
+        return Response.json({ tasks: [{ id: 'task-1' }], routing_status: 'ready', run: { id: 'run-1' } });
+      }
       if (target.pathname === '/api/cleanup-tasks/custom') return Response.json({ message: 'synthetic private backend detail', status: 'conflict', reason: 'stale_or_blocked_report' }, { status: 409 });
       if (target.pathname === '/api/optimization/blocks') return Response.json([]);
       if (target.pathname === '/api/auth/login') {
@@ -60,6 +66,44 @@ const loginRequest = (body, origin = 'https://web.example.invalid') => new Reque
   method: 'POST', headers: { Origin: origin, 'Content-Type': 'application/json' }, body: JSON.stringify(body),
 });
 const context = action => ({ params: Promise.resolve({ action }) });
+
+test('plan commit waits beyond the normal proxy deadline and publishes only once', async t => {
+  const { calls } = fakeServices(t, { commitDelay: 30 });
+  const login = await route.POST(loginRequest({ email: 'person@example.invalid', password: 'synthetic-password' }), context(['login']));
+  const cookie = login.headers.get('set-cookie').split(';', 1)[0];
+  const timeout = AbortSignal.timeout.bind(AbortSignal);
+  // Scale seconds to milliseconds to exercise the real abort behavior quickly.
+  t.mock.method(AbortSignal, 'timeout', ms => timeout(ms / 1000));
+  const response = await proxy.POST(new Request('https://web.example.invalid/api/backend/api/optimization/plan/plan-1/commit', {
+    method: 'POST', headers: { Cookie: cookie, Origin: 'https://web.example.invalid', 'Content-Type': 'application/json' }, body: '{}',
+  }));
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).routing_status, 'ready');
+  assert.equal(calls.filter(call => call.target.endsWith('/plan/plan-1/commit')).length, 1);
+});
+
+test('longer commit deadline leaves other requests bounded and honors client cancellation', async t => {
+  const deadlines = [];
+  const timeout = AbortSignal.timeout.bind(AbortSignal);
+  t.mock.method(AbortSignal, 'timeout', ms => { deadlines.push(ms); return timeout(ms); });
+  t.mock.method(globalThis, 'fetch', async (_url, options) => {
+    options.signal.throwIfAborted();
+    return Response.json({});
+  });
+  for (const [path, method] of [
+    ['/api/auth/login', 'POST'],
+    ['/api/optimization/plan/plan-1', 'GET'],
+    ['/api/optimization/plan/plan-1/commit', 'GET'],
+    ['/api/optimization/plan/plan-1/commit-extra', 'POST'],
+  ]) {
+    await authorityFetch(path, { method });
+    assert.equal(deadlines.at(-1), 10000);
+  }
+  const controller = new AbortController();
+  controller.abort();
+  await assert.rejects(authorityFetch('/api/optimization/plan/plan-1/commit?source=dashboard', { method: 'POST' }, controller.signal), { name: 'AbortError' });
+  assert.equal(deadlines.at(-1), 60000);
+});
 
 test('dispatch conflicts remain 409 with safe refresh guidance, not a gateway failure', async t => {
   fakeServices(t);

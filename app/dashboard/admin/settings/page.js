@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
+import PageTabs from '@/components/ui/PageTabs'
 import { AdminGuard } from '@/components/auth/RequireRole'
 import Notification from '@/components/ui/Notification'
 import { getSystemSettings, updateSystemSettings, uploadCmsMediaFile } from '@/lib/api'
@@ -14,10 +14,8 @@ import {
   Megaphone, 
   Smartphone, 
   Save, 
-  CheckCircle2, 
   AlertTriangle, 
   Info, 
-  ExternalLink,
   Upload,
   Loader2
 } from 'lucide-react'
@@ -67,9 +65,15 @@ const DEFAULT_CMS = {
   maintenance_notice: 'The reporting service is currently undergoing scheduled maintenance. Please check back shortly.'
 }
 
+const SETTINGS_TABS = [
+  { id: 'contact', label: 'Contact & office', icon: PhoneCall },
+  { id: 'media', label: 'Media & gallery', icon: ImageIcon },
+  { id: 'announcements', label: 'Advisories & app', icon: Megaphone },
+  { id: 'security', label: 'Security & quotas', icon: ShieldCheck }
+]
+
 function SystemSettingsContent() {
-  const router = useRouter()
-  const [activeTab, setActiveTab] = useState('contact') // 'contact' | 'media' | 'announcements' | 'security'
+  const [activeTab, setActiveTab] = useState('contact')
   const [settings, setSettings] = useState({
     password_min_length: 8,
     password_require_uppercase: true,
@@ -115,6 +119,7 @@ function SystemSettingsContent() {
   }, [loadSettings])
 
   const handleSave = async () => {
+    if (saving || uploadingField) return
     try {
       setSaving(true)
       await updateSystemSettings({
@@ -191,13 +196,23 @@ function SystemSettingsContent() {
     <div className="workspace-page">
       <PageHeader
         title="System & CMS Settings"
-        subtitle="Configure public portal content, contact channels, media assets, and system policies"
+        subtitle="Manage content and policies. Save changes applies updates from every tab."
         breadcrumbs={[
           { label: 'Dashboard', href: '/dashboard' },
           { label: 'Admin', href: '/dashboard/admin' },
           { label: 'Settings' }
         ]}
-      />
+      >
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving || Boolean(uploadingField)}
+          className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {saving ? <Loader2 size={18} className="animate-spin" aria-hidden="true" /> : <Save size={18} aria-hidden="true" />}
+          <span>{saving ? 'Saving changes...' : 'Save changes'}</span>
+        </button>
+      </PageHeader>
 
       {notification && (
         <Notification
@@ -207,65 +222,12 @@ function SystemSettingsContent() {
         />
       )}
 
-      <div className="workspace-fill workspace-scroll p-4 md:p-6 space-y-6">
-        {/* Navigation Tabs */}
-        <div className="flex flex-wrap gap-2 border-b border-border pb-3">
-          <button
-            type="button"
-            onClick={() => setActiveTab('contact')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'contact'
-                ? 'bg-primary text-white shadow-sm'
-                : 'bg-surface-elevated text-text-muted hover:text-text-primary hover:bg-surface'
-            }`}
-          >
-            <PhoneCall size={16} />
-            <span>Contact & Office Info</span>
-          </button>
+      <PageTabs label="System settings" tabs={SETTINGS_TABS} value={activeTab} onChange={setActiveTab} />
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('media')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'media'
-                ? 'bg-primary text-white shadow-sm'
-                : 'bg-surface-elevated text-text-muted hover:text-text-primary hover:bg-surface'
-            }`}
-          >
-            <ImageIcon size={16} />
-            <span>Media & Community Gallery</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('announcements')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'announcements'
-                ? 'bg-primary text-white shadow-sm'
-                : 'bg-surface-elevated text-text-muted hover:text-text-primary hover:bg-surface'
-            }`}
-          >
-            <Megaphone size={16} />
-            <span>Advisories & App Distribution</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('security')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'security'
-                ? 'bg-primary text-white shadow-sm'
-                : 'bg-surface-elevated text-text-muted hover:text-text-primary hover:bg-surface'
-            }`}
-          >
-            <ShieldCheck size={16} />
-            <span>Security & Citizen Quotas</span>
-          </button>
-        </div>
-
+      <div className="workspace-fill workspace-scroll">
         {/* Tab 1: Contact & Office Info */}
         {activeTab === 'contact' && (
-          <div className="card space-y-6">
+          <section role="tabpanel" id="contact-panel" aria-labelledby="contact-tab" tabIndex={0} className="card space-y-6">
             <div>
               <h2 className="text-xl font-bold text-text-primary">Contact & Office Information</h2>
               <p className="text-sm text-text-muted mt-1">
@@ -376,12 +338,12 @@ function SystemSettingsContent() {
                 />
               </div>
             </div>
-          </div>
+          </section>
         )}
 
         {/* Tab 2: Media & Community Gallery */}
         {activeTab === 'media' && (
-          <div className="card space-y-6">
+          <section role="tabpanel" id="media-panel" aria-labelledby="media-tab" tabIndex={0} className="card space-y-6">
             <div>
               <h2 className="text-xl font-bold text-text-primary">Media & Community Showcase</h2>
               <p className="text-sm text-text-muted mt-1">
@@ -619,12 +581,12 @@ function SystemSettingsContent() {
                 </div>
               </div>
             </div>
-          </div>
+          </section>
         )}
 
         {/* Tab 3: Announcements & App Distribution */}
         {activeTab === 'announcements' && (
-          <div className="card space-y-6">
+          <section role="tabpanel" id="announcements-panel" aria-labelledby="announcements-tab" tabIndex={0} className="card space-y-6">
             <div>
               <h2 className="text-xl font-bold text-text-primary">Advisories & App Distribution</h2>
               <p className="text-sm text-text-muted mt-1">
@@ -850,12 +812,12 @@ function SystemSettingsContent() {
                 </div>
               )}
             </div>
-          </div>
+          </section>
         )}
 
         {/* Tab 4: Security & Citizen Quotas */}
         {activeTab === 'security' && (
-          <div className="card space-y-6">
+          <section role="tabpanel" id="security-panel" aria-labelledby="security-tab" tabIndex={0} className="card space-y-6">
             <h2 className="text-xl font-bold text-text-primary">Password Requirements & Citizen Quotas</h2>
 
             <div className="space-y-6">
@@ -967,21 +929,8 @@ function SystemSettingsContent() {
                 </p>
               </div>
             </div>
-          </div>
+          </section>
         )}
-
-        {/* Action Button Footer */}
-        <div className="flex justify-end pt-2 pb-6">
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="btn-primary flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold shadow-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-          >
-            <Save size={18} />
-            <span>{saving ? 'Saving changes...' : 'Save Settings'}</span>
-          </button>
-        </div>
       </div>
     </div>
   )

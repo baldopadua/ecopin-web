@@ -6,7 +6,6 @@
   line-height: 1.5;
   display: flex;
   flex-direction: column;
-  gap: 16px;
   min-height: 0;
 }
 
@@ -16,15 +15,16 @@
   border: 1px solid var(--border);
   border-radius: 16px;
   background: var(--surface);
-  overflow: hidden;
+  padding: 20px;
 }
 
 .section {
   display: grid;
-  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 1fr);
   gap: 32px;
   padding: 0;
   align-items: start;
+  flex-shrink: 0;
 }
 
 .section + .section {
@@ -35,6 +35,8 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  flex-shrink: 0;
+  min-width: 0;
 }
 
 .description h2 {
@@ -60,12 +62,12 @@
 .deadlineForm {
   background: var(--surface-elevated);
   border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 16px 20px;
+  border-radius: 16px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-width: 520px;
+  min-width: 0;
 }
 
 .deadlineForm label {
@@ -88,7 +90,7 @@
 }
 
 .input {
-  width: 84px;
+  width: 96px;
   min-height: 44px;
   padding: 8px 10px;
   border: 1px solid var(--border);
@@ -117,18 +119,19 @@
 .workTimes {
   min-width: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 20px;
+  flex-shrink: 0;
 }
 
 .workRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 14px;
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  min-width: 0;
+  padding: 20px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 16px;
   background: var(--surface-elevated);
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
@@ -139,7 +142,7 @@
 }
 
 .workRow label {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 500;
   color: var(--text-primary);
   overflow-wrap: anywhere;
@@ -147,8 +150,10 @@
 
 .workRow .controls {
   flex-shrink: 0;
-  gap: 8px;
+  gap: 12px;
 }
+
+.workRow button { margin-left: auto; }
 
 .unit {
   font-size: 14px;
@@ -157,24 +162,21 @@
 
 .footer {
   border-top: 1px solid var(--border);
-  padding: 14px 0 0;
+  padding: 20px 0 0;
   margin: 0;
   font-size: 14px;
   color: var(--text-secondary);
-  background: var(--surface-elevated);
+  flex-shrink: 0;
 }
 
 .panelBody,
 .workPanelBody {
-  flex: 1;
-  min-height: 0;
-  padding: 20px;
-}
-
-.workPanelBody {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
+  flex: 1;
+  min-height: 0;
+  padding: 6px;
 }
 
 .footer a {
@@ -248,24 +250,23 @@
 }
 
 @media (max-width: 899px) {
-  .page {
+  .panel {
     padding: 16px;
   }
   .section {
     grid-template-columns: minmax(0, 1fr);
     gap: 16px;
   }
-  .workTimes {
-    grid-template-columns: minmax(0, 1fr);
+}
+
+@media (max-width: 479px) {
+  .workRow .controls {
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr);
   }
-  .workRow {
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-  .workRow label {
-    flex: 1 1 100%;
-  }
-  .footer {
-    padding-top: 14px;
+  .workRow button {
+    grid-column: 1 / -1;
+    width: 100%;
+    margin-left: 0;
   }
 }

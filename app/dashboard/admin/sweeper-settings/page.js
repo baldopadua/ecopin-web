@@ -110,7 +110,7 @@ function SweeperSettingsPageContent() {
             <p>{error}</p><Button variant="secondary" onClick={loadConfig}>Retry</Button>
           </div>
         ) : config && (activeTab === 'deadline' ? (
-          <section id="deadline-panel" role="tabpanel" aria-labelledby="deadline-tab" className={`${styles.panel} workspace-fill`}>
+          <section id="deadline-panel" role="tabpanel" aria-labelledby="deadline-tab" tabIndex={0} className={`${styles.panel} workspace-fill`}>
             <div className={`workspace-scroll ${styles.panelBody}`}>
             <div className={styles.section} aria-labelledby="deadline-heading">
               <div className={styles.description}>
@@ -134,7 +134,7 @@ function SweeperSettingsPageContent() {
             </div>
           </section>
         ) : (
-          <section id="work-times-panel" role="tabpanel" aria-labelledby="work-times-tab" className={`${styles.panel} workspace-fill`}>
+          <section id="work-times-panel" role="tabpanel" aria-labelledby="work-times-tab" tabIndex={0} className={`${styles.panel} workspace-fill`}>
             <div className={`workspace-scroll ${styles.workPanelBody}`}>
               <div className={styles.description}>
                 <h2 id="work-time-heading">Work time estimates</h2>
