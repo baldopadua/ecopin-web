@@ -80,6 +80,10 @@
   min-height: 0;
   overflow: hidden;
 }
+@media (min-width: 1024px) and (min-height: 700px) {
+  /* Fitted pages scroll their panels; a sticky inset would push the header into the cards. */
+  .shell :global(.workspace-page:not(.workspace-page--flow) > header) { position: relative; top: auto; }
+}
 @media (max-width: 767px) {
   .shell :global(.workspace-page) { padding: 16px; }
   .shell :global(.workspace-page:not(.workspace-page--flow)) {

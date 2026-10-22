@@ -91,16 +91,12 @@ export function NavigationLoadingProvider({ children }) {
   useEffect(() => {
     if (previousPathnameRef.current !== pathname) {
       previousPathnameRef.current = pathname
-      if (isNavigatingRef.current || isLoading) {
-        if (safetyTimeoutRef.current) clearTimeout(safetyTimeoutRef.current)
-        const timer = setTimeout(() => {
-          isNavigatingRef.current = false
-          setIsLoading(false)
-        }, 150)
-        return () => clearTimeout(timer)
-      }
+      // Loading can start after the pathname update during fast programmatic navigation.
+      // Do not cancel dismissal when that loading state changes.
+      const timer = setTimeout(stopLoading, 150)
+      return () => clearTimeout(timer)
     }
-  }, [pathname, isLoading])
+  }, [pathname, stopLoading])
 
   // Global click interceptor for internal links targeting /dashboard routes.
   // INVESTIGATION NOTE (Redundant loading bug):

@@ -870,7 +870,7 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        {userCtx?.role === 'officer' && <OfficerTourSettings />}
+        {userCtx?.role === 'officer' && <OfficerTourSettings onNotify={setNotification} />}
 
         {/* 5. Session Management (Danger Zone) */}
         <section className={styles.dangerCard} aria-labelledby="session-heading">
