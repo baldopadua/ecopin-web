@@ -7,17 +7,13 @@ import { UserProvider } from '@/components/auth/UserContext'
 import { SessionProvider, useSession } from '@/components/auth/SessionProvider'
 import { TaskProvider } from '@/components/context/TaskContext'
 import DashboardQueryProvider from '@/components/context/DashboardQueryProvider'
-import { NavigationLoadingProvider } from '@/components/context/NavigationLoadingContext'
-import NavigationLoadingScreen from '@/components/ui/NavigationLoadingScreen'
 import styles from '@/components/layout/DashboardShell.module.css'
 import { reportDiagnostic } from '../../lib/diagnostics.mjs';
 
 export default function DashboardLayout({ children }) {
   return (
     <SessionProvider>
-      <NavigationLoadingProvider>
-        <DashboardContent>{children}</DashboardContent>
-      </NavigationLoadingProvider>
+      <DashboardContent>{children}</DashboardContent>
     </SessionProvider>
   )
 }
@@ -116,7 +112,6 @@ function DashboardContent({ children }) {
             <a href="#workspace-content" className={styles.skip}>Skip to workspace</a>
                         <Sidebar />
             <main id="workspace-content" tabIndex={-1} className={styles.main}>
-              <NavigationLoadingScreen />
               {children}
             </main>
           </div>

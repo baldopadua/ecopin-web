@@ -17,9 +17,26 @@ import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
 import useConfirmation from '@/components/ui/useConfirmation'
 import StatusBadge from '@/components/ui/StatusBadge'
+import ReportApprovalDialog from '@/components/reports/ReportApprovalDialog'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
 import { useUser } from '@/components/auth/UserContext'
-import { RefreshCw, Upload, Image as ImageIcon, Loader2 } from 'lucide-react'
+import {
+  RefreshCw,
+  Upload,
+  Image as ImageIcon,
+  Loader2,
+  Copy,
+  Check,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  AlertTriangle,
+  Video,
+  Play,
+  Maximize2
+} from 'lucide-react'
+import { isVideoResource, getVideoPosterUrl } from '@/lib/helpers/mediaHelpers'
+import { formatReportAddress } from '@/lib/format-location.mjs'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
 import { reportDiagnostic } from '../../../../../lib/diagnostics.mjs';
@@ -31,6 +48,89 @@ import { backendFetch as fetch } from '../../../../../lib/backend-fetch.mjs';
 // Polyfill Buffer for browser environment
 if (typeof window !== 'undefined' && !window.Buffer) {
   window.Buffer = Buffer
+}
+
+function VideoEvidenceCard({ url, name, onExpand }) {
+  const [isPlaying, setIsPlaying] = useState(false)
+  const videoRef = useRef(null)
+  const posterUrl = getVideoPosterUrl(url)
+
+  if (!url) return null
+
+  const handlePlayClick = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const v = videoRef.current
+    if (!v) return
+    const promise = v.play()
+    if (promise !== undefined) {
+      promise
+        .then(() => setIsPlaying(true))
+        .catch((err) => {
+          if (err?.name === 'NotAllowedError') {
+            v.muted = true
+            v.play()
+              .then(() => setIsPlaying(true))
+              .catch((retryErr) => console.error('Video muted play retry failed:', retryErr))
+          } else {
+            console.warn('Video play error:', err?.name, err?.message)
+          }
+        })
+    }
+  }
+
+  return (
+    <div className="relative group rounded-lg overflow-hidden border border-border bg-black w-full h-48 flex items-center justify-center">
+      <video
+        ref={videoRef}
+        key={url}
+        src={url}
+        poster={posterUrl || undefined}
+        controls
+        playsInline
+        preload="metadata"
+        onPlay={() => setIsPlaying(true)}
+        onPlaying={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        onEnded={() => setIsPlaying(false)}
+        className="w-full h-48 object-cover rounded-lg"
+      />
+
+      {/* Top Left Video Badge */}
+      <div className="absolute top-2 left-2 z-20 pointer-events-none bg-black/75 text-white text-[11px] font-mono font-bold px-2 py-0.5 rounded border border-white/20 flex items-center gap-1 shadow-sm">
+        <Video className="w-3 h-3 text-primary" />
+        <span>VIDEO</span>
+      </div>
+
+      {/* Top Right Expand Button (Opens Lightbox Inspector) */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation()
+          onExpand(url)
+        }}
+        className="absolute top-2 right-2 z-30 px-2.5 py-1 min-h-[32px] rounded-md bg-black/75 hover:bg-black text-white border border-white/25 hover:border-white/70 shadow-md backdrop-blur-sm flex items-center gap-1.5 text-xs font-medium transition-all transform hover:scale-105 active:scale-95 cursor-pointer"
+        aria-label="Expand video in inspector"
+        title="Expand video in inspector"
+      >
+        <Maximize2 className="w-3.5 h-3.5 text-white" />
+        <span className="text-[11px] font-mono font-medium">Expand</span>
+      </button>
+
+      {/* Prominent Centered Play Button (Visible when paused) */}
+      {!isPlaying && (
+        <button
+          type="button"
+          onClick={handlePlayClick}
+          className="absolute inset-0 m-auto w-14 h-14 rounded-full bg-black/60 hover:bg-black/80 text-white border-2 border-white/80 hover:border-white shadow-2xl backdrop-blur-xs flex items-center justify-center transition-all transform hover:scale-110 active:scale-95 z-20 group/play cursor-pointer pointer-events-auto"
+          aria-label="Play video"
+          title="Play video"
+        >
+          <Play className="w-6 h-6 fill-white text-white translate-x-0.5 group-hover/play:scale-110 transition-transform" />
+        </button>
+      )}
+    </div>
+  )
 }
 
 export default function ReportDetailPage() {
@@ -66,8 +166,66 @@ export default function ReportDetailPage() {
   const [agencyResponses, setAgencyResponses] = useState([])
   const [resolvingReport, setResolvingReport] = useState(false)
   const [validatingReport, setValidatingReport] = useState(null)
+  const [showApproval, setShowApproval] = useState(false)
   const [activityLogPage, setActivityLogPage] = useState(1)
   const activityLogPerPage = 10
+  const [copiedField, setCopiedField] = useState(null)
+
+  const handleCopy = (text, fieldName) => {
+    if (!text) return
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedField(fieldName)
+      setNotification({
+        message: `${fieldName === 'coords' ? 'Coordinates' : 'Address'} copied to clipboard`,
+        type: 'success'
+      })
+      setTimeout(() => setCopiedField(null), 2000)
+    }).catch(() => {
+      setNotification({ message: 'Failed to copy to clipboard', type: 'error' })
+    })
+  }
+
+  const slaInfo = useMemo(() => {
+    if (!report?.created_at) return null
+    const isClosedOrResolved =
+      report.status === 'closed' ||
+      report.status === 'resolved' ||
+      report.stage === 'closed' ||
+      report.stage === 'resolved' ||
+      report.lifecycle_stage === 'closed' ||
+      report.lifecycle_stage === 'resolved' ||
+      report.validation_status === 'rejected'
+    if (isClosedOrResolved) return null
+
+    const createdTime = new Date(report.created_at).getTime()
+    if (isNaN(createdTime)) return null
+
+    const elapsedHours = (Date.now() - createdTime) / (1000 * 60 * 60)
+    const slaThresholdHours = 48 // Default SLA threshold
+
+    if (elapsedHours > slaThresholdHours) {
+      const overdueHours = Math.max(1, Math.round(elapsedHours - slaThresholdHours))
+      return {
+        status: 'breached',
+        label: `SLA Overdue (${overdueHours}h overdue)`,
+        hours: overdueHours
+      }
+    } else if (elapsedHours >= slaThresholdHours * 0.75) {
+      const remainingHours = Math.max(1, Math.round(slaThresholdHours - elapsedHours))
+      return {
+        status: 'risk',
+        label: `SLA At Risk (${remainingHours}h remaining)`,
+        hours: remainingHours
+      }
+    } else {
+      const remainingHours = Math.max(1, Math.round(slaThresholdHours - elapsedHours))
+      return {
+        status: 'within',
+        label: `Within SLA (${remainingHours}h remaining)`,
+        hours: remainingHours
+      }
+    }
+  }, [report?.created_at, report?.status, report?.stage, report?.lifecycle_stage, report?.validation_status])
 
   const loadReportData = useCallback(async (isManualRefresh = false) => {
     const id = params?.id
@@ -131,18 +289,51 @@ export default function ReportDetailPage() {
 
   const allReportPhotos = useMemo(() => {
     const list = []
-    if (report?.image_url) list.push({ url: report.image_url, label: 'Reported Photo' })
+    if (report?.image_url) {
+      const isVideo = isVideoResource(report.image_url)
+      list.push({ url: report.image_url, label: isVideo ? 'Reported Video' : 'Reported Photo', isVideo, poster: getVideoPosterUrl(report.image_url) })
+    }
+    if (report?.video_url && !list.some(item => item.url === report.video_url)) {
+      list.push({
+        url: report.video_url,
+        label: 'Reported Video Evidence',
+        isVideo: true,
+        resource_type: 'video',
+        poster: getVideoPosterUrl(report.video_url)
+      })
+    }
     ;(evidence || []).forEach((e, idx) => {
       const url = e.url || e.photo_url || e.file_url
       if (url && !list.some(item => item.url === url)) {
-        list.push({ url, label: e.name || `Evidence Photo #${idx + 1}` })
+        const isVideo = e.resource_type === 'video' || isVideoResource(url, e.resource_type)
+        list.push({
+          url,
+          label: e.name || (isVideo ? `Evidence Video #${idx + 1}` : `Evidence Photo #${idx + 1}`),
+          isVideo,
+          resource_type: e.resource_type || (isVideo ? 'video' : 'image'),
+          poster: isVideo ? getVideoPosterUrl(url) : null
+        })
       }
     })
     if (report?.before_photo_url && !list.some(item => item.url === report.before_photo_url)) {
-      list.push({ url: report.before_photo_url, label: 'Before Cleanup Photo' })
+      const isVideo = isVideoResource(report.before_photo_url)
+      list.push({
+        url: report.before_photo_url,
+        label: isVideo ? 'Before Cleanup Video' : 'Before Cleanup Photo',
+        isVideo,
+        resource_type: isVideo ? 'video' : 'image',
+        poster: isVideo ? getVideoPosterUrl(report.before_photo_url) : null
+      })
     }
     if (report?.after_photo_url && !list.some(item => item.url === report.after_photo_url)) {
-      list.push({ url: report.after_photo_url, label: 'After Cleanup Photo' })
+      const isVideo = isVideoResource(report.after_photo_url)
+      list.push({
+        url: report.after_photo_url,
+        label: isVideo ? 'After Cleanup Video' : 'After Cleanup Photo',
+        isVideo,
+        resource_type: isVideo ? 'video' : 'image',
+        poster: isVideo ? getVideoPosterUrl(report.after_photo_url) : null
+      })
     }
     return list
   }, [report, evidence])
@@ -209,6 +400,67 @@ export default function ReportDetailPage() {
 
     return { latitude: null, longitude: null }
   }
+
+  const location = useMemo(() => {
+    return parseLocation(report?.location, report?.latitude, report?.longitude)
+  }, [report?.location, report?.latitude, report?.longitude])
+
+  const [reverseGeocodedAddress, setReverseGeocodedAddress] = useState(null)
+
+  useEffect(() => {
+    if (!location.latitude || !location.longitude) return
+    let active = true
+    const lat = location.latitude
+    const lng = location.longitude
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 4000)
+
+    const fetchFn = typeof window !== 'undefined' && window.fetch ? window.fetch.bind(window) : globalThis.fetch
+    fetchFn(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
+      headers: { 'Accept': 'application/json' },
+      signal: controller.signal
+    })
+      .then(r => r.json())
+      .then(data => {
+        clearTimeout(timer)
+        if (!active) return
+        const addr = data?.address
+        if (addr) {
+          const street = addr.road || addr.pedestrian || addr.street || ''
+          const district = addr.quarter || addr.neighbourhood || addr.suburb || ''
+          const city = addr.city || addr.town || 'Pasig City'
+          const parts = [street, district ? `Brgy. ${district}` : '', city].filter(Boolean)
+          if (parts.length > 0) {
+            setReverseGeocodedAddress(parts.join(', '))
+          }
+        }
+      })
+      .catch(() => {})
+
+    return () => {
+      active = false
+      clearTimeout(timer)
+      controller.abort()
+    }
+  }, [location.latitude, location.longitude])
+
+  const effectiveAddress = useMemo(() => {
+    if (reverseGeocodedAddress) return reverseGeocodedAddress
+    if (report?.street_address && typeof report.street_address === 'string' && report.street_address.trim()) {
+      return report.street_address
+    }
+    if (report?.address && typeof report.address === 'string' && report.address.trim()) {
+      return report.address
+    }
+    if (location.latitude && location.longitude) {
+      return formatReportAddress({
+        ...report,
+        latitude: location.latitude,
+        longitude: location.longitude
+      })
+    }
+    return report?.barangay ? `Barangay ${report.barangay}, Pasig City` : 'Street address not available'
+  }, [reverseGeocodedAddress, report, location.latitude, location.longitude])
 
   const getSatisfactionEmoji = (rating) => {
     switch (rating) {
@@ -281,18 +533,10 @@ export default function ReportDetailPage() {
     }
   }
 
-  const handleValidateReport = async () => {
-    setValidatingReport(reportId)
-    try {
-      await updateReportValidation(reportId, 'approved')
-      setReport({ ...report, validation_status: 'approved' })
-      setNotification({ message: 'Report approved successfully', type: 'success' })
-    } catch (error) {
-      reportDiagnostic('error', 'media', 'Failed to approve report:', error)
-      setNotification({ message: 'Failed to approve report. Please try again.', type: 'error' })
-    } finally {
-      setValidatingReport(null)
-    }
+  const handleReportApproved = updatedReport => {
+    setReport(previous => ({ ...previous, ...updatedReport }))
+    setShowApproval(false)
+    setNotification({ message: 'Report approval and severity saved successfully', type: 'success' })
   }
 
   const handleResolveReport = async () => {
@@ -395,11 +639,20 @@ export default function ReportDetailPage() {
   }
 
   const handlePropertyOwnerConsent = async (newStatus) => {
+    if (newStatus === 'denied') {
+      const confirmed = await confirmAction({
+        title: 'Deny Property Owner Consent?',
+        description: 'Marking property owner consent as denied will halt field crew operations and restrict crew dispatch for this private property report. Are you sure you want to proceed?',
+        action: 'Confirm Denial'
+      })
+      if (!confirmed) return
+    }
+
     setUpdatingConsent(true)
     try {
       await updatePropertyOwnerConsent(reportId, newStatus)
       await loadReportData()
-      setNotification({ message: 'Property owner consent status updated', type: 'success' })
+      setNotification({ message: `Property owner consent status updated to ${newStatus}`, type: 'success' })
     } catch (error) {
       reportDiagnostic('error', 'media', 'Failed to update consent status:', error)
       setNotification({ message: 'Failed to update consent status', type: 'error' })
@@ -487,7 +740,6 @@ export default function ReportDetailPage() {
     )
   }
 
-  const location = parseLocation(report.location, report.latitude, report.longitude)
   const dateStr = new Date(report.created_at).toLocaleString('en-US', {
     month: 'long',
     day: 'numeric',
@@ -575,6 +827,20 @@ export default function ReportDetailPage() {
                             <StatusBadge status={report.stage || report.lifecycle_stage} type="lifecycle" size="small" />
                           </div>
                         )}
+                        {slaInfo && (
+                          <div
+                            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg border ${
+                              slaInfo.status === 'breached'
+                                ? 'bg-error/10 text-error border-error/30 font-semibold'
+                                : slaInfo.status === 'risk'
+                                ? 'bg-warning/10 text-warning border-warning/30 font-semibold'
+                                : 'bg-surface-elevated text-text-muted border-border font-medium'
+                            }`}
+                          >
+                            {slaInfo.status === 'breached' ? <AlertTriangle size={13} /> : <Clock size={13} />}
+                            <span className="text-xs">{slaInfo.label}</span>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>
@@ -633,33 +899,60 @@ export default function ReportDetailPage() {
 
               </div>
 
-              {/* Evidence Photos */}
+              {/* Evidence Photos & Videos */}
+              {['officer', 'admin'].includes(user?.role) &&
+                typeof report.notes === 'string' &&
+                report.notes.startsWith('Reporter requested manual review:') && (
+                  <section className="card" aria-labelledby="manual-review-request-title">
+                    <h2 id="manual-review-request-title" className="text-xl font-semibold text-text-primary mb-2">
+                      Manual review request
+                    </h2>
+                    <p className="text-sm text-text-secondary mb-4">
+                      The citizen requested a human review. Read their explanation alongside the evidence before making a decision. Any recorded officer rejection reason appears below as well.
+                    </p>
+                    <p className="text-text-primary leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                      {report.notes}
+                    </p>
+                  </section>
+                )}
+
               <div className="card">
-                <h2 className="text-xl font-bold text-text-primary mb-4">Evidence Photos</h2>
+                <h2 className="text-xl font-bold text-text-primary mb-4">Evidence Media</h2>
                 {(loading || isRefreshing) ? (
                   <div className="h-48 bg-surface-elevated rounded-lg flex flex-col items-center justify-center border border-dashed border-border gap-2">
                     <Loader2 className="w-8 h-8 text-[var(--primary)] animate-spin" aria-hidden="true" />
-                    <p className="text-sm text-text-muted">Loading evidence photos...</p>
+                    <p className="text-sm text-text-muted">Loading evidence media...</p>
                   </div>
                 ) : evidence.length === 0 ? (
                   <div className="h-48 bg-surface-elevated rounded-lg flex items-center justify-center border border-dashed border-border">
                     <div className="text-center">
                       <ImageIcon size={48} className="text-text-muted mx-auto mb-2" aria-hidden="true" />
-                      <p className="text-text-muted">No evidence images available</p>
+                      <p className="text-text-muted">No evidence media available</p>
                     </div>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {evidence.map((img, index) => (
-                      <div key={index} className="relative group">
-                        <SecureImage
-                          src={img.url}
-                          alt={`Evidence ${index + 1}`}
-                          className="w-full h-48 object-cover rounded-lg border border-border cursor-pointer hover:opacity-90 transition-opacity"
-                          onClick={() => openLightboxAtUrl(img.url)}
-                        />
-                      </div>
-                    ))}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {evidence.map((img, index) => {
+                      const isVideo = img.resource_type === 'video' || isVideoResource(img.url, img.resource_type)
+                      return (
+                        <div key={index} className="relative group rounded-lg overflow-hidden border border-border bg-black">
+                          {isVideo ? (
+                            <VideoEvidenceCard
+                              url={img.url}
+                              name={img.name}
+                              onExpand={openLightboxAtUrl}
+                            />
+                          ) : (
+                            <SecureImage
+                              src={img.url}
+                              alt={`Evidence ${index + 1}`}
+                              className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                              onClick={() => openLightboxAtUrl(img.url)}
+                            />
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 )}
 
@@ -680,12 +973,20 @@ export default function ReportDetailPage() {
                       )}
                     </div>
                     {report.before_photo_url ? (
-                      <SecureImage
-                        src={report.before_photo_url}
-                        alt="Before"
-                        className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => openLightboxAtUrl(report.before_photo_url)}
-                      />
+                      isVideoResource(report.before_photo_url) ? (
+                        <VideoEvidenceCard
+                          url={report.before_photo_url}
+                          name="Before Cleanup Video"
+                          onExpand={openLightboxAtUrl}
+                        />
+                      ) : (
+                        <SecureImage
+                          src={report.before_photo_url}
+                          alt="Before"
+                          className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => openLightboxAtUrl(report.before_photo_url)}
+                        />
+                      )
                     ) : user?.role === 'field_crew' ? (
                       <div
                         className={`border border-border border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${uploadingBefore ? 'border-border bg-surface' : 'border-border hover:border-accent-green hover:bg-accent-green/5'
@@ -743,12 +1044,20 @@ export default function ReportDetailPage() {
                       )}
                     </div>
                     {report.after_photo_url ? (
-                      <SecureImage
-                        src={report.after_photo_url}
-                        alt="After"
-                        className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => openLightboxAtUrl(report.after_photo_url)}
-                      />
+                      isVideoResource(report.after_photo_url) ? (
+                        <VideoEvidenceCard
+                          url={report.after_photo_url}
+                          name="After Cleanup Video"
+                          onExpand={openLightboxAtUrl}
+                        />
+                      ) : (
+                        <SecureImage
+                          src={report.after_photo_url}
+                          alt="After"
+                          className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => openLightboxAtUrl(report.after_photo_url)}
+                        />
+                      )
                     ) : user?.role === 'field_crew' ? (
                       <div
                         className={`border border-border border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${uploadingAfter ? 'border-border bg-surface' : 'border-border hover:border-primary hover:bg-primary/5'
@@ -813,18 +1122,82 @@ export default function ReportDetailPage() {
                 <h2 className="text-lg font-bold text-text-primary mb-4">Report Details</h2>
                 <div className="space-y-3">
                   <div>
-                    <p className="text-xs text-text-muted">Report ID</p>
-                    <p className="text-text-primary font-medium text-sm">{report.id}</p>
+                    <p className="text-xs text-text-muted">Severity score</p>
+                    <p className="text-text-primary font-medium text-sm">{report.severity_score == null ? 'Not assigned' : `${report.severity_score} / 100${report.severity_level ? ` · ${report.severity_level}` : ''}`}</p>
+                    {report.validation_status === 'approved' && report.severity_score == null && ['officer', 'admin'].includes(user?.role) && (
+                      <button type="button" className="btn-secondary mt-2 min-h-11" onClick={() => setShowApproval(true)}>Set severity</button>
+                    )}
                   </div>
                   <div>
-                    <p className="text-xs text-text-muted">Location</p>
-                    <p className="text-text-primary font-medium text-sm">
-                      {location.latitude && location.longitude
-                        ? `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`
-                        : 'Not available'
-                      }
-                    </p>
+                    <p className="text-xs text-text-muted">Report ID</p>
+                    <p className="text-text-primary font-medium text-sm font-mono">{report.id}</p>
                   </div>
+                  {/* Street Address */}
+                  <div>
+                    <p className="text-xs text-text-muted">Street Address</p>
+                    <div className="flex items-center justify-between gap-2 mt-0.5">
+                      <p className="text-text-primary font-medium text-sm leading-snug break-words">
+                        {effectiveAddress}
+                      </p>
+                      {effectiveAddress && effectiveAddress !== 'Street address not available' && (
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(effectiveAddress, 'address')}
+                          className="p-1.5 rounded-lg border border-border hover:bg-surface-elevated text-text-muted hover:text-text-primary transition-colors flex-shrink-0"
+                          title="Copy street address"
+                          aria-label="Copy street address"
+                        >
+                          {copiedField === 'address' ? <Check size={14} className="text-success" /> : <Copy size={14} />}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {/* Location Coordinates */}
+                  <div>
+                    <p className="text-xs text-text-muted">Coordinates</p>
+                    <div className="flex items-center justify-between gap-2 mt-0.5">
+                      <p className="text-text-primary font-medium text-sm font-mono">
+                        {location.latitude && location.longitude
+                          ? `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`
+                          : 'Not available'
+                        }
+                      </p>
+                      {location.latitude && location.longitude && (
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(`${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`, 'coords')}
+                          className="p-1.5 rounded-lg border border-border hover:bg-surface-elevated text-text-muted hover:text-text-primary transition-colors flex-shrink-0"
+                          title="Copy coordinates"
+                          aria-label="Copy coordinates"
+                        >
+                          {copiedField === 'coords' ? <Check size={14} className="text-success" /> : <Copy size={14} />}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {/* SLA Status in Sidebar */}
+                  {slaInfo && (
+                    <div>
+                      <p className="text-xs text-text-muted">SLA Timeline</p>
+                      <div className="mt-1">
+                        {slaInfo.status === 'breached' && (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-error/10 text-error border border-error/30">
+                            <AlertTriangle size={13} /> {slaInfo.label}
+                          </span>
+                        )}
+                        {slaInfo.status === 'risk' && (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-warning/10 text-warning border border-warning/30">
+                            <Clock size={13} /> {slaInfo.label}
+                          </span>
+                        )}
+                        {slaInfo.status === 'within' && (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-text-muted bg-surface-elevated border border-border">
+                            <Clock size={13} /> {slaInfo.label}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <p className="text-xs text-text-muted">Submitted</p>
                     <p className="text-text-primary font-medium text-sm">{dateStr}</p>
@@ -957,23 +1330,43 @@ export default function ReportDetailPage() {
                   )}
 
                   {/* Validate/Reject Report for Manual Review */}
-                  {(report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review') && (
-                    <>
+                  {(report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review') && ['officer', 'admin'].includes(user?.role) && (
+                    <div className="flex flex-col gap-2.5 pt-2 border-t border-border">
                       <button
-                        onClick={handleValidateReport}
+                        onClick={() => setShowApproval(true)}
                         disabled={validatingReport === reportId}
-                        className="w-full px-4 py-2 bg-success text-white rounded-lg hover:bg-success/80 disabled:opacity-50 font-medium"
+                        className="w-full min-h-[44px] px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-medium rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {validatingReport === reportId ? 'Approving...' : 'Approve Report'}
+                        {validatingReport === reportId ? (
+                          <>
+                            <Loader2 size={16} className="animate-spin" />
+                            <span>Approving report...</span>
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 size={18} />
+                            <span>Approve Report</span>
+                          </>
+                        )}
                       </button>
                       <button
                         onClick={handleRejectReport}
                         disabled={validatingReport === reportId}
-                        className="w-full px-4 py-2 bg-error text-white rounded-lg hover:bg-error/80 disabled:opacity-50 font-medium"
+                        className="w-full min-h-[44px] px-4 py-2.5 bg-error/5 hover:bg-error/15 active:bg-error/25 text-error border border-error/30 font-medium rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {validatingReport === reportId ? 'Rejecting...' : 'Reject Report'}
+                        {validatingReport === reportId ? (
+                          <>
+                            <Loader2 size={16} className="animate-spin" />
+                            <span>Rejecting report...</span>
+                          </>
+                        ) : (
+                          <>
+                            <XCircle size={18} />
+                            <span>Reject Report</span>
+                          </>
+                        )}
                       </button>
-                    </>
+                    </div>
                   )}
 
                   <button
@@ -1001,6 +1394,7 @@ export default function ReportDetailPage() {
       />
 
       {confirmation}
+      {showApproval && <ReportApprovalDialog report={report} onClose={() => setShowApproval(false)} onApproved={handleReportApproved} />}
       {notification && (
         <Notification
           message={notification.message}

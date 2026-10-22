@@ -56,7 +56,7 @@ const nextConfig = {
       `img-src 'self' data: blob: ${services.join(' ')} https://*.tile.openstreetmap.org https://tile.openstreetmap.org https://cdnjs.cloudflare.com https://images.unsplash.com https://ui-avatars.com https://res.cloudinary.com`,
       `connect-src 'self' ${[...services, realtime].filter(Boolean).join(' ')} https://router.project-osrm.org https://api.open-meteo.com${isDev ? ' ws://localhost:* ws://127.0.0.1:*' : ''}`,
       "worker-src 'self' blob:",
-      "media-src 'self' blob:",
+      `media-src 'self' blob: data: ${services.join(' ')} https://res.cloudinary.com`,
       "object-src 'none'",
       "frame-src 'none'",
       "frame-ancestors 'none'",

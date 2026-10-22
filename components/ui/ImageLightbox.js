@@ -3,7 +3,66 @@ import React, { useState, useEffect, useCallback, useRef } from 'react'
 import SecureImage from '@/components/ui/SecureImage'
 import Dialog from './Dialog'
 import { getOptimizedImageUrl } from '@/components/ui/EvidenceGallery'
-import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react'
+import { isVideoResource } from '@/lib/helpers/mediaHelpers'
+import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Play } from 'lucide-react'
+
+function LightboxVideoPlayer({ src, poster }) {
+  const [isPlaying, setIsPlaying] = useState(false)
+  const videoRef = useRef(null)
+
+  if (!src) return null
+
+  const handlePlayClick = (e) => {
+    e.stopPropagation()
+    const v = videoRef.current
+    if (!v) return
+    const promise = v.play()
+    if (promise !== undefined) {
+      promise
+        .then(() => setIsPlaying(true))
+        .catch((err) => {
+          if (err?.name === 'NotAllowedError') {
+            v.muted = true
+            v.play()
+              .then(() => setIsPlaying(true))
+              .catch((retryErr) => console.error('Lightbox muted play retry failed:', retryErr))
+          } else {
+            console.warn('Lightbox video play error:', err?.name, err?.message)
+          }
+        })
+    }
+  }
+
+  return (
+    <div className="relative max-w-full max-h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+      <video
+        ref={videoRef}
+        key={src}
+        src={src}
+        poster={poster || undefined}
+        controls
+        playsInline
+        preload="auto"
+        onPlay={() => setIsPlaying(true)}
+        onPlaying={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        onEnded={() => setIsPlaying(false)}
+        className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+      />
+      {!isPlaying && (
+        <button
+          type="button"
+          onClick={handlePlayClick}
+          className="absolute inset-0 m-auto w-20 h-20 rounded-full bg-black/60 hover:bg-black/80 text-white border-2 border-white/80 hover:border-white shadow-2xl backdrop-blur-xs flex items-center justify-center transition-all transform hover:scale-110 active:scale-95 z-30 cursor-pointer pointer-events-auto"
+          aria-label="Play video"
+          title="Play video"
+        >
+          <Play className="w-9 h-9 fill-white text-white translate-x-0.5" />
+        </button>
+      )}
+    </div>
+  )
+}
 
 export default function ImageLightbox({
   images = [],
@@ -22,11 +81,18 @@ export default function ImageLightbox({
   }
 
   const normalizedImages = React.useMemo(() => (images || []).map(img => {
-    if (typeof img === 'string') return { url: img, label: '' }
+    if (typeof img === 'string') {
+      const isVideo = isVideoResource(img)
+      return { url: img, label: '', isVideo }
+    }
+    const url = img.photo_url || img.file_url || img.url || ''
+    const isVideo = img.isVideo || img.resource_type === 'video' || isVideoResource(url, img.resource_type)
     return {
-      url: img.photo_url || img.file_url || img.url || '',
+      url,
       label: img.label || img.reportTitle || (img.reportId ? `Report ${img.reportId}` : ''),
-      title: img.title || ''
+      title: img.title || '',
+      isVideo,
+      resource_type: img.resource_type
     }
   }).filter(img => Boolean(img.url)), [images])
 
@@ -107,15 +173,17 @@ export default function ImageLightbox({
       >
         {/* Top Control Bar */}
         <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-50 flex items-center gap-2">
-          <button
-            type="button"
-            onClick={toggleZoom}
-            className="p-2 min-h-11 min-w-11 inline-flex items-center justify-center bg-black/60 text-white hover:text-secondary transition-colors rounded-full border border-white/20 hover:border-secondary"
-            aria-label={isZoomed ? 'Zoom out' : 'Zoom in'}
-            title={isZoomed ? 'Zoom out' : 'Zoom in'}
-          >
-            {isZoomed ? <ZoomOut className="w-5 h-5 shrink-0" /> : <ZoomIn className="w-5 h-5 shrink-0" />}
-          </button>
+          {!currentImage.isVideo && (
+            <button
+              type="button"
+              onClick={toggleZoom}
+              className="p-2 min-h-11 min-w-11 inline-flex items-center justify-center bg-black/60 text-white hover:text-secondary transition-colors rounded-full border border-white/20 hover:border-secondary"
+              aria-label={isZoomed ? 'Zoom out' : 'Zoom in'}
+              title={isZoomed ? 'Zoom out' : 'Zoom in'}
+            >
+              {isZoomed ? <ZoomOut className="w-5 h-5 shrink-0" /> : <ZoomIn className="w-5 h-5 shrink-0" />}
+            </button>
+          )}
           <button
             type="button"
             onClick={onClose}
@@ -140,19 +208,29 @@ export default function ImageLightbox({
           </button>
         )}
 
-        {/* Image Display */}
+        {/* Media Display */}
         <div
-          className={`w-full h-full flex items-center justify-center p-2 sm:p-8 overflow-auto transition-transform duration-200 cursor-${isZoomed ? 'zoom-out' : 'zoom-in'}`}
-          onClick={toggleZoom}
+          className={`w-full h-full flex items-center justify-center p-2 sm:p-8 overflow-auto transition-transform duration-200 ${
+            currentImage.isVideo ? '' : `cursor-${isZoomed ? 'zoom-out' : 'zoom-in'}`
+          }`}
+          onClick={currentImage.isVideo ? undefined : toggleZoom}
         >
-          <SecureImage
-            src={getOptimizedImageUrl(currentImage.url, { width: 1600 })}
-            alt={currentImage.label || currentImage.title || 'Evidence Photo'}
-            decoding="async"
-            className={`max-w-full max-h-full object-contain rounded-sm transition-transform duration-200 ${
-              isZoomed ? 'scale-150 cursor-zoom-out' : 'cursor-zoom-in'
-            }`}
-          />
+          {currentImage.isVideo ? (
+            <LightboxVideoPlayer
+              key={currentImage.url}
+              src={currentImage.url}
+              poster={currentImage.poster}
+            />
+          ) : (
+            <SecureImage
+              src={getOptimizedImageUrl(currentImage.url, { width: 1600 })}
+              alt={currentImage.label || currentImage.title || 'Evidence Photo'}
+              decoding="async"
+              className={`max-w-full max-h-full object-contain rounded-sm transition-transform duration-200 ${
+                isZoomed ? 'scale-150 cursor-zoom-out' : 'cursor-zoom-in'
+              }`}
+            />
+          )}
         </div>
 
         {/* Next Button */}

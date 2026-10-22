@@ -1,5 +1,6 @@
 'use client'
 import React, { useEffect, useState, useMemo, useCallback, useRef, useDeferredValue } from 'react'
+import { MAP_LOCATIONS as LOCATIONS } from '@/lib/map-search.mjs'
 import { publicReportSearchText, matchesGallerySearch } from '@/lib/public-gallery.mjs'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -91,15 +92,7 @@ const PASIG_CENTER = [14.5802, 121.0850]
 const DEFAULT_ZOOM = 14
 const ISSUE_TYPES = ['waste', 'flooding', 'pollution', 'infrastructure', 'illegal_logging', 'others']
 
-const LOCATIONS = [
-  { name: 'Pasig City (All)', lat: 14.5802, lng: 121.0850 },
-  { name: 'Ortigas Center', lat: 14.5862, lng: 121.0610 },
-  { name: 'San Antonio', lat: 14.5815, lng: 121.0645 },
-  { name: 'Kapasigan Plaza', lat: 14.5595, lng: 121.0805 },
-  { name: 'Ugong North', lat: 14.5910, lng: 121.0760 },
-  { name: 'Rosario / Tramo', lat: 14.5875, lng: 121.0920 },
-  { name: 'Maybunga Riverbank', lat: 14.5775, lng: 121.0965 },
-]
+
 
 // Haversine distance calculation in kilometers
 const getDistanceKm = (lat1, lon1, lat2, lon2) => {

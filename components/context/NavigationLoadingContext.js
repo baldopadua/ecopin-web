@@ -16,9 +16,21 @@ export function useNavigationLoading() {
 // Friendly page name lookup for smooth contextual indicator
 export function getRouteTitle(urlPath) {
   if (!urlPath) return 'Workspace'
-  const path = urlPath.split('?')[0].replace(/\/+$/, '')
+  const path = urlPath.split(/[?#]/)[0].replace(/\/+$/, '') || '/'
 
   const routeMap = {
+    '/': 'EcoPin',
+    '/landing': 'EcoPin',
+    '/explore': 'Explore Pasig',
+    '/map': 'Explore Pasig',
+    '/gallery': 'Reports Gallery',
+    '/about': 'About EcoPin',
+    '/mobile': 'EcoPin App',
+    '/mobile-app': 'EcoPin App',
+    '/downloads': 'Downloads',
+    '/auth': 'Sign in',
+    '/delete-account': 'Delete account',
+    '/force-change-password': 'Password settings',
     '/dashboard': 'Command Center',
     '/dashboard/officer': 'Command Center',
     '/dashboard/officer/map-grid': 'Map Grid',
@@ -48,12 +60,13 @@ export function getRouteTitle(urlPath) {
   }
 
   if (routeMap[path]) return routeMap[path]
+  if (path.startsWith('/reports/')) return 'Report Details'
   if (path.startsWith('/dashboard/field-crew/operations/')) return 'Operation Details'
   if (path.startsWith('/dashboard/officer/operations/')) return 'Operation Details'
   if (path.startsWith('/dashboard/officer/hotzone-intel/')) return 'Hotzone Analysis'
   if (path.startsWith('/dashboard/officer/optimization/')) return 'Optimization Run'
   if (path.startsWith('/dashboard/raw-data/')) return 'Report Details'
-  return 'Workspace'
+  return path.startsWith('/dashboard') ? 'Workspace' : 'page'
 }
 
 export function NavigationLoadingProvider({ children }) {
@@ -98,7 +111,7 @@ export function NavigationLoadingProvider({ children }) {
     }
   }, [pathname, stopLoading])
 
-  // Global click interceptor for internal links targeting /dashboard routes.
+  // Show navigation feedback for internal pages, excluding assets and same-page changes.
   // INVESTIGATION NOTE (Redundant loading bug):
   // Previously checked `url.pathname !== currentUrl.pathname || url.search !== currentUrl.search`.
   // Triggering the full-screen page navigation overlay on query-only changes (like table pagination
@@ -115,14 +128,14 @@ export function NavigationLoadingProvider({ children }) {
 
       const href = anchor.getAttribute('href')
       const target = anchor.getAttribute('target')
-      if (!href || href.startsWith('#') || target === '_blank') return
+      if (!href || href.startsWith('#') || (target && target !== '_self') || anchor.hasAttribute('download')) return
 
       try {
         const url = new URL(href, window.location.href)
-        if (url.origin === window.location.origin) {
+        if (url.origin === window.location.origin && !/\.[a-z0-9]+$/i.test(url.pathname)) {
           const currentUrl = new URL(window.location.href)
           // Strictly navigate between different pathnames to prevent reload flashes on table pagination
-          if (url.pathname !== currentUrl.pathname && url.pathname.startsWith('/dashboard')) {
+          if (url.pathname !== currentUrl.pathname) {
             startLoading(url.pathname)
           }
         }
@@ -149,7 +162,7 @@ export function NavigationLoadingProvider({ children }) {
       if (!urlArg) return
       try {
         const dest = new URL(String(urlArg), window.location.href)
-        if (dest.origin === window.location.origin && dest.pathname.startsWith('/dashboard')) {
+        if (dest.origin === window.location.origin) {
           if (dest.pathname !== window.location.pathname) {
             // Next.js App Router performs history manipulations during React render/insertion phase.
             // Defer React state dispatch out of the synchronous render/insertion call stack.

@@ -4,16 +4,17 @@ import { useRef, useState, useEffect } from 'react'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { ArrowDown, ArrowRight, Camera, CheckCircle2, Download, Leaf, MapPin, ShieldCheck, Smartphone, Send, Megaphone, Info, AlertTriangle } from 'lucide-react'
+import { ArrowDown, ArrowRight, Camera, CheckCircle2, Download, Leaf, MapPin, ShieldCheck, Smartphone, Send, Megaphone, Info, AlertTriangle, Check, Loader2 } from 'lucide-react'
 import styles from './LandingPage.module.css'
 import usePublicTheme from './usePublicTheme'
 import useLandingMotion from './useLandingMotion'
 import LandingNavigation from './LandingNavigation'
+import PublicLoadingState from '@/components/ui/PublicLoadingState'
 import { getPublicCmsSettings } from '@/lib/api'
 
 const LandingMap = dynamic(() => import('./LandingMap'), {
   ssr: false,
-  loading: () => <div className={styles.mapLoading} role="status">Loading the Pasig map…</div>,
+  loading: () => <PublicLoadingState label="Loading the Pasig map…" />,
 })
 
 const steps = [
@@ -67,16 +68,15 @@ export default function LandingPage() {
 
   const [emailForm, setEmailForm] = useState({
     name: '',
+    email: '',
     subject: '',
     message: '',
     recipient: 'ecopinmail@gmail.com'
   })
   const [emailSending, setEmailSending] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
-  const [showEmailForm, setShowEmailForm] = useState(false)
   const [emailError, setEmailError] = useState(null)
   const [emailSuccess, setEmailSuccess] = useState(null)
-  const formRef = useRef(null)
 
   const handleEmailSubmit = async (e) => {
     e.preventDefault()
@@ -94,10 +94,10 @@ export default function LandingPage() {
         },
         body: JSON.stringify({
           name: emailForm.name,
-          email: 'no-reply@ecopin.com',
+          email: emailForm.email || 'no-reply@ecopin.com',
           subject: emailForm.subject,
           message: emailForm.message,
-          recipient: emailForm.recipient
+          recipient: emailForm.recipient || cms.contact_support_email || 'ecopinmail@gmail.com'
         })
       })
 
@@ -112,25 +112,26 @@ export default function LandingPage() {
         throw new Error(data.message || 'Failed to send message')
       }
 
-      setEmailSuccess('Message sent successfully! We\'ll get back to you soon.')
+      setEmailSuccess("Message sent successfully! We'll get back to you soon.")
+      setEmailSent(true)
       setEmailForm({
         name: '',
+        email: '',
         subject: '',
         message: '',
-        recipient: 'ecopinmail@gmail.com'
+        recipient: cms.contact_support_email || 'ecopinmail@gmail.com'
       })
 
       setTimeout(() => {
         setEmailSuccess(null)
-        setShowEmailForm(false)
-      }, 3000)
+        setEmailSent(false)
+      }, 4000)
     } catch (error) {
       console.error('Error sending contact form:', error)
 
-      // Better error messages based on error type
       let errorMessage = 'Failed to send message. Please try again or email us directly.'
       if (error.message === 'Failed to fetch') {
-        errorMessage = 'Unable to connect to server. Please email us directly at ' + emailForm.recipient
+        errorMessage = 'Unable to connect to server. Please email us directly at ' + (emailForm.recipient || 'ecopinmail@gmail.com')
       }
 
       setEmailError(errorMessage)
@@ -141,14 +142,6 @@ export default function LandingPage() {
 
   const handleEmailChange = (e) => {
     setEmailForm({ ...emailForm, [e.target.name]: e.target.value })
-  }
-
-  const handleContactCardClick = (recipient) => {
-    setShowEmailForm(true)
-    setEmailForm({ ...emailForm, recipient })
-    setTimeout(() => {
-      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }, 100)
   }
 
   return (
@@ -261,12 +254,29 @@ export default function LandingPage() {
         <section id="mobile-app" className={styles.mobileSection} aria-labelledby="mobile-heading">
           <div className={styles.phoneStage} data-reveal="100">
             <div className={styles.phoneOrbit} aria-hidden="true" />
-            <div className={styles.phone} aria-label="Illustration of the EcoPin mobile reporting app">
-              <div className={styles.phoneCamera} />
-              <div className={styles.phoneHeader}><Image src="/Solo Logo Light.png" alt="" width={24} height={24} style={{ width: 'auto', height: 'auto' }} /><strong>EcoPin</strong><span>Pasig City</span></div>
-              <div className={styles.phoneMap}><Image src="/pasig.svg" alt="" width={400} height={400} unoptimized /><span className={styles.phonePin}><MapPin size={30} /></span><span className={styles.phonePinSmall}><MapPin size={22} /></span><div className={styles.phoneLocation}><MapPin size={14} /> Your neighborhood</div></div>
-              <div className={styles.phoneSheet}><span>Make a difference nearby</span><strong>What did you notice?</strong><div><Camera size={18} /> Capture an issue <ArrowRight size={16} /></div><small>Photo · Location · Description</small></div>
-              <div className={styles.phoneHome} />
+            <div
+              className={styles.phoneTilt}
+              onPointerMove={event => {
+                if (event.pointerType !== 'mouse' || !window.matchMedia('(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)').matches) return
+                const bounds = event.currentTarget.getBoundingClientRect()
+                event.currentTarget.style.setProperty('--tilt-x', `${(0.5 - (event.clientY - bounds.top) / bounds.height) * 12}deg`)
+                event.currentTarget.style.setProperty('--tilt-y', `${((event.clientX - bounds.left) / bounds.width - 0.5) * 16}deg`)
+              }}
+              onPointerLeave={event => {
+                event.currentTarget.style.removeProperty('--tilt-x')
+                event.currentTarget.style.removeProperty('--tilt-y')
+              }}
+            >
+              <div className={styles.phone}>
+                <Image
+                  src={`/images/app/welcome-${isDark ? 'dark' : 'light'}.webp`}
+                  alt="EcoPin Android welcome screen: A cleaner Pasig starts with us, with sign in and create account options"
+                  width={648}
+                  height={1476}
+                  sizes="(max-width: 480px) 210px, 248px"
+                  draggable={false}
+                />
+              </div>
             </div>
             <span className={styles.phoneCaption}><CheckCircle2 size={16} /> A small action, wherever you are.</span>
           </div>
@@ -289,131 +299,173 @@ export default function LandingPage() {
 
         <section className={styles.closing}><div data-reveal><Leaf size={28} /><h2>A better Pasig begins<br />with the people in it.</h2><a href="#mobile-app" className={styles.primaryButton}>Take the first step <ArrowRight size={18} /></a></div></section>
       </main>
-      <section className={styles.contactSection}>
-        <div className={styles.contactContent}>
-          <h2 className={styles.contactHeading}>Contact Us</h2>
-          <div className={styles.contactGrid}>
-            <div className={styles.contactCard} onClick={() => handleContactCardClick(cms.contact_support_email || 'ecopinmail@gmail.com')}>
-              <div className={styles.contactCardContent}>
-                <span className={styles.contactCardLabel}>EcoPin Support</span>
-                <span className={styles.contactCardLink}>{cms.contact_support_email || 'ecopinmail@gmail.com'}</span>
+      <footer id="contact" className={styles.footer}>
+        <div className={styles.footerContainer}>
+          {/* Column 1: Brand & Civic Mission */}
+          <div className={styles.footerColBrand}>
+            <Link href="/" aria-label="EcoPin home" className={styles.footerLogo}>
+              <Image src={isDark ? '/Full Logo Dark.png' : '/Full Logo Light.png'} alt="EcoPin" width="120" height="34" />
+            </Link>
+            <div className={styles.footerCopy}>
+              <p className={styles.footerTagline}>Small actions. A cleaner Pasig.</p>
+              <p className={styles.footerDisclaimer}>
+                EcoPin connects residents with city operations to quickly report and resolve environmental concerns across Pasig City.
+              </p>
+              <div className={styles.footerCredits}>
+                <p className={styles.photoCredit}>
+                  Photography courtesy of{' '}
+                  <a href="https://www.facebook.com/share/p/19hk6BA5W8/" target="_blank" rel="noopener noreferrer">Pasig Tayo</a>{' '}
+                  (<a href="https://www.facebook.com/jonah.talagtag.77" target="_blank" rel="noopener noreferrer">Jonah Talagtag</a>)
+                </p>
               </div>
-              <ArrowRight size={16} className={styles.clickIndicator} />
-            </div>
-            <div className={styles.contactCard} onClick={() => handleContactCardClick(cms.contact_office_email || 'swmo@pasigcity.gov.ph')}>
-              <div className={styles.contactCardContent}>
-                <span className={styles.contactCardLabel}>{cms.contact_office_name || 'Solid Waste Management Office'}</span>
-                <div className={styles.contactCardDetails}>
-                  <span className={styles.contactCardLink}>{cms.contact_office_email || 'swmo@pasigcity.gov.ph'}</span>
-                  {cms.contact_phone && (
-                    <>
-                      <span className={styles.contactSeparator}>·</span>
-                      <a href={`tel:${cms.contact_phone}`} className={styles.contactCardLink} onClick={(e) => e.stopPropagation()}>{cms.contact_phone}</a>
-                    </>
-                  )}
-                </div>
-              </div>
-              <ArrowRight size={16} className={styles.clickIndicator} />
             </div>
           </div>
 
-          {showEmailForm && (
-            <div className={styles.emailFormContainer} ref={formRef}>
-              <div className={styles.emailFormHeader}>
-                <h3 className={styles.emailFormHeading}>Send us a message</h3>
-                <button
-                  type="button"
-                  onClick={() => setShowEmailForm(false)}
-                  className={styles.closeFormButton}
-                  aria-label="Close form"
-                >
-                  ×
-                </button>
+          {/* Column 2: Navigation & Official Office Info */}
+          <div className={styles.footerColNav}>
+            <div className={styles.footerNavGroup}>
+              <h3 className={styles.footerColTitle}>Navigation</h3>
+              <nav aria-label="Footer navigation" className={styles.footerLinks}>
+                <Link href="/explore">Live Map</Link>
+                <Link href="/explore?view=gallery">Reports Gallery</Link>
+                <a href="#how-it-works">Citizen Guide</a>
+                <a href="#mobile-app">Android App</a>
+                <Link href="/delete-account">Delete account</Link>
+              </nav>
+            </div>
+
+            <div className={styles.footerOfficeGroup}>
+              <h3 className={styles.footerColTitle}>Office & Inquiries</h3>
+              <p className={styles.officeName}>{cms.contact_office_name || 'Solid Waste Management Office'}</p>
+              {cms.contact_support_email && (
+                <p className={styles.officeDetail}>
+                  <span>Support: </span>
+                  <a href={`mailto:${cms.contact_support_email}`}>{cms.contact_support_email}</a>
+                </p>
+              )}
+              {cms.contact_phone && (
+                <p className={styles.officeDetail}>
+                  <span>Hotline: </span>
+                  <a href={`tel:${cms.contact_phone}`}>{cms.contact_phone}</a>
+                </p>
+              )}
+              {cms.contact_operating_hours && (
+                <p className={styles.officeDetail}>
+                  <span>Hours: </span>
+                  {cms.contact_operating_hours}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Column 3: Integrated Contact Form */}
+          <div className={styles.footerColForm}>
+            <div className={styles.contactFormCard}>
+              <div className={styles.contactFormHeader}>
+                <h3 className={styles.contactFormTitle}>Send us a message</h3>
+                <p className={styles.contactFormSubtitle}>Directly message support or city operations</p>
               </div>
-              <div className={styles.recipientBadge}>
-                To: {emailForm.recipient}
-              </div>
+
               {emailError && (
-                <div className={styles.errorMessage}>
+                <div className={styles.formErrorAlert} role="alert">
                   {emailError}
                 </div>
               )}
               {emailSuccess && (
-                <div className={styles.successMessage}>
+                <div className={styles.formSuccessAlert} role="status">
                   {emailSuccess}
                 </div>
               )}
-              <form onSubmit={handleEmailSubmit} className={styles.emailForm}>
-              <div className={styles.formRow}>
-                <div className={styles.formField}>
-                  <label htmlFor="contact-name" className={styles.formLabel}>Name</label>
+
+              <form onSubmit={handleEmailSubmit} className={styles.footerForm}>
+                <div className={styles.formRowTwo}>
+                  <div className={styles.formFieldCompact}>
+                    <label htmlFor="contact-name" className={styles.formLabelCompact}>Name</label>
+                    <input
+                      id="contact-name"
+                      name="name"
+                      type="text"
+                      value={emailForm.name}
+                      onChange={handleEmailChange}
+                      className={styles.formInputCompact}
+                      placeholder="Your name"
+                      required
+                    />
+                  </div>
+                  <div className={styles.formFieldCompact}>
+                    <label htmlFor="contact-email" className={styles.formLabelCompact}>Email</label>
+                    <input
+                      id="contact-email"
+                      name="email"
+                      type="email"
+                      value={emailForm.email}
+                      onChange={handleEmailChange}
+                      className={styles.formInputCompact}
+                      placeholder="name@email.com"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className={styles.formFieldCompact}>
+                  <label htmlFor="contact-subject" className={styles.formLabelCompact}>Subject</label>
                   <input
-                    id="contact-name"
-                    name="name"
+                    id="contact-subject"
+                    name="subject"
                     type="text"
-                    value={emailForm.name}
+                    value={emailForm.subject}
                     onChange={handleEmailChange}
-                    className={styles.formInput}
-                    placeholder="Your name"
+                    className={styles.formInputCompact}
+                    placeholder="What is this about?"
                     required
                   />
                 </div>
-              </div>
-              <div className={styles.formField}>
-                <label htmlFor="contact-subject" className={styles.formLabel}>Subject</label>
-                <input
-                  id="contact-subject"
-                  name="subject"
-                  type="text"
-                  value={emailForm.subject}
-                  onChange={handleEmailChange}
-                  className={styles.formInput}
-                  placeholder="What is this about?"
-                  required
-                />
-              </div>
-              <div className={styles.formField}>
-                <label htmlFor="contact-message" className={styles.formLabel}>Message</label>
-                <textarea
-                  id="contact-message"
-                  name="message"
-                  value={emailForm.message}
-                  onChange={handleEmailChange}
-                  className={styles.formTextarea}
-                  placeholder="Tell us more..."
-                  rows={5}
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                className={styles.submitButton}
-                disabled={emailSending}
-              >
-                {emailSending ? 'Sending...' : emailSent ? 'Sent!' : <><Send size={18} /> Send Message</>}
-              </button>
-            </form>
+
+                <div className={styles.formFieldCompact}>
+                  <label htmlFor="contact-message" className={styles.formLabelCompact}>Message</label>
+                  <textarea
+                    id="contact-message"
+                    name="message"
+                    value={emailForm.message}
+                    onChange={handleEmailChange}
+                    className={styles.formTextareaCompact}
+                    placeholder="How can we help?"
+                    rows={3}
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className={styles.footerSubmitBtn}
+                  disabled={emailSending}
+                >
+                  {emailSending ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      <span>Sending...</span>
+                    </>
+                  ) : emailSent ? (
+                    <>
+                      <Check size={16} />
+                      <span>Message Sent!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send size={15} />
+                      <span>Send Message</span>
+                    </>
+                  )}
+                </button>
+              </form>
             </div>
-          )}
+          </div>
         </div>
-      </section>
-      <footer className={styles.footer}>
-        <Link href="/" aria-label="EcoPin home"><Image src={isDark ? '/Full Logo Dark.png' : '/Full Logo Light.png'} alt="EcoPin" width="100" height="28" /></Link>
-        <div className={styles.footerCopy}>
-          <p>Small actions. A cleaner Pasig.</p>
-          <p className={styles.photoCredit}>
-            Photography courtesy of{' '}
-            <a href="https://www.facebook.com/share/p/19hk6BA5W8/" target="_blank" rel="noopener noreferrer">Pasig Tayo</a>{' '}
-            (<a href="https://www.facebook.com/jonah.talagtag.77" target="_blank" rel="noopener noreferrer">Jonah Talagtag</a>)
-          </p>
+
+        <div className={styles.footerBottomBar}>
+          <span>EcoPin · City Government of Pasig</span>
+          <span>Small actions. A cleaner Pasig.</span>
         </div>
-        <nav aria-label="Footer navigation">
-          <Link href="/explore">Map</Link>
-          <Link href="/explore?view=gallery">Gallery</Link>
-          <a href="#how-it-works">Citizen guide</a>
-          <Link href="/delete-account">Delete account</Link>
-        </nav>
-        <span>EcoPin · Pasig City</span>
       </footer>
     </div>
   )

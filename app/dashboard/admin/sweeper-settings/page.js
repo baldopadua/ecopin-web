@@ -7,7 +7,7 @@ import Button from '@/components/ui/Button'
 import Dialog from '@/components/ui/Dialog'
 import Notification from '@/components/ui/Notification'
 import PageTabs from '@/components/ui/PageTabs'
-import { fetchSweeperConfig, updateSlaThreshold, updateWorkTime } from '@/lib/api/sweeper'
+import { fetchSweeperConfig, updateSlaThreshold, updateWorkTime, updateMaturationThreshold } from '@/lib/api/sweeper'
 import styles from './SweeperSettings.module.css'
 
 const issueLabel = type => type.replace(/_/g, ' ').replace(/^\w/, letter => letter.toUpperCase())
@@ -18,8 +18,10 @@ function SweeperSettingsPageContent() {
   const [error, setError] = useState(null)
   const [notification, setNotification] = useState(null)
   const [slaThreshold, setSlaThreshold] = useState('')
+  const [maturationThreshold, setMaturationThreshold] = useState('')
   const [workTimes, setWorkTimes] = useState({})
   const [savingSla, setSavingSla] = useState(false)
+  const [savingMaturation, setSavingMaturation] = useState(false)
   const [savingWorkTimes, setSavingWorkTimes] = useState({})
   const [pendingSla, setPendingSla] = useState(null)
   const [activeTab, setActiveTab] = useState('deadline')
@@ -31,6 +33,7 @@ function SweeperSettingsPageContent() {
       const data = await fetchSweeperConfig()
       setConfig(data)
       setSlaThreshold(data.slaThreshold)
+      setMaturationThreshold(data.maturationThreshold ?? 6)
       setWorkTimes(data.workTimes || {})
     } catch {
       setError('Sweeper settings could not load. Try again to view the current values.')
@@ -68,6 +71,29 @@ function SweeperSettingsPageContent() {
     } else {
       void saveSla(hours)
     }
+  }
+
+  const saveMaturation = async (hours) => {
+    if (savingMaturation) return
+    setSavingMaturation(true)
+    setNotification(null)
+    try {
+      await updateMaturationThreshold(hours)
+      setConfig(previous => ({ ...previous, maturationThreshold: hours }))
+      setMaturationThreshold(hours)
+      setNotification({ type: 'success', message: 'Report freshness threshold saved.' })
+    } catch (err) {
+      setNotification({ type: 'error', message: err.message || 'Freshness threshold could not be saved. Try again.' })
+    } finally {
+      setSavingMaturation(false)
+    }
+  }
+
+  const submitMaturation = event => {
+    event.preventDefault()
+    const hours = Number(maturationThreshold)
+    if (!Number.isFinite(hours) || hours < 1 || hours > 168) return
+    void saveMaturation(hours)
   }
 
   const saveWorkTime = async (event, type) => {
@@ -126,6 +152,24 @@ function SweeperSettingsPageContent() {
                     onChange={event => setSlaThreshold(event.target.value)} />
                   <Button type="submit" disabled={savingSla || slaThreshold === '' || Number(slaThreshold) === Number(config.slaThreshold)}>
                     {savingSla ? 'Saving…' : 'Save deadline'}
+                  </Button>
+                </div>
+              </form>
+            </div>
+            <div className={styles.section} aria-labelledby="freshness-heading">
+              <div className={styles.description}>
+                <h2 id="freshness-heading">Report freshness / maturation threshold</h2>
+                <p>Minimum age before an unassigned report qualifies for sweeper dispatch. Reports younger than this threshold remain eligible for natural clustering.</p>
+              </div>
+              <form onSubmit={submitMaturation} className={styles.deadlineForm}>
+                <label htmlFor="freshness-hours">Freshness threshold (hours)</label>
+                <p id="freshness-help" className={styles.hint}>1–168 hours · current setting: {config.maturationThreshold ?? 6} hours</p>
+                <div className={styles.controls}>
+                  <input id="freshness-hours" className={styles.input} type="number" min="1" max="168" step="1" required
+                    aria-describedby="freshness-help" value={maturationThreshold} disabled={savingMaturation}
+                    onChange={event => setMaturationThreshold(event.target.value)} />
+                  <Button type="submit" disabled={savingMaturation || maturationThreshold === '' || Number(maturationThreshold) === Number(config.maturationThreshold ?? 6)}>
+                    {savingMaturation ? 'Saving…' : 'Save freshness'}
                   </Button>
                 </div>
               </form>

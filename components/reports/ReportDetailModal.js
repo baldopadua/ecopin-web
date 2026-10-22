@@ -6,7 +6,68 @@ import StatusBadge from '@/components/ui/StatusBadge'
 import ImageLightbox from '@/components/ui/ImageLightbox'
 import Dialog from '@/components/ui/Dialog'
 import { getOptimizedImageUrl } from '@/components/ui/EvidenceGallery'
-import { X, ChevronLeft, ChevronRight, Maximize2, MapPin, Calendar, Tag, AlertCircle, FileText, ExternalLink } from 'lucide-react'
+import { isVideoResource, getVideoPosterUrl } from '@/lib/helpers/mediaHelpers'
+import { formatReportAddress } from '@/lib/format-location.mjs'
+import { X, ChevronLeft, ChevronRight, Maximize2, MapPin, Calendar, Tag, AlertCircle, FileText, ExternalLink, Video, Play } from 'lucide-react'
+
+function ModalVideoPlayer({ src, poster }) {
+  const [isPlaying, setIsPlaying] = useState(false)
+  const videoRef = React.useRef(null)
+
+  if (!src) return null
+
+  const handlePlayClick = (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const v = videoRef.current
+    if (!v) return
+    const promise = v.play()
+    if (promise !== undefined) {
+      promise
+        .then(() => setIsPlaying(true))
+        .catch((err) => {
+          if (err?.name === 'NotAllowedError') {
+            v.muted = true
+            v.play()
+              .then(() => setIsPlaying(true))
+              .catch((retryErr) => console.error('Modal muted play retry failed:', retryErr))
+          } else {
+            console.warn('Modal video play error:', err?.name, err?.message)
+          }
+        })
+    }
+  }
+
+  return (
+    <div className="relative w-full h-full flex items-center justify-center">
+      <video
+        ref={videoRef}
+        key={src}
+        src={src}
+        poster={poster || undefined}
+        controls
+        playsInline
+        preload="metadata"
+        onPlay={() => setIsPlaying(true)}
+        onPlaying={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        onEnded={() => setIsPlaying(false)}
+        className="max-w-full max-h-full object-contain"
+      />
+      {!isPlaying && (
+        <button
+          type="button"
+          onClick={handlePlayClick}
+          className="absolute inset-0 m-auto w-16 h-16 rounded-full bg-black/60 hover:bg-black/80 text-white border-2 border-white/80 hover:border-white shadow-2xl backdrop-blur-xs flex items-center justify-center transition-all transform hover:scale-110 active:scale-95 z-10 cursor-pointer pointer-events-auto"
+          aria-label="Play video"
+          title="Play video"
+        >
+          <Play className="w-7 h-7 fill-white text-white translate-x-0.5" />
+        </button>
+      )}
+    </div>
+  )
+}
 
 export default function ReportDetailModal({ report, evidence = [], agencyResponses = [], onClose, className = '' }) {
   const router = useRouter()
@@ -15,15 +76,35 @@ export default function ReportDetailModal({ report, evidence = [], agencyRespons
 
   if (!report) return null
 
-  // Aggregate all photos for this report
+  const locationAddress = report.street_address || report.location_address || report.address || (report.latitude && report.longitude ? formatReportAddress(report) : null)
+
+  // Aggregate all photos and videos for this report
   const images = []
-  if (report.image_url) images.push({ url: report.image_url, label: 'Reported Photo' })
-  if (report.before_photo_url) images.push({ url: report.before_photo_url, label: 'Before Cleanup' })
-  if (report.after_photo_url) images.push({ url: report.after_photo_url, label: 'After Cleanup' })
+  if (report.image_url) {
+    const isVideo = isVideoResource(report.image_url)
+    images.push({ url: report.image_url, label: isVideo ? 'Reported Video' : 'Reported Photo', isVideo, poster: getVideoPosterUrl(report.image_url) })
+  }
+  if (report.video_url && !images.some(existing => existing.url === report.video_url)) {
+    images.push({ url: report.video_url, label: 'Reported Video', isVideo: true, poster: getVideoPosterUrl(report.video_url) })
+  }
+  if (report.before_photo_url) {
+    const isVideo = isVideoResource(report.before_photo_url)
+    images.push({ url: report.before_photo_url, label: isVideo ? 'Before Cleanup Video' : 'Before Cleanup', isVideo, poster: getVideoPosterUrl(report.before_photo_url) })
+  }
+  if (report.after_photo_url) {
+    const isVideo = isVideoResource(report.after_photo_url)
+    images.push({ url: report.after_photo_url, label: isVideo ? 'After Cleanup Video' : 'After Cleanup', isVideo, poster: getVideoPosterUrl(report.after_photo_url) })
+  }
   ;(evidence || []).forEach((img, idx) => {
     const url = img.photo_url || img.file_url || img.url
     if (url && !images.some(existing => existing.url === url)) {
-      images.push({ url, label: img.name || `Evidence #${idx + 1}` })
+      const isVideo = img.resource_type === 'video' || isVideoResource(url, img.resource_type)
+      images.push({
+        url,
+        label: img.name || (isVideo ? `Evidence Video #${idx + 1}` : `Evidence #${idx + 1}`),
+        isVideo,
+        poster: getVideoPosterUrl(url)
+      })
     }
   })
 
@@ -53,17 +134,27 @@ export default function ReportDetailModal({ report, evidence = [], agencyRespons
               </div>
             ) : (
               <div className="w-full h-full relative flex items-center justify-center group bg-black/90">
-                <SecureImage 
-                  src={getOptimizedImageUrl(images[currentImageIndex]?.url, { width: 1200 })} 
-                  alt={images[currentImageIndex]?.label || 'Report Evidence'} 
-                  className="max-w-full max-h-full object-contain cursor-pointer"
-                  wrapperClassName="w-full h-full flex items-center justify-center"
-                  onClick={() => setIsLightboxOpen(true)}
-                />
+                {images[currentImageIndex]?.isVideo ? (
+                  <ModalVideoPlayer
+                    key={images[currentImageIndex]?.url}
+                    src={images[currentImageIndex]?.url}
+                    poster={images[currentImageIndex]?.poster}
+                  />
+                ) : (
+                  <SecureImage 
+                    src={getOptimizedImageUrl(images[currentImageIndex]?.url, { width: 1200 })} 
+                    alt={images[currentImageIndex]?.label || 'Report Evidence'} 
+                    className="max-w-full max-h-full object-contain cursor-pointer"
+                    wrapperClassName="w-full h-full flex items-center justify-center"
+                    onClick={() => setIsLightboxOpen(true)}
+                  />
+                )}
+
                 
-                {/* Photo Label Pill */}
-                <div className="absolute top-3 left-3 z-20 bg-black/70 text-white px-2.5 py-1 text-[11px] font-mono font-bold uppercase tracking-wider rounded border border-white/20">
-                  {images[currentImageIndex]?.label}
+                {/* Photo/Video Label Pill */}
+                <div className="absolute top-3 left-3 z-20 bg-black/70 text-white px-2.5 py-1 text-[11px] font-mono font-bold uppercase tracking-wider rounded border border-white/20 flex items-center gap-1.5">
+                  {images[currentImageIndex]?.isVideo && <Video className="w-3.5 h-3.5 text-primary" />}
+                  <span>{images[currentImageIndex]?.label}</span>
                 </div>
 
                 {/* Counter Pill */}
@@ -213,9 +304,9 @@ export default function ReportDetailModal({ report, evidence = [], agencyRespons
                 <h4 className="text-xs font-bold uppercase tracking-wider text-text-muted mb-2 flex items-center gap-1.5">
                   <MapPin className="w-3.5 h-3.5 text-primary" /> Location Intel
                 </h4>
-                {report.location_address && (
+                {locationAddress && (
                   <p className="text-xs text-text-primary mb-2 font-medium">
-                    {report.location_address}
+                    {locationAddress}
                   </p>
                 )}
                 <div className="flex items-center justify-between text-xs font-mono text-text-muted bg-surface-elevated p-2 border border-border">

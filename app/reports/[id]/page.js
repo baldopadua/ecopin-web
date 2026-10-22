@@ -21,6 +21,7 @@ import LandingNavigation from '@/components/landing/LandingNavigation'
 import usePublicTheme from '@/components/landing/usePublicTheme'
 import publicStyles from '@/components/landing/LandingPage.module.css'
 import StatusBadge from '@/components/ui/StatusBadge'
+import PublicLoadingState from '@/components/ui/PublicLoadingState'
 
 export default function PublicReportPage() {
   const { id } = useParams()
@@ -115,13 +116,7 @@ export default function PublicReportPage() {
           </button>
         </div>
 
-        {loading && (
-          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <div style={{ display: 'inline-block', width: '32px', height: '32px', border: '3px solid #0052cc', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-            <p style={{ marginTop: '16px', color: 'var(--text-muted, #64748b)', fontSize: '14px' }}>Loading verified report…</p>
-            <style jsx>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-          </div>
-        )}
+        {loading && <PublicLoadingState label="Loading verified report…" />}
 
         {error && (
           <div style={{ 
