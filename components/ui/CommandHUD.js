@@ -1,42 +1,37 @@
-
 'use client'
-import React from 'react'
+import styles from './SpatialScan.module.css'
 
-export default function CommandHUD({ accuracy, lastUpdated, viewMode, setViewMode }) {
-  return (
-    <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-[1000] flex gap-4 pointer-events-auto">
-      <div className="bg-surface/80 backdrop-blur border border-border border-primary px-6 py-3 flex items-center gap-6 shadow-md">
-        <div>
-          <p className="text-[10px] text-primary font-mono uppercase tracking-widest">Command HUD</p>
-          <h1 className="text-text-primary font-bold uppercase tracking-tight text-xl">Spatial Scan</h1>
-        </div>
-        <div className="h-8 w-px bg-border"></div>
-        <div className="flex gap-4">
-          <div className="text-center">
-             <p className="text-[10px] text-text-muted font-mono uppercase">AI Confidence</p>
-             <p className="text-text-primary font-bold">{accuracy ? `${(accuracy.averageAccuracy * 100).toFixed(1)}%` : 'Calibrating...'}</p>
-          </div>
-          <div className="text-center">
-             <p className="text-[10px] text-text-muted font-mono uppercase">Last Updated</p>
-             <p className="text-text-primary font-bold">{lastUpdated || 'Live'}</p>
-          </div>
-        </div>
-        <div className="h-8 w-px bg-border"></div>
-        <div className="flex gap-2">
-           <button 
-             onClick={() => setViewMode('clusters')}
-             className={`px-3 py-1 text-xs font-bold font-mono border ${viewMode === 'clusters' ? 'bg-primary text-white border-primary' : 'bg-transparent text-text-primary border-border hover:border-text-primary'}`}
-           >
-             POLYGONS
-           </button>
-           <button 
-             onClick={() => setViewMode('heatmap')}
-             className={`px-3 py-1 text-xs font-bold font-mono border ${viewMode === 'heatmap' ? 'bg-primary text-white border-primary' : 'bg-transparent text-text-primary border-border hover:border-text-primary'}`}
-           >
-             EVENTS
-           </button>
-        </div>
+export default function CommandHUD({ accuracy, lastUpdated, viewMode, setViewMode, timeHorizon = '7d', setTimeHorizon, activeTab = 'current', selectedDate = null }) {
+  const value = accuracy?.averageAccuracy
+  const hasEvaluations = (accuracy?.totalEvaluations ?? 0) > 0
+  const displayAccuracy = hasEvaluations && Number.isFinite(value)
+    ? `${(value * 100).toFixed(1)}%`
+    : 'Unavailable'
+
+  const isHistorical = activeTab === 'historical'
+  const formattedSnapshotDate = selectedDate && !isNaN(new Date(selectedDate).getTime())
+    ? new Date(selectedDate).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
+    : 'Past Date'
+
+  return <div className={styles.controls || styles.summary}>
+    {accuracy && (
+      <>
+        <div className={styles.metric}><span>Model accuracy</span><strong>{displayAccuracy}</strong></div>
+        <div className={styles.metric}><span>Metrics loaded at</span><strong>{lastUpdated || 'Unavailable'}</strong></div>
+      </>
+    )}
+    {setTimeHorizon && (
+      <div className={styles.horizonControls} role="group" aria-label="Forecast horizon">
+        {[['7d', '+7 Days (Short-term)'], ['30d', '+30 Days (Monthly)'], ['90d', '+90 Days (Quarterly)']].map(([value, label]) =>
+          <button key={value} type="button" aria-label={label} aria-pressed={timeHorizon === value} disabled={viewMode === 'heatmap'} onClick={() => setTimeHorizon(value)}>
+            <strong>{isHistorical ? `${parseInt(value, 10)}-Day Window` : `Next ${parseInt(value, 10)} days`}</strong>
+            <span>{isHistorical ? `From ${formattedSnapshotDate}` : (value === '7d' ? 'Short term' : value === '30d' ? 'Monthly outlook' : 'Quarterly outlook')}</span>
+          </button>)}
       </div>
+    )}
+    <div className={`${styles.switcher || ''} ${styles.layerControls || ''}`} role="group" aria-label="Map layer">
+      <button type="button" aria-label="Risk areas" aria-pressed={viewMode === 'clusters'} onClick={() => setViewMode('clusters')}>Forecast map</button>
+      <button type="button" aria-label="Today (Actual)" aria-pressed={viewMode === 'heatmap'} onClick={() => setViewMode('heatmap')}>Today’s reports</button>
     </div>
-  )
+  </div>
 }

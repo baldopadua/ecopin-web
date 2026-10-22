@@ -8,6 +8,7 @@ import DataTable from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { FieldCrewGuard } from '@/components/auth/RequireRole'
+import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
 
 export default function FieldCrewReportsPage() {
   const router = useRouter()
@@ -79,7 +80,7 @@ export default function FieldCrewReportsPage() {
       setIssueTypes(typesData)
       setLoading(false)
     }).catch(error => {
-      console.error("Failed to load field crew raw data:", error)
+      reportDiagnostic('error', 'media', "Failed to load field crew raw data:", error)
       setLoading(false)
     })
   }, [])
@@ -105,15 +106,24 @@ export default function FieldCrewReportsPage() {
     }
 
     if (validationFilter !== 'all') {
-      if (validationFilter === 'pending') {
-        // Include both pending and manual_review when filtering by pending
-        filtered = filtered.filter(r => 
-          r.validation_status === 'pending' || 
-          r.validation_status === 'manual_review' || 
-          r.validation_status === 'Manual_Review'
-        )
+      const targetFilter = validationFilter.toLowerCase().trim()
+      if (targetFilter === 'pending' || targetFilter === 'pending_ai_validation') {
+        filtered = filtered.filter(r => {
+          const v = (r.validation_status || '').toLowerCase().trim()
+          return v === 'pending' || v === 'pending_ai_validation'
+        })
+      } else if (targetFilter === 'manual_review') {
+        filtered = filtered.filter(r => {
+          const v = (r.validation_status || '').toLowerCase().trim()
+          return v === 'manual_review' || v === 'manual review' || v === 'pending_manual_review' || Boolean(r.manual_review_id)
+        })
+      } else if (targetFilter === 'approved' || targetFilter === 'validated' || targetFilter === 'automatically_valid') {
+        filtered = filtered.filter(r => {
+          const v = (r.validation_status || '').toLowerCase().trim()
+          return v === 'approved' || v === 'validated' || v === 'automatically_valid'
+        })
       } else {
-        filtered = filtered.filter(r => r.validation_status === validationFilter)
+        filtered = filtered.filter(r => (r.validation_status || '').toLowerCase().trim() === targetFilter)
       }
     }
 
@@ -136,7 +146,7 @@ export default function FieldCrewReportsPage() {
     if (taskId) {
       router.push(`/dashboard/field-crew/operations/${taskId}`)
     } else {
-      console.warn("No assigned task found for report", report.id)
+      reportDiagnostic('warn', 'media', "No assigned task found for report", report.id)
     }
   }
 
@@ -194,14 +204,14 @@ export default function FieldCrewReportsPage() {
               ]
             },
             {
-              label: 'All Validation',
+              label: 'Review Status',
               value: validationFilter,
-              onChange: setValidationFilter,
+              onChange: (val) => { setValidationFilter(val); setCurrentPage(1) },
               options: [
-                { value: 'all', label: 'All Validation' },
-                { value: 'automatically_valid', label: 'Automatically Valid' },
+                { value: 'all', label: 'All Review Status' },
+                { value: 'approved', label: 'Approved' },
                 { value: 'manual_review', label: 'Manual Review' },
-                { value: 'validated', label: 'Validated' },
+                { value: 'pending', label: 'Pending AI Validation' },
                 { value: 'rejected', label: 'Rejected' }
               ]
             }
@@ -225,7 +235,7 @@ export default function FieldCrewReportsPage() {
             },
             { 
               key: 'issue_type', 
-              label: 'Issue Type', 
+              label: 'Issue type',
               width: '20%',
               render: (value) => (
                 <span className="text-sm text-text-secondary">{value || 'N/A'}</span>
@@ -241,11 +251,12 @@ export default function FieldCrewReportsPage() {
             },
             { 
               key: 'validation_status', 
-              label: 'Validation', 
+              label: 'Review status',
               width: '15%',
-              render: (value) => (
-                <StatusBadge status={value} type="validation" />
-              )
+              render: (value, row) => {
+                const effective = value || (row?.manual_review_id ? 'manual_review' : 'pending')
+                return <StatusBadge status={effective} type="validation" />
+              }
             },
             { 
               key: 'created_at', 

@@ -1,0 +1,8 @@
+.enter { animation: enter .45s cubic-bezier(.22,1,.36,1) both; }
+.loading { height: 100%; min-height: 240px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; color: var(--landing-text); background: var(--landing-bg); font-family: var(--font-outfit), sans-serif; animation: enter .3s ease both; }
+.loadingIcon { width: 64px; height: 64px; display: grid; place-items: center; background: var(--landing-green-bg); border: 1px solid var(--landing-border); border-radius: 50%; color: var(--landing-green); animation: breathe 1.8s ease-in-out infinite; }
+.loading strong { font-size: 20px; font-weight: 500; }
+.loading p { font-size: 14px; color: var(--landing-muted); margin: 0; }
+@keyframes enter { from { opacity: .2; translate: 0 12px; } to { opacity: 1; translate: 0 0; } }
+@keyframes breathe { 50% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--landing-green) 10%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .enter, .loading, .loadingIcon { animation: none; } }

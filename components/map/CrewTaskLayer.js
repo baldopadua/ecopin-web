@@ -1,10 +1,13 @@
 'use client'
-import { useMemo } from 'react'
-import { Polyline, Marker, Popup } from 'react-leaflet'
+import { useMemo, useState } from 'react'
+import { Polyline, Marker, Popup, Tooltip, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import { Buffer } from 'buffer'
 import wkx from 'wkx'
 import EcoPinMarker from './EcoPinMarker'
+import { useUser } from '@/components/auth/UserContext'
+import useMapPhotoEvidence from './useMapPhotoEvidence'
+import { reportDiagnostic } from '../../lib/diagnostics.mjs';
 
 // Parse WKB geometry
 const parseGeometry = (geometry) => {
@@ -21,13 +24,13 @@ const parseGeometry = (geometry) => {
       return [lat, lng]
     }
   } catch (error) {
-    console.error('Error parsing geometry:', error)
+    reportDiagnostic('error', 'map', 'Error parsing geometry:', error)
   }
   return null
 }
 
 const CREW_COLORS = [
-  '#ccff00', '#FF0055', '#00FFFF', '#FF9900', '#9900FF', '#00FF66'
+  '#0052cc', '#FF0055', '#00FFFF', '#FF9900', '#9900FF', '#00FF66'
 ]
 
 function getCrewColor(crewIdStr) {
@@ -54,7 +57,7 @@ function createTaskReportIcon(label, color, isCompleted) {
       justify-content: center;
       font-size: 10px;
       font-weight: bold;
-      color: ${isCompleted ? color : (color === '#ccff00' || color === '#00FFFF' || color === '#00FF66' ? 'black' : 'white')};
+      color: ${isCompleted ? color : (color === '#00FFFF' || color === '#00FF66' ? 'black' : 'white')};
       box-shadow: 0 2px 4px rgba(0,0,0,0.4);
     "></div>`,
     iconSize: [24, 24],
@@ -62,7 +65,20 @@ function createTaskReportIcon(label, color, isCompleted) {
   })
 }
 
-export default function CrewTaskLayer({ tasks = [] }) {
+export default function CrewTaskLayer({ tasks = [], basePath, photoPins = false, routeColor, reportLinks = false }) {
+  const user = useUser()
+  const map = useMapEvents({ moveend: () => { if (photoPins) setBounds(map.getBounds()) } })
+  const [bounds, setBounds] = useState(() => map.getBounds())
+  const visibleReports = useMemo(() => !photoPins ? [] : tasks.flatMap(task => task.reports || []).filter(report => {
+    const coords = parseGeometry(report.location)
+    return coords && bounds.contains(coords)
+  }), [tasks, photoPins, bounds])
+  const photos = useMapPhotoEvidence(visibleReports, photoPins)
+  const defaultBasePath = user?.role === 'field_crew'
+    ? '/dashboard/field-crew/operations'
+    : '/dashboard/officer/operations'
+  const effectiveBasePath = basePath || defaultBasePath
+
   const renderedTasks = useMemo(() => {
     if (!tasks || tasks.length === 0) return null
 
@@ -70,7 +86,7 @@ export default function CrewTaskLayer({ tasks = [] }) {
       if (!task.reports || task.reports.length === 0) return null
       
       const crewId = task.assigned_crew_ids && task.assigned_crew_ids.length > 0 ? task.assigned_crew_ids[0] : null
-      const color = getCrewColor(crewId)
+      const color = routeColor || getCrewColor(crewId)
       const isTaskCompleted = task.status === 'completed' || task.status === 'resolved'
 
       // Extract coordinates for all reports in this task
@@ -99,7 +115,11 @@ export default function CrewTaskLayer({ tasks = [] }) {
                 opacity: 0.7, 
                 dashArray: '5, 10'
               }}
-            />
+            >
+              <Tooltip sticky>
+                Task micro-route ({color}): Connects cluster centroid to constituent report sub-pins
+              </Tooltip>
+            </Polyline>
           )}
           
           {/* Pins for Reports */}
@@ -108,15 +128,18 @@ export default function CrewTaskLayer({ tasks = [] }) {
               <EcoPinMarker 
                 key={report.id}
                 report={report}
+                photoPin={photoPins}
+                photo={photos[report.id]}
                 position={coords}
-                customUrl={`/dashboard/field-crew/operations/${task.id}`}
+                customUrl={reportLinks ? `/dashboard/raw-data/${report.id}` : `${effectiveBasePath}/${task.id}`}
+                buttonLabel={reportLinks ? 'View Report' : undefined}
               />
             )
           })}
         </div>
       )
     })
-  }, [tasks])
+  }, [tasks, effectiveBasePath, photoPins, photos, routeColor, reportLinks])
 
   return <>{renderedTasks}</>
 }

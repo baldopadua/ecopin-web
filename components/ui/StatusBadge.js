@@ -10,8 +10,13 @@ import {
   getResponseActionColor,
   getRoleBadgeColor,
   getConsentStatusColor,
+  getLocationVerificationColor,
+  formatLocationVerificationLabel,
   formatStatusLabel,
-  formatActionLabel
+  formatActionLabel,
+  formatValidationStatusLabel,
+  formatLifecycleStageLabel,
+  toTitleCase
 } from '@/lib/helpers/statusHelpers'
 
 /**
@@ -19,8 +24,9 @@ import {
  */
 export default function StatusBadge({
   status,
-  type = 'report', // report, validation, lifecycle, task, severity, cluster, auditAction, responseAction, role, consent
+  type = 'report', // report, validation, lifecycle, task, severity, cluster, auditAction, responseAction, role, consent, location_verification
   label,
+  distanceMeters,
   size = 'small', // small, medium, large
   className = ''
 }) {
@@ -34,11 +40,11 @@ export default function StatusBadge({
       break
     case 'validation':
       colorClass = getValidationStatusColor(status)
-      displayLabel = label || formatStatusLabel(status)
+      displayLabel = label || formatValidationStatusLabel(status)
       break
     case 'lifecycle':
       colorClass = getLifecycleStageColor(status)
-      displayLabel = label || formatStatusLabel(status)
+      displayLabel = label || formatLifecycleStageLabel(status)
       break
     case 'task':
       colorClass = getTaskStatusColor(status)
@@ -46,7 +52,7 @@ export default function StatusBadge({
       break
     case 'severity':
       colorClass = getSeverityColor(status)
-      displayLabel = label || (status ? status.charAt(0).toUpperCase() + status.slice(1) : 'N/A')
+      displayLabel = label || (status ? toTitleCase(status) : 'N/A')
       break
     case 'cluster':
       colorClass = getClusterStatusColor(status)
@@ -62,11 +68,15 @@ export default function StatusBadge({
       break
     case 'role':
       colorClass = getRoleBadgeColor(status)
-      displayLabel = label || (status ? status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'N/A')
+      displayLabel = label || (status ? toTitleCase(status) : 'N/A')
       break
     case 'consent':
       colorClass = getConsentStatusColor(status)
       displayLabel = label || formatStatusLabel(status)
+      break
+    case 'location_verification':
+      colorClass = getLocationVerificationColor(status)
+      displayLabel = label || formatLocationVerificationLabel(status, distanceMeters)
       break
     default:
       colorClass = 'bg-surface-elevated text-text-muted border-border'
@@ -80,11 +90,8 @@ export default function StatusBadge({
   }
 
   return (
-    <span className={`inline-flex items-center gap-2 ${sizeClasses[size]} font-bold uppercase tracking-[0.15em] border border-border border-current whitespace-nowrap ${colorClass} ${className}`}>
-      <span className="text-[0.7em] opacity-50 font-mono font-bold leading-none transform -skew-x-12">
-        //
-      </span>
-      <span className="translate-y-[1px]">{displayLabel}</span>
+    <span className={`inline-flex items-center ${sizeClasses[size]} font-medium rounded-full border border-current max-w-full ${colorClass} ${className}`}>
+      <span className="break-words">{displayLabel}</span>
     </span>
   )
 }

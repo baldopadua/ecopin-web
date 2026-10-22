@@ -18,6 +18,7 @@ export default function RootLayout({ children }) {
     <html
       lang="en"
       className={`${outfit.variable} h-full antialiased`}
+      data-scroll-behavior="smooth"
       suppressHydrationWarning
     >
       <head>

@@ -1,0 +1,119 @@
+.page {
+  color: var(--text-primary);
+  font-family: var(--font-outfit), sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.tableWorkspace {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tableContainer {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.tableViewport { flex: 1; min-height: 0; overflow: auto; border-radius: 14px; }
+
+.clusterTitle {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.clusterId {
+  font-size: 11px;
+  font-family: monospace;
+  color: var(--text-secondary);
+}
+
+.severityBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.severityHigh {
+  background: color-mix(in srgb, var(--error) 12%, var(--surface));
+  color: var(--error);
+}
+
+.severityMedium {
+  background: color-mix(in srgb, var(--warning) 12%, var(--surface));
+  color: var(--warning);
+}
+
+.severityLow {
+  background: color-mix(in srgb, var(--info) 12%, var(--surface));
+  color: var(--info);
+}
+
+.statusWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.statusText {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.statusSub {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.pagination {
+  margin-top: 0 !important;
+  flex-shrink: 0;
+  padding: 2px 0;
+}
+
+.taskCell {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: pointer;
+  align-items: flex-start;
+}
+
+.taskCell:hover .taskTitleSnippet {
+  text-decoration: underline;
+  color: var(--primary);
+}
+
+.taskTitleSnippet {
+  font-size: 11px;
+  color: var(--text-secondary);
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.15s ease;
+}
+
+.noTaskBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--border) 40%, transparent);
+  border: 1px dashed var(--border);
+}
+

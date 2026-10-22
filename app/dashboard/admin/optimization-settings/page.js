@@ -1,9 +1,13 @@
 'use client'
 import FleetCapabilities from '@/components/optimization/FleetCapabilities'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import PageHeader from '@/components/layout/PageHeader'
+import PageTabs from '@/components/ui/PageTabs'
+import { AdminGuard } from '@/components/auth/RequireRole'
 import Notification from '@/components/ui/Notification'
+import Dialog from '@/components/ui/Dialog'
+import useConfirmation from '@/components/ui/useConfirmation'
 import { SkeletonForm } from '@/components/ui/Skeleton'
 import {
   getOptimizationSettings,
@@ -11,18 +15,32 @@ import {
   getFieldCrews,
   updateFieldCrew,
   createFieldCrew,
+  deleteFieldCrew,
 } from '@/lib/api/optimization'
+import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
+import { toTitleCase } from '@/lib/helpers/statusHelpers';
+import styles from './OptimizationSettings.module.css'
 
 const LocationPickerMap = dynamic(
   () => import('@/components/map/LocationPickerMap'),
   { ssr: false }
 )
 
-export default function OptimizationSettings() {
+const NEW_CREW_DEFAULTS = {
+  name: '', shift_start: '08:00', shift_end: '17:00', max_tasks_per_shift: 10,
+  supports_standard: true, supports_sweeper: false, speed_factor: 1, service_time_factor: 1,
+  vehicle_type: 'compactor', hazmat_certified: false,
+  max_volume_m3: null, max_weight_kg: null, starting_volume_m3: null, starting_weight_kg: null,
+  load_measured_at: null
+}
+
+function OptimizationSettingsContent() {
+  const { confirm: confirmAction, confirmation } = useConfirmation()
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(null) // null | 'depot' | 'crew-<id>'
+  const [saving, setSaving] = useState(null) // null | 'depot' | 'crew-<id>' | 'delete-<id>'
   const [isEditingDepot, setIsEditingDepot] = useState(false)
   const [notification, setNotification] = useState(null)
+  const [activeTab, setActiveTab] = useState('depot') // 'depot' | 'crew'
 
   // Depot settings
   const [depot, setDepot] = useState({
@@ -34,12 +52,13 @@ export default function OptimizationSettings() {
   // Crew settings
   const [crews, setCrews] = useState([])
   const [showAddCrew, setShowAddCrew] = useState(false)
-  const [newCrew, setNewCrew] = useState({
-    name: '',
-    shift_start: '08:00',
-    shift_end: '17:00',
-    max_tasks_per_shift: 10,
-  })
+  const newCrewNameRef = useRef(null)
+  const [newCrew, setNewCrew] = useState({ ...NEW_CREW_DEFAULTS })
+  const [createError, setCreateError] = useState(null)
+
+  useEffect(() => {
+    if (showAddCrew) newCrewNameRef.current?.focus()
+  }, [showAddCrew])
 
   const fleetPayload = crew => ({
     supports_standard: crew.supports_standard ?? true,
@@ -55,20 +74,37 @@ export default function OptimizationSettings() {
     load_measured_at: crew.load_measured_at ?? null,
   })
 
-  const validateFleet = crew => {
+  const validateFleet = (crew, showError = message => setNotification({ message, type: 'error' })) => {
+    const invalid = message => { showError(message); return false }
+    if (!(crew.supports_standard ?? true) && !crew.supports_sweeper && crew.vehicle_type !== 'hazmat_unit') {
+      return invalid('Select at least one dispatch capability: Standard clusters or Sweeper reports.')
+    }
+    if (!['compactor', 'pickup', 'tricycle', 'motorcycle', 'hazmat_unit', 'walking', 'bicycle'].includes(crew.vehicle_type ?? 'compactor')) {
+      return invalid('Choose a valid crew vehicle type')
+    }
+    for (const [key, label] of [['speed_factor', 'Travel speed factor'], ['service_time_factor', 'Service time factor']]) {
+      const value = crew[key] ?? 1
+      if (value === '' || !Number.isFinite(Number(value)) || Number(value) < 0.1 || Number(value) > 3) {
+        return invalid(`${label} is required and must be between 0.1 and 3.0`)
+      }
+    }
     for (const [load, maximum, label] of [
       ['starting_volume_m3', 'max_volume_m3', 'volume'],
       ['starting_weight_kg', 'max_weight_kg', 'weight'],
     ]) {
+      for (const key of [load, maximum]) {
+        if (crew[key] != null && (!Number.isFinite(Number(crew[key])) || Number(crew[key]) < (key === load ? 0 : 0.001))) {
+          return invalid(`${key === load ? 'Starting' : 'Maximum'} ${label} must be a valid ${key === load ? 'nonnegative' : 'positive'} number`)
+        }
+      }
       if (crew[maximum] != null && crew[load] != null && Number(crew[load]) > Number(crew[maximum])) {
-        setNotification({ message: `Starting ${label} exceeds vehicle capacity`, type: 'error' })
-        return false
+        return invalid(`Starting ${label} exceeds vehicle capacity`)
       }
     }
     if ((crew.starting_volume_m3 != null || crew.starting_weight_kg != null) && !crew.load_measured_at) {
-      setNotification({ message: 'Enter when the starting load was measured', type: 'error' })
-      return false
+      return invalid('Enter when the starting load was measured')
     }
+    if (crew.load_measured_at && !Number.isFinite(Date.parse(crew.load_measured_at))) return invalid('Enter a valid load measurement time')
     return true
   }
 
@@ -88,7 +124,7 @@ export default function OptimizationSettings() {
 
       setCrews(crewsData || [])
     } catch (err) {
-      console.error('Failed to load optimization settings:', err)
+      reportDiagnostic('error', 'settings', 'Failed to load optimization settings:', err)
       setNotification({ message: 'Failed to load settings', type: 'error' })
     } finally {
       setLoading(false)
@@ -163,39 +199,38 @@ export default function OptimizationSettings() {
   }
 
   const handleCreateCrew = async () => {
-    if (!newCrew.name.trim()) {
-      setNotification({ message: 'Crew name is required', type: 'error' })
+    if (saving) return
+    setCreateError(null)
+    if (!newCrew.name.trim() || newCrew.name.trim().length > 100) {
+      setCreateError('Crew name is required and must contain 1 to 100 characters')
       return
     }
-    if (!newCrew.shift_start || !newCrew.shift_end) {
-      setNotification({ message: 'Shift start and end times are required', type: 'error' })
+    if (!newCrew.shift_start || !newCrew.shift_end || newCrew.shift_end <= newCrew.shift_start) {
+      setCreateError('Enter both shift times. Shift end must be after shift start on the same day.')
       return
     }
-    if (newCrew.shift_end <= newCrew.shift_start) {
-      setNotification({ message: 'Shift end must be after shift start', type: 'error' })
+    if (!Number.isInteger(Number(newCrew.max_tasks_per_shift)) || Number(newCrew.max_tasks_per_shift) < 1 || Number(newCrew.max_tasks_per_shift) > 50) {
+      setCreateError('Max tasks per shift must be a whole number between 1 and 50')
       return
     }
-    if (!newCrew.max_tasks_per_shift || newCrew.max_tasks_per_shift < 1 || newCrew.max_tasks_per_shift > 50) {
-      setNotification({ message: 'Max tasks must be between 1 and 50', type: 'error' })
-      return
-    }
-    if (!validateFleet(newCrew)) return
+    if (!validateFleet(newCrew, setCreateError)) return
 
     try {
       setSaving('new-crew')
-      const created = await createFieldCrew({ ...newCrew, ...fleetPayload(newCrew) })
+      const created = await createFieldCrew({ ...newCrew, name: newCrew.name.trim(), max_tasks_per_shift: Number(newCrew.max_tasks_per_shift), ...fleetPayload(newCrew) })
       setCrews(prev => [...prev, created])
       setShowAddCrew(false)
-      setNewCrew({ name: '', shift_start: '08:00', shift_end: '17:00', max_tasks_per_shift: 10 })
-      setNotification({ message: 'Crew created successfully', type: 'success' })
+      setNewCrew({ ...NEW_CREW_DEFAULTS })
+      setNotification({ message: 'Crew created successfully. Assign crew members in Crew Management before dispatching.', type: 'success' })
     } catch (err) {
-      setNotification({ message: err.message || 'Failed to create crew', type: 'error' })
+      setCreateError(err.message || 'Failed to create crew')
     } finally {
       setSaving(null)
     }
   }
 
   const handleDepotChange = (field, value) => {
+    setIsEditingDepot(true)
     setDepot(prev => ({ ...prev, [field]: value }))
   }
 
@@ -203,36 +238,75 @@ export default function OptimizationSettings() {
     setCrews(prev => prev.map(c => c.id === crewId ? { ...c, [field]: value } : c))
   }
 
+  const handleDeleteCrew = async (crew) => {
+    // Safety constraint 1: Check if tasks are assigned
+    const activeTasks = Number(crew.active_task_count ?? crew.assigned_tasks_count ?? 0)
+    if (activeTasks > 0) {
+      setNotification({
+        message: `Cannot delete "${crew.name}": There are ${activeTasks} task(s) assigned to this crew. Reassign or resolve all tasks first to prevent system errors.`,
+        type: 'error'
+      })
+      return
+    }
+
+    // Safety constraint 2: Check if field crew members or a lead are attached
+    const memberCount = (crew.members?.length || crew.member_profile_ids?.length || 0)
+    if (memberCount > 0 || crew.team_lead_profile_id) {
+      setNotification({
+        message: `Cannot delete "${crew.name}": Crew has ${memberCount} attached member(s) or an assigned team lead. Unassign all members in Crew Management first.`,
+        type: 'error'
+      })
+      return
+    }
+
+    // Confirmation dialog before proceeding
+    const confirmed = await confirmAction({
+      title: `Delete Crew "${crew.name}"?`,
+      description: `Are you sure you want to delete ${crew.name}? This field crew configuration will be permanently removed.`,
+      action: 'Delete Crew'
+    })
+    if (!confirmed) return
+
+    try {
+      setSaving(`delete-${crew.id}`)
+      await deleteFieldCrew(crew.id)
+      setCrews(prev => prev.filter(c => c.id !== crew.id))
+      setNotification({ message: `Field crew "${crew.name}" was successfully deleted.`, type: 'success' })
+    } catch (err) {
+      setNotification({ message: err.message || 'Failed to delete field crew', type: 'error' })
+    } finally {
+      setSaving(null)
+    }
+  }
+
   if (loading) {
     return (
-      <div className="p-8">
+      <div className={`${styles.page} workspace-page`}>
         <PageHeader
-          title="Optimization"
-          titleAccent="Settings"
-          subtitle="Loading..."
+          title="Optimization settings"
+          subtitle="Configure depot location, crew schedules, and operational parameters."
           breadcrumbs={[
-            { label: 'Dashboard', href: '/dashboard' },
             { label: 'Admin', href: '/dashboard/admin' },
-            { label: 'Optimization Settings' }
+            { label: 'Optimization settings' }
           ]}
         />
-        <div className="card">
-          <SkeletonForm fields={6} />
+        <div className={styles.panel}>
+          <div className={styles.panelBody}>
+            <SkeletonForm fields={6} />
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="p-8">
+    <div className={`${styles.page} workspace-page`}>
       <PageHeader
-        title="Optimization"
-        titleAccent="Settings"
-        subtitle="Configure depot location, crew schedules, and operational parameters"
+        title="Optimization settings"
+        subtitle="Configure depot location, crew schedules, and operational parameters."
         breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
           { label: 'Admin', href: '/dashboard/admin' },
-          { label: 'Optimization Settings' }
+          { label: 'Optimization settings' }
         ]}
       />
 
@@ -244,230 +318,270 @@ export default function OptimizationSettings() {
         />
       )}
 
-      {/* SWMO Depot Settings */}
-      <div className="card border border-border mb-6">
-        <h2 className="text-xl font-bold text-text-primary mb-2">🏢 SWMO Depot</h2>
-        <p className="text-sm text-text-muted mb-6">
-          The depot is the start and end point for all crew routes. Changing this affects future optimization runs.
-        </p>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-text-primary mb-2">
-              Depot Name
-            </label>
-            <input
-              type="text"
-              maxLength={100}
-              value={depot.name}
-              onChange={(e) => handleDepotChange('name', e.target.value)}
-              disabled={!isEditingDepot}
-              className="w-full p-3 border border-border bg-surface-elevated text-text-primary focus:border-[#ccff00] focus:outline-none transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-              placeholder="e.g., SWMO Depot (PLP Center)"
-            />
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-text-primary mb-2">
-              Depot Location
-            </label>
-            <LocationPickerMap
-              position={{ lat: depot.latitude, lng: depot.longitude }}
-              readOnly={!isEditingDepot}
-              onChange={(latlng) => {
-                setDepot(prev => ({
-                  ...prev,
-                  latitude: latlng.lat,
-                  longitude: latlng.lng
-                }))
-              }}
-            />
-            <div className="mt-2 flex gap-4 text-xs text-text-muted font-mono">
-              <span>Lat: {depot.latitude?.toFixed(6) || 'N/A'}</span>
-              <span>Lng: {depot.longitude?.toFixed(6) || 'N/A'}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6 flex justify-end gap-4">
-          {!isEditingDepot ? (
-            <button
-              onClick={() => setIsEditingDepot(true)}
-              className="btn-secondary px-6 py-3"
-            >
-              Change Location
-            </button>
-          ) : (
-            <>
-              <button
-                onClick={() => {
-                  setIsEditingDepot(false)
-                  loadAll() // reload original settings
-                }}
-                disabled={saving === 'depot'}
-                className="btn-secondary px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveDepot}
-                disabled={saving === 'depot'}
-                className="btn-primary px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {saving === 'depot' ? 'Saving...' : 'Save Depot Settings'}
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Crew Settings */}
-      <div className="card border border-border">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2">
-          <h2 className="text-xl font-bold text-text-primary">👷 Field Crew Configuration</h2>
-          <button 
-            onClick={() => setShowAddCrew(!showAddCrew)}
-            className="mt-2 sm:mt-0 text-sm bg-surface-elevated text-text-primary border border-border px-3 py-1 hover:border-text-primary transition-colors font-bold uppercase tracking-wider"
-          >
-            {showAddCrew ? 'Cancel' : '+ Add Crew'}
-          </button>
-        </div>
-        <p className="text-sm text-text-muted mb-6">
-          Configure shift schedules and task limits for each field crew. Changes apply to future optimization runs.
-        </p>
-
+      <Dialog open={showAddCrew} onClose={() => setShowAddCrew(false)} labelledBy="create-crew-title" dismissible={saving !== 'new-crew'}>
         {showAddCrew && (
-          <div className="mb-6 p-4 border border-border border-[#2563eb] bg-[#2563eb]/5">
-            <h3 className="font-bold text-text-primary mb-4 uppercase tracking-wider text-sm text-[#2563eb]">New Field Crew</h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="md:col-span-1">
-                <label className="block text-xs font-medium text-text-primary mb-1 uppercase">Crew Name</label>
-                <input
-                  type="text"
-                  value={newCrew.name}
-                  onChange={(e) => setNewCrew(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full p-2 border border-border bg-surface-elevated text-text-primary focus:border-[#2563eb] focus:outline-none transition-colors text-sm"
-                  placeholder="e.g., Team Alpha"
-                />
-              </div>
+          <form className={styles.crewDialog} onSubmit={event => { event.preventDefault(); void handleCreateCrew() }}>
+            <div className={styles.crewDialogHeader}>
               <div>
-                <label className="block text-xs font-medium text-text-primary mb-1 uppercase">Shift Start</label>
-                <input
-                  type="time"
-                  value={newCrew.shift_start}
-                  onChange={(e) => setNewCrew(prev => ({ ...prev, shift_start: e.target.value }))}
-                  className="w-full p-2 border border-border bg-surface-elevated text-text-primary font-mono focus:border-[#2563eb] focus:outline-none transition-colors text-sm"
-                />
+                <h2 id="create-crew-title">Create field crew</h2>
+                <p>Required fields have defaults where appropriate. Select only capabilities the crew actually has.</p>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-text-primary mb-1 uppercase">Shift End</label>
-                <input
-                  type="time"
-                  value={newCrew.shift_end}
-                  onChange={(e) => setNewCrew(prev => ({ ...prev, shift_end: e.target.value }))}
-                  className="w-full p-2 border border-border bg-surface-elevated text-text-primary font-mono focus:border-[#2563eb] focus:outline-none transition-colors text-sm"
-                />
+              <button type="button" className={styles.btnSecondary} onClick={() => setShowAddCrew(false)} disabled={saving === 'new-crew'} aria-label="Close crew creation">Close</button>
+            </div>
+            <div className={styles.crewDialogBody}>
+              <fieldset className={styles.crewDialogFields} disabled={saving === 'new-crew'}>
+              <div className={styles.newCrewGrid}>
+                <div className={styles.field}>
+                  <label htmlFor="new-crew-name">Crew name · Required</label>
+                  <input ref={newCrewNameRef} id="new-crew-name" autoFocus required maxLength={100} type="text" value={newCrew.name}
+                    onChange={event => setNewCrew(prev => ({ ...prev, name: event.target.value }))}
+                    className={styles.input} placeholder="e.g., Barangay collection team 1" aria-describedby="new-crew-name-help" />
+                  <p id="new-crew-name-help" className={styles.help}>Use a recognizable, specific team name. Assign members separately in Crew Management after creation.</p>
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="new-crew-start">Shift start · Required</label>
+                  <input id="new-crew-start" type="time" required value={newCrew.shift_start}
+                    onChange={event => setNewCrew(prev => ({ ...prev, shift_start: event.target.value }))} className={styles.input} />
+                  <p className={styles.help}>Default 08:00. Use the crew’s actual daily start time.</p>
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="new-crew-end">Shift end · Required</label>
+                  <input id="new-crew-end" type="time" required value={newCrew.shift_end}
+                    onChange={event => setNewCrew(prev => ({ ...prev, shift_end: event.target.value }))} className={styles.input} />
+                  <p className={styles.help}>Default 17:00. Must be later than the start on the same day.</p>
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="new-crew-tasks">Max tasks per shift · Required</label>
+                  <input id="new-crew-tasks" type="number" required min="1" max="50" step="1" value={newCrew.max_tasks_per_shift}
+                    onChange={event => setNewCrew(prev => ({ ...prev, max_tasks_per_shift: event.target.value === '' ? '' : Number(event.target.value) }))} className={styles.input} />
+                  <p className={styles.help}>Default 10; accepted range 1–50. Reduce this for long or demanding cleanup tasks. This is a cap, not a target.</p>
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-text-primary mb-1 uppercase">Max Tasks</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="50"
-                  value={newCrew.max_tasks_per_shift}
-                  onChange={(e) => setNewCrew(prev => ({ ...prev, max_tasks_per_shift: parseInt(e.target.value) || 10 }))}
-                  className="w-full p-2 border border-border bg-surface-elevated text-text-primary font-mono focus:border-[#2563eb] focus:outline-none transition-colors text-sm"
-                />
+              <FleetCapabilities crew={newCrew} onChange={(key, value) => setNewCrew(prev => ({ ...prev, [key]: value }))} />
+              </fieldset>
+            </div>
+            <div className={styles.crewDialogFooter}>
+              {createError && <p role="alert" className={styles.createError}>{createError}</p>}
+              <div className={styles.actionRow}>
+                <button type="button" className={styles.btnSecondary} onClick={() => setShowAddCrew(false)} disabled={saving === 'new-crew'}>Cancel</button>
+                <button type="submit" className={styles.btnPrimary} disabled={saving === 'new-crew'}>{saving === 'new-crew' ? 'Creating…' : 'Create crew'}</button>
               </div>
             </div>
-            <FleetCapabilities crew={newCrew} onChange={(key,value)=>setNewCrew(prev=>({...prev,[key]:value}))} />
-            <div className="mt-4 flex justify-end">
-              <button
-                onClick={handleCreateCrew}
-                disabled={saving === 'new-crew'}
-                className="bg-[#2563eb] text-white font-bold uppercase tracking-wider text-xs px-4 py-2 border border-border hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          </form>
+        )}
+      </Dialog>
+
+      {/* Tabs Switcher */}
+      <PageTabs label="Optimization settings" tabs={[{ id: 'depot', label: 'SWMO Depot Location' }, { id: 'crew', label: 'Field Crew Configuration' }]} value={activeTab} onChange={setActiveTab} />
+
+      <div className={`${styles.tabContent} workspace-fill`}>
+        {/* Tab 1: SWMO Depot Settings */}
+        {activeTab === 'depot' && (
+          <section
+            id="depot-panel"
+            role="tabpanel"
+            aria-labelledby="depot-tab"
+            className={styles.panel}
+          >
+            <div className={styles.panelHeader}>
+              <div>
+                <h2>SWMO Depot</h2>
+                <p>The depot is the origin and destination for all cleanup routes.</p>
+              </div>
+            </div>
+
+            <div className={styles.panelBody}>
+              <div className={styles.depotLayout}>
+                <div className={styles.mapWrapper}>
+                  <LocationPickerMap
+                    position={{ lat: depot.latitude, lng: depot.longitude }}
+                    readOnly={!isEditingDepot || saving === 'depot'}
+                    onChange={(latlng) => {
+                      setDepot(prev => ({
+                        ...prev,
+                        latitude: latlng.lat,
+                        longitude: latlng.lng
+                      }))
+                    }}
+                  />
+                </div>
+
+                <div className={styles.depotMeta}>
+                  <div className={styles.field}>
+                    <label htmlFor="depot-name-input">Depot name</label>
+                    <input
+                      id="depot-name-input"
+                      type="text"
+                      maxLength={100}
+                      value={depot.name}
+                      onChange={(e) => handleDepotChange('name', e.target.value)}
+                      disabled={saving === 'depot'}
+                      className={styles.input}
+                      placeholder="e.g., SWMO Depot (PLP Center)"
+                    />
+                  </div>
+
+                  <div className={styles.field}>
+                    <label>Coordinates</label>
+                    <div className={styles.coords}>
+                      <span>Lat: {depot.latitude?.toFixed(6) || '—'}</span>
+                      <span>Lng: {depot.longitude?.toFixed(6) || '—'}</span>
+                    </div>
+                  </div>
+
+                  <div className={styles.actionRow}>
+                    {!isEditingDepot ? (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingDepot(true)}
+                        className={styles.btnSecondary}
+                      >
+                        Change location
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsEditingDepot(false)
+                            loadAll()
+                          }}
+                          disabled={saving === 'depot'}
+                          className={styles.btnSecondary}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSaveDepot}
+                          disabled={saving === 'depot'}
+                          className={styles.btnPrimary}
+                        >
+                          {saving === 'depot' ? 'Saving…' : 'Save depot settings'}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Tab 2: Crew Settings */}
+        {activeTab === 'crew' && (
+          <section
+            id="crew-panel"
+            role="tabpanel"
+            aria-labelledby="crew-tab"
+            className={styles.panel}
+          >
+            <div className={styles.panelHeader}>
+              <div>
+                <h2>Field Crew Configuration</h2>
+                <p>Configure shift schedules and limits for each field crew.</p>
+              </div>
+              <button 
+                type="button"
+                onClick={() => { setCreateError(null); setShowAddCrew(true) }}
+                className={styles.btnSecondary}
               >
-                {saving === 'new-crew' ? 'Creating...' : 'Create Crew'}
+                + Add crew
               </button>
             </div>
-          </div>
-        )}
 
-        {crews.length === 0 ? (
-          <p className="text-text-muted text-sm">No field crews found. Click &quot;+ Add Crew&quot; above to create one.</p>
-        ) : (
-          <div className="space-y-6">
-            {crews.map((crew) => (
-              <div key={crew.id} className="border border-border p-4 bg-surface-elevated">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-text-primary text-lg">{crew.name}</h3>
-                  <span className={`text-xs px-2 py-1 border font-mono uppercase tracking-wider ${
-                    crew.availability_status === 'available'
-                      ? 'bg-success/20 text-success border-success/30'
-                      : crew.availability_status === 'on_route'
-                      ? 'bg-warning/20 text-warning border-warning/30'
-                      : 'bg-text-muted/20 text-text-muted border-text-muted/30'
-                  }`}>
-                    {crew.availability_status}
-                  </span>
+            <div className={styles.panelBody}>
+
+
+              {crews.length === 0 ? (
+                <p className="text-text-muted text-sm py-4">No field crews found. Click &quot;+ Add crew&quot; to configure one.</p>
+              ) : (
+                <div className="space-y-4">
+                  {crews.map((crew) => (
+                    <div key={crew.id} className={styles.crewCard}>
+                      <div className={styles.crewHeader}>
+                        <h3 className={styles.crewTitle}>{crew.name}</h3>
+                        <span className={`${styles.statusBadge} ${
+                          crew.availability_status === 'available'
+                            ? styles.statusAvailable
+                            : crew.availability_status === 'on_route'
+                            ? styles.statusOnRoute
+                            : styles.statusOffline
+                        }`}>
+                          {toTitleCase(crew.availability_status || 'offline')}
+                        </span>
+                      </div>
+
+                      <div className={styles.crewGrid}>
+                        <div className={styles.field}>
+                          <label>Shift start</label>
+                          <input
+                            type="time"
+                            value={crew.shift_start || '08:00'}
+                            onChange={(e) => handleCrewChange(crew.id, 'shift_start', e.target.value)}
+                            className={styles.input}
+                          />
+                        </div>
+
+                        <div className={styles.field}>
+                          <label>Shift end</label>
+                          <input
+                            type="time"
+                            value={crew.shift_end || '17:00'}
+                            onChange={(e) => handleCrewChange(crew.id, 'shift_end', e.target.value)}
+                            className={styles.input}
+                          />
+                        </div>
+
+                        <div className={styles.field}>
+                          <label>Max tasks per shift</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="50"
+                            value={crew.max_tasks_per_shift || 10}
+                            onChange={(e) => handleCrewChange(crew.id, 'max_tasks_per_shift', e.target.value)}
+                            className={styles.input}
+                          />
+                        </div>
+                      </div>
+
+                      <FleetCapabilities crew={crew} onChange={(key,value)=>handleCrewChange(crew.id,key,value)} />
+                      <div className={styles.actionRow}>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCrew(crew)}
+                          disabled={saving === `delete-${crew.id}` || saving === `crew-${crew.id}`}
+                          className={styles.btnDanger}
+                        >
+                          {saving === `delete-${crew.id}` ? 'Deleting…' : 'Delete crew'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSaveCrew(crew)}
+                          disabled={saving === `crew-${crew.id}` || saving === `delete-${crew.id}`}
+                          className={styles.btnPrimary}
+                        >
+                          {saving === `crew-${crew.id}` ? 'Saving…' : `Save ${crew.name}`}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-text-primary mb-2">
-                      Shift Start
-                    </label>
-                    <input
-                      type="time"
-                      value={crew.shift_start || '08:00'}
-                      onChange={(e) => handleCrewChange(crew.id, 'shift_start', e.target.value)}
-                      className="w-full p-3 border border-border bg-surface-elevated text-text-primary font-mono focus:border-[#ccff00] focus:outline-none transition-colors"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-text-primary mb-2">
-                      Shift End
-                    </label>
-                    <input
-                      type="time"
-                      value={crew.shift_end || '17:00'}
-                      onChange={(e) => handleCrewChange(crew.id, 'shift_end', e.target.value)}
-                      className="w-full p-3 border border-border bg-surface-elevated text-text-primary font-mono focus:border-[#ccff00] focus:outline-none transition-colors"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-text-primary mb-2">
-                      Max Tasks per Shift
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="50"
-                      value={crew.max_tasks_per_shift || 10}
-                      onChange={(e) => handleCrewChange(crew.id, 'max_tasks_per_shift', e.target.value)}
-                      className="w-full p-3 border border-border bg-surface-elevated text-text-primary font-mono focus:border-[#ccff00] focus:outline-none transition-colors"
-                    />
-                    <p className="text-xs text-text-muted mt-1">Range: 1–50</p>
-                  </div>
-                </div>
-
-                <FleetCapabilities crew={crew} onChange={(key,value)=>handleCrewChange(crew.id,key,value)} />
-                <div className="mt-4 flex justify-end">
-                  <button
-                    onClick={() => handleSaveCrew(crew)}
-                    disabled={saving === `crew-${crew.id}`}
-                    className="btn-primary px-4 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {saving === `crew-${crew.id}` ? 'Saving...' : `Save ${crew.name}`}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+              )}
+            </div>
+          </section>
         )}
       </div>
+      {confirmation}
     </div>
+  )
+}
+
+export default function OptimizationSettings() {
+  return (
+    <AdminGuard>
+      <OptimizationSettingsContent />
+    </AdminGuard>
   )
 }

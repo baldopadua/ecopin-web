@@ -4,19 +4,25 @@ import React, { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { fetchCleanupTaskById, uploadCleanupPhoto, fetchReportsByClusterId, fetchReportsByIds, fetchReportEvidence, updateLifecycleStage, logAgencyResponse, fetchAgencyResponses, fetchAvailableCrew, assignCleanupTask, updateCleanupTaskTitle } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
+import DataTable from '@/components/ui/DataTable'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
 import Notification from '@/components/ui/Notification'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
 import dynamic from 'next/dynamic'
-import { Pen } from 'lucide-react'
+import { Pen, Users, X } from 'lucide-react'
+import { OfficerGuard } from '@/components/auth/RequireRole'
+import ReportDetailModal from '@/components/reports/ReportDetailModal'
+import Dialog from '@/components/ui/Dialog'
+import styles from './OperationDetails.module.css'
+import { reportDiagnostic } from '../../../../../lib/diagnostics.mjs';
 
 const OperationsMap = dynamic(() => import('@/components/map/OperationsMap'), { 
   ssr: false,
   loading: () => (
     <div className="w-full h-full bg-surface-elevated animate-pulse flex items-center justify-center">
-      <span className="text-text-muted font-mono text-xs uppercase tracking-widest">Loading Map...</span>
+      <span className="text-text-muted text-sm" role="status">Loading map…</span>
     </div>
   )
 })
@@ -58,13 +64,13 @@ const parseLocation = (location, latitude, longitude) => {
       }
     }
   } catch (error) {
-    console.error('Error parsing location:', error)
+    reportDiagnostic('error', 'dispatch', 'Error parsing location:', error)
   }
 
   return { latitude: null, longitude: null }
 }
 
-export default function CleanupTaskDetailPage() {
+function CleanupTaskDetailContent() {
   const [task, setTask] = useState(null)
   const [reports, setReports] = useState([])
   const [reportsEvidence, setReportsEvidence] = useState({})
@@ -90,7 +96,10 @@ export default function CleanupTaskDetailPage() {
   const [agencyResponses, setAgencyResponses] = useState([])
   const [availableCrew, setAvailableCrew] = useState([])
   const [showAssignmentModal, setShowAssignmentModal] = useState(false)
-  const [tempCrewIds, setTempCrewIds] = useState([])
+  const [assignmentError, setAssignmentError] = useState('')
+  const cancelAssignmentRef = useRef(null)
+  useEffect(() => { if (showAssignmentModal) cancelAssignmentRef.current?.focus() }, [showAssignmentModal])
+  const [selectedCrewId, setSelectedCrewId] = useState(null)
   const [assigning, setAssigning] = useState(false)
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [editingTitle, setEditingTitle] = useState('')
@@ -122,9 +131,8 @@ export default function CleanupTaskDetailPage() {
         }
 
         // Don't fetch evidence on load - lazy load when expanded
-        console.log('Loaded', reportsData.length, 'reports')
       } catch (error) {
-        console.error('Failed to load cleanup task:', error)
+        reportDiagnostic('error', 'dispatch', 'Failed to load cleanup task:', error)
       } finally {
         setLoading(false)
       }
@@ -138,7 +146,7 @@ export default function CleanupTaskDetailPage() {
         const data = await fetchAvailableCrew()
         setAvailableCrew(data)
       } catch (error) {
-        console.error('Failed to load available crew:', error)
+        reportDiagnostic('error', 'dispatch', 'Failed to load available crew:', error)
       }
     }
     loadAvailableCrew()
@@ -158,17 +166,19 @@ export default function CleanupTaskDetailPage() {
   // uploads the final after photo for the last unresolved report. No manual
   // officer action is required or exposed here.
 
-  const handleAssignTask = async (selectedCrewIds) => {
+  const handleAssignTask = async (crewId) => {
     setAssigning(true)
+    setAssignmentError('')
     try {
-      await assignCleanupTask(taskId, selectedCrewIds)
+      await assignCleanupTask(taskId, crewId)
       const updatedTask = await fetchCleanupTaskById(taskId)
       setTask(updatedTask)
       setShowAssignmentModal(false)
-      setNotification({ message: 'Task assigned successfully', type: 'success' })
+      setNotification({ message: 'Crew deployed successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to assign task:', error)
-      setNotification({ message: 'Failed to assign task. Please try again.', type: 'error' })
+      reportDiagnostic('error', 'dispatch', 'Failed to assign task:', error)
+      setAssignmentError(error.message || 'The crew could not be assigned. Please try again.')
+      setNotification({ message: error.message || 'Failed to assign crew. Please try again.', type: 'error' })
     } finally {
       setAssigning(false)
     }
@@ -188,7 +198,7 @@ export default function CleanupTaskDetailPage() {
       setIsEditingTitle(false)
       setNotification({ message: 'Title updated successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to update title:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to update title:', error)
       setNotification({ message: 'Failed to update title. Please try again.', type: 'error' })
     } finally {
       setSavingTitle(false)
@@ -230,7 +240,7 @@ export default function CleanupTaskDetailPage() {
       setShowLifecycleDropdown(false)
       setNotification({ message: 'Lifecycle stage updated successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to update lifecycle stage:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to update lifecycle stage:', error)
       setNotification({ message: 'Failed to update lifecycle stage. Please try again.', type: 'error' })
     } finally {
       setUpdatingLifecycle(false)
@@ -276,7 +286,7 @@ export default function CleanupTaskDetailPage() {
       
       setNotification({ message: 'Report marked as complete!', type: 'success' })
     } catch (error) {
-      console.error('Failed to mark report complete:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to mark report complete:', error)
       setNotification({ message: 'Failed to mark report complete. Please try again.', type: 'error' })
     } finally {
       setCompletingReportId(null)
@@ -306,7 +316,7 @@ export default function CleanupTaskDetailPage() {
 
       setNotification({ message: 'Report validated successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to validate report:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to validate report:', error)
       setNotification({ message: 'Failed to validate report. Please try again.', type: 'error' })
     } finally {
       setValidatingReport(null)
@@ -328,7 +338,7 @@ export default function CleanupTaskDetailPage() {
 
       setNotification({ message: 'Report rejected successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to reject report:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to reject report:', error)
       setNotification({ message: 'Failed to reject report. Please try again.', type: 'error' })
     } finally {
       setValidatingReport(null)
@@ -353,7 +363,7 @@ export default function CleanupTaskDetailPage() {
       setShowNoteInput(false)
       setNotification({ message: 'Note added successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to add note:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to add note:', error)
       setNotification({ message: 'Failed to add note. Please try again.', type: 'error' })
     } finally {
       setAddingNote(false)
@@ -369,7 +379,7 @@ export default function CleanupTaskDetailPage() {
       const responses = await fetchAgencyResponses(reportId)
       setAgencyResponses(responses)
     } catch (error) {
-      console.error('Failed to load agency responses:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to load agency responses:', error)
       setAgencyResponses([])
     }
     
@@ -395,7 +405,7 @@ export default function CleanupTaskDetailPage() {
         })
         .catch(error => {
           if (error.name !== 'AbortError') {
-            console.error('Failed to fetch evidence for report:', reportId, error)
+            reportDiagnostic('error', 'dispatch', 'Failed to fetch evidence for report:', reportId, error)
             setEvidenceErrors(prev => ({ ...prev, [reportId]: error.message }))
           }
         })
@@ -434,7 +444,7 @@ export default function CleanupTaskDetailPage() {
           })
           .catch(error => {
             if (error.name !== 'AbortError') {
-              console.error('Failed to fetch evidence for report:', nextReportId, error)
+              reportDiagnostic('error', 'dispatch', 'Failed to fetch evidence for report:', nextReportId, error)
               setEvidenceErrors(prev => ({ ...prev, [nextReportId]: error.message }))
             }
           })
@@ -469,7 +479,7 @@ export default function CleanupTaskDetailPage() {
           })
           .catch(error => {
             if (error.name !== 'AbortError') {
-              console.error('Failed to fetch evidence for report:', prevReportId, error)
+              reportDiagnostic('error', 'dispatch', 'Failed to fetch evidence for report:', prevReportId, error)
               setEvidenceErrors(prev => ({ ...prev, [prevReportId]: error.message }))
             }
           })
@@ -504,16 +514,14 @@ export default function CleanupTaskDetailPage() {
       abortControllersRef.current[reportId] = controller
       
       try {
-        console.log('Fetching evidence for report:', reportId)
         const evidence = await fetchReportEvidence(reportId, controller.signal)
         setReportsEvidence(prev => ({
           ...prev,
           [reportId]: evidence || []
         }))
-        console.log('Fetched evidence:', evidence?.length || 0, 'items')
       } catch (error) {
         if (error.name !== 'AbortError') {
-          console.error('Failed to fetch evidence for report:', reportId, error)
+          reportDiagnostic('error', 'dispatch', 'Failed to fetch evidence for report:', reportId, error)
           setEvidenceErrors(prev => ({ ...prev, [reportId]: error.message }))
           setNotification({ message: 'Failed to load evidence. Please try again.', type: 'error' })
         }
@@ -577,34 +585,8 @@ export default function CleanupTaskDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-3">
             <div className="space-y-0">
-              <div className="ecopin-table-container">
-                <table className="ecopin-table">
-                  <thead>
-                    <tr>
-                      <th>Title</th>
-                      <th>Issue Type</th>
-                      <th>Description</th>
-                      <th>Status</th>
-                      <th>Lifecycle</th>
-                      <th>Validation</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <tr key={i} className="border-b border-border">
-                        <td className="py-3 px-4"><SkeletonLine className="h-4 w-28" /></td>
-                        <td className="py-3 px-4"><SkeletonLine className="h-4 w-20" /></td>
-                        <td className="py-3 px-4"><SkeletonLine className="h-4 w-36" /></td>
-                        <td className="py-3 px-4"><SkeletonLine className="h-5 w-20" /></td>
-                        <td className="py-3 px-4"><SkeletonLine className="h-5 w-20" /></td>
-                        <td className="py-3 px-4"><SkeletonLine className="h-5 w-24" /></td>
-                        <td className="py-3 px-4"><SkeletonLine className="h-6 w-16" /></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable loading caption="Reports in this operation" onRowClick={handleViewReportDetail}
+                columns={[{ key: 'created_at', label: 'Date / time' }, { key: 'title', label: 'Target' }, { key: 'issue_type', label: 'Type' }, { key: 'status', label: 'Status' }]} />
             </div>
           </div>
           <div className="lg:col-span-1">
@@ -622,48 +604,49 @@ export default function CleanupTaskDetailPage() {
   });
 
   return (
-    <div className="p-8 min-h-screen flex flex-col">
+    <div className="workspace-page workspace-page--flow">
       <PageHeader
         title={
           isEditingTitle ? (
-            <div className="flex items-center gap-2">
+            <span className="flex flex-wrap items-center gap-2">
               <input 
                 type="text" 
                 value={editingTitle} 
                 onChange={(e) => setEditingTitle(e.target.value)} 
-                className="px-2 py-1 text-2xl font-bold border border-border border-[#2563eb] focus:outline-none w-64 bg-surface text-text-primary"
+                aria-label="Operation title"
+                className="input max-w-full w-64 text-xl"
                 disabled={savingTitle}
                 autoFocus
               />
               <button 
                 onClick={handleSaveTitle}
                 disabled={savingTitle}
-                className="px-3 py-1 text-sm font-bold uppercase tracking-widest bg-accent-green text-white border border-border border-accent-green hover:bg-black hover:border-border transition-colors"
+                className="btn-primary text-sm"
               >
                 {savingTitle ? 'Saving...' : 'Save'}
               </button>
               <button 
                 onClick={() => setIsEditingTitle(false)}
                 disabled={savingTitle}
-                className="px-3 py-1 text-sm font-bold uppercase tracking-widest text-text-muted hover:text-text-primary dark:hover:text-white transition-colors"
+                className="btn-secondary text-sm"
               >
                 Cancel
               </button>
-            </div>
+            </span>
           ) : (
-            <div className="flex items-center gap-3">
+            <span className="flex items-center gap-3">
               <span>{task.title}</span>
               <button 
                 onClick={() => {
                   setEditingTitle(task.title)
                   setIsEditingTitle(true)
                 }}
-                className="text-text-muted hover:text-primary transition-colors p-1"
-                title="Rename Mission"
+                className="text-text-secondary hover:text-primary min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl"
+                aria-label="Rename operation"
               >
                 <Pen className="w-5 h-5" />
               </button>
-            </div>
+            </span>
           )
         }
         subtitle={`Operation / ${task.id.slice(0,8)}`}
@@ -674,48 +657,60 @@ export default function CleanupTaskDetailPage() {
         ]}
       />
 
-      <div className="flex flex-col gap-8 mt-2">
+      <div className="flex flex-col gap-6">
          
-         <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-            <div className="xl:col-span-3 h-[400px] border border-border dark:border-[#333333] relative flex flex-col bg-surface-elevated shrink-0 isolate z-0">
-               <div className="absolute top-4 left-4 z-10 bg-black text-white px-3 py-1.5 border border-border border-accent-green pointer-events-none">
-                  <h3 className="font-bold uppercase tracking-widest text-xs">Route Map</h3>
-               </div>
-               <div className="flex-1 z-0 relative">
-                  <div className="w-full h-full">
-                     <OperationsMap tasks={[{ ...task, reports }]} />
-                  </div>
-               </div>
-            </div>
+         <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+            <section className={`xl:col-span-3 ${styles.routeCard}`} aria-labelledby="operation-route-title">
+              <div className={styles.routeHeader}><h2 id="operation-route-title">Route map</h2><p>Report locations and connections for this operation.</p></div>
+              <div className={styles.routeMap}><OperationsMap tasks={[{ ...task, reports }]} modern={true} reportLinks={true} /></div>
+            </section>
+
 
             <div className="xl:col-span-1 h-[400px]">
                <div className="h-full card p-6 border border-border dark:border-[#333333] rounded-xl bg-surface-elevated text-text-primary flex flex-col">
-                  <h2 className="text-lg font-bold uppercase tracking-tight mb-4 border-b border-border pb-2 text-accent-green shrink-0">Mission Status</h2>
+                  <h2 className="text-lg font-semibold mb-4 border-b border-border pb-3 shrink-0">Operation status</h2>
                   
                   <div className="space-y-4 mb-6 overflow-y-auto flex-1 pr-2">
                     <div>
-                       <span className="block text-[10px] font-mono uppercase text-text-muted mb-1">Current Status</span>
+                       <span className="block text-sm text-text-secondary mb-2">Current status</span>
                        <StatusBadge status={task.status} type="task" />
                     </div>
                     
                     <div>
-                       <span className="block text-[10px] font-mono uppercase text-text-muted mb-1">Assigned Units</span>
-                       {task.assigned_crew_ids && task.assigned_crew_ids.length > 0 ? (
+                       <span className="block text-sm text-text-secondary mb-2">Assigned field crew</span>
+                       {task.assigned_field_crew_id ? (
+                          (() => {
+                             const crew = availableCrew.find(c => c.id === task.assigned_field_crew_id)
+                             return (
+                               <div className="bg-background p-3 border border-border">
+                                 <div className="flex items-center gap-3">
+                                   <div className="w-8 h-8 bg-surface-elevated rounded-full flex items-center justify-center font-bold text-xs border border-border">
+                                     <Users className="w-4 h-4 text-accent-green" />
+                                   </div>
+                                   <div>
+                                     <div className="text-sm font-medium">{crew ? (crew.crew_name || crew.name) : `Crew ${task.assigned_field_crew_id.slice(0, 8)}`}</div>
+                                     <div className="text-xs text-text-secondary">{crew?.member_count || task.assigned_crew_ids?.length || 0} members</div>
+                                   </div>
+                                 </div>
+                               </div>
+                             )
+                          })()
+                       ) : task.assigned_crew_ids && task.assigned_crew_ids.length > 0 ? (
                           <div className="flex flex-col gap-2">
                              {task.assigned_crew_ids.map(id => {
                                 const crew = availableCrew.find(c => c.id === id)
                                 return (
                                   <div key={id} className="flex items-center gap-3 bg-background p-2 border border-border">
                                     <div className="w-8 h-8 bg-surface-elevated rounded-full flex items-center justify-center font-bold text-xs border border-border">
-                                      {crew ? crew.full_name[0] : 'U'}
+                                      {crew ? (crew.crew_name || crew.name || crew.full_name || 'C')[0] : 'U'}
                                     </div>
-                                    <span className="font-mono text-sm">{crew ? crew.full_name : `Unit ${id.slice(0,4)}`}</span>
+                                    <span className="text-sm">{crew ? (crew.crew_name || crew.name || crew.full_name) : `Unit ${id.slice(0,4)}`}</span>
                                   </div>
                                 )
                              })}
                           </div>
                        ) : (
-                          <div className="text-sm font-mono text-error border border-error/30 p-2 bg-error/10">UNASSIGNED</div>
+                          <div className="text-sm text-error border border-error/30 p-3 bg-error/10 rounded-xl">Unassigned</div>
                        )}
                     </div>
                   </div>
@@ -723,18 +718,18 @@ export default function CleanupTaskDetailPage() {
                   <div className="mt-auto space-y-3 pt-4 border-t border-border shrink-0">
                      <button 
                         onClick={() => {
-                          setTempCrewIds(task.assigned_crew_ids || [])
+                          setSelectedCrewId(task.assigned_field_crew_id || null)
                           setShowAssignmentModal(true)
                         }}
-                        className="w-full border border-border py-3 text-xs font-bold uppercase tracking-widest text-text-primary hover:bg-black hover:text-white dark:hover:bg-surface dark:hover:text-text-primary transition-colors"
+                        className="btn-secondary w-full text-sm"
                      >
-                        {task.assigned_crew_ids?.length > 0 ? 'Update Roster' : 'Assign Units'}
+                        {task.assigned_field_crew_id || task.assigned_crew_ids?.length > 0 ? 'Reassign Crew' : 'Dispatch Crew'}
                      </button>
                      {/* Completion is triggered automatically by the field crew app
                          uploading the after photo. This panel reflects the live status. */}
                      {task.status === 'completed' && (
-                        <div className="w-full py-3 text-xs font-bold uppercase tracking-widest border border-border bg-success/20 text-success border-success/50 text-center">
-                           Mission Accomplished
+                        <div className="w-full py-3 text-sm border rounded-xl bg-success/10 text-success border-success/30 text-center">
+                           Operation completed
                         </div>
                      )}
                   </div>
@@ -743,40 +738,18 @@ export default function CleanupTaskDetailPage() {
          </div>
 
          <div className="flex flex-col gap-4">
-            <h2 className="text-xl font-bold text-text-primary uppercase tracking-tight">Mission Targets</h2>
-            <div className="ecopin-table-container">
-              <table className="ecopin-table">
-                <thead>
-                  <tr>
-                    <th>Date / Time</th>
-                    <th>Target</th>
-                    <th>Type</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reports.map((report) => (
-                    <tr key={report.id}>
-                      <td className="font-mono text-xs whitespace-nowrap">
-                        {new Date(report.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                      </td>
-                      <td className="font-bold">{report.title}</td>
-                      <td>{report.issue_type}</td>
-                      <td><StatusBadge status={report.status} type="report" /></td>
-                      <td>
-                        <button
-                          onClick={() => handleViewReportDetail(report.id)}
-                          className="text-xs font-bold uppercase tracking-widest border border-border px-3 py-1 hover:border-accent-green hover:text-accent-green transition-colors"
-                        >
-                          View Data
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <h2 className="text-xl font-semibold text-text-primary">Reports in this operation</h2>
+            <DataTable caption="Reports in this operation" data={reports}
+              columns={[
+                { key: 'created_at', label: 'Date / time', render: value => new Date(value).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) },
+                { key: 'title', label: 'Target', render: value => <span className="font-medium">{value}</span> },
+                { key: 'issue_type', label: 'Type' },
+                { key: 'status', label: 'Status', render: value => <StatusBadge status={value} type="report" /> },
+              ]}
+              onRowClick={report => handleViewReportDetail(report.id)}
+              rowActionLabel={report => `View report ${report.title || report.id}`}
+              emptyMessage="No reports in this operation."
+            />
          </div>
       </div>
 
@@ -785,146 +758,62 @@ export default function CleanupTaskDetailPage() {
       )}
 
       {showAssignmentModal && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[900]">
-          <div className="bg-surface-elevated border border-border dark:border-[#333333] p-6 max-w-md w-full mx-4 shadow-sm">
-            <h2 className="text-xl font-bold uppercase tracking-tight mb-4">Deploy Units</h2>
-            <div className="space-y-2 max-h-60 overflow-y-auto mb-6">
-              {availableCrew.length === 0 ? (
-                <p className="text-sm text-text-muted font-mono">No units available</p>
-              ) : (
-                availableCrew.map(crew => (
-                  <label key={crew.id} className="flex items-center space-x-3 p-3 border border-border hover:border-accent-green cursor-pointer transition-colors bg-background">
-                    <input type="checkbox" checked={tempCrewIds.includes(crew.id)} onChange={(e) => {
-                        let newIds = e.target.checked ? [...tempCrewIds, crew.id] : tempCrewIds.filter(id => id !== crew.id);
-                        setTempCrewIds(newIds);
-                      }}
-                      className="rounded-xl border border-border text-accent-green focus:ring-accent-green w-5 h-5 bg-transparent" />
-                    <div className="flex-1 font-mono text-sm font-bold uppercase">{crew.full_name}</div>
-                  </label>
-                ))
-              )}
+        <Dialog open={showAssignmentModal} onClose={() => setShowAssignmentModal(false)} dismissible={!assigning} labelledBy="assign-crew-title">
+          <div className={styles.assignment}>
+            <div className={styles.header}>
+              <div><h2 id="assign-crew-title">Reassign field crew</h2><p>Choose an available crew for this operation.</p></div>
+              <button type="button" className={styles.close} aria-label="Close crew selection" disabled={assigning} onClick={() => setShowAssignmentModal(false)}><X size={20} aria-hidden="true" /></button>
             </div>
-            <div className="flex gap-4">
-              <button onClick={() => handleAssignTask(tempCrewIds)} disabled={assigning} className="btn-primary flex-1 py-3 text-xs">
-                {assigning ? 'DEPLOYING...' : 'CONFIRM DEPLOYMENT'}
-              </button>
-              <button onClick={() => setShowAssignmentModal(false)} className="btn-secondary flex-1 py-3 text-xs">CANCEL</button>
+            <fieldset className={styles.crewList} disabled={assigning}>
+              <legend className="sr-only">Available field crews</legend>
+              {assignmentError && <p className={styles.assignmentError} role="alert">{assignmentError}</p>}
+              {availableCrew.length === 0 ? <p className={styles.empty}>No field crews are available.</p> : availableCrew.map(crew => {
+                const activeCount = crew.active_task_count ?? crew.assigned_tasks_count ?? 0
+                const maxTasks = crew.max_tasks_per_shift || 10
+                const isAtCapacity = crew.is_at_capacity || activeCount >= maxTasks
+                return (
+                  <label key={crew.id} className={`${styles.crew} ${selectedCrewId === crew.id ? styles.selected : ''}`}>
+                    <input type="radio" name="fieldCrewSelection" checked={selectedCrewId === crew.id} onChange={() => setSelectedCrewId(crew.id)} />
+                    <span className="flex-1">
+                      <strong>{crew.crew_name || crew.name || crew.full_name}</strong>
+                      <small>{crew.member_count != null ? `${crew.member_count} members` : crew.status ? `Status: ${crew.status.replaceAll('_', ' ')}` : 'Field crew unit'}</small>
+                      <span className={`${styles.crewWorkloadBadge} ${isAtCapacity ? styles.crewWorkloadCapacity : activeCount > 0 ? styles.crewWorkloadActive : styles.crewWorkloadAvailable}`}>
+                        {isAtCapacity
+                          ? `⚠️ At Capacity (${activeCount}/${maxTasks} tasks)`
+                          : activeCount > 0
+                          ? `${activeCount} active task${activeCount > 1 ? 's' : ''} (${activeCount}/${maxTasks})`
+                          : 'Available · 0 active tasks'}
+                      </span>
+                    </span>
+                  </label>
+                )
+              })}
+            </fieldset>
+            <div className={styles.actions}>
+              <button ref={cancelAssignmentRef} type="button" disabled={assigning} onClick={() => setShowAssignmentModal(false)} className={styles.secondary}>Cancel</button>
+              <button type="button" onClick={() => handleAssignTask(selectedCrewId)} disabled={assigning || !selectedCrewId} className={styles.primary}>{assigning ? 'Assigning crew…' : 'Confirm assignment'}</button>
             </div>
           </div>
-        </div>
+        </Dialog>
       )}
 
       {selectedReportId && (
-        <div className="fixed inset-0 bg-black/80 z-[900] p-4 md:p-8 overflow-y-auto flex cursor-pointer" onClick={() => setSelectedReportId(null)}>
-          <div className="m-auto bg-surface-elevated flex flex-col md:flex-row w-full max-w-5xl h-[600px] max-h-[90vh] shadow-sm rounded-xl overflow-hidden relative border border-border dark:border-[#333333] cursor-auto" onClick={(e) => e.stopPropagation()}>
-            {/* Close Button Mobile (absolute) */}
-            <button onClick={() => setSelectedReportId(null)} className="md:hidden absolute top-4 right-4 z-50 bg-black/50 text-white rounded-full p-2 hover:bg-black/70">
-               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-            </button>
-
-            {/* Left Side: Images */}
-            <div className="w-full md:w-[60%] bg-black flex-shrink-0 relative overflow-hidden flex items-center justify-center border-b md:border-b-0 md:border-r border-border dark:border-[#333333]">
-              {(() => {
-                 const r = reports.find(rep => rep.id === selectedReportId);
-                 const evs = reportsEvidence[selectedReportId] || [];
-                 const images = [];
-                 if (r.image_url) images.push({ url: r.image_url, label: 'Reported' });
-                 if (r.before_photo_url) images.push({ url: r.before_photo_url, label: 'Before' });
-                 if (r.after_photo_url) images.push({ url: r.after_photo_url, label: 'After' });
-                 evs.forEach(img => images.push({ url: img.file_url || img.url, label: 'Evidence' }));
-
-                 if (images.length === 0) {
-                    return <div className="text-white/50 font-mono text-sm uppercase tracking-widest">No Visual Evidence</div>;
-                 }
-
-                 return (
-                    <div className="w-full h-full relative flex items-center justify-center group">
-                       <SecureImage src={images[currentImageIndex].url} alt={images[currentImageIndex].label} className="max-w-full max-h-full object-contain" />
-                       <div className="absolute top-4 left-4 bg-black/60 text-white px-2 py-1 text-[10px] font-bold uppercase tracking-widest rounded">{images[currentImageIndex].label}</div>
-                       {images.length > 1 && (
-                          <div className="absolute top-4 right-4 bg-black/60 text-white px-2 py-1 text-[10px] font-bold tracking-widest rounded">{currentImageIndex + 1} / {images.length}</div>
-                       )}
-
-                       {images.length > 1 && (
-                          <>
-                            <button onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(prev => prev > 0 ? prev - 1 : images.length - 1); }} className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80">
-                               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
-                            </button>
-                            <button onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(prev => prev < images.length - 1 ? prev + 1 : 0); }} className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/80">
-                               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
-                            </button>
-                          </>
-                       )}
-                    </div>
-                 );
-              })()}
-            </div>
-
-            {/* Right Side: Details & Audit */}
-            <div className="w-full md:w-[40%] flex flex-col h-full bg-surface-elevated">
-               {/* Header */}
-               <div className="flex justify-between items-center p-4 border-b border-border dark:border-[#333333] shrink-0 bg-background/50">
-                  <div className="flex items-center gap-3">
-                     <div>
-                        <h2 className="text-lg font-bold uppercase tracking-tight leading-tight">{reports.find(r => r.id === selectedReportId)?.title}</h2>
-                        <div className="flex items-center gap-2">
-                           <span className="text-[10px] text-text-muted font-mono uppercase tracking-widest">{reports.find(r => r.id === selectedReportId)?.issue_type}</span>
-                           <span className="text-text-muted text-[10px]">•</span>
-                           <span className="text-[10px] text-text-muted font-mono uppercase tracking-widest">
-                             {new Date(reports.find(r => r.id === selectedReportId)?.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                           </span>
-                        </div>
-                     </div>
-                  </div>
-                  <button onClick={() => setSelectedReportId(null)} className="hidden md:block text-text-muted hover:text-text-primary transition-colors">
-                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                  </button>
-               </div>
-
-               {/* Scrollable Content (Comments) */}
-               <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                  {/* Caption / Description */}
-                  <div>
-                     <span className="font-bold text-sm mr-2">{reports.find(r => r.id === selectedReportId)?.title}</span>
-                     <span className="text-sm text-text-primary whitespace-pre-line">{reports.find(r => r.id === selectedReportId)?.description}</span>
-                  </div>
-
-                  <hr className="border-border border-dashed" />
-
-                  {/* Actions */}
-                  {/* Read-only status — field crew app drives completion via after photo upload */}
-                  {(() => {
-                     const r = reports.find(rep => rep.id === selectedReportId);
-                     const isCompleted = r?.status === 'resolved' || r?.status === 'completed';
-                     return isCompleted ? (
-                        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-success border border-success/30 bg-success/10 px-3 py-2">
-                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M20 6L9 17l-5-5"/></svg>
-                           Resolved
-                        </div>
-                     ) : null;
-                  })()}
-
-                  <hr className="border-border border-dashed" />
-
-                  {/* Audit Trail */}
-                  <div className="space-y-4">
-                     <h3 className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Audit Log</h3>
-                     {agencyResponses.length > 0 ? (
-                        agencyResponses.map((res, i) => (
-                          <div key={i} className="mb-2 border-l border-accent-green pl-3">
-                             <div className="text-[10px] font-mono text-text-muted">{new Date(res.created_at).toLocaleString()}</div>
-                             <div className="text-sm text-text-primary mt-1">{res.action_details}</div>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-xs text-text-muted italic">No activity recorded yet.</p>
-                      )}
-                  </div>
-               </div>
-            </div>
-          </div>
-        </div>
+        <ReportDetailModal
+          className={styles.reportDialog}
+          report={reports.find(r => r.id === selectedReportId)}
+          evidence={reportsEvidence[selectedReportId] || []}
+          agencyResponses={agencyResponses}
+          onClose={() => setSelectedReportId(null)}
+        />
       )}
     </div>
+  )
+}
+
+export default function CleanupTaskDetailPage() {
+  return (
+    <OfficerGuard>
+      <CleanupTaskDetailContent />
+    </OfficerGuard>
   )
 }

@@ -2,11 +2,15 @@ import React from 'react'
 import { Marker, Popup } from 'react-leaflet'
 import L from 'leaflet'
 import { useRouter } from 'next/navigation'
+import ReportPhotoMarker from './ReportPhotoMarker'
+import { toTitleCase } from '@/lib/helpers/statusHelpers'
 
 export const createEcoPinIcon = (status, isRemoving = false, isSelected = false) => {
-  let color = 'var(--error)' // unresolved
-  if (status === 'in_progress') color = 'var(--warning)' // in_progress
-  if (status === 'resolved') color = 'var(--success)' // resolved
+  let color = 'var(--error, #d32f2f)' // unresolved
+  if (status === 'in_progress') color = 'var(--warning, #b45309)' // in_progress
+  if (status === 'resolved') color = 'var(--success, #2e7d32)' // resolved
+  if (status === 'waiting_for_feedback' || status === 'pending_owner_consent') color = 'var(--info, #0369a1)'
+  if (status === 'closed') color = 'var(--text-muted, #59636e)'
 
   // If selected, use a distinct color (purple)
   if (isSelected) color = '#8B5CF6'
@@ -23,7 +27,7 @@ export const createEcoPinIcon = (status, isRemoving = false, isSelected = false)
   })
 }
 
-export default function EcoPinMarker({ report, position, isRemoving = false, isSelected = false, selectionMode = false, onReportSelect, customUrl }) {
+export default function EcoPinMarker({ report, position, isRemoving = false, isSelected = false, selectionMode = false, onReportSelect, customUrl, photoPin = false, photo, buttonLabel }) {
   const router = useRouter()
 
   const handlePopupRouting = (e, reportId) => {
@@ -35,10 +39,16 @@ export default function EcoPinMarker({ report, position, isRemoving = false, isS
     }
   }
 
+  const photoSource = photo || report?.photo_url || report?.file_url || report?.image_url || report?.image
+  const MarkerView = photoPin ? ReportPhotoMarker : Marker
+  const photoProps = photoPin ? { report, image: photoSource, selected: isSelected, removing: isRemoving } : {}
+  
+  console.log(`[EcoPinMarker] Report ${report.id}: photoPin=${photoPin}, photoSource=${photoSource ? 'has photo' : 'no photo'}`)
+  
   return (
-    <Marker
+    <MarkerView {...photoProps}
       position={position}
-      icon={createEcoPinIcon(report.status, isRemoving, isSelected)}
+      icon={createEcoPinIcon(report?.status, isRemoving, isSelected)}
       eventHandlers={{
         click: (e) => {
           if (selectionMode && onReportSelect) {
@@ -59,28 +69,32 @@ export default function EcoPinMarker({ report, position, isRemoving = false, isS
           )}
 
           <div className="mt-3 flex gap-2 flex-wrap">
-            <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${report.status === 'resolved' ? 'bg-green-100 text-green-700' :
-              report.status === 'in_progress' ? 'bg-orange-100 text-orange-700' :
-                report.status === 'waiting_for_feedback' ? 'bg-purple-100 text-purple-700' :
-                  report.status === 'closed' ? 'bg-gray-100 text-gray-700' :
-                    report.status === 'pending_owner_consent' ? 'bg-blue-100 text-blue-700' :
-                      'bg-red-100 text-red-700'
-              }`}>
-              {report.status?.replace(/_/g, ' ').toUpperCase()}
-            </span>
-            <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${report.validation_status === 'approved' || report.validation_status === 'validated'
-              ? 'bg-green-100 text-green-700'
-              : report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review'
-                ? 'bg-purple-100 text-purple-700'
-                : report.validation_status === 'rejected'
-                  ? 'bg-red-100 text-red-700'
-                  : 'bg-yellow-100 text-yellow-700'
-              }`}>
-              {report.validation_status?.replace(/_/g, ' ').toUpperCase()}
-            </span>
+            {report.status && (
+              <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${report.status === 'resolved' ? 'bg-green-100 text-green-700' :
+                report.status === 'in_progress' ? 'bg-orange-100 text-orange-700' :
+                  report.status === 'waiting_for_feedback' ? 'bg-purple-100 text-purple-700' :
+                    report.status === 'closed' ? 'bg-gray-100 text-gray-700' :
+                      report.status === 'pending_owner_consent' ? 'bg-blue-100 text-blue-700' :
+                        'bg-red-100 text-red-700'
+                }`}>
+                {toTitleCase(report.status)}
+              </span>
+            )}
+            {report.validation_status && (
+              <span className={`text-[10px] px-2 py-1 rounded-full font-medium ${report.validation_status === 'approved' || report.validation_status === 'validated'
+                ? 'bg-green-100 text-green-700'
+                : report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review'
+                  ? 'bg-purple-100 text-purple-700'
+                  : report.validation_status === 'rejected'
+                    ? 'bg-red-100 text-red-700'
+                    : 'bg-yellow-100 text-yellow-700'
+                }`}>
+                {toTitleCase(report.validation_status)}
+              </span>
+            )}
             {report.issue_type && (
                <span className="text-[10px] px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-700">
-                 {report.issue_type.replace(/_/g, ' ').toUpperCase()}
+                 {toTitleCase(report.issue_type)}
                </span>
             )}
           </div>
@@ -90,12 +104,12 @@ export default function EcoPinMarker({ report, position, isRemoving = false, isS
                 onClick={(e) => handlePopupRouting(e, report.id)}
                 className="w-full bg-blue-600 text-white font-medium text-sm py-2 rounded shadow-sm hover:bg-blue-700 transition-colors"
               >
-                {customUrl ? 'View Operation' : 'View Full Details'}
+                {buttonLabel || (customUrl ? 'View Operation' : 'View Full Details')}
               </button>
             </div>
           )}
         </div>
       </Popup>
-    </Marker>
+    </MarkerView>
   )
 }

@@ -1,38 +1,39 @@
 import Link from 'next/link'
+import styles from './PageHeader.module.css'
 
-export default function PageHeader({ title, titleAccent, subtitle, breadcrumbs, children }) {
+export default function PageHeader({ title, titleAccent, subtitle, breadcrumbs, children, className = '' }) {
   return (
-    <div className="sticky top-0 z-[40] bg-surface -mx-8 -mt-8 px-8 pt-8 pb-4 mb-6">
+    <header className={`${styles.header} ${className}`}>
       {breadcrumbs && breadcrumbs.length > 0 && (
-        <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-text-muted mb-4">
+        <nav aria-label="Breadcrumb" className={styles.breadcrumbs}>
           {breadcrumbs.map((crumb, i) => (
             <span key={i} className="flex items-center gap-2">
-              {i > 0 && <span className="text-accent-green">/</span>}
+              {i > 0 && <span aria-hidden="true">/</span>}
               {crumb.href ? (
-                <Link href={crumb.href} className="hover:text-accent-green hover:underline transition-colors">
+                <Link href={crumb.href}>
                   {crumb.label}
                 </Link>
               ) : (
-                <span className="text-text-primary">{crumb.label}</span>
+                <span aria-current="page" className="text-text-primary">{crumb.label}</span>
               )}
             </span>
           ))}
-        </div>
+        </nav>
       )}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-4xl font-bold uppercase tracking-tight text-text-primary mb-2">
+      <div className={styles.row}>
+        <div className={styles.copy}>
+          <h1 className={styles.title}>
             {title}
-            {titleAccent && <span className="text-accent-green ml-2">{titleAccent}</span>}
+            {titleAccent && <span className={styles.accent}>{titleAccent}</span>}
           </h1>
           {subtitle && (
-            <p className="text-sm text-text-muted">
+            <p className={styles.subtitle}>
               {subtitle}
             </p>
           )}
         </div>
-        {children}
+        {children && <div className={styles.actions}>{children}</div>}
       </div>
-    </div>
+    </header>
   )
 }

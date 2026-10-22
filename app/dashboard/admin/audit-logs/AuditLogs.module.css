@@ -1,0 +1,252 @@
+.page {
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  color: var(--text-primary);
+  font-family: var(--font-outfit), sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* WORM & Immutability Compliance Banner */
+.retention { flex-shrink: 0; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
+.retention > summary { min-height: 48px; padding: 12px 20px; cursor: pointer; color: var(--text-primary); font-size: 14px; }
+.retention > summary span { margin-left: 12px; color: var(--text-secondary); font-size: 12px; }
+.retention[open] > summary { border-bottom: 1px solid var(--border); }
+.retention .wormBanner { border: 0; }
+.wormBanner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  flex-shrink: 0;
+}
+
+.wormLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.wormIconBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--success, #2e7d32) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--success, #2e7d32) 30%, transparent);
+  color: var(--success, #2e7d32);
+  flex-shrink: 0;
+}
+
+.wormTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.wormTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.wormBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--success, #2e7d32) 15%, transparent);
+  color: var(--success, #2e7d32);
+  border: 1px solid color-mix(in srgb, var(--success, #2e7d32) 25%, transparent);
+}
+
+.wormSubtitle {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+
+.protectionDetails {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.protectionDetails summary {
+  width: fit-content;
+  cursor: pointer;
+  color: var(--workspace-link, #0052cc);
+}
+
+.protectionDetails p {
+  margin: 6px 0 0;
+  max-width: 52rem;
+}
+
+.wormRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.wormStats {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+}
+
+.wormStatMain {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.wormStatSub {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.sealBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sealBtn:hover:not(:disabled) {
+  background: var(--surface);
+  border-color: var(--workspace-link, #0052cc);
+  color: var(--workspace-link, #0052cc);
+}
+
+.sealBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Table workspace */
+.tableWorkspace {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
+}
+
+.tableContainer {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.tableViewport {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
+}
+
+/* Status / Action badges */
+.actionBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
+  background: color-mix(in srgb, #0052cc 10%, transparent);
+  color: #0052cc;
+  border: 1px solid color-mix(in srgb, #0052cc 25%, transparent);
+}
+
+:global(.dark) .actionBadge {
+  color: #82b6ff;
+  border-color: color-mix(in srgb, #82b6ff 30%, transparent);
+  background: color-mix(in srgb, #82b6ff 12%, transparent);
+}
+
+.targetBadge {
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.pagination {
+  flex-shrink: 0;
+}
+
+/* Error message banner */
+.errorBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--error, #d32f2f) 30%, transparent);
+  background: color-mix(in srgb, var(--error, #d32f2f) 10%, var(--surface));
+  color: var(--error, #d32f2f);
+  flex-shrink: 0;
+}
+
+.retryBtn {
+  min-height: 44px;
+  padding: 6px 16px;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--error, #d32f2f) 35%, transparent);
+  background: var(--surface);
+  color: var(--error, #d32f2f);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.retryBtn:hover {
+  background: color-mix(in srgb, var(--error, #d32f2f) 15%, var(--surface));
+}
+
+@media (max-width: 899px) {
+  .page {
+    min-height: 0;
+  }
+  .wormBanner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .wormRight {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

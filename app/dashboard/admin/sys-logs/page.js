@@ -1,68 +1,90 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
-import { getAuditLogs } from '@/lib/api'
+import { getSystemLogs } from '@/lib/api/admin'
 import FilterBar from '@/components/ui/FilterBar'
 import DataTable from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
+import useTablePageSize from '@/components/ui/useTablePageSize'
 import StatusBadge from '@/components/ui/StatusBadge'
+import { AdminGuard } from '@/components/auth/RequireRole'
+import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
 
-export default function SystemLogs() {
+function SystemLogsContent() {
   const router = useRouter()
-  const [logs, setLogs] = useState([])
   const [allLogs, setAllLogs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [filters, setFilters] = useState({ action_type: '', start_date: '', end_date: '' })
+  const [filters, setFilters] = useState({ search: '', action_type: '', start_date: '', end_date: '' })
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 8
+  const { containerRef, pageSize: itemsPerPage } = useTablePageSize({ resetKey: JSON.stringify(filters) })
 
-  useEffect(() => {
-    loadLogs()
-  }, [])
-
-  const loadLogs = async () => {
+  const loadLogs = useCallback(async () => {
     try {
-      setLoading(true)
-      const data = await getAuditLogs()
+      const data = await getSystemLogs({ limit: 500 })
       setAllLogs(data.logs || [])
+      setError(null)
     } catch (err) {
-      console.error('Failed to load system logs:', err)
-      setError('Failed to load system logs')
+      reportDiagnostic('error', 'admin', 'Failed to load system logs:', err)
+      setError(err.message || 'Failed to load system logs')
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
-    let filtered = allLogs
+    loadLogs()
+  }, [loadLogs])
+
+  const filteredLogs = useMemo(() => {
+    let result = allLogs
+
+    if (filters.search) {
+      const term = filters.search.toLowerCase()
+      result = result.filter(log =>
+        (log.profiles?.full_name || '').toLowerCase().includes(term) ||
+        (log.profiles?.email || '').toLowerCase().includes(term) ||
+        (log.action_type || '').toLowerCase().includes(term) ||
+        (log.action_details || '').toLowerCase().includes(term) ||
+        (log.ip_address || '').toLowerCase().includes(term) ||
+        (log.user_id || '').toLowerCase().includes(term)
+      )
+    }
+
     if (filters.action_type) {
-      filtered = filtered.filter(log => log.action_type === filters.action_type)
+      result = result.filter(log => log.action_type === filters.action_type)
     }
     if (filters.start_date) {
-      filtered = filtered.filter(log => new Date(log.created_at) >= new Date(filters.start_date))
+      result = result.filter(log => new Date(log.created_at) >= new Date(filters.start_date))
     }
     if (filters.end_date) {
       const endDate = new Date(filters.end_date)
       endDate.setHours(23, 59, 59, 999)
-      filtered = filtered.filter(log => new Date(log.created_at) <= endDate)
+      result = result.filter(log => new Date(log.created_at) <= endDate)
     }
-    setLogs(filtered)
-    setCurrentPage(1)
+
+    return result
   }, [filters, allLogs])
 
-  const totalPages = Math.ceil(logs.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
+  const totalPages = Math.ceil(filteredLogs.length / itemsPerPage)
+  const safeCurrentPage = Math.min(currentPage, Math.max(1, totalPages))
+  const startIndex = (safeCurrentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
-  const paginatedLogs = logs.slice(startIndex, endIndex)
+  const paginatedLogs = filteredLogs.slice(startIndex, endIndex)
 
   const handlePageChange = (page) => {
     setCurrentPage(page)
   }
 
+  const updateFilters = (updater) => {
+    setFilters(updater)
+    setCurrentPage(1)
+  }
+
   const handleResetFilters = () => {
-    setFilters({ action_type: '', start_date: '', end_date: '' })
+    setFilters({ search: '', action_type: '', start_date: '', end_date: '' })
+    setCurrentPage(1)
   }
 
   const formatDate = (dateString) => {
@@ -112,7 +134,7 @@ export default function SystemLogs() {
     },
     { 
       key: 'ip_address', 
-      label: 'IP Address', 
+      label: 'IP address',
       width: '15%',
       render: (value) => (
         <span className="text-sm text-text-muted">{value || 'N/A'}</span>
@@ -121,63 +143,92 @@ export default function SystemLogs() {
   ]
 
   return (
-    <div className="p-8">
-      <PageHeader
-        title="System Logs"
-        subtitle="View system activity and actions"
-        breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Admin', href: '/dashboard/admin' },
-          { label: 'System Logs' }
-        ]}
-      />
-
-      {/* Filters */}
-      <FilterBar
-        filters={[
-          {
-            label: 'All Actions',
-            value: filters.action_type,
-            onChange: (val) => setFilters(prev => ({ ...prev, action_type: val })),
-            options: [
-              { value: '', label: 'All Actions' },
-              { value: 'login', label: 'Login' },
-              { value: 'logout', label: 'Logout' },
-              { value: 'password_change', label: 'Password Change' },
-              { value: 'profile_update', label: 'Profile/Role Update' },
-              { value: 'user_created', label: 'User Created' },
-              { value: 'account_deletion', label: 'User Deleted' }
-            ]
-          }
-        ]}
-        showDateRange={true}
-        dateRange={{ start: filters.start_date, end: filters.end_date }}
-        onDateRangeChange={(range) => setFilters(prev => ({ ...prev, start_date: range.start, end_date: range.end }))}
-        onReset={handleResetFilters}
-        resultsCount={logs.length}
-        loading={loading}
-        sticky={false}
-      />
-
-      {/* Logs Table */}
-      <DataTable
-        columns={tableColumns}
-        data={paginatedLogs}
-        loading={loading}
-        emptyMessage="No system logs found"
-      />
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-          itemsPerPage={itemsPerPage}
-          totalItems={logs.length}
-          className="mt-6"
+    <div className="workspace-page">
+        <PageHeader
+          title="System Logs"
+          subtitle="View system activity and actions"
+          breadcrumbs={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Admin', href: '/dashboard/admin' },
+            { label: 'System Logs' }
+          ]}
         />
-      )}
-    </div>
+
+        {error && (
+          <div className="p-4 bg-error/10 border border-error/30 text-error flex justify-between items-center">
+            <div>
+              <p className="font-bold text-sm">Failed to load system logs</p>
+              <p className="text-xs">{error}</p>
+            </div>
+            <button
+              onClick={() => {
+                setLoading(true)
+                loadLogs()
+              }}
+              className="btn-secondary py-1 px-3 text-xs font-bold uppercase tracking-wider"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* Filters */}
+        <FilterBar
+          searchPlaceholder="Search by user, email, action, details, or IP..."
+          searchValue={filters.search}
+          onSearchChange={(val) => updateFilters(prev => ({ ...prev, search: val }))}
+          filters={[
+            {
+              label: 'All Actions',
+              value: filters.action_type,
+              onChange: (val) => updateFilters(prev => ({ ...prev, action_type: val })),
+              options: [
+                { value: '', label: 'All Actions' },
+                { value: 'login', label: 'Login' },
+                { value: 'logout', label: 'Logout' },
+                { value: 'password_change', label: 'Password Change' },
+                { value: 'profile_update', label: 'Profile/Role Update' },
+                { value: 'user_created', label: 'User Created' },
+                { value: 'account_deletion', label: 'User Deleted' }
+              ]
+            }
+          ]}
+          showDateRange={true}
+          dateRange={{ start: filters.start_date, end: filters.end_date }}
+          onDateRangeChange={(range) => updateFilters(prev => ({ ...prev, start_date: range.start, end_date: range.end }))}
+          onReset={handleResetFilters}
+          resultsCount={filteredLogs.length}
+          loading={loading}
+          sticky={false}
+        />
+
+        {/* Logs Table */}
+        <div ref={containerRef} className="workspace-scroll">
+        <DataTable
+          columns={tableColumns}
+          data={paginatedLogs}
+          loading={loading}
+          emptyMessage="No system logs found"
+        />
+        </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <Pagination
+            currentPage={safeCurrentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+            itemsPerPage={itemsPerPage}
+            totalItems={filteredLogs.length}
+          />
+        )}
+      </div>
+  )
+}
+export default function SystemLogs() {
+  return (
+    <AdminGuard>
+      <SystemLogsContent />
+    </AdminGuard>
   )
 }

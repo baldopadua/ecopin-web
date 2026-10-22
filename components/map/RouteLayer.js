@@ -1,7 +1,8 @@
 'use client'
-import { useMemo } from 'react'
-import { Polyline, Marker, Popup, CircleMarker } from 'react-leaflet'
+import React, { useMemo, useEffect, useState } from 'react'
+import { Polyline, Marker, Popup, CircleMarker, useMap } from 'react-leaflet'
 import L from 'leaflet'
+import { reportDiagnostic } from '../../lib/diagnostics.mjs';
 
 /**
  * RouteLayer — Renders route polylines and numbered waypoint markers
@@ -14,6 +15,7 @@ import L from 'leaflet'
  *     - waypoints: array of { sequence_order, latitude, longitude, waypoint_type, cleanup_task_id, ... }
  *     - totalDistance: number (meters)
  *     - totalDuration: number (minutes)
+ *   travelMode: string ('DRIVING', 'MOTORCYCLE', 'BICYCLE', 'WALKING')
  */
 
 function formatDistance(meters) {
@@ -86,7 +88,152 @@ function createWaypointIcon(sequenceNumber, color) {
   })
 }
 
-export default function RouteLayer({ routes = [] }) {
+const OSRM_PROFILE_MAP = {
+  DRIVING: 'driving',
+  MOTORCYCLE: 'driving',
+  BICYCLE: 'bike',
+  WALKING: 'walking',
+}
+
+function deduplicateCoords(coords) {
+  if (!coords || coords.length === 0) return []
+  const result = [coords[0]]
+  for (let i = 1; i < coords.length; i++) {
+    const prev = result[result.length - 1]
+    const curr = coords[i]
+    if (Math.abs(curr[0] - prev[0]) > 0.00002 || Math.abs(curr[1] - prev[1]) > 0.00002) {
+      result.push(curr)
+    }
+  }
+  return result
+}
+
+async function requestOsrm(profile, coordStr) {
+  const res = await fetch(`https://router.project-osrm.org/route/v1/${profile}/${coordStr}?overview=full&geometries=geojson`, {
+    signal: AbortSignal.timeout(6000)
+  })
+  if (!res.ok) return null
+  const data = await res.json()
+  if (data.code === 'Ok' && data.routes?.[0]?.geometry?.coordinates) {
+    return data.routes[0].geometry.coordinates.map(([lng, lat]) => [lat, lng])
+  }
+  return null
+}
+
+async function fetchStreetLevelRoute(coords, mode = 'DRIVING') {
+  if (!coords || coords.length < 2) return null
+  const cleanCoords = deduplicateCoords(coords)
+  if (cleanCoords.length < 2) return cleanCoords.length === 1 ? [cleanCoords[0], cleanCoords[0]] : null
+
+  const profile = OSRM_PROFILE_MAP[mode?.toUpperCase()] || 'driving'
+  try {
+    if (cleanCoords.length <= 25) {
+      const coordStr = cleanCoords.map(c => `${c[1]},${c[0]}`).join(';') // lng,lat
+      let points = await requestOsrm(profile, coordStr)
+      if (!points && profile !== 'driving') {
+        points = await requestOsrm('driving', coordStr)
+      }
+      return points
+    }
+
+    const allPoints = []
+    const chunkSize = 20
+    for (let i = 0; i < cleanCoords.length - 1; i += chunkSize - 1) {
+      const chunk = cleanCoords.slice(i, i + chunkSize)
+      if (chunk.length < 2) break
+      const coordStr = chunk.map(c => `${c[1]},${c[0]}`).join(';')
+      let segPoints = await requestOsrm(profile, coordStr)
+      if (!segPoints && profile !== 'driving') {
+        segPoints = await requestOsrm('driving', coordStr)
+      }
+      if (segPoints && segPoints.length > 0) {
+        allPoints.push(...(allPoints.length > 0 ? segPoints.slice(1) : segPoints))
+      }
+    }
+    return allPoints.length > 0 ? allPoints : null
+  } catch (err) {
+    reportDiagnostic('warn', 'map', '[RouteLayer] OSRM street route fetch error:', err.message)
+    return null
+  }
+}
+
+export default function RouteLayer({ routes = [], travelMode = 'DRIVING' }) {
+  const map = useMap()
+  const [streetRoutes, setStreetRoutes] = useState({})
+
+  // Fetch actual street-level road routes asynchronously (just like the mobile client)
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadStreetRoutes() {
+      if (!routes || routes.length === 0) return
+
+      for (const [routeIdx, route] of routes.entries()) {
+        const effectiveMode = (route.travel_mode || route.travelMode || travelMode || 'DRIVING').toUpperCase()
+        const baseKey = route.id || route.crewId || route.vehicle_id || `route-${routeIdx}`
+        const cacheKey = `${baseKey}-${effectiveMode}`
+        const waypoints = route.waypoints || []
+
+        const hasExistingPolyline = waypoints.some(wp => Array.isArray(wp.polyline) && wp.polyline.length > 0)
+        if (hasExistingPolyline) continue
+        if (streetRoutes[cacheKey]?.length > 0) continue
+
+        const coords = waypoints
+          .filter(wp => Number.isFinite(parseFloat(wp.latitude)) && Number.isFinite(parseFloat(wp.longitude)))
+          .map(wp => [parseFloat(wp.latitude), parseFloat(wp.longitude)])
+
+        if (coords.length < 2) continue
+
+        const streetPoints = await fetchStreetLevelRoute(coords, effectiveMode)
+        if (!cancelled && streetPoints && streetPoints.length > 0) {
+          setStreetRoutes(prev => ({
+            ...prev,
+            [cacheKey]: streetPoints,
+            [baseKey]: streetPoints
+          }))
+        }
+      }
+    }
+
+    loadStreetRoutes()
+    return () => { cancelled = true }
+  }, [routes, travelMode])
+
+  useEffect(() => {
+    if (!routes || routes.length === 0 || !map) return
+    const allPositions = []
+    routes.forEach((r, idx) => {
+      const effectiveMode = (r.travel_mode || r.travelMode || travelMode || 'DRIVING').toUpperCase()
+      const baseKey = r.id || r.crewId || r.vehicle_id || `route-${idx}`
+      const cacheKey = `${baseKey}-${effectiveMode}`
+      const activeStreet = streetRoutes[cacheKey] || streetRoutes[baseKey]
+
+      if (activeStreet?.length > 0) {
+        allPositions.push(...activeStreet)
+      } else {
+        (r.waypoints || []).forEach(wp => {
+          if (wp.polyline && wp.polyline.length > 0) {
+            wp.polyline.forEach(p => {
+              if (p.latitude && p.longitude) allPositions.push([parseFloat(p.latitude), parseFloat(p.longitude)])
+            })
+          } else if (wp.latitude && wp.longitude) {
+            allPositions.push([parseFloat(wp.latitude), parseFloat(wp.longitude)])
+          }
+        })
+      }
+    })
+    if (allPositions.length > 0) {
+      try {
+        const bounds = L.latLngBounds(allPositions)
+        if (bounds.isValid()) {
+          map.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 })
+        }
+      } catch (err) {
+        reportDiagnostic('warn', 'map', 'fitBounds warning:', err)
+      }
+    }
+  }, [map, routes, streetRoutes, travelMode])
+
   const renderedRoutes = useMemo(() => {
     if (!routes || routes.length === 0) return null
 
@@ -96,21 +243,39 @@ export default function RouteLayer({ routes = [] }) {
 
       if (waypoints.length === 0) return null
 
-      // Build polyline positions from waypoints
-      const positions = []
-      waypoints.forEach((wp) => {
-        if (wp.polyline && wp.polyline.length > 0) {
-          positions.push(...wp.polyline.map(p => [parseFloat(p.latitude), parseFloat(p.longitude)]))
-        } else if (wp.latitude && wp.longitude) {
-          positions.push([parseFloat(wp.latitude), parseFloat(wp.longitude)])
-        }
-      })
+      const effectiveMode = (route.travel_mode || route.travelMode || travelMode || 'DRIVING').toUpperCase()
+      const routeKey = route.id || route.crewId || route.vehicle_id || `route-${routeIdx}`
+      const baseKey = routeKey
+      const cacheKey = `${baseKey}-${effectiveMode}`
+      const hasExistingPolyline = waypoints.some(wp => Array.isArray(wp.polyline) && wp.polyline.length > 0)
 
-      const depotWaypoints = waypoints.filter(wp => wp.waypoint_type === 'depot_start' || wp.waypoint_type === 'depot_end')
+      // Build polyline positions: prefer rich existing polyline, then fetched street route, then waypoint endpoints
+      let positions = []
+      const activeStreet = streetRoutes[cacheKey] || streetRoutes[baseKey]
+
+      if (hasExistingPolyline) {
+        waypoints.forEach((wp) => {
+          if (wp.polyline && wp.polyline.length > 0) {
+            positions.push(...wp.polyline.map(p => [parseFloat(p.latitude), parseFloat(p.longitude)]))
+          } else if (wp.latitude && wp.longitude) {
+            positions.push([parseFloat(wp.latitude), parseFloat(wp.longitude)])
+          }
+        })
+      } else if (activeStreet && activeStreet.length > 0) {
+        positions = activeStreet
+      } else {
+        waypoints.forEach((wp) => {
+          if (wp.latitude && wp.longitude) {
+            positions.push([parseFloat(wp.latitude), parseFloat(wp.longitude)])
+          }
+        })
+      }
+
+      const depotWaypoints = waypoints.filter(wp => wp.waypoint_type === 'depot_start')
       const taskWaypoints = waypoints.filter(wp => wp.waypoint_type === 'task')
 
       return (
-        <div key={route.id || `route-${routeIdx}`}>
+        <React.Fragment key={routeKey}>
           {/* Route Polyline */}
           {positions.length > 1 && (
             <Polyline
@@ -207,10 +372,10 @@ export default function RouteLayer({ routes = [] }) {
               </Popup>
             </CircleMarker>
           )}
-        </div>
+        </React.Fragment>
       )
     })
-  }, [routes])
+  }, [routes, streetRoutes, travelMode])
 
   return <>{renderedRoutes}</>
 }

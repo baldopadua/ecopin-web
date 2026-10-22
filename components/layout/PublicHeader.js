@@ -23,14 +23,14 @@ export default function PublicHeader({
 
         <nav className="flex items-center gap-3 sm:gap-6 overflow-x-auto no-scrollbar">
           <Link 
-            href="/"
+            href="/map"
             className={`text-sm pb-1.5 pt-1 transition-all flex items-center gap-1.5 whitespace-nowrap ${
               activeNav === 'reports'
                 ? 'font-bold text-[#0052CC] dark:text-[#60A5FA] border-b-2 border-[#0052CC] dark:border-[#60A5FA]'
                 : 'font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
-            <span>Public Reports</span>
+            <span>Map view</span>
           </Link>
 
           <Link 
@@ -41,18 +41,18 @@ export default function PublicHeader({
                 : 'font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
-            <span>Incident Gallery</span>
+            <span>Gallery view</span>
           </Link>
 
           <Link 
-            href="/mobile"
+            href="/#mobile-app"
             className={`text-sm pb-1.5 pt-1 transition-all flex items-center gap-1.5 whitespace-nowrap ${
               activeNav === 'mobile'
                 ? 'font-bold text-[#0052CC] dark:text-[#60A5FA] border-b-2 border-[#0052CC] dark:border-[#60A5FA]'
                 : 'font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
-            <span>Mobile App</span>
+            <span>App &amp; guide</span>
           </Link>
         </nav>
       </div>

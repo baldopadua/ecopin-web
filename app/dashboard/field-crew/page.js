@@ -8,6 +8,7 @@ import { MapPin, AlertCircle, CheckCircle, Navigation } from 'lucide-react'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { Buffer } from 'buffer'
 import wkx from 'wkx'
+import { reportDiagnostic } from '../../../lib/diagnostics.mjs';
 
 // Polyfill Buffer for browser environment
 if (typeof window !== 'undefined' && !window.Buffer) {
@@ -31,7 +32,7 @@ const parseGeometry = (geometry) => {
       return [lat, lng]
     }
   } catch (error) {
-    console.error('Error parsing geometry:', error)
+    reportDiagnostic('error', 'other', 'Error parsing geometry:', error)
   }
   return null
 }
@@ -56,7 +57,7 @@ export default function FieldCrewCommandCenter() {
         })
         setTasks(myTasks)
       } catch (error) {
-        console.error('Failed to load tasks:', error)
+        reportDiagnostic('error', 'other', 'Failed to load tasks:', error)
       } finally {
         setLoading(false)
       }

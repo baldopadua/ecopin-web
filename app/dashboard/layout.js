@@ -1,73 +1,70 @@
 'use client'
-import {updateAuthToken} from '@/lib/auth-token.mjs'
-import { useEffect, useState } from 'react'
+import { clearSessionMetadata, getSessionMetadata, loadSessionMetadata, subscribeSession } from '@/lib/auth-token.mjs'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Sidebar from '@/components/layout/Sidebar'
 import { UserProvider } from '@/components/auth/UserContext'
-import { SessionProvider } from '@/components/auth/SessionProvider'
+import { SessionProvider, useSession } from '@/components/auth/SessionProvider'
 import { TaskProvider } from '@/components/context/TaskContext'
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL + '/api/auth'
+import DashboardQueryProvider from '@/components/context/DashboardQueryProvider'
+import { NavigationLoadingProvider } from '@/components/context/NavigationLoadingContext'
+import NavigationLoadingScreen from '@/components/ui/NavigationLoadingScreen'
+import styles from '@/components/layout/DashboardShell.module.css'
+import { reportDiagnostic } from '../../lib/diagnostics.mjs';
 
 export default function DashboardLayout({ children }) {
-  const [user, setUser] = useState(null)
-  const [isRedirecting, setIsRedirecting] = useState(false)
+  return (
+    <SessionProvider>
+      <NavigationLoadingProvider>
+        <DashboardContent>{children}</DashboardContent>
+      </NavigationLoadingProvider>
+    </SessionProvider>
+  )
+}
+
+function DashboardContent({ children }) {
+  const session = useSyncExternalStore(subscribeSession, getSessionMetadata, () => null)
+  const [authReady, setAuthReady] = useState(false)
+  const { showSessionExpiredModal } = useSession()
   const router = useRouter()
   const pathname = usePathname()
+  const user = session?.state === 'full' ? session.user : null
+  const role = user?.role || 'citizen'
+  const redirectTo = !authReady || showSessionExpiredModal ? null
+    : !user || role === 'citizen' || role === 'field_crew' ? '/auth'
+      : pathname.startsWith('/dashboard/admin') && role !== 'admin' && role !== 'sysadmin' ? '/dashboard/officer'
+        : pathname === '/dashboard' && (role === 'admin' || role === 'sysadmin') ? '/dashboard/admin'
+          : pathname === '/dashboard' && role === 'officer' ? '/dashboard/officer'
+            : null
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const token = localStorage.getItem('authToken')
-      if (!token) {
-        router.push('/auth')
-        return
+    let active = true
+    const cached = getSessionMetadata()
+    const validCachedSession = cached?.state === 'full' && cached.expiresAt > Date.now()
+    void Promise.resolve(validCachedSession ? cached : loadSessionMetadata()).then((loadedSession) => {
+      if (!active) return
+      if (loadedSession?.state === 'full' && loadedSession.expiresAt <= Date.now()) clearSessionMetadata()
+      setAuthReady(true)
+    }).catch((error) => {
+      if (active) {
+        reportDiagnostic('error', 'other', 'Failed to fetch user data:', error)
+        clearSessionMetadata()
+        setAuthReady(true)
       }
+    })
+    return () => { active = false }
+  }, [])
 
-      try {
-        const response = await fetch(`${API_BASE_URL}/me`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        })
+  useEffect(() => {
+    if (!authReady) return
+    if (session && (!user || role === 'citizen' || role === 'field_crew')) clearSessionMetadata()
+    if (redirectTo) router.push(redirectTo)
+  }, [authReady, redirectTo, role, router, session, user])
 
-        if (!response.ok) {
-          updateAuthToken(null)
-          router.push('/auth')
-          return
-        }
-
-        const data = await response.json()
-        const userRole = data.user.role || 'citizen'
-
-        setUser(data.user)
-
-        if (userRole === 'admin' && pathname === '/dashboard') {
-          setIsRedirecting(true)
-          router.push('/dashboard/admin')
-        } else if (userRole === 'field_crew') {
-          // Immediately block field crew from any dashboard pages
-          updateAuthToken(null)
-          router.push('/auth')
-          return
-        } else if (userRole === 'officer' && pathname === '/dashboard') {
-          setIsRedirecting(true)
-          router.push('/dashboard/officer')
-        } else {
-          setIsRedirecting(false)
-        }
-      } catch (error) {
-        console.error('Failed to fetch user data:', error)
-        updateAuthToken(null)
-        router.push('/auth')
-      }
-    }
-
-    checkAuth()
-  }, [pathname])
-
-  if (!user || isRedirecting) return (
-    <div className="flex h-screen bg-background relative">
-            <aside className="w-64 bg-surface-elevated border-r border-border h-screen flex flex-col animate-pulse z-10 relative">
+  if (!authReady || !user || redirectTo) return (
+    <div className={styles.shell} aria-busy="true" aria-label="Loading workspace">
+      <div className={styles.mobileBar} aria-hidden="true"><div className="h-7 w-28 rounded-lg bg-border/50 animate-pulse" /></div>
+            <aside className={`${styles.sidebar} ${styles.desktopSidebar} animate-pulse`}>
         <div className="p-6 border-b border-border">
           <div className="h-6 w-24 rounded bg-border/50" />
         </div>
@@ -80,7 +77,7 @@ export default function DashboardLayout({ children }) {
           ))}
         </nav>
       </aside>
-      <main className="flex-1 overflow-auto bg-transparent z-10 relative">
+      <main className={styles.main}>
         <div className="p-8">
           <div className="mb-8 animate-pulse">
             <div className="h-8 w-48 rounded bg-border/50 mb-2" />
@@ -112,20 +109,19 @@ export default function DashboardLayout({ children }) {
   )
 
   return (
-    <SessionProvider>
       <UserProvider user={user}>
+        <DashboardQueryProvider>
         <TaskProvider>
-          <div className="flex h-screen bg-background relative">
+          <div className={styles.shell}>
+            <a href="#workspace-content" className={styles.skip}>Skip to workspace</a>
                         <Sidebar />
-            <main className="flex-1 overflow-auto bg-transparent z-10 relative">
+            <main id="workspace-content" tabIndex={-1} className={styles.main}>
+              <NavigationLoadingScreen />
               {children}
             </main>
           </div>
         </TaskProvider>
+        </DashboardQueryProvider>
       </UserProvider>
-    </SessionProvider>
   )
 }
-
-
-

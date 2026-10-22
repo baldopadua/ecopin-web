@@ -7,6 +7,8 @@ import RouteInfoHeader from '@/components/ui/RouteInfoHeader'
 import TaskListItem from '@/components/ui/TaskListItem'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { FieldCrewGuard } from '@/components/auth/RequireRole'
+import { MapPin, AlertTriangle, Map } from 'lucide-react'
+import { reportDiagnostic } from '../../../../../lib/diagnostics.mjs';
 
 export default function FieldCrewClusterDetailPage() {
   const router = useRouter()
@@ -26,13 +28,20 @@ export default function FieldCrewClusterDetailPage() {
         
         setCluster(clusterData)
         
-        // Filter reports for this cluster
-        const clusterReports = reportsData.filter(r => 
+        // Filter reports for this cluster and merge with cluster's member reports
+        const dbReports = clusterData?.reports || []
+        const clusterReports = (reportsData || []).filter(r => 
           String(r.cluster_id) === String(clusterId)
         )
-        setReports(clusterReports)
+        const reportsById = new Map()
+        dbReports.forEach(r => reportsById.set(String(r.id), r))
+        clusterReports.forEach(r => {
+          const existing = reportsById.get(String(r.id))
+          reportsById.set(String(r.id), { ...existing, ...r })
+        })
+        setReports(Array.from(reportsById.values()))
       } catch (error) {
-        console.error('Failed to load cluster data:', error)
+        reportDiagnostic('error', 'other', 'Failed to load cluster data:', error)
       } finally {
         setLoading(false)
       }
@@ -46,12 +55,10 @@ export default function FieldCrewClusterDetailPage() {
 
   const handleTrackAll = () => {
     // TODO: Navigate to map with all tasks
-    console.log('Track all tasks on map')
   }
 
   const handleTrackSingle = (reportId) => {
     // TODO: Navigate to map with single task
-    console.log('Track single task:', reportId)
   }
 
   return (
@@ -110,19 +117,14 @@ export default function FieldCrewClusterDetailPage() {
                         </div>
                         
                         <div className="flex items-center gap-2 text-sm text-text-muted mb-2">
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
+                          <MapPin size={16} aria-hidden="true" />
                           <span className="flex-1">
                             {report.latitude?.toFixed(5)}, {report.longitude?.toFixed(5)}
                           </span>
                         </div>
 
                         <div className="flex items-center gap-2 text-sm text-text-muted mb-3">
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                          </svg>
+                          <AlertTriangle size={16} aria-hidden="true" />
                           <span>Issue: {report.issue_type || 'General'}</span>
                         </div>
 
@@ -145,9 +147,7 @@ export default function FieldCrewClusterDetailPage() {
                 onClick={handleTrackAll}
                 className="btn-primary flex items-center gap-2"
               >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                </svg>
+                <Map size={20} aria-hidden="true" />
                 <span>Track All Tasks on Map</span>
               </button>
             </div>

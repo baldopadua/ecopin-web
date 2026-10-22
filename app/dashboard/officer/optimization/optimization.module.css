@@ -1,0 +1,255 @@
+.page {
+  color: var(--text-primary);
+  font-family: var(--font-outfit), sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Tab Panel & Content */
+.tabPanel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.scrollableContent {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.scrollableContent::-webkit-scrollbar {
+  width: 6px;
+}
+.scrollableContent::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+
+/* Alerts / Banners */
+.banner {
+  flex-shrink: 0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.bannerWarning {
+  background: color-mix(in srgb, var(--warning) 12%, var(--surface));
+  border: 1px solid var(--warning);
+}
+
+.bannerSuccess {
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface));
+  border: 1px solid var(--primary);
+}
+
+/* Dispatch Settings Form Container */
+.settingsCard {
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 16px 20px;
+}
+
+.settingsCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.contextBadge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 12px;
+}
+
+.generateBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  margin-top: 14px;
+}
+
+.generateButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 24px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: #0052cc;
+  color: #ffffff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 82, 204, 0.2);
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.generateButton:hover:not(:disabled) {
+  background: #003d99;
+  transform: translateY(-1px);
+}
+
+.generateButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Table Card for Previous Runs */
+.tableCard {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 20px;
+  overflow: hidden;
+}
+
+.tableHeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+
+.tableHeaderRow h2 { margin: 0; font-size: 20px; font-weight: 600; line-height: 1.3; }
+.tableHeaderRow p,
+.tableHeaderRow > span { font-size: 14px; line-height: 1.5; }
+
+.tableWrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.tableWrap::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.tableWrap::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+
+.viewButton {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid transparent !important;
+  border-radius: 9999px;
+  background: #0052cc !important;
+  color: white !important;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  transition: background-color 0.15s ease;
+}
+
+.viewButton:hover {
+  background: #003d99 !important;
+  color: white !important;
+}
+
+:global(.ecopin-table tbody tr:hover) .viewButton {
+  background: #0052cc !important;
+  border-color: transparent !important;
+  color: white !important;
+}
+
+:global(.ecopin-table tbody tr:hover) .viewButton:hover {
+  background: #003d99 !important;
+  color: white !important;
+}
+
+.disassembleButton {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid var(--border) !important;
+  border-radius: 9999px;
+  background: var(--surface-elevated) !important;
+  color: var(--error, #ef4444) !important;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.disassembleButton:hover {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: var(--error, #ef4444) !important;
+  color: var(--error, #ef4444) !important;
+}
+
+:global(.ecopin-table tbody tr:hover) .disassembleButton {
+  background: var(--surface-elevated) !important;
+  border-color: var(--border) !important;
+  color: var(--error, #ef4444) !important;
+}
+
+:global(.ecopin-table tbody tr:hover) .disassembleButton:hover {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: var(--error, #ef4444) !important;
+  color: var(--error, #ef4444) !important;
+}
+
+.viewButton:focus-visible,
+.disassembleButton:focus-visible {
+  outline: 3px solid var(--workspace-link, #0052cc);
+  outline-offset: 2px;
+}
+
+@media (max-width: 767px) {
+  .settingsCard {
+    padding: 12px;
+  }
+}
+

@@ -2,12 +2,15 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
-import { getSystemStats, getAuditLogs } from '@/lib/api'
+import { AdminGuard } from '@/components/auth/RequireRole'
+import { getSystemStats, getSystemLogs } from '@/lib/api'
 import StatsCard from '@/components/ui/StatsCard'
 import DataTable from '@/components/ui/DataTable'
 import StatusBadge from '@/components/ui/StatusBadge'
+import { Users, Settings, FileText } from 'lucide-react'
+import { reportDiagnostic } from '../../../lib/diagnostics.mjs';
 
-export default function AdminHomepage() {
+function AdminHomepageContent() {
   const router = useRouter()
   const [stats, setStats] = useState(null)
   const [recentLogs, setRecentLogs] = useState([])
@@ -24,7 +27,7 @@ export default function AdminHomepage() {
       const data = await getSystemStats()
       setStats(data)
     } catch (err) {
-      console.error('Failed to load stats:', err)
+      reportDiagnostic('error', 'admin', 'Failed to load stats:', err)
       setError('Failed to load system statistics')
     } finally {
       setLoading(false)
@@ -33,10 +36,10 @@ export default function AdminHomepage() {
 
   const loadRecentLogs = async () => {
     try {
-      const data = await getAuditLogs({ limit: 4 })
+      const data = await getSystemLogs({ limit: 4 })
       setRecentLogs(data.logs || [])
     } catch (err) {
-      console.error('Failed to load recent logs:', err)
+      reportDiagnostic('error', 'admin', 'Failed to load recent logs:', err)
     }
   }
 
@@ -89,7 +92,7 @@ export default function AdminHomepage() {
 
   if (loading) {
     return (
-      <div className="p-8">
+      <div className="workspace-page">
         <PageHeader
           title="Admin Dashboard"
           subtitle="Loading..."
@@ -123,7 +126,7 @@ export default function AdminHomepage() {
 
   if (error) {
     return (
-      <div className="p-8">
+      <div className="workspace-page">
         <PageHeader
           title="Admin Dashboard"
           subtitle="Error"
@@ -140,7 +143,7 @@ export default function AdminHomepage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="workspace-page">
       <PageHeader
         title="Admin Dashboard"
         subtitle="Manage users, settings, and view system logs"
@@ -151,7 +154,7 @@ export default function AdminHomepage() {
       />
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatsCard
           title="Total Users"
           value={stats?.users?.total || 0}
@@ -200,23 +203,21 @@ export default function AdminHomepage() {
 
         <StatsCard
           title="System Logs"
-          value={stats?.auditLogs?.total || 0}
+          value={stats?.systemLogs?.total ?? stats?.auditLogs?.total ?? 0}
           color="accent"
           subtitle="Total system actions logged"
         />
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <button
           onClick={() => router.push('/dashboard/admin/users')}
           className="card hover:border-accent-green transition-colors cursor-pointer text-left"
         >
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-full bg-accent-green/10 flex items-center justify-center">
-              <svg className="w-5 h-5 text-accent-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
+              <Users size={20} className="text-accent-green" aria-hidden="true" />
             </div>
             <h3 className="text-lg font-semibold text-text-primary">User Management</h3>
           </div>
@@ -229,10 +230,7 @@ export default function AdminHomepage() {
         >
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-full bg-accent-green/10 flex items-center justify-center">
-              <svg className="w-5 h-5 text-accent-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
+              <Settings size={20} className="text-accent-green" aria-hidden="true" />
             </div>
             <h3 className="text-lg font-semibold text-text-primary">System Settings</h3>
           </div>
@@ -245,9 +243,7 @@ export default function AdminHomepage() {
         >
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-full bg-accent-green/10 flex items-center justify-center">
-              <svg className="w-5 h-5 text-accent-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+              <FileText size={20} className="text-accent-green" aria-hidden="true" />
             </div>
             <h3 className="text-lg font-semibold text-text-primary">System Logs</h3>
           </div>
@@ -256,14 +252,19 @@ export default function AdminHomepage() {
       </div>
 
       {/* Recent System Logs */}
-      <div className="flex flex-col gap-4 mt-8">
+      <div className="workspace-fill">
         <h2 className="text-xl font-bold text-text-primary uppercase tracking-tight">Recent System Logs</h2>
-        <DataTable
-          columns={tableColumns}
-          data={recentLogs}
-          emptyMessage="No recent activity"
-        />
+        <div className="workspace-scroll">
+          <DataTable columns={tableColumns} data={recentLogs} emptyMessage="No recent activity" />
+        </div>
       </div>
     </div>
+  )
+}
+export default function AdminHomepage() {
+  return (
+    <AdminGuard>
+      <AdminHomepageContent />
+    </AdminGuard>
   )
 }

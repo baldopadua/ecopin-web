@@ -1,0 +1,7 @@
+.dialog { position: fixed; inset: 0; width: 100vw; height: 100dvh; max-width: none; max-height: none;
+  margin: 0; padding: 16px; border: 0; background: transparent; color: var(--text-primary); overflow: auto; }
+.dialog[open] { display: flex; align-items: center; justify-content: center; }
+.dialog::backdrop { background: #00000080; }
+.dialog :focus-visible { outline: 3px solid #0052cc; outline-offset: 3px; }
+:global(.dark) .dialog :focus-visible { outline-color: #82b6ff; }
+@media (max-height: 600px) { .dialog[open] { align-items: flex-start; } }

@@ -3,11 +3,13 @@ import SecureImage from '@/components/ui/SecureImage'
 import React, { useEffect, useState, useRef } from 'react'
 import { ArrowLeft, Eye, Camera, Upload, ChevronRight, CheckCircle } from 'lucide-react'
 import { useRouter, useParams } from 'next/navigation'
-import { fetchCleanupTaskById, uploadCleanupPhoto, markCleanupTaskComplete, fetchReportsByClusterId, batchCompleteReportsByCluster, updateReportStatus, fetchReportsByIds, updateReportValidation, fetchReportEvidence, updateLifecycleStage, logAgencyResponse, fetchAgencyResponses, fetchAvailableCrew, updateReportDetails } from '@/lib/api'
+import { fetchCleanupTaskById, uploadCleanupPhoto, markCleanupTaskComplete, updateCleanupTaskStatus, fetchReportsByClusterId, batchCompleteReportsByCluster, updateReportStatus, fetchReportsByIds, updateReportValidation, fetchReportEvidence, updateLifecycleStage, logAgencyResponse, fetchAgencyResponses, fetchAvailableCrew, updateReportDetails } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
+import DataTable from '@/components/ui/DataTable'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
 import Notification from '@/components/ui/Notification'
+import useConfirmation from '@/components/ui/useConfirmation'
 import { FieldCrewGuard } from '@/components/auth/RequireRole'
 import { useUser } from '@/components/auth/UserContext'
 import PhotoGalleryCard from '@/components/ui/PhotoGalleryCard'
@@ -15,6 +17,11 @@ import EcoPinMap from '@/components/map/EcoPinMap'
 import MicroRouteLayer from '@/components/map/MicroRouteLayer'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
+import { reportDiagnostic } from '../../../../../lib/diagnostics.mjs';
+
+import { backendFetch as fetch } from '../../../../../lib/backend-fetch.mjs';
+
+
 
 // Polyfill Buffer for browser environment
 if (typeof window !== 'undefined' && !window.Buffer) {
@@ -53,7 +60,7 @@ const parseLocation = (location, latitude, longitude) => {
       }
     }
   } catch (error) {
-    console.error('Error parsing location:', error)
+    reportDiagnostic('error', 'dispatch', 'Error parsing location:', error)
   }
 
   return { latitude: null, longitude: null }
@@ -65,6 +72,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
   const [reportsEvidence, setReportsEvidence] = useState({})
   const [loading, setLoading] = useState(true)
   const [markingComplete, setMarkingComplete] = useState(false)
+  const [isUpdatingTaskStatus, setIsUpdatingTaskStatus] = useState(false)
   const [completingReportId, setCompletingReportId] = useState(null)
   const [notification, setNotification] = useState(null)
   const [expandedReports, setExpandedReports] = useState({})
@@ -85,13 +93,14 @@ export default function FieldCrewCleanupTaskDetailPage() {
   const [agencyResponses, setAgencyResponses] = useState([])
   const [availableCrew, setAvailableCrew] = useState([])
   const [isAssigned, setIsAssigned] = useState(false)
-  
+
   // Edit Report Details State
   const [isEditingDetails, setIsEditingDetails] = useState(false)
   const [updatingDetails, setUpdatingDetails] = useState(false)
   const [editFormData, setEditFormData] = useState({})
-  
+
   const router = useRouter()
+  const { confirm: confirmAction, confirmation } = useConfirmation()
   const params = useParams()
   const taskId = params.id
   const user = useUser()
@@ -100,11 +109,11 @@ export default function FieldCrewCleanupTaskDetailPage() {
     const loadTask = async () => {
       try {
         const data = await fetchCleanupTaskById(taskId)
-        
+
         // Check if current user is assigned to this task
         const assigned = data.assigned_crew_ids && data.assigned_crew_ids.length > 0 && user?.id && data.assigned_crew_ids.includes(user.id)
         setIsAssigned(assigned)
-        
+
         setTask(data)
 
         // Fetch reports based on task type
@@ -120,9 +129,8 @@ export default function FieldCrewCleanupTaskDetailPage() {
         }
 
         // Don't fetch evidence on load - lazy load when expanded
-        console.log('Loaded', reportsData.length, 'reports')
       } catch (error) {
-        console.error('Failed to load cleanup task:', error)
+        reportDiagnostic('error', 'dispatch', 'Failed to load cleanup task:', error)
       } finally {
         setLoading(false)
       }
@@ -146,7 +154,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
         const data = await fetchAvailableCrew()
         setAvailableCrew(data)
       } catch (error) {
-        console.error('Failed to load available crew:', error)
+        reportDiagnostic('error', 'dispatch', 'Failed to load available crew:', error)
       }
     }
     loadAvailableCrew()
@@ -161,7 +169,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
     setUpdatingDetails(true)
     try {
       await updateReportDetails(reportId, editFormData)
-      
+
       // Refresh reports
       let reportsData = []
       if (task.is_custom && task.report_ids) {
@@ -173,16 +181,45 @@ export default function FieldCrewCleanupTaskDetailPage() {
       setIsEditingDetails(false)
       setNotification({ message: 'Report details updated successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to update details:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to update details:', error)
       setNotification({ message: 'Failed to update report details. Please try again.', type: 'error' })
     } finally {
       setUpdatingDetails(false)
     }
   }
 
+  const handleStartEnRoute = async () => {
+    if (!isAssigned) {
+      setNotification({ message: 'You are not assigned to this task', type: 'error' })
+      return
+    }
+
+    if (isUpdatingTaskStatus) return
+
+    setIsUpdatingTaskStatus(true)
+    try {
+      await updateCleanupTaskStatus(taskId, 'en_route')
+      const updatedTask = await fetchCleanupTaskById(taskId)
+      setTask(updatedTask)
+      setNotification({ message: 'Task marked as En Route! Safe travels.', type: 'success' })
+    } catch (error) {
+      reportDiagnostic('error', 'dispatch', 'Failed to start en route:', error)
+      setNotification({ message: error.message || 'Failed to start en route. Please try again.', type: 'error' })
+    } finally {
+      setIsUpdatingTaskStatus(false)
+    }
+  }
+
   const handleMarkComplete = async () => {
     if (!isAssigned) {
       setNotification({ message: 'You are not assigned to this task', type: 'error' })
+      return
+    }
+
+    if (markingComplete) return
+
+    if (!['en_route', 'in_progress'].includes(task.status)) {
+      setNotification({ message: 'Task must be in En Route status before completing.', type: 'warning' })
       return
     }
 
@@ -219,8 +256,8 @@ export default function FieldCrewCleanupTaskDetailPage() {
 
       setNotification({ message: 'Cleanup task marked as complete successfully!', type: 'success' })
     } catch (error) {
-      console.error('Failed to mark task complete:', error)
-      setNotification({ message: 'Failed to mark task complete. Please try again.', type: 'error' })
+      reportDiagnostic('error', 'dispatch', 'Failed to mark task complete:', error)
+      setNotification({ message: error.message || 'Failed to mark task complete. Please try again.', type: 'error' })
     } finally {
       setMarkingComplete(false)
     }
@@ -236,7 +273,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
     }
 
     const report = reports.find(r => r.id === reportId)
-    
+
     // Check if trying to mark as resolved without photos
     if (newStage === 'resolved' && (!report.before_photo_url || !report.after_photo_url)) {
       setNotification({ message: 'Please upload both before and after photos before marking the report as resolved.', type: 'warning' })
@@ -246,7 +283,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
     setUpdatingLifecycle(true)
     try {
       await updateLifecycleStage(reportId, newStage)
-      
+
       // Refresh reports to show updated lifecycle stage
       let reportsData = []
       if (task.is_custom && task.report_ids) {
@@ -255,7 +292,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
         reportsData = await fetchReportsByClusterId(task.cluster_id)
       }
       setReports(reportsData)
-      
+
       // If we're in detail view, ensure the selected report still exists
       if (viewMode === 'detail' && selectedReportId) {
         const reportStillExists = reportsData.find(r => r.id === selectedReportId)
@@ -265,11 +302,11 @@ export default function FieldCrewCleanupTaskDetailPage() {
           setSelectedReportId(null)
         }
       }
-      
+
       setShowLifecycleDropdown(false)
       setNotification({ message: 'Lifecycle stage updated successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to update lifecycle stage:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to update lifecycle stage:', error)
       setNotification({ message: 'Failed to update lifecycle stage. Please try again.', type: 'error' })
     } finally {
       setUpdatingLifecycle(false)
@@ -277,10 +314,12 @@ export default function FieldCrewCleanupTaskDetailPage() {
   }
 
   const handleMarkReportComplete = async (reportId) => {
+    if (completingReportId) return
     const report = reports.find(r => r.id === reportId)
-    
+
     // Check if the report has both before and after photos
-    if (!report.before_photo_url || !report.after_photo_url) {
+    const isScouting = report?.issue_type?.toLowerCase() === 'scouting' || report?.issue_type?.toLowerCase() === 'acknowledge_only'
+    if (!isScouting && (!report?.before_photo_url || !report?.after_photo_url)) {
       setNotification({ message: 'Please upload both before and after photos for this report before marking it as complete.', type: 'warning' })
       return
     }
@@ -296,7 +335,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
         reportsData = await fetchReportsByClusterId(task.cluster_id)
       }
       setReports(reportsData)
-      
+
       // If we're in detail view, ensure the selected report still exists
       if (viewMode === 'detail' && selectedReportId) {
         const reportStillExists = reportsData.find(r => r.id === selectedReportId)
@@ -305,17 +344,18 @@ export default function FieldCrewCleanupTaskDetailPage() {
           setSelectedReportId(null)
         }
       }
-      
+
       setNotification({ message: 'Cleanup completed successfully! Waiting for citizen to close.', type: 'success' })
     } catch (error) {
-      console.error('Failed to mark report complete:', error)
-      setNotification({ message: 'Failed to mark report complete. Please try again.', type: 'error' })
+      reportDiagnostic('error', 'dispatch', 'Failed to mark report complete:', error)
+      setNotification({ message: error.message || 'Failed to mark report complete. Please try again.', type: 'error' })
     } finally {
       setCompletingReportId(null)
     }
   }
 
   const handleUpdateStatus = async (reportId, newStatus) => {
+    if (completingReportId) return
     setCompletingReportId(reportId)
     try {
       await updateReportStatus(reportId, newStatus)
@@ -329,8 +369,8 @@ export default function FieldCrewCleanupTaskDetailPage() {
       setReports(reportsData)
       setNotification({ message: `Report marked as ${newStatus}!`, type: 'success' })
     } catch (error) {
-      console.error('Failed to update status:', error)
-      setNotification({ message: 'Failed to update status. Please try again.', type: 'error' })
+      reportDiagnostic('error', 'dispatch', 'Failed to update status:', error)
+      setNotification({ message: error.message || 'Failed to update status. Please try again.', type: 'error' })
     } finally {
       setCompletingReportId(null)
     }
@@ -351,7 +391,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
 
       setNotification({ message: 'Report validated successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to validate report:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to validate report:', error)
       setNotification({ message: 'Failed to validate report. Please try again.', type: 'error' })
     } finally {
       setValidatingReport(null)
@@ -373,7 +413,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
 
       setNotification({ message: 'Report rejected successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to reject report:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to reject report:', error)
       setNotification({ message: 'Failed to reject report. Please try again.', type: 'error' })
     } finally {
       setValidatingReport(null)
@@ -387,23 +427,23 @@ export default function FieldCrewCleanupTaskDetailPage() {
     }
 
     if (!noteText.trim()) return
-    
+
     setAddingNote(true)
     try {
       await logAgencyResponse(selectedReportId, {
         action_type: 'manual_note',
         action_details: noteText
       })
-      
+
       // Refresh agency responses
       const responses = await fetchAgencyResponses(selectedReportId)
       setAgencyResponses(responses)
-      
+
       setNoteText('')
       setShowNoteInput(false)
       setNotification({ message: 'Note added successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to add note:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to add note:', error)
       setNotification({ message: 'Failed to add note. Please try again.', type: 'error' })
     } finally {
       setAddingNote(false)
@@ -424,15 +464,15 @@ export default function FieldCrewCleanupTaskDetailPage() {
     if (currentIndex < reports.length - 1) {
       const nextReportId = reports[currentIndex + 1].id
       setSelectedReportId(nextReportId)
-      
+
       // Load evidence for the next report if not already loaded
       if (!reportsEvidence[nextReportId] && !evidenceErrors[nextReportId]) {
         setLoadingEvidence(prev => ({ ...prev, [nextReportId]: true }))
         setEvidenceErrors(prev => ({ ...prev, [nextReportId]: null }))
-        
+
         const controller = new AbortController()
         abortControllersRef.current[nextReportId] = controller
-        
+
         fetchReportEvidence(nextReportId, controller.signal)
           .then(evidence => {
             setReportsEvidence(prev => ({
@@ -442,7 +482,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
           })
           .catch(error => {
             if (error.name !== 'AbortError') {
-              console.error('Failed to fetch evidence for report:', nextReportId, error)
+              reportDiagnostic('error', 'dispatch', 'Failed to fetch evidence for report:', nextReportId, error)
               setEvidenceErrors(prev => ({ ...prev, [nextReportId]: error.message }))
             }
           })
@@ -459,15 +499,15 @@ export default function FieldCrewCleanupTaskDetailPage() {
     if (currentIndex > 0) {
       const prevReportId = reports[currentIndex - 1].id
       setSelectedReportId(prevReportId)
-      
+
       // Load evidence for the previous report if not already loaded
       if (!reportsEvidence[prevReportId] && !evidenceErrors[prevReportId]) {
         setLoadingEvidence(prev => ({ ...prev, [prevReportId]: true }))
         setEvidenceErrors(prev => ({ ...prev, [prevReportId]: null }))
-        
+
         const controller = new AbortController()
         abortControllersRef.current[prevReportId] = controller
-        
+
         fetchReportEvidence(prevReportId, controller.signal)
           .then(evidence => {
             setReportsEvidence(prev => ({
@@ -477,7 +517,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
           })
           .catch(error => {
             if (error.name !== 'AbortError') {
-              console.error('Failed to fetch evidence for report:', prevReportId, error)
+              reportDiagnostic('error', 'dispatch', 'Failed to fetch evidence for report:', prevReportId, error)
               setEvidenceErrors(prev => ({ ...prev, [prevReportId]: error.message }))
             }
           })
@@ -491,7 +531,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
 
   const toggleReportExpansion = async (reportId) => {
     const isExpanding = !expandedReports[reportId]
-    
+
     setExpandedReports(prev => ({
       ...prev,
       [reportId]: !prev[reportId]
@@ -503,25 +543,23 @@ export default function FieldCrewCleanupTaskDetailPage() {
       if (abortControllersRef.current[reportId]) {
         abortControllersRef.current[reportId].abort()
       }
-      
+
       setLoadingEvidence(prev => ({ ...prev, [reportId]: true }))
       setEvidenceErrors(prev => ({ ...prev, [reportId]: null }))
-      
+
       // Create new AbortController for this request
       const controller = new AbortController()
       abortControllersRef.current[reportId] = controller
-      
+
       try {
-        console.log('Fetching evidence for report:', reportId)
         const evidence = await fetchReportEvidence(reportId, controller.signal)
         setReportsEvidence(prev => ({
           ...prev,
           [reportId]: evidence || []
         }))
-        console.log('Fetched evidence:', evidence?.length || 0, 'items')
       } catch (error) {
         if (error.name !== 'AbortError') {
-          console.error('Failed to fetch evidence for report:', reportId, error)
+          reportDiagnostic('error', 'dispatch', 'Failed to fetch evidence for report:', reportId, error)
           setEvidenceErrors(prev => ({ ...prev, [reportId]: error.message }))
           setNotification({ message: 'Failed to load evidence. Please try again.', type: 'error' })
         }
@@ -559,7 +597,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
       [`${reportId}-${photoType}`]: true
     }))
 
-    const token = localStorage.getItem('authToken')
+
     const formData = new FormData()
     formData.append('image', file)
     formData.append('photo_type', photoType)
@@ -568,7 +606,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/reports/${reportId}/photo`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+
         },
         body: formData,
       })
@@ -589,7 +627,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
       }
       setNotification({ message: 'Photo uploaded successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to upload photo:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to upload photo:', error)
       setNotification({ message: error.message || 'Failed to upload photo. Please try again.', type: 'error' })
     } finally {
       setUploadingReportPhotos(prev => ({
@@ -605,17 +643,17 @@ export default function FieldCrewCleanupTaskDetailPage() {
       return
     }
 
-    if (!confirm('Are you sure you want to delete this photo? This action cannot be undone.')) {
+    if (!await confirmAction({ title: 'Delete report photo?', description: 'This removes the selected evidence photo from this report. This action cannot be undone.', action: 'Delete photo' })) {
       return
     }
 
-    const token = localStorage.getItem('authToken')
+
 
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/reports/${reportId}/photo`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`,
+
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ photo_type: photoType }),
@@ -637,7 +675,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
       }
       setNotification({ message: 'Photo deleted successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to delete photo:', error)
+      reportDiagnostic('error', 'dispatch', 'Failed to delete photo:', error)
       setNotification({ message: error.message || 'Failed to delete photo. Please try again.', type: 'error' })
     }
   }
@@ -661,37 +699,8 @@ export default function FieldCrewCleanupTaskDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-3">
             <div className="flex flex-col gap-4">
-              <div className="ecopin-table-container">
-                <table className="ecopin-table">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left py-3 px-4"><SkeletonLine className="h-4 w-12" /></th>
-                      <th className="text-left py-3 px-4"><SkeletonLine className="h-4 w-16" /></th>
-                      <th className="text-left py-3 px-4"><SkeletonLine className="h-4 w-24" /></th>
-                      <th className="text-left py-3 px-4"><SkeletonLine className="h-4 w-16" /></th>
-                      <th className="text-left py-3 px-4"><SkeletonLine className="h-4 w-20" /></th>
-                      <th className="text-left py-3 px-4"><SkeletonLine className="h-4 w-16" /></th>
-                      <th className="text-left py-3 px-4"><SkeletonLine className="h-4 w-12" /></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <tr key={i} className="border-b border-border">
-                        <td className="py-4 px-4"><SkeletonLine className="h-4 w-32" /></td>
-                        <td className="py-4 px-4"><SkeletonLine className="h-4 w-24" /></td>
-                        <td className="py-4 px-4">
-                          <SkeletonLine className="h-4 w-full max-w-[200px] mb-2" />
-                          <SkeletonLine className="h-4 w-3/4 max-w-[150px]" />
-                        </td>
-                        <td className="py-4 px-4"><SkeletonLine className="h-6 w-20 rounded-full" /></td>
-                        <td className="py-4 px-4"><SkeletonLine className="h-6 w-24 rounded-full" /></td>
-                        <td className="py-4 px-4"><SkeletonLine className="h-6 w-24 rounded-full" /></td>
-                        <td className="py-4 px-4"><SkeletonLine className="h-8 w-24 rounded" /></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable loading caption="Reports in this operation" onRowClick={handleViewReportDetail}
+                columns={[{ key: 'title', label: 'Title' }, { key: 'issue_type', label: 'Issue type' }, { key: 'description', label: 'Description' }, { key: 'status', label: 'Status' }, { key: 'stage', label: 'Lifecycle stage' }, { key: 'validation_status', label: 'Review status' }, { key: 'actions', label: 'Actions' }]} />
             </div>
           </div>
           <div className="lg:col-span-1 space-y-6">
@@ -745,57 +754,54 @@ export default function FieldCrewCleanupTaskDetailPage() {
             <div className="lg:col-span-3">
               {/* Reports in Cluster - Table View */}
               {reports.length > 0 && (
-                <div className="ecopin-table-container">
-                  <table className="ecopin-table">
-                    <thead>
-                      <tr>
-                        <th>Title</th>
-                        <th>Issue Type</th>
-                        <th>Description</th>
-                        <th>Status</th>
-                        <th>Lifecycle Stage</th>
-                        <th>Validation Status</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {reports.map((report) => (
-                        <tr key={report.id} className={getReportCardColor(report.status)}>
-                          <td>
-                            <span className="font-bold text-text-primary">{report.title}</span>
-                          </td>
-                          <td>
-                            <span className="text-sm text-text-secondary">{report.issue_type}</span>
-                          </td>
-                          <td>
-                            <span className="text-sm text-text-muted line-clamp-2 max-w-xs">{report.description || 'N/A'}</span>
-                          </td>
-                          <td>
-                            <StatusBadge status={report.status} type="report" />
-                          </td>
-                          <td>
-                            {report.stage ? (
-                              <StatusBadge status={report.stage} type="lifecycle" />
-                            ) : (
-                              <span className="text-xs text-text-muted">N/A</span>
-                            )}
-                          </td>
-                          <td>
-                            <StatusBadge status={report.validation_status} type="validation" />
-                          </td>
-                          <td className="py-3 px-4 min-w-[140px]">
-                            <button
-                              onClick={() => handleViewReportDetail(report.id)}
-                              className="px-4 py-2 bg-transparent border border-border border-[#1A1A1A]  text-sm rounded-xl flex items-center justify-center gap-2 whitespace-nowrap hover:bg-[#1A1A1A] hover:text-white dark:hover:bg-surface dark:hover:text-text-primary transition-colors"
-                            >
-                              <Eye className="w-4 h-4" /> View Detail
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <DataTable caption="Reports in this operation" data={reports}
+                  columns={[
+                    { key: 'title', label: 'Title', render: value => <span className="font-medium">{value}</span> },
+                    { key: 'issue_type', label: 'Issue type' },
+                    { key: 'description', label: 'Description', render: value => <span className="line-clamp-2 max-w-xs text-text-secondary">{value || 'N/A'}</span> },
+                    { key: 'status', label: 'Status', render: value => <StatusBadge status={value} type="report" /> },
+                    { key: 'stage', label: 'Lifecycle stage', render: value => value ? <StatusBadge status={value} type="lifecycle" /> : 'N/A' },
+                    { key: 'validation_status', label: 'Review status', render: value => <StatusBadge status={value} type="validation" /> },
+                    { key: 'actions', label: 'Actions', render: (_, report) => (<div className="flex items-center gap-2">
+                              {(!report.status || ['submitted', 'pending', 'unresolved'].includes(report.status)) && (
+                                <button
+                                  onClick={() => handleUpdateStatus(report.id, 'acknowledged')}
+                                  disabled={completingReportId === report.id || !isAssigned}
+                                  className="px-3 py-1.5 bg-info text-white text-xs font-bold rounded-lg hover:bg-info/90 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                                >
+                                  {completingReportId === report.id ? 'Processing...' : 'Acknowledge'}
+                                </button>
+                              )}
+                              {report.status === 'acknowledged' && (
+                                <button
+                                  onClick={() => handleUpdateStatus(report.id, 'responded')}
+                                  disabled={completingReportId === report.id || !isAssigned}
+                                  className="px-3 py-1.5 bg-purple text-white text-xs font-bold rounded-lg hover:bg-purple/90 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                                >
+                                  {completingReportId === report.id ? 'Processing...' : 'Mark Responded'}
+                                </button>
+                              )}
+                              {report.status === 'responded' && (
+                                <button
+                                  onClick={() => handleMarkReportComplete(report.id)}
+                                  disabled={completingReportId === report.id || !isAssigned}
+                                  className="px-3 py-1.5 bg-success text-white text-xs font-bold rounded-lg hover:bg-success/90 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                                >
+                                  {completingReportId === report.id ? 'Processing...' : 'Complete'}
+                                </button>
+                              )}
+                              {report.status === 'resolved' && (
+                                <span className="text-xs text-success font-semibold whitespace-nowrap">✓ Resolved</span>
+                              )}
+                              {report.status === 'closed' && (
+                                <span className="text-xs text-text-muted font-semibold whitespace-nowrap">✓ Closed</span>
+                              )}
+                            </div>) },
+                  ]}
+                  rowClassName={report => getReportCardColor(report.status)}
+                  onRowClick={report => handleViewReportDetail(report.id)}
+                  rowActionLabel={report => `View report ${report.title || report.id}`}
+                />
               )}
 
               {/* Cleanup Task Photo Gallery */}
@@ -804,7 +810,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
 
             {/* Sidebar - Task Info */}
             <div className="lg:col-span-1 space-y-6">
-              
+
               {/* Mini Map */}
               <div className="card p-0 overflow-hidden border border-border h-[300px] relative z-0 isolate">
                 <EcoPinMap
@@ -843,17 +849,11 @@ export default function FieldCrewCleanupTaskDetailPage() {
                     <div className="space-y-2">
                       {availableCrew.filter(crew => task.assigned_crew_ids.includes(crew.id)).map(crew => (
                         <div key={crew.id} className="flex items-center space-x-3 p-2 bg-surface-elevated rounded-lg">
-                          {crew.avatar_url ? (
-                            <SecureImage
-                              src={crew.avatar_url}
-                              alt={crew.full_name}
-                              className="w-10 h-10 rounded-full object-cover border border-border"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 rounded-full bg-surface-elevated border border-border flex items-center justify-center text-text-muted font-medium">
-                              {crew.full_name?.[0]?.toUpperCase() || 'U'}
-                            </div>
-                          )}
+                          <img
+                            src={crew.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(crew.full_name || crew.email || 'User')}&background=random&color=fff&size=80`}
+                            alt={crew.full_name}
+                            className="w-10 h-10 rounded-full object-cover border border-border"
+                          />
                           <div className="flex-1">
                             <p className="text-sm font-medium text-text-primary">{crew.full_name}</p>
                           </div>
@@ -893,7 +893,25 @@ export default function FieldCrewCleanupTaskDetailPage() {
                   </>
                 )}
 
-                {task.status !== 'completed' && (() => {
+                {/* Strict state machine: assigned/pending/created -> en_route -> completed */}
+                {['assigned', 'pending', 'created'].includes(task.status) && (
+                  <div className="mt-6 pt-4 border-t border-[#1A1A1A]">
+                    <button
+                      onClick={handleStartEnRoute}
+                      disabled={isUpdatingTaskStatus || !isAssigned}
+                      className={`w-full py-3 px-4 transition-all ${(!isAssigned || isUpdatingTaskStatus) ? 'bg-border text-text-muted cursor-not-allowed border border-transparent' : 'bg-[#ccff00] text-text-primary font-bold border border-[#1A1A1A] hover:translate-x-[2px] hover:translate-y-[2px] shadow-sm'}`}
+                    >
+                      {isUpdatingTaskStatus ? 'Starting Route...' : '🚀 Start / En Route'}
+                    </button>
+                    {!isAssigned && (
+                      <p className="text-xs text-text-muted mt-2 text-center font-mono">
+                        You must be assigned to start this task.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {['en_route', 'in_progress'].includes(task.status) && (() => {
                   const hasBeforePhotos = task.before_photo_url || reports.some(r => r.before_photo_url)
                   const hasAfterPhotos = task.after_photo_url || reports.some(r => r.after_photo_url)
                   const allResolved = reports.length === 0 || reports.every(r => {
@@ -912,6 +930,12 @@ export default function FieldCrewCleanupTaskDetailPage() {
                       >
                         {markingComplete ? 'Processing...' : 'Mark Task Complete'}
                       </button>
+                      {!canMarkComplete && isAssigned && (
+                        <p className="text-xs text-text-muted mt-2 text-center font-mono">
+                          {!hasBeforePhotos || !hasAfterPhotos ? 'Before & after photos required. ' : ''}
+                          {!allResolved ? 'All reports must be resolved before completing.' : ''}
+                        </p>
+                      )}
                     </div>
                   )
                 })()}
@@ -998,6 +1022,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
             </div>
           </div>
 
+      {confirmation}
       {notification && (
         <Notification
           message={notification.message}

@@ -12,6 +12,12 @@
 
 # testing
 /coverage
+/tests/*
+!tests/forward-forecast.test.mjs
+!tests/forward-forecast.browser.cjs
+!tests/forecast-map-browser.test.cjs
+!tests/spatial-scan.browser.cjs
+!tests/time-player.test.mjs
 
 # next.js
 /.next/
@@ -20,9 +26,12 @@
 # production
 /build
 
-# misc
+# misc & certificates/keys
 .DS_Store
 *.pem
+*.key
+*.cert
+*.id_rsa
 
 # debug
 npm-debug.log*
@@ -44,3 +53,30 @@ next-env.d.ts
 TASK.md
 # Generated local patch dump
 /diff.txt
+
+# SQL scripts and internal migration/security files
+*.sql
+scripts/
+
+# Security audit logs and sensitive security notes
+QA_SECURITY_AUDIT_LOG.md
+docs/*security*.md
+
+# Graphify knowledge graph outputs
+graphify-out/
+
+# Tests folder is ignored, except for the specific test files that are needed for CI/CD and coverage reports
+/tests/*
+!/tests/dashboard-query-client.test.mjs
+!/tests/role-layout.browser.cjs
+!/tests/table-design.browser.cjs
+!/tests/map-pin-consistency.test.mjs
+!/tests/cluster-markers.browser.cjs
+!/tests/dispatch-preview.test.mjs
+!/tests/web-session-routes.test.mjs
+!/tests/system-settings.browser.cjs
+!/tests/infrastructure.browser.cjs
+!/tests/depot-settings.browser.cjs
+!/tests/crew-creation.browser.cjs
+!/tests/sweeper-settings.browser.cjs
+!/tests/operations-crews.browser.cjs

@@ -1,7 +1,10 @@
 'use client'
 import React, { createContext, useContext, useState, useCallback } from 'react'
-import { generatePlan, getPlanJob, getDispatchPlan, commitPlan } from '@/lib/api/optimization'
+import { generatePlan, getPlanJob, getDispatchPlan, commitPlan, disassemblePlan } from '@/lib/api/optimization'
 import { useRouter } from 'next/navigation'
+import Notification from '@/components/ui/Notification'
+import { reportDiagnostic } from '../../lib/diagnostics.mjs';
+import { dispatchResultNotice } from '../../lib/dispatch-result-notice.mjs';
 
 const TaskContext = createContext()
 
@@ -28,9 +31,23 @@ export function TaskProvider({ children }) {
       setPlanningJob({ jobId: queued.jobId, status: queued.status || 'queued' })
       setOptimizationProgress({ percent: 20, message: 'Planning job queued' })
       let job = queued
+      let pollRateLimitAttempts = 0
       while (job.status !== 'completed' && job.status !== 'failed') {
         await new Promise(resolve => setTimeout(resolve, 2000))
-        job = await getPlanJob(queued.jobId)
+        try {
+          job = await getPlanJob(queued.jobId)
+        } catch (pollErr) {
+          if ((pollErr.status === 429 || pollErr.isRateLimited) && pollRateLimitAttempts < 2) {
+            pollRateLimitAttempts++
+            setOptimizationProgress({
+              percent: 30,
+              message: 'Server busy, waiting a moment before checking job status...'
+            })
+            await new Promise(resolve => setTimeout(resolve, 5000))
+            continue
+          }
+          throw pollErr
+        }
         setPlanningJob(job)
         setOptimizationProgress(job.status === 'running'
           ? { percent: 65, message: 'Solver is building routes' }
@@ -44,24 +61,37 @@ export function TaskProvider({ children }) {
       const outsideBufferCount = new Set((result.rejectedBundles || [])
         .filter(entry => entry.reason === 'outside_buffer' && entry.report_id)
         .map(entry => entry.report_id)).size
+      const capacityFiltering = result.plan?.capacity_breakdown?.capacity_filtering ||
+        result.plan?.solver_diagnostics?.capacity_filtering ||
+        result.capacity?.capacity_filtering || null
       const generatedDraft = {
         ...result.plan, status: 'draft_plan', selectedCount,
         omittedCount: unselectedItems.length,
         outsideBufferCount,
         plannedCrewCount: result.plannedCrewCount || 0,
         proposedRoutes: result.proposedRoutes || [],
-        capacityUtilized: result.capacity.used || 0,
+        capacityUtilized: result.capacity?.used || 0,
         groups: result.groups, rejectedBundles: result.rejectedBundles,
-        capacity: result.capacity
+        capacity: result.capacity,
+        capacity_filtering: capacityFiltering
       }
       setDraftPlan(generatedDraft)
       setOptimizationProgress({ percent: 100, message: 'Draft plan ready' })
-      setGlobalNotification({ message: `Draft plan generated with ${selectedCount} tasks.`,
-        type: selectedCount ? 'success' : 'warning' })
+      if (capacityFiltering?.alert_message) {
+        setGlobalNotification({
+          message: capacityFiltering.alert_message,
+          type: 'info'
+        })
+      } else {
+        setGlobalNotification({
+          message: `Draft plan generated with ${selectedCount} tasks.`,
+          type: selectedCount ? 'success' : 'warning'
+        })
+      }
       if (onSuccess) onSuccess({ ...result, plan: generatedDraft,
-        selectedCount, omittedLoggedCount: generatedDraft.omittedCount })
+        selectedCount, omittedLoggedCount: generatedDraft.omittedCount, capacityFiltering })
     } catch (error) {
-      console.error('Optimization error:', error)
+      reportDiagnostic('error', 'ui', 'Optimization error:', error)
       setGlobalNotification({ message: error.message || 'Failed to generate optimization', type: 'error' })
       if (onError) onError(error)
     } finally {
@@ -93,65 +123,95 @@ export function TaskProvider({ children }) {
       const result = await commitPlan(planId, options)
       clearInterval(progressInterval)
 
-      const pending = result.routing_status === 'needs_replan' || result.routing_status === 'routing'
-      const empty = result.routing_status === 'empty' || !result.tasks?.length
-      setOptimizationProgress({ percent: 100, message: empty ? 'No tasks dispatched' : pending ? 'Reports claimed; routing needs attention' : 'Routes published' })
-      setGlobalNotification({
-        message: empty ? 'No tasks dispatched. Review crew availability and plan exclusions.'
-          : pending ? 'Reports claimed; routes pending. Retry the same plan within 30 minutes.'
-          : 'Routes published and crews dispatched.',
-        type: empty || pending ? 'warning' : 'success',
-        link: !empty && result.run?.id ? `/dashboard/officer/optimization/${result.run.id}` : null
+      const isFailed = result.routing_status === 'failed' || result.routing_status === 'needs_replan'
+      const isPending = result.routing_status === 'routing'
+      const isEmpty = result.routing_status === 'empty' || !result.tasks?.length
+
+      let toastMessage = 'Dispatch Confirmed! Routes have been published and assigned to field crews.'
+      let toastType = 'success'
+
+      const notice = dispatchResultNotice(result)
+      if (notice) {
+        toastMessage = notice.message
+        toastType = notice.type
+      }
+
+      setOptimizationProgress({
+        percent: 100,
+        message: isFailed ? 'Routing failed' : isPending ? 'Routes computing...' : isEmpty ? 'No tasks scheduled' : 'Dispatch complete'
       })
-      if (onSuccess) onSuccess(result)
+      setGlobalNotification({
+        message: toastMessage,
+        type: toastType,
+        link: !isEmpty && !isFailed && result.run?.id ? `/dashboard/officer/optimization/${result.run.id}` : null
+      })
+      if (onSuccess && !isFailed) onSuccess(result)
+      else if (onError && isFailed) onError(new Error(toastMessage))
     } catch (error) {
       clearInterval(progressInterval)
-      setGlobalNotification({ message: error.message || 'Failed to commit plan', type: 'error' })
+      setGlobalNotification({ message: error.message || 'Failed to dispatch plan. Reports remain safe in your backlog.', type: 'error' })
       if (onError) onError(error)
     } finally {
       setIsOptimizing(false)
     }
   }, [isOptimizing])
 
+  const disassembleOptimization = useCallback(async (planOrRunId, onSuccess, onError) => {
+    if (isOptimizing) return
+    setIsOptimizing(true)
+    setOptimizationProgress({ percent: 50, message: 'Disassembling plan and resetting backlog...' })
+    setGlobalNotification(null)
+
+    try {
+      const result = await disassemblePlan(planOrRunId)
+      setDraftPlan(prev => {
+        if (prev && (prev.id === planOrRunId || prev.optimization_run_id === planOrRunId)) {
+          return null
+        }
+        return prev
+      })
+      setOptimizationProgress({ percent: 100, message: 'Plan disassembled' })
+      setGlobalNotification({
+        message: result.message || 'Plan disassembled successfully. Backlog restored.',
+        type: 'info'
+      })
+      if (onSuccess) onSuccess(result)
+      return result
+    } catch (error) {
+      reportDiagnostic('error', 'ui', 'Failed to disassemble plan:', error)
+      setGlobalNotification({
+        message: error.message || 'Failed to disassemble plan',
+        type: 'error'
+      })
+      if (onError) onError(error)
+      throw error
+    } finally {
+      setIsOptimizing(false)
+    }
+  }, [isOptimizing])
+
   return (
-    <TaskContext.Provider value={{ isOptimizing, optimizationProgress, planningJob, draftPlan, setDraftPlan, startOptimization, commitOptimization }}>
+    <TaskContext.Provider value={{ isOptimizing, optimizationProgress, planningJob, draftPlan, setDraftPlan, startOptimization, commitOptimization, disassembleOptimization }}>
       {children}
 
       {/* Global Notification Toast */}
       {globalNotification && !isOptimizing && (
-        <div className={`fixed bottom-6 right-6 z-[9999] p-4 border border-border  shadow-[4px_4px_0px_0px_#000] dark:shadow-[4px_4px_0px_0px_#fff] flex items-center gap-4 ${
-          globalNotification.type === 'success' ? 'bg-[#ccff00] text-text-primary' :
-          globalNotification.type === 'error' ? 'bg-error text-white' : 'bg-surface-elevated text-text-primary'
-        }`}>
-          <p className="font-bold">{globalNotification.message}</p>
-          {globalNotification.link && (
-            <button
-              onClick={() => { setGlobalNotification(null); router.push(globalNotification.link) }}
-              className="underline font-bold text-sm hover:opacity-80"
-            >
-              View Here
-            </button>
-          )}
-          <button onClick={() => setGlobalNotification(null)} className="ml-4 font-bold hover:opacity-80">✕</button>
-        </div>
+        <Notification
+          message={globalNotification.message}
+          type={globalNotification.type}
+          onClose={() => setGlobalNotification(null)}
+          actionLabel={globalNotification.link ? 'View plan' : undefined}
+          onAction={globalNotification.link ? () => { setGlobalNotification(null); router.push(globalNotification.link) } : undefined}
+        />
       )}
 
       {/* Global Progress Toast */}
       {isOptimizing && (
-        <div className="fixed bottom-6 right-6 z-[9999] p-4 bg-surface-elevated border border-border shadow-sm min-w-[300px]">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-xs font-mono font-bold text-accent-green uppercase">
-              {optimizationProgress.message || 'Processing...'}
-            </span>
-            <span className="text-xs font-mono text-text-muted">{optimizationProgress.percent}%</span>
-          </div>
-          <div className="w-full h-2 bg-black/20 dark:bg-surface/10 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-[#ccff00] transition-all duration-500 ease-out"
-              style={{ width: `${optimizationProgress.percent}%` }}
-            ></div>
-          </div>
-        </div>
+        <Notification
+          message={optimizationProgress.message || 'Processing…'}
+          progress={optimizationProgress.percent}
+          duration={0}
+        />
       )}
     </TaskContext.Provider>
   )

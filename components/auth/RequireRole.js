@@ -11,7 +11,6 @@ import React from 'react';
  */
 export function RequireRole({ allowedRole, allowedRoles, children }) {
   const user = useUser();
-//   console.log("user role: ", user?.role);
   const role = user?.role ?? 'guest';
   
   // Handle both allowedRole (singular) and allowedRoles (array)
@@ -19,7 +18,6 @@ export function RequireRole({ allowedRole, allowedRoles, children }) {
   const rolesArray = Array.isArray(rolesToCheck) ? rolesToCheck : [rolesToCheck];
   
   const allowed = rolesArray.includes(role);
-  console.log("Allowed: ", allowed, "User role:", role, "Required roles:", rolesArray);
   if (allowed) {
     return <>{children}</>;
   }

@@ -1,9 +1,43 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
-import { MapContainer, TileLayer, GeoJSON, useMap, Marker } from 'react-leaflet';
+import { useEffect, useState, useRef, useMemo } from 'react';
+import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { AlertCircle } from 'lucide-react';
+import { reportDiagnostic } from '../../lib/diagnostics.mjs';
+
+const ViewToggle = ({ id, label, active, onClick, disabled }) => (
+    <button
+      id={id}
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        padding: '6px 14px',
+        borderRadius: '6px',
+        fontSize: '13px',
+        fontWeight: 600,
+        border: 'none',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        transition: 'all 0.2s',
+        backgroundColor: active ? 'var(--primary)' : 'transparent',
+        color: active ? '#fff' : 'var(--text-secondary)',
+        opacity: disabled ? 0.5 : 1
+      }}
+    >
+      {label}
+    </button>
+  );
+
+// These templates interpolate data only into HTML text, never attributes or styles.
+const escapePopupText = (value) => {
+  if (typeof value !== 'string' && !Number.isFinite(value)) return 'N/A';
+  return String(value).replace(/[&<>"']/g, char => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[char]);
+};
+const riskLevel = value => ['high', 'medium', 'low'].includes(value) ? value : 'unknown';
+const coordinateText = (value, limit) => Number.isFinite(value) && Math.abs(value) <= limit ? value.toFixed(5) : 'N/A';
 
 if (typeof window !== 'undefined') {
   window.L = L;
@@ -30,8 +64,11 @@ function HeatmapLayer({ heatmapData }) {
       .filter(f => f.geometry?.coordinates && f.properties?.intensity)
       .map(f => [f.geometry.coordinates[1], f.geometry.coordinates[0], f.properties.intensity]);
 
-    if (heatPoints.length > 0) {
-      // @ts-ignore
+    const render = () => {
+      const container = map.getContainer();
+      if (!heatPoints.length || !container.clientWidth || !container.clientHeight) return;
+      map.invalidateSize({ pan: false });
+      if (heatLayerRef.current) return;
       const heatLayer = L.heatLayer(heatPoints, {
         radius: 30,
         blur: 20,
@@ -40,9 +77,14 @@ function HeatmapLayer({ heatmapData }) {
         gradient: { 0.0: '#00bfff', 0.3: '#00ff88', 0.55: '#ffdd00', 0.75: '#ff8800', 1.0: '#ff2200' },
       }).addTo(map);
       heatLayerRef.current = heatLayer;
-    }
+    };
+    // Compact view can mount Leaflet inside a hidden panel with a zero-size canvas.
+    const observer = new ResizeObserver(render);
+    observer.observe(map.getContainer());
+    render();
 
     return () => {
+      observer.disconnect();
       if (heatLayerRef.current) {
         map.removeLayer(heatLayerRef.current);
         heatLayerRef.current = null;
@@ -70,6 +112,7 @@ function ClusterLabelMarkers({ features }) {
 
     features.forEach(feature => {
       const { rank, risk_level, report_count } = feature.properties || {};
+      if (!Number.isFinite(rank)) return;
       const lat = feature.properties?.center_lat;
       const lng = feature.properties?.center_lng;
       if (!lat || !lng) return;
@@ -96,7 +139,7 @@ function ClusterLabelMarkers({ features }) {
             border: 2px solid white;
             box-shadow: 0 2px 8px rgba(0,0,0,0.35);
             font-family: sans-serif;
-          ">#${rank || '?'}</div>
+          ">#${escapePopupText(rank || '?')}</div>
         `,
         className: '',
         iconSize: [28, 28],
@@ -133,11 +176,11 @@ function MapBoundsFitter({ geojsonData, heatmapData }) {
     try {
       const bounds = L.geoJSON(source).getBounds();
       if (bounds.isValid()) {
-        map.fitBounds(bounds, { padding: [60, 60] });
+        map.fitBounds(bounds, { padding: [60, 60], animate: false });
         fitted.current = true;
       }
     } catch (e) {
-      console.error('fitBounds error', e);
+      reportDiagnostic('error', 'forecast', 'fitBounds error', e);
     }
   }, [geojsonData, heatmapData, map]);
 
@@ -162,16 +205,15 @@ function MapFocusManager({ focusedItem }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Main Map Component
 // ─────────────────────────────────────────────────────────────────────────────
-export default function HotspotForecastMap({ predictions, timeHorizon, viewModeOverride, focusedItem, hideUI }) {
-  const [geojsonData, setGeoJsonData] = useState(null);
-  const [heatmapData, setHeatmapData] = useState(null);
-  const [viewMode, setViewMode] = useState('both');
-  const [mapKey, setMapKey] = useState(0);
-  const [isDark, setIsDark] = useState(false);
+export default function HotspotForecastMap({ predictions, timeHorizon, viewModeOverride, focusedItem, onZoneSelect, hideUI }) {
+  const geojsonData = predictions?.geojson || null;
+  const heatmapData = predictions?.heatmap_geojson || null;
+  const [userViewMode, setViewMode] = useState('both');
+  const mapKey = 0;
+  const [isDark, setIsDark] = useState(() => typeof document !== 'undefined' && document.documentElement.classList.contains('dark'));
 
   useEffect(() => {
     const html = document.documentElement;
-    setIsDark(html.classList.contains('dark'));
     const observer = new MutationObserver(() => {
       setIsDark(html.classList.contains('dark'));
     });
@@ -179,54 +221,110 @@ export default function HotspotForecastMap({ predictions, timeHorizon, viewModeO
     return () => observer.disconnect();
   }, []);
 
-  useEffect(() => {
-    if (!predictions) return;
+  const sanitizedGeoJson = useMemo(() => {
+    if (!geojsonData?.features || !Array.isArray(geojsonData.features)) {
+      return { type: 'FeatureCollection', features: [] };
+    }
 
-    if (predictions.geojson) {
-      setGeoJsonData(predictions.geojson);
-    }
-    if (predictions.heatmap_geojson) {
-      setHeatmapData(predictions.heatmap_geojson);
-    }
-  }, [predictions]);
+    const validFeatures = geojsonData.features
+      .map(feature => {
+        if (!feature || typeof feature !== 'object') return null;
+        let geometry = feature.geometry;
+
+        const hasCoords = geometry && Array.isArray(geometry.coordinates) && geometry.coordinates.length > 0;
+        if (!hasCoords && !feature.properties?.zone_id) {
+          const lat = feature.properties?.center_lat;
+          const lng = feature.properties?.center_lng;
+          if (Number.isFinite(lat) && Number.isFinite(lng)) {
+            const radiusDeg = (feature.properties?.region_radius_meters || 100) / 111000.0;
+            const ring = [];
+            const numPts = 32;
+            for (let i = 0; i < numPts; i++) {
+              const angle = (i / numPts) * 2 * Math.PI;
+              ring.push([
+                lng + radiusDeg * Math.cos(angle),
+                lat + radiusDeg * Math.sin(angle),
+              ]);
+            }
+            ring.push(ring[0]);
+            geometry = { type: 'Polygon', coordinates: [ring] };
+          }
+        }
+
+        if (!geometry || !Array.isArray(geometry.coordinates) || geometry.coordinates.length === 0) {
+          return null;
+        }
+
+        if (geometry.type === 'Polygon') {
+          const ring = geometry.coordinates[0];
+          if (!Array.isArray(ring) || ring.length < 3 || ring.some(pt => !Array.isArray(pt) || !Number.isFinite(pt[0]) || !Number.isFinite(pt[1]))) {
+            return null;
+          }
+        }
+
+        return {
+          type: 'Feature',
+          ...feature,
+          geometry,
+        };
+      })
+      .filter(Boolean);
+
+    return {
+      type: 'FeatureCollection',
+      features: validFeatures,
+    };
+  }, [geojsonData]);
 
   // ── Style for cluster polygons ──────────────────────────────────────────────
   const getFeatureStyle = (feature) => {
-    const risk = feature.properties?.risk_level || 'low';
-    const score = feature.properties?.risk_score || 0;
-
-    const fill = { high: '#ef4444', medium: '#f97316', low: '#22c55e' }[risk] || '#22c55e';
+    const risk = riskLevel(feature.properties?.risk_level);
+    const fill = { high: '#EF4444', medium: '#F59E0B', low: '#10B981' }[risk] || '#10B981';
     const stroke = { high: '#b91c1c', medium: '#c2410c', low: '#15803d' }[risk] || '#15803d';
 
-    const isFocused = focusedItem && (
-        focusedItem.properties?.region_id === feature.properties?.region_id || 
-        focusedItem.properties?.rank === feature.properties?.rank
-    );
+    const isFocused = focusedItem?.properties?.region_id && focusedItem.properties.region_id === feature.properties?.region_id;
 
     return {
-      fillColor: isFocused ? '#ccff00' : fill,
-      color: isFocused ? '#ccff00' : stroke,
+      fillColor: fill,
+      color: isFocused ? '#0052cc' : stroke,
       weight: isFocused ? 4 : 2,
       opacity: isFocused ? 1 : 0.9,
-      fillOpacity: isFocused ? 0.6 : (0.25 + score * 0.3),
+      fillOpacity: isFocused ? 0.6 : ({ high: 0.45, medium: 0.35, low: 0.20 }[risk] || 0.20),
       dashArray: null,
     };
   };
 
   // ── Popup content ───────────────────────────────────────────────────────────
   const onEachFeature = (feature, layer) => {
+    if (!layer || typeof layer.bindPopup !== 'function') return;
     const p = feature.properties || {};
-    const breakdown = p.issue_breakdown || {};
+    if (p.zone_id && onZoneSelect) {
+      layer.bindTooltip(`${escapePopupText(p.display_name || p.zone_name || p.zone_id)} · ${escapePopupText(p.predicted_count)} expected reports · ${riskLevel(p.risk_level)} risk`);
+      layer.on('click', () => onZoneSelect(feature));
+      layer.on('add', () => {
+        const element = layer.getElement();
+        if (!element) return;
+        element.setAttribute('tabindex', '0');
+        element.setAttribute('role', 'button');
+        element.setAttribute('aria-label', `${p.display_name || p.zone_name || p.zone_id}: ${p.risk_level} risk, ${p.predicted_count} expected reports. View trend.`);
+        element.addEventListener('keydown', event => {
+          if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onZoneSelect(feature); }
+        });
+      });
+      return;
+    }
+    const breakdown = p.issue_breakdown && typeof p.issue_breakdown === 'object' && !Array.isArray(p.issue_breakdown) ? p.issue_breakdown : {};
     const breakdownHtml = Object.entries(breakdown)
       .sort((a, b) => b[1] - a[1])
       .map(([type, count]) => `
         <div style="display:flex;justify-content:space-between;gap:12px;padding:2px 0">
-          <span style="text-transform:capitalize">${type.replace(/_/g, ' ')}</span>
-          <strong>${count}</strong>
+          <span style="text-transform:capitalize">${escapePopupText(type.replace(/_/g, ' '))}</span>
+          <strong>${escapePopupText(count)}</strong>
         </div>`)
       .join('') || '<div style="color:#aaa">No breakdown available</div>';
 
-    const riskColor = { high: '#ef4444', medium: '#f97316', low: '#22c55e' }[p.risk_level] || '#22c55e';
+    const risk = riskLevel(p.risk_level);
+    const riskColor = { high: '#ef4444', medium: '#f97316', low: '#22c55e' }[risk] || '#22c55e';
 
     layer.bindPopup(`
       <div style="font-family:system-ui,sans-serif;min-width:220px">
@@ -235,82 +333,52 @@ export default function HotspotForecastMap({ predictions, timeHorizon, viewModeO
             background:${riskColor};color:#fff;font-weight:700;font-size:13px;
             width:28px;height:28px;border-radius:50%;display:flex;align-items:center;
             justify-content:center;flex-shrink:0
-          ">#${p.rank || '?'}</div>
+          ">#${escapePopupText(p.rank || '?')}</div>
           <div>
-            <div style="font-weight:700;font-size:14px">Cluster #${p.rank || '?'}</div>
-            <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.04em">${p.risk_level || 'unknown'} risk</div>
+            <div style="font-weight:700;font-size:14px">Cluster #${escapePopupText(p.rank || '?')}</div>
+            <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.04em">${risk} risk</div>
           </div>
         </div>
 
-        <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px">
-          <tr><td style="color:#666;padding:3px 0">Reports</td><td style="text-align:right;font-weight:600">${p.report_count ?? 'N/A'}</td></tr>
-          <tr><td style="color:#666;padding:3px 0">Risk Score</td><td style="text-align:right;font-weight:600">${p.risk_score != null ? (p.risk_score * 100).toFixed(0) + '%' : 'N/A'}</td></tr>
-          <tr><td style="color:#666;padding:3px 0">Top Issue</td><td style="text-align:right;font-weight:600;text-transform:capitalize">${(p.top_issue_type || 'N/A').replace(/_/g, ' ')}</td></tr>
-          <tr><td style="color:#666;padding:3px 0">Center</td><td style="text-align:right;font-size:11px;font-family:monospace">${p.center_lat?.toFixed(5)}, ${p.center_lng?.toFixed(5)}</td></tr>
-        </table>
+        <dl style="display:grid;grid-template-columns:auto 1fr;gap:8px 16px;font-size:14px;margin:0 0 10px;color:var(--text-primary)">
+          <dt>Reports</dt><dd style="margin:0;text-align:right;font-weight:600">${escapePopupText(p.report_count ?? 'N/A')}</dd>
+          <dt>Risk score</dt><dd style="margin:0;text-align:right;font-weight:600">${Number.isFinite(p.risk_score) && p.risk_score >= 0 && p.risk_score <= 1 ? (p.risk_score * 100).toFixed(0) + '%' : 'N/A'}</dd>
+          <dt>Top issue</dt><dd style="margin:0;text-align:right;font-weight:600;text-transform:capitalize">${escapePopupText(typeof p.top_issue_type === 'string' ? p.top_issue_type.replace(/_/g, ' ') : 'N/A')}</dd>
+          <dt>Center</dt><dd style="margin:0;text-align:right;font-size:12px">${coordinateText(p.center_lat, 90)}, ${coordinateText(p.center_lng, 180)}</dd>
+        </dl>
 
         <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:4px">Issue Breakdown</div>
         <div style="font-size:12px;border-top:1px solid #eee;padding-top:6px">${breakdownHtml}</div>
       </div>
     `, { maxWidth: 280 });
 
-    layer.on('mouseover', () => layer.setStyle({ fillOpacity: 0.55, weight: 3 }));
-    layer.on('mouseout', () => layer.setStyle(getFeatureStyle(feature)));
+    if (typeof layer.setStyle === 'function') {
+      layer.on('mouseover', () => layer.setStyle({ fillOpacity: 0.55, weight: 3 }));
+      layer.on('mouseout', () => layer.setStyle(getFeatureStyle(feature)));
+    }
   };
 
-  const clusterFeatures = geojsonData?.features || [];
+  const clusterFeatures = sanitizedGeoJson.features;
   const heatmapFeatures = heatmapData?.features || [];
   const hasData = clusterFeatures.length > 0 || heatmapFeatures.length > 0;
 
-  // Force viewMode to clusters if no heatmap data is available
-  useEffect(() => {
-    if (viewModeOverride) {
-      setViewMode(viewModeOverride);
-      return;
-    }
-    if (heatmapFeatures.length === 0 && viewMode !== 'clusters') {
-      setViewMode('clusters');
-    }
-  }, [heatmapFeatures.length, viewMode, viewModeOverride]);
+  const viewMode = viewModeOverride || (heatmapFeatures.length ? userViewMode : 'clusters');
 
   const showClusters = viewMode === 'clusters' || viewMode === 'both';
   const showHeatmap = viewMode === 'heatmap' || viewMode === 'both';
 
-  const ViewToggle = ({ id, label, active, onClick, disabled }) => (
-    <button
-      id={id}
-      onClick={onClick}
-      disabled={disabled}
-      style={{
-        padding: '6px 14px',
-        borderRadius: '6px',
-        fontSize: '13px',
-        fontWeight: 600,
-        border: 'none',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        transition: 'all 0.2s',
-        backgroundColor: active ? 'var(--primary)' : 'transparent',
-        color: active ? '#fff' : 'var(--text-secondary)',
-        opacity: disabled ? 0.5 : 1
-      }}
-    >
-      {label}
-    </button>
-  );
 
   if (!hasData) {
     return (
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        height: '100%', gap: 12, color: '#6b7280',
+        height: '100%', gap: 12, color: 'var(--text-muted)',
       }}>
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-          <circle cx="12" cy="12" r="10" /><path d="M12 8v4m0 4h.01" />
-        </svg>
+        <AlertCircle size={40} strokeWidth={1.5} aria-hidden="true" />
         <p style={{ margin: 0, fontSize: 14 }}>
           {timeHorizon === 'historical' 
             ? 'No historical data available for this range. Try selecting different dates.' 
-            : <span>No active micro-clusters found currently. Scanning in real-time...</span>}
+            : <span>No forecast zones are available.</span>}
         </p>
       </div>
     );
@@ -328,7 +396,7 @@ export default function HotspotForecastMap({ predictions, timeHorizon, viewModeO
       }}>
         <div style={{ display: 'flex', gap: '6px' }}>
           <ViewToggle id="view-heatmap" label="Heatmap" active={viewMode === 'heatmap'} onClick={() => setViewMode('heatmap')} disabled={heatmapFeatures.length === 0} />
-          <ViewToggle id="view-clusters" label="Clusters" active={viewMode === 'clusters'} onClick={() => setViewMode('clusters')} />
+          <ViewToggle id="view-clusters" label="Zones" active={viewMode === 'clusters'} onClick={() => setViewMode('clusters')} />
           <ViewToggle id="view-both" label="Both" active={viewMode === 'both'} onClick={() => setViewMode('both')} disabled={heatmapFeatures.length === 0} />
         </div>
         {heatmapFeatures.length === 0 && (
@@ -354,13 +422,13 @@ export default function HotspotForecastMap({ predictions, timeHorizon, viewModeO
           }}>
             {clusterFeatures.length}
           </span>
-          {clusterFeatures.length === 1 ? 'Hotspot Cluster' : 'Hotspot Clusters'}
+          {clusterFeatures.length === 1 ? 'Forecast zone' : 'Forecast zones'}
         </div>
       )}
 
       <MapContainer
         key={mapKey}
-        center={[14.5995, 120.9842]}
+        center={[14.5764, 121.0851]}
         zoom={12}
         style={{ height: '100%', width: '100%' }}
         zoomControl={true}
@@ -371,17 +439,17 @@ export default function HotspotForecastMap({ predictions, timeHorizon, viewModeO
           className={isDark ? 'dark-mode-tiles' : ''}
         />
 
-        <MapBoundsFitter geojsonData={geojsonData} heatmapData={heatmapData} />
+        <MapBoundsFitter geojsonData={sanitizedGeoJson} heatmapData={heatmapData} />
         <MapFocusManager focusedItem={focusedItem} />
 
         {/* Heatmap layer */}
         {showHeatmap && heatmapData && <HeatmapLayer heatmapData={heatmapData} />}
 
         {/* Cluster polygon layer */}
-        {showClusters && geojsonData && geojsonData.features.length > 0 && (
+        {showClusters && clusterFeatures.length > 0 && (
           <GeoJSON
-            key={JSON.stringify(geojsonData).slice(0, 40)}
-            data={geojsonData}
+            key={`zones-${timeHorizon}-${(sanitizedGeoJson.features || []).map(f => `${f.properties?.zone_id || f.properties?.region_id || ''}-${f.properties?.risk_level || ''}-${f.properties?.predicted_count || ''}-${f.properties?.future_step_date || ''}`).join('|')}`}
+            data={sanitizedGeoJson}
             style={getFeatureStyle}
             onEachFeature={onEachFeature}
           />

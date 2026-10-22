@@ -16,7 +16,7 @@ export default function StatsCard({
   children
 }) {
   const colorMap = {
-    accent: 'var(--accent-green)',
+    accent: 'var(--workspace-link, var(--primary))',
     success: 'var(--success)',
     warning: 'var(--warning)',
     error: 'var(--error)',
@@ -28,19 +28,19 @@ export default function StatsCard({
 
   return (
     <div
-      className={`bg-surface-elevated border border-border rounded-xl p-6 ${onClick ? 'hover:bg-surface transition-all cursor-pointer' : ''} ${className}`}
+      className={`workspace-stat bg-surface border border-border rounded-2xl p-5 ${onClick ? 'hover:bg-surface-elevated transition-all cursor-pointer' : ''} ${className}`}
       onClick={onClick}
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
           {title && (
-            <span className="text-xs font-mono tracking-widest uppercase text-text-muted block mb-2">{title}</span>
+            <span className="text-sm font-medium text-text-secondary block mb-2">{title}</span>
           )}
-          <p className="text-4xl font-bold text-text-primary">
+          <p className="text-3xl font-semibold text-text-primary tracking-tight">
             {value}
           </p>
           {subtitle && (
-            <div className="text-sm text-text-secondary mt-2">{subtitle}</div>
+            <div className="text-sm text-text-secondary mt-1.5 leading-normal">{subtitle}</div>
           )}
           {trend && (
             <div className="flex items-center gap-2 mt-3">
@@ -58,7 +58,7 @@ export default function StatsCard({
           <div
             className="w-12 h-12 rounded-xl border flex items-center justify-center shrink-0 ml-4"
             style={{ 
-              borderColor: `${borderColor}40`, 
+              borderColor: `color-mix(in srgb, ${borderColor} 25%, transparent)`,
               color: borderColor,
               backgroundColor: `color-mix(in srgb, ${borderColor} 10%, transparent)` 
             }}

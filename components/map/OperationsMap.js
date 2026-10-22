@@ -6,6 +6,7 @@ import OutlierClusterLayer from './OutlierClusterLayer'
 import L from 'leaflet'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
+import { reportDiagnostic } from '../../lib/diagnostics.mjs';
 
 // PASIG BOUNDS
 const PASIG_BOUNDS = [
@@ -31,12 +32,12 @@ const parseGeometry = (geometry) => {
       return [lat, lng]
     }
   } catch (error) {
-    console.error('Error parsing geometry:', error)
+    reportDiagnostic('error', 'map', 'Error parsing geometry:', error)
   }
   return null
 }
 
-export default function OperationsMap({ tasks, clusters = [], selectedTemplate = 'standard' }) {
+export default function OperationsMap({ tasks, clusters = [], selectedTemplate = 'standard', modern = true, reportLinks = false }) {
   const [mounted, setMounted] = useState(false)
 
   // Find exact center from tasks
@@ -84,7 +85,7 @@ export default function OperationsMap({ tasks, clusters = [], selectedTemplate =
         hidePins={true}
         hideClusters={true}
       >
-        <CrewTaskLayer tasks={tasks} />
+        <CrewTaskLayer tasks={tasks} photoPins={modern} routeColor={modern ? '#0052cc' : undefined} reportLinks={reportLinks} />
         {clusters && clusters.length > 0 && (
           <OutlierClusterLayer clusters={clusters} selectedTemplate={selectedTemplate} />
         )}

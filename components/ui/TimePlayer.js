@@ -1,108 +1,97 @@
-
 'use client'
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect, useId, useMemo } from 'react'
+import { Play, Pause } from 'lucide-react'
+import styles from './SpatialScan.module.css'
 
-export default function TimePlayer({ dates, currentDate, onDateChange, isProjective }) {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [speed, setSpeed] = useState(1);
+import { filterAvailableSnapshotDates, getNextSnapshotDate } from '@/lib/helpers/forecastTimeline'
 
-  // Stop playing if switched to projective mode
+export { filterAvailableSnapshotDates, getNextSnapshotDate }
+
+export default function TimePlayer({ dates, currentDate, onDateChange, isProjective, steps = [], currentStepIndex = 0, onStepChange }) {
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [speed, setSpeed] = useState(1)
+  const dateId = useId()
+
+  const availableSnapshotDates = useMemo(() => filterAvailableSnapshotDates(dates), [dates])
+
+  // In projective mode, we use steps (e.g. Week 1, Week 2, Week 3, Week 4)
+  const totalSteps = isProjective ? steps.length : availableSnapshotDates.length
+  const currentIndex = isProjective ? currentStepIndex : availableSnapshotDates.indexOf(currentDate)
+  const sliderIndex = currentIndex === -1 ? 0 : currentIndex
+  const disabled = isProjective ? steps.length < 2 : availableSnapshotDates.length === 0
+
   useEffect(() => {
-    if (isProjective) {
-      setIsPlaying(false);
+    if (disabled || totalSteps < 2) {
+      setIsPlaying(false)
     }
-  }, [isProjective]);
+  }, [disabled, totalSteps])
+
+  const dateLabel = isProjective
+    ? (steps[sliderIndex]?.label || 'Initial state')
+    : (currentDate && !isNaN(new Date(currentDate).getTime())
+        ? new Date(currentDate).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })
+        : 'No date selected')
 
   useEffect(() => {
-    let interval;
-    if (isPlaying && dates.length > 0) {
-      interval = setInterval(() => {
-         const currentIndex = dates.indexOf(currentDate);
-         if (currentIndex < dates.length - 1) {
-           onDateChange(dates[currentIndex + 1]);
-         } else {
-           onDateChange(dates[0]); // Loop back to start
-         }
-      }, 2000 / speed);
-    }
-    return () => clearInterval(interval);
-  }, [isPlaying, currentDate, dates, speed, onDateChange]);
+    if (!isPlaying || disabled || totalSteps < 2) return
+    const interval = setInterval(() => {
+      if (isProjective) {
+        onStepChange(prev => (prev + 1 < steps.length ? prev + 1 : 0))
+      } else {
+        const nextDate = getNextSnapshotDate(availableSnapshotDates, currentDate)
+        if (nextDate) {
+          onDateChange(nextDate)
+        }
+      }
+    }, 2000 / speed)
+    return () => clearInterval(interval)
+  }, [isPlaying, isProjective, currentDate, availableSnapshotDates, steps, speed, disabled, totalSteps, onDateChange, onStepChange])
 
-  return (
-    <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-[1000] w-full max-w-3xl pointer-events-auto">
-      <div className="bg-surface/90 backdrop-blur border border-border p-4 flex flex-col gap-4 shadow-lg">
-        <div className="flex justify-between items-center px-2">
-           <span className="text-xs font-mono text-primary uppercase tracking-widest">{isProjective ? 'Projective Timeline (Future)' : 'Retrospective Timeline (Past)'}</span>
-           <span className="text-text-primary font-bold font-mono">{currentDate ? new Date(currentDate).toLocaleDateString() : 'LIVE'}</span>
-        </div>
-        
-        <div className="flex items-center gap-4">
-           <button 
-             onClick={() => setIsPlaying(!isPlaying)} 
-             disabled={isProjective}
-             className={`w-12 h-12 flex items-center justify-center transition-colors ${isProjective ? 'bg-surface text-text-muted cursor-not-allowed border border-border' : 'bg-primary text-white hover:bg-text-primary hover:text-background'}`}
-           >
-             {isPlaying ? (
-               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-                  <path fillRule="evenodd" d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z" clipRule="evenodd" />
-               </svg>
-             ) : (
-               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-                  <path fillRule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clipRule="evenodd" />
-               </svg>
-             )}
-           </button>
-           
-           <div className="flex-1 relative flex items-center">
-             <input 
-               type="range" 
-               min={0} 
-               max={Math.max(0, dates.length - 1)} 
-               value={dates.indexOf(currentDate) === -1 ? 0 : dates.indexOf(currentDate)}
-               onChange={(e) => {
-                 setIsPlaying(false);
-                 onDateChange(dates[e.target.value]);
-               }}
-               disabled={isProjective}
-               className={`w-full h-2 appearance-none outline-none timeline-slider ${isProjective ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-               style={{
-                 background: isProjective ? 'var(--border)' : `linear-gradient(to right, var(--primary) ${(dates.indexOf(currentDate) / Math.max(1, dates.length - 1)) * 100}%, var(--border) 0)`
-               }}
-             />
-             <style>{`
-               .timeline-slider::-webkit-slider-thumb {
-                 -webkit-appearance: none;
-                 appearance: none;
-                 width: 12px;
-                 height: 24px;
-                 background: var(--primary);
-                 cursor: pointer;
-                 box-shadow: 0 0 10px rgba(0,0,0,0.2);
-               }
-               .timeline-slider::-moz-range-thumb {
-                 width: 12px;
-                 height: 24px;
-                 background: var(--primary);
-                 cursor: pointer;
-                 border: none;
-                 box-shadow: 0 0 10px rgba(0,0,0,0.2);
-               }
-             `}</style>
-           </div>
-
-           <div className="flex gap-2">
-              {[1, 2, 5].map(s => (
-                <button 
-                  key={s}
-                  onClick={() => setSpeed(s)}
-                  className={`px-2 py-1 text-xs font-bold font-mono border ${speed === s ? 'bg-text-primary text-background border-text-primary' : 'text-text-primary border-border hover:border-text-primary'}`}
-                >
-                  {s}x
-                </button>
-              ))}
-           </div>
-        </div>
+  return <section className={styles.timeline} aria-labelledby="spatial-timeline-title">
+    <div className={styles.timelineHeader}>
+      <div className={styles.playbackLabel}><h2 id="spatial-timeline-title">{isProjective ? 'Future forecast timeline' : 'Snapshot date archive'}</h2>
+        <p>{isProjective
+          ? (steps.length ? 'Play simulation or scrub to see projected hotspot growth across weeks.' : 'No future weekly projections available.')
+          : (availableSnapshotDates.length ? 'Scrub through past forecast dates generated by the AI.' : 'No past snapshots are available in database.')}
+        </p>
+      </div>
+      <div className={styles.dateField}><label htmlFor={dateId}>{isProjective ? 'Forecast week' : 'Forecast date'}</label>
+        {isProjective ? (
+          <select id={dateId} value={sliderIndex} disabled={disabled}
+            onChange={event => { setIsPlaying(false); onStepChange(Number(event.target.value)) }}>
+            {steps.map((st, idx) => <option key={st.date || idx} value={idx}>{st.label}</option>)}
+          </select>
+        ) : (
+          <select id={dateId} value={disabled ? '' : (availableSnapshotDates.includes(currentDate) ? currentDate : '')} disabled={disabled}
+            onChange={event => { setIsPlaying(false); if (event.target.value) onDateChange(event.target.value) }}>
+            <option value="" disabled>No date selected</option>
+            {availableSnapshotDates.map(date => <option key={date} value={date}>{new Date(date).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })}</option>)}
+          </select>
+        )}
       </div>
     </div>
-  )
+    <div className={styles.timelineControls}>
+      <button type="button" className={styles.play} disabled={disabled || totalSteps < 2}
+        aria-label={isPlaying ? (isProjective ? 'Pause simulation' : 'Pause playback') : (isProjective ? 'Play simulation' : 'Play snapshots')}
+        onClick={() => setIsPlaying(value => !value)}>
+        {isPlaying ? <Pause size={20} aria-hidden="true" /> : <Play size={20} aria-hidden="true" />}
+      </button>
+      <input type="range" min={0} max={Math.max(0, totalSteps - 1)} value={sliderIndex}
+        aria-label={isProjective ? 'Future forecast week' : 'Historical forecast date'} aria-valuetext={dateLabel}
+        disabled={disabled || totalSteps < 2} onChange={event => {
+          setIsPlaying(false)
+          const targetIndex = Number(event.target.value)
+          if (isProjective) {
+            onStepChange(targetIndex)
+          } else {
+            const target = availableSnapshotDates[targetIndex]
+            if (target) onDateChange(target)
+          }
+        }} />
+      <div className={styles.switcher} role="group" aria-label="Playback speed">
+        {[1, 2, 5].map(value => <button key={value} type="button" aria-label={`${value} times playback speed`}
+          aria-pressed={speed === value} disabled={disabled || totalSteps < 2} onClick={() => setSpeed(value)}>{value}×</button>)}
+      </div>
+    </div>
+  </section>
 }

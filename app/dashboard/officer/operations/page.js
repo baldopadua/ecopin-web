@@ -1,56 +1,70 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { fetchCleanupTasks } from '@/lib/api'
+import { getFieldCrews } from '@/lib/api/optimization'
 import PageHeader from '@/components/layout/PageHeader'
 import FilterBar from '@/components/ui/FilterBar'
 import DataTable from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
+import useTablePageSize from '@/components/ui/useTablePageSize'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { OfficerGuard } from '@/components/auth/RequireRole'
+import { Plus } from 'lucide-react'
+import { reportDiagnostic } from '../../../../lib/diagnostics.mjs'
+import styles from './Operations.module.css'
 
 export default function CleanupTasksPage() {
   const [tasks, setTasks] = useState([])
-  const [filteredTasks, setFilteredTasks] = useState([])
+  const [crews, setCrews] = useState([])
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      return params.get('status') || 'all'
+    }
+    return 'all'
+  })
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 8
+  const { containerRef, pageSize: itemsPerPage } = useTablePageSize({ resetKey: `${searchQuery}|${statusFilter}` })
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search)
-      const statusParam = params.get('status')
-      if (statusParam) {
-        setStatusFilter(statusParam)
-      }
-    }
-  }, [])
-
-  useEffect(() => {
-    const loadTasks = async () => {
-      try {
-        const data = await fetchCleanupTasks()
-        const taskList = Array.isArray(data) ? data : (data?.tasks || [])
-        setTasks(taskList)
-        setFilteredTasks(taskList)
-      } catch (error) {
-        console.error('Failed to load cleanup tasks:', error)
-      } finally {
+    let active = true
+    Promise.allSettled([fetchCleanupTasks(), getFieldCrews()])
+      .then(([taskResult, crewResult]) => {
+        if (!active) return
+        if (taskResult.status === 'fulfilled') {
+          const data = taskResult.value
+          setTasks(Array.isArray(data) ? data : (data?.tasks || []))
+        } else {
+          reportDiagnostic('error', 'dispatch', 'Failed to load cleanup tasks:', taskResult.reason)
+        }
+        if (crewResult.status === 'fulfilled') setCrews(crewResult.value || [])
+        else reportDiagnostic('error', 'dispatch', 'Failed to load crew names:', crewResult.reason)
+      })
+      .catch(error => {
+        if (!active) return
+        reportDiagnostic('error', 'dispatch', 'Failed to load cleanup tasks:', error)
+      })
+      .finally(() => {
+        if (!active) return
         setLoading(false)
-      }
+      })
+    return () => {
+      active = false
     }
-    loadTasks()
   }, [])
 
-  // Apply filters
-  useEffect(() => {
+  const crewNames = useMemo(() => new Map(crews.map(crew => [crew.id, crew.name])), [crews])
+
+  // Apply filters with useMemo
+  const filteredTasks = useMemo(() => {
     let filtered = tasks
 
     if (searchQuery) {
@@ -65,15 +79,14 @@ export default function CleanupTasksPage() {
       filtered = filtered.filter(t => t.status === statusFilter)
     }
 
-    setFilteredTasks(filtered)
-    setCurrentPage(1)
+    return filtered
   }, [searchQuery, statusFilter, tasks])
 
   // Calculate pagination
-  const totalPages = Math.ceil(filteredTasks.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
-  const paginatedTasks = filteredTasks.slice(startIndex, endIndex)
+  const totalPages = Math.ceil(filteredTasks.length / itemsPerPage) || 1
+  const safeCurrentPage = Math.min(currentPage, totalPages)
+  const startIndex = (safeCurrentPage - 1) * itemsPerPage
+  const paginatedTasks = filteredTasks.slice(startIndex, startIndex + itemsPerPage)
 
   const handlePageChange = (page) => {
     setCurrentPage(page)
@@ -86,29 +99,32 @@ export default function CleanupTasksPage() {
   const handleResetFilters = () => {
     setSearchQuery('')
     setStatusFilter('all')
+    setCurrentPage(1)
   }
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A'
+    if (!dateString) return '—'
     return new Date(dateString).toLocaleDateString()
   }
 
   return (
-    <div className="p-8">
+      <div className={`workspace-page ${styles.page}`}>
       <PageHeader
-        title="Cleanup Tasks"
+        title="Operations"
         subtitle="Manage and track cleanup tasks"
         breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Cleanup Tasks' }
+          { label: 'Officer', href: '/dashboard/officer' },
+          { label: 'Operations' }
         ]}
       >
         <OfficerGuard>
           <button
+            type="button"
             onClick={() => router.push('/dashboard/officer/operations/create')}
-            className="bg-accent-green text-white font-mono font-bold uppercase tracking-widest border border-border rounded-xl shadow-sm dark:shadow-[2px_2px_0px_0px_#333333] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all px-6 py-3"
+            className={styles.createButton}
           >
-            Create Cleanup Task
+            <Plus size={18} aria-hidden="true" />
+            <span>Create cleanup task</span>
           </button>
         </OfficerGuard>
       </PageHeader>
@@ -117,17 +133,17 @@ export default function CleanupTasksPage() {
       <FilterBar
         searchPlaceholder="Search by title or description..."
         searchValue={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={val => { setSearchQuery(val); setCurrentPage(1) }}
         filters={[
           {
-            label: 'All Status',
+            label: 'All status',
             value: statusFilter,
-            onChange: setStatusFilter,
+            onChange: val => { setStatusFilter(val); setCurrentPage(1) },
             options: [
-              { value: 'all', label: 'All Status' },
+              { value: 'all', label: 'All statuses' },
               { value: 'created', label: 'Created' },
               { value: 'pending', label: 'Pending' },
-              { value: 'in_progress', label: 'In Progress' },
+              { value: 'in_progress', label: 'In progress' },
               { value: 'completed', label: 'Completed' },
               { value: 'cancelled', label: 'Cancelled' }
             ]
@@ -136,67 +152,76 @@ export default function CleanupTasksPage() {
         onReset={handleResetFilters}
         resultsCount={filteredTasks.length}
         loading={loading}
+        sticky={false}
       />
 
       {/* Tasks List */}
-      <DataTable
-        columns={[
-          { key: 'title', label: 'Title', width: '20%' },
-          {
-            key: 'description',
-            label: 'Description',
-            width: '25%',
-            render: (value) => (
-              <span className="text-sm text-text-secondary line-clamp-2 max-w-xs">{value || '—'}</span>
-            )
-          },
-          {
-            key: 'assigned_crew_ids',
-            label: 'Assigned',
-            width: '20%',
-            render: (value) => {
-              const count = value && value.length > 0 ? value.length : 0
-              return (
-                <span className={`text-sm font-medium ${count > 0 ? 'text-accent-green' : 'text-text-muted'}`}>
-                  {count > 0 ? `${count} crew member${count > 1 ? 's' : ''}` : 'Unassigned'}
-                </span>
+      <div className={`workspace-fill ${styles.tableWorkspace}`}>
+        <div ref={containerRef} className={styles.tableViewport}>
+        <DataTable
+          columns={[
+            { key: 'title', label: 'Title', width: '22%' },
+            {
+              key: 'description',
+              label: 'Description',
+              width: '26%',
+              render: (value) => (
+                <span className="text-sm text-text-secondary line-clamp-2 max-w-xs">{value || '—'}</span>
+              )
+            },
+            {
+              key: 'assigned_field_crew_id',
+              label: 'Assigned crew',
+              width: '20%',
+              render: (value, task) => {
+                const ids = value ? [value] : (task.assigned_crew_ids || [])
+                const names = [...new Set(ids.map(id => crewNames.get(id)).filter(Boolean))]
+                return (
+                  <span className={`text-sm font-medium whitespace-normal ${names.length ? 'text-accent-green' : 'text-text-muted'}`}>
+                    {names.length ? names.join(', ') : ids.length ? 'Crew name unavailable' : 'Unassigned'}
+                  </span>
+                )
+              }
+            },
+            {
+              key: 'created_at',
+              label: 'Created',
+              width: '14%',
+              render: (value) => (
+                <span className="text-sm text-text-muted">{formatDate(value)}</span>
+              )
+            },
+            {
+              key: 'status',
+              label: 'Status',
+              width: '18%',
+              render: (value) => (
+                <StatusBadge status={value} type="task" />
               )
             }
-          },
-          {
-            key: 'created_at',
-            label: 'Created',
-            width: '15%',
-            render: (value) => (
-              <span className="text-sm text-text-muted">{formatDate(value)}</span>
-            )
-          },
-          {
-            key: 'status',
-            label: 'Status',
-            width: '20%',
-            render: (value) => (
-              <StatusBadge status={value} type="task" />
-            )
-          }
-        ]}
-        data={paginatedTasks}
-        loading={loading}
-        emptyMessage="No cleanup tasks match your filters"
-        onRowClick={handleRowClick}
-      />
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-          itemsPerPage={itemsPerPage}
-          totalItems={filteredTasks.length}
-          className="mt-6"
+          ]}
+          data={paginatedTasks}
+          loading={loading}
+          emptyMessage="No cleanup tasks match your filters."
+          onRowClick={handleRowClick}
+          rowActionLabel={(task) => `Open ${task.title || 'task'} details`}
+          className={styles.tableContainer}
+          caption="Cleanup tasks"
         />
-      )}
+        </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <Pagination
+            currentPage={safeCurrentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+            itemsPerPage={itemsPerPage}
+            totalItems={filteredTasks.length}
+            className={styles.pagination}
+          />
+        )}
+      </div>
     </div>
   )
 }

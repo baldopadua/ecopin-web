@@ -45,8 +45,7 @@ export default function Pagination({
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages && page !== currentPage) {
-      onPageChange(page)
-      window.scrollTo({ top: 0, behavior: 'smooth' })
+      onPageChange?.(page)
     }
   }
 
@@ -61,20 +60,21 @@ export default function Pagination({
   if (totalPages <= 1) return null
 
   return (
-    <div className={`flex items-center justify-between ${className}`}>
+    <nav aria-label="Results pages" className={`flex flex-wrap items-center justify-between gap-4 ${className}`}>
       {/* Items Info */}
       {showItemsInfo && totalItems > 0 && (
-        <div className="text-sm font-mono tracking-widest text-text-secondary">
-          SHOWING {getStartIndex()} TO {getEndIndex()} OF {totalItems}
+        <div role="status" className="text-sm text-text-secondary">
+          Showing {getStartIndex()}–{getEndIndex()} of {totalItems}
         </div>
       )}
 
       {/* Page Navigation */}
-      <div className="flex items-center gap-2 font-mono uppercase tracking-widest">
+      <div className="flex flex-wrap items-center gap-2">
         <button
           onClick={() => handlePageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="border border-border px-3 py-1 hover:bg-black hover:text-white dark:hover:bg-surface dark:hover:text-text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          aria-label="Previous page"
+          className="btn-secondary min-w-11 disabled:opacity-50"
         >
           Prev
         </button>
@@ -87,11 +87,13 @@ export default function Pagination({
           ) : (
             <button
               key={page}
+              aria-label={`Page ${page}`}
+              aria-current={currentPage === page ? 'page' : undefined}
               onClick={() => handlePageChange(page)}
-              className={`px-3 py-1 border border-border transition-colors ${
+              className={`min-h-11 min-w-11 rounded-xl border border-border transition-colors ${
                 currentPage === page
-                  ? 'bg-black text-white dark:bg-accent-green  dark:border-accent-green'
-                  : 'hover:bg-black hover:text-white dark:hover:bg-surface dark:hover:text-text-primary'
+                  ? 'bg-primary text-white border-primary'
+                  : 'hover:bg-surface-elevated'
               }`}
             >
               {page}
@@ -102,11 +104,12 @@ export default function Pagination({
         <button
           onClick={() => handlePageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="border border-border px-3 py-1 hover:bg-black hover:text-white dark:hover:bg-surface dark:hover:text-text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          aria-label="Next page"
+          className="btn-secondary min-w-11 disabled:opacity-50"
         >
           Next
         </button>
       </div>
-    </div>
+    </nav>
   )
 }

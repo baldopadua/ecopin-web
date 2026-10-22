@@ -1,0 +1,88 @@
+.page { min-width: 0; font-family: var(--font-outfit), sans-serif; font-size: 14px; line-height: 1.5; }
+.card { min-width: 0; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
+.crewHeader { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap;
+  gap: 16px; padding: 20px; border-bottom: 1px solid var(--border); }
+.crewHeader > div { min-width: 0; }
+.crewHeader > div:last-child { flex-wrap: wrap; }
+.crewHeader h2 { overflow-wrap: anywhere; }
+.badge { display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 4px 12px;
+  border: 1px solid var(--border); border-radius: 999px; font-size: 12px; line-height: 1.5;
+  font-weight: 500; color: var(--text-secondary); background: var(--surface-elevated); }
+.available { color: var(--success); border-color: color-mix(in srgb, var(--success) 25%, var(--border));
+  background: color-mix(in srgb, var(--success) 8%, var(--surface)); }
+.onRoute { color: var(--warning); border-color: color-mix(in srgb, var(--warning) 25%, var(--border));
+  background: color-mix(in srgb, var(--warning) 8%, var(--surface)); }
+.unavailable { color: var(--text-secondary); }
+.avatar { border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid var(--border); }
+.member { display: flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; padding: 8px 12px;
+  border: 1px solid var(--border); border-radius: 12px; background: var(--surface-elevated); }
+.remove { display: inline-flex; align-items: center; justify-content: center; width: 44px; min-width: 44px; height: 44px;
+  margin-left: 4px; border-radius: 12px; color: var(--text-secondary); }
+.remove:hover { background: color-mix(in srgb, var(--error) 8%, var(--surface)); color: var(--error); }
+.remove:disabled { opacity: .4; cursor: not-allowed; }
+.addButton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px;
+  padding: 8px 16px; border: 1px solid var(--border); border-radius: 999px; font: inherit; font-weight: 500; color: var(--workspace-link); }
+.addButton:hover, .candidate:hover { background: color-mix(in srgb, var(--workspace-link) 8%, var(--surface)); }
+.addPanel { margin-top: 12px; padding: 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface-elevated); }
+.search { width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px 10px 40px; border: 1px solid var(--border);
+  border-radius: 12px; background: var(--surface); color: var(--text-primary); font: inherit; }
+.search::placeholder { color: var(--text-muted); }
+.search:focus { border-color: var(--workspace-link); }
+.candidate { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 12px;
+  border-radius: 12px; text-align: left; font: inherit; }
+.addIcon { margin-left: auto; color: var(--workspace-link); flex-shrink: 0; }
+.workloadAvailable { color: var(--success); border-color: color-mix(in srgb, var(--success) 25%, var(--border));
+  background: color-mix(in srgb, var(--success) 8%, var(--surface)); }
+.workloadActive { color: var(--workspace-link); border-color: color-mix(in srgb, var(--workspace-link) 25%, var(--border));
+  background: color-mix(in srgb, var(--workspace-link) 8%, var(--surface)); }
+.workloadCapacity { color: var(--error); border-color: color-mix(in srgb, var(--error) 25%, var(--border));
+  background: color-mix(in srgb, var(--error) 8%, var(--surface)); font-weight: 600; }
+.assignedTasksSection { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+.assignedTasksToggle { display: flex; align-items: center; justify-content: space-between; width: 100%;
+  padding: 8px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-elevated);
+  font: inherit; font-size: 13px; font-weight: 500; color: var(--text-primary); cursor: pointer; }
+.assignedTasksToggle:hover { background: color-mix(in srgb, var(--workspace-link) 6%, var(--surface-elevated)); }
+.assignedTaskList { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+.assignedTaskItem { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface);
+  text-decoration: none; transition: border-color 0.15s ease; }
+.assignedTaskItem:hover { border-color: var(--workspace-link); }
+.assignedTaskTitle { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+.assignedTaskMeta { display: flex; align-items: center; gap: 8px; }
+.summaryBanner { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 14px 20px;
+  margin-top: 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
+.summaryStat { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-secondary); }
+.summaryStat strong { font-weight: 600; color: var(--text-primary); }
+.viewToggle { display: inline-flex; align-items: center; gap: 4px; padding: 4px;
+  border: 1px solid var(--border); border-radius: 12px; background: var(--surface-elevated); }
+.toggleButton { display: inline-flex; align-items: center; justify-content: center; min-height: 36px;
+  padding: 8px 16px; border: none; border-radius: 10px; font: inherit; font-size: 13px; font-weight: 500;
+  color: var(--text-secondary); background: transparent; cursor: pointer; transition: all 0.15s ease; }
+.toggleButton:hover { color: var(--text-primary); background: color-mix(in srgb, var(--workspace-link) 8%, var(--surface-elevated)); }
+.toggleButtonActive { color: var(--text-primary); background: var(--surface); font-weight: 600; }
+.tasksView { min-width: 0; }
+.crewTasksHeader { display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px; padding: 20px; border-bottom: 1px solid var(--border); }
+.crewTasksHeader > div { min-width: 0; }
+.workloadBadge { color: var(--workspace-link); border-color: color-mix(in srgb, var(--workspace-link) 25%, var(--border));
+  background: color-mix(in srgb, var(--workspace-link) 8%, var(--surface)); }
+.tasksList { display: flex; flex-direction: column; gap: 8px; padding: 16px 20px 20px; }
+.taskRow { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface);
+  text-decoration: none; transition: border-color 0.15s ease; }
+.taskRow:hover { border-color: var(--workspace-link); }
+.taskTitle { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+.taskMeta { display: flex; align-items: center; gap: 8px; }
+@media (max-width: 767px) {
+  .page { padding: 20px 16px; }
+  .crewHeader { padding: 16px; }
+  .member { width: 100%; }
+  .member > div:not(.avatar) { flex: 1; }
+  .addPanel { padding: 12px; }
+  .viewToggle { width: 100%; justify-content: stretch; }
+  .toggleButton { flex: 1; }
+  .crewTasksHeader { padding: 16px; }
+  .tasksList { padding: 12px 16px 16px; }
+  .taskRow { flex-direction: column; align-items: flex-start; }
+  .taskMeta { width: 100%; justify-content: space-between; margin-top: 8px; }
+}

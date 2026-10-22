@@ -1,22 +1,32 @@
 'use client'
 import SecureImage from '@/components/ui/SecureImage'
-import { useEffect, useState, useRef } from 'react'
+import ImageLightbox from '@/components/ui/ImageLightbox'
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { useNavigationLoading } from '@/components/context/NavigationLoadingContext'
 import {
   fetchReportById,
   fetchReportEvidence,
   updateReportStatus,
   updatePropertyOwnerConsent,
   lguResolveReport,
-  updateReportValidation
+  updateReportValidation,
+  fetchCleanupTasks
 } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
+import useConfirmation from '@/components/ui/useConfirmation'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
 import { useUser } from '@/components/auth/UserContext'
+import { RefreshCw, Upload, Image as ImageIcon, Loader2 } from 'lucide-react'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
+import { reportDiagnostic } from '../../../../../lib/diagnostics.mjs';
+
+import { backendFetch as fetch } from '../../../../../lib/backend-fetch.mjs';
+
+
 
 // Polyfill Buffer for browser environment
 if (typeof window !== 'undefined' && !window.Buffer) {
@@ -24,16 +34,24 @@ if (typeof window !== 'undefined' && !window.Buffer) {
 }
 
 export default function ReportDetailPage() {
+  const { confirm: confirmAction, confirmation } = useConfirmation()
   const params = useParams()
+  /*
+   * Investigation - Issue #6 (Report Detail Page Error on Page 4 San Miguel):
+   * Reports requiring manual review evaluate `validatingReport === reportId` (and map button & action handlers
+   * reference `reportId`), but `reportId` was never declared in ReportDetailPage scope, triggering an uncaught
+   * `ReferenceError: reportId is not defined` whenever manual_review reports loaded.
+   */
+  const reportId = params?.id || report?.id
   const router = useRouter()
   const user = useUser()
-  const reportId = params.id
-
+  const { isLoading: isNavigating } = useNavigationLoading()
   const [report, setReport] = useState(null)
   const [evidence, setEvidence] = useState([])
   const [loading, setLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState(null)
-  const [selectedImage, setSelectedImage] = useState(null)
+  const [lightboxIndex, setLightboxIndex] = useState(null)
   const [showStatusDropdown, setShowStatusDropdown] = useState(false)
   const [updatingStatus, setUpdatingStatus] = useState(false)
   const [uploadingBefore, setUploadingBefore] = useState(false)
@@ -44,30 +62,58 @@ export default function ReportDetailPage() {
   const [updatingConsent, setUpdatingConsent] = useState(false)
   const [notification, setNotification] = useState(null)
   const statusDropdownRef = useRef(null)
+  const [existingTask, setExistingTask] = useState(null)
   const [agencyResponses, setAgencyResponses] = useState([])
   const [resolvingReport, setResolvingReport] = useState(false)
   const [validatingReport, setValidatingReport] = useState(null)
   const [activityLogPage, setActivityLogPage] = useState(1)
   const activityLogPerPage = 10
 
-  const loadReportData = async () => {
-    setLoading(true)
+  const loadReportData = useCallback(async (isManualRefresh = false) => {
+    const id = params?.id
+    if (!id) return
+    if (isManualRefresh) {
+      setIsRefreshing(true)
+    } else {
+      setLoading(true)
+    }
     try {
-      const [reportData, evidenceData] = await Promise.all([
-        fetchReportById(reportId),
-        fetchReportEvidence(reportId)
+      const [reportData, evidenceData, tasksData] = await Promise.all([
+        fetchReportById(id),
+        fetchReportEvidence(id),
+        fetchCleanupTasks().catch((err) => {
+          reportDiagnostic('warn', 'tasks', 'Failed to fetch tasks for report detail:', err)
+          return []
+        })
       ])
-      console.log('Report data:', reportData)
-      console.log('Profiles data:', reportData?.profiles)
-      console.log('Data consent value:', reportData?.profiles?.data_consent)
-      console.log('Evidence data:', evidenceData)
       if (reportData) {
         // Access Control: Field crew cannot view incomplete raw reports
         if (user?.role === 'field_crew' && reportData.lifecycle_stage !== 'completed') {
           setError('Access Denied: Field crews can only view raw report details after the operation is complete. Please use the Operations workspace.')
           return
         }
-        
+
+        const activeTasks = (tasksData || []).filter(t => t.status !== 'cancelled')
+        const reportClusterId = reportData.cluster_id ? String(reportData.cluster_id) : null
+        const directTaskId = reportData.cleanup_task_id ? String(reportData.cleanup_task_id) : null
+        const currentReportId = String(id)
+
+        const matchedTask = activeTasks.find(t => {
+          if (directTaskId && String(t.id) === directTaskId) return true
+          const inReportIds = Array.isArray(t.report_ids) && t.report_ids.some(tid => String(tid) === currentReportId)
+          const inSequence = Array.isArray(t.report_sequence) && t.report_sequence.some(tid => String(tid) === currentReportId)
+          const inSatellites = Array.isArray(t.satellite_report_ids) && t.satellite_report_ids.some(tid => String(tid) === currentReportId)
+          const inReports = Array.isArray(t.reports) && t.reports.some(r => String(r.id || r) === currentReportId)
+          if (inReportIds || inSequence || inSatellites || inReports) return true
+
+          if (reportClusterId) {
+            if (String(t.cluster_id) === reportClusterId) return true
+            if (Array.isArray(t.cluster_ids) && t.cluster_ids.some(cid => String(cid) === reportClusterId)) return true
+          }
+          return false
+        }) || (directTaskId ? { id: directTaskId } : null)
+
+        setExistingTask(matchedTask)
         setReport(reportData)
         setEvidence(evidenceData)
         setAgencyResponses([])
@@ -75,16 +121,43 @@ export default function ReportDetailPage() {
         setError('Report not found')
       }
     } catch (err) {
-      console.error('Error loading report:', err)
+      reportDiagnostic('error', 'media', 'Error loading report:', err)
       setError('Failed to load report')
     } finally {
       setLoading(false)
+      setIsRefreshing(false)
     }
+  }, [params?.id, user])
+
+  const allReportPhotos = useMemo(() => {
+    const list = []
+    if (report?.image_url) list.push({ url: report.image_url, label: 'Reported Photo' })
+    ;(evidence || []).forEach((e, idx) => {
+      const url = e.url || e.photo_url || e.file_url
+      if (url && !list.some(item => item.url === url)) {
+        list.push({ url, label: e.name || `Evidence Photo #${idx + 1}` })
+      }
+    })
+    if (report?.before_photo_url && !list.some(item => item.url === report.before_photo_url)) {
+      list.push({ url: report.before_photo_url, label: 'Before Cleanup Photo' })
+    }
+    if (report?.after_photo_url && !list.some(item => item.url === report.after_photo_url)) {
+      list.push({ url: report.after_photo_url, label: 'After Cleanup Photo' })
+    }
+    return list
+  }, [report, evidence])
+
+  const openLightboxAtUrl = (url) => {
+    if (!url) return
+    const found = allReportPhotos.findIndex(item => item.url === url)
+    setLightboxIndex(found >= 0 ? found : 0)
   }
 
   useEffect(() => {
-    loadReportData()
-  }, [reportId])
+    queueMicrotask(() => {
+      void loadReportData()
+    })
+  }, [loadReportData])
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -131,7 +204,7 @@ export default function ReportDetailPage() {
         }
       }
     } catch (error) {
-      console.error('Error parsing location:', error)
+      reportDiagnostic('error', 'media', 'Error parsing location:', error)
     }
 
     return { latitude: null, longitude: null }
@@ -187,7 +260,7 @@ export default function ReportDetailPage() {
       setShowStatusDropdown(false)
       setNotification({ message: 'Status updated successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to update status:', error)
+      reportDiagnostic('error', 'media', 'Failed to update status:', error)
       setNotification({ message: 'Failed to update status. Please try again.', type: 'error' })
     } finally {
       setUpdatingStatus(false)
@@ -201,7 +274,7 @@ export default function ReportDetailPage() {
       setReport({ ...report, validation_status: 'rejected' })
       setNotification({ message: 'Report rejected successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to reject report:', error)
+      reportDiagnostic('error', 'media', 'Failed to reject report:', error)
       setNotification({ message: 'Failed to reject report. Please try again.', type: 'error' })
     } finally {
       setValidatingReport(null)
@@ -215,7 +288,7 @@ export default function ReportDetailPage() {
       setReport({ ...report, validation_status: 'approved' })
       setNotification({ message: 'Report approved successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to approve report:', error)
+      reportDiagnostic('error', 'media', 'Failed to approve report:', error)
       setNotification({ message: 'Failed to approve report. Please try again.', type: 'error' })
     } finally {
       setValidatingReport(null)
@@ -235,7 +308,7 @@ export default function ReportDetailPage() {
       setReport(updatedReport)
       setNotification({ message: 'Report resolved successfully. Waiting for reporter feedback.', type: 'success' })
     } catch (error) {
-      console.error('Failed to resolve report:', error)
+      reportDiagnostic('error', 'media', 'Failed to resolve report:', error)
       setNotification({ message: 'Failed to resolve report. Please try again.', type: 'error' })
     } finally {
       setResolvingReport(false)
@@ -262,8 +335,7 @@ export default function ReportDetailPage() {
     const setUploading = photoType === 'before' ? setUploadingBefore : setUploadingAfter
     setUploading(true)
 
-    const token = localStorage.getItem('authToken')
-    console.log('Uploading photo:', { token: token ? token.substring(0, 20) + '...' : null, photoType })
+
     const formData = new FormData()
     formData.append('image', file)
     formData.append('photo_type', photoType)
@@ -272,7 +344,6 @@ export default function ReportDetailPage() {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/reports/${reportId}/photo`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
         },
         body: formData,
       })
@@ -283,11 +354,10 @@ export default function ReportDetailPage() {
       }
 
       const data = await response.json()
-      console.log('Upload response:', data)
       setReport(data.report)
       setNotification({ message: 'Photo uploaded successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to upload photo:', error)
+      reportDiagnostic('error', 'media', 'Failed to upload photo:', error)
       setNotification({ message: error.message || 'Failed to upload photo. Please try again.', type: 'error' })
     } finally {
       setUploading(false)
@@ -295,17 +365,16 @@ export default function ReportDetailPage() {
   }
 
   const handlePhotoDelete = async (photoType) => {
-    if (!confirm('Are you sure you want to delete this photo? This action cannot be undone.')) {
+    if (!await confirmAction({ title: 'Delete report photo?', description: 'This removes the selected evidence photo from this report. This action cannot be undone.', action: 'Delete photo' })) {
       return
     }
 
-    const token = localStorage.getItem('authToken')
+
 
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/reports/${reportId}/photo`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ photo_type: photoType }),
@@ -320,7 +389,7 @@ export default function ReportDetailPage() {
       setReport(data.report)
       setNotification({ message: 'Photo deleted successfully', type: 'success' })
     } catch (error) {
-      console.error('Failed to delete photo:', error)
+      reportDiagnostic('error', 'media', 'Failed to delete photo:', error)
       setNotification({ message: error.message || 'Failed to delete photo. Please try again.', type: 'error' })
     }
   }
@@ -332,16 +401,16 @@ export default function ReportDetailPage() {
       await loadReportData()
       setNotification({ message: 'Property owner consent status updated', type: 'success' })
     } catch (error) {
-      console.error('Failed to update consent status:', error)
+      reportDiagnostic('error', 'media', 'Failed to update consent status:', error)
       setNotification({ message: 'Failed to update consent status', type: 'error' })
     } finally {
       setUpdatingConsent(false)
     }
   }
 
-  if (loading) {
+  if (loading && !report && !isNavigating) {
     return (
-      <div className="p-8">
+      <div className="workspace-page workspace-page--flow">
         <PageHeader
           title="Report Details"
           subtitle="Loading report information..."
@@ -395,7 +464,7 @@ export default function ReportDetailPage() {
 
   if (error || !report) {
     return (
-      <div className="p-8">
+      <div className="workspace-page workspace-page--flow">
         <PageHeader
           title="Report Details"
           subtitle="Error loading report"
@@ -428,35 +497,33 @@ export default function ReportDetailPage() {
   })
 
   return (
-    <div className="p-8">
+    <div className="workspace-page workspace-page--flow">
       <PageHeader
         title="Report Details"
         subtitle="View detailed report information"
         breadcrumbs={[
-          { 
-            label: 'Dashboard', 
-            href: user?.role === 'officer' ? '/dashboard/officer' : 
-                  user?.role === 'field_crew' ? '/dashboard/field-crew' : 
-                  '/dashboard' 
+          {
+            label: 'Dashboard',
+            href: user?.role === 'officer' ? '/dashboard/officer' :
+                  user?.role === 'field_crew' ? '/dashboard/field-crew' :
+                  '/dashboard'
           },
-          { 
-            label: 'Reports', 
-            href: user?.role === 'officer' ? '/dashboard/officer/reports' : 
-                  user?.role === 'field_crew' ? '/dashboard/field-crew/raw-data' : 
-                  '/dashboard/raw-data' 
+          {
+            label: 'Reports',
+            href: user?.role === 'officer' ? '/dashboard/officer/reports' :
+                  user?.role === 'field_crew' ? '/dashboard/field-crew/raw-data' :
+                  '/dashboard/raw-data'
           },
           { label: 'Details' }
         ]}
       >
         <button
-          onClick={loadReportData}
-          disabled={loading}
+          onClick={() => loadReportData(true)}
+          disabled={loading || isRefreshing}
           className="btn-secondary flex items-center gap-2 text-sm"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          {loading ? 'Refreshing...' : 'Refresh'}
+          <RefreshCw size={16} aria-hidden="true" className={isRefreshing ? 'animate-spin' : ''} />
+          {isRefreshing ? 'Refreshing...' : 'Refresh'}
         </button>
       </PageHeader>
 
@@ -464,32 +531,49 @@ export default function ReportDetailPage() {
             {/* Main Content */}
             <div className="lg:col-span-3 space-y-6">
               {/* Lifecycle Timeline - Read-only display */}
-              <div className="card border border-border border-[var(--accent-green)]">
+              <div className="card border border-border border-primary">
                 <div className="text-center mb-6">
-                  <h2 className="text-2xl font-bold text-text-primary mb-2">Report Lifecycle</h2>
-                  <div className="flex justify-center gap-3 flex-wrap">
+                  <h2 className="text-2xl font-bold text-text-primary mb-1">Operational Lifecycle</h2>
+                  <p className="text-xs text-text-muted mb-4">Track progress from citizen submission through field resolution</p>
+                  <div className="flex justify-center gap-3 flex-wrap items-center">
                     {report.validation_status === 'rejected' || (report.on_private_property && report.property_owner_consent_status === 'denied') ? (
                       <>
-                        {report.validation_status === 'rejected' && (
-                          <StatusBadge status={report.validation_status} type="validation" size="large" />
-                        )}
+                        <div className="flex items-center gap-1.5 px-3 py-1 bg-surface-elevated rounded-lg border border-border">
+                          <span className="text-xs font-medium text-text-secondary">Review:</span>
+                          <StatusBadge status={report.validation_status} type="validation" size="small" />
+                        </div>
                         {report.on_private_property && report.property_owner_consent_status === 'denied' && (
-                          <StatusBadge status={report.property_owner_consent_status} type="consent" size="large" />
+                          <div className="flex items-center gap-1.5 px-3 py-1 bg-surface-elevated rounded-lg border border-border">
+                            <span className="text-xs font-medium text-text-secondary">Consent:</span>
+                            <StatusBadge status={report.property_owner_consent_status} type="consent" size="small" />
+                          </div>
                         )}
                       </>
                     ) : (
                       <>
-                        <StatusBadge status={report.status} type="report" size="large" />
-                        <StatusBadge status={report.validation_status} type="validation" size="large" />
+                        <div className="flex items-center gap-1.5 px-3 py-1 bg-surface-elevated rounded-lg border border-border">
+                          <span className="text-xs font-medium text-text-secondary">Report status:</span>
+                          <StatusBadge status={report.status} type="report" size="small" />
+                        </div>
+                        <div className="flex items-center gap-1.5 px-3 py-1 bg-surface-elevated rounded-lg border border-border">
+                          <span className="text-xs font-medium text-text-secondary">Citizen review:</span>
+                          <StatusBadge status={report.validation_status} type="validation" size="small" />
+                        </div>
                         {report.on_private_property && (
-                          <StatusBadge
-                            status={report.property_owner_consent_status}
-                            type="consent"
-                            size="large"
-                          />
+                          <div className="flex items-center gap-1.5 px-3 py-1 bg-surface-elevated rounded-lg border border-border">
+                            <span className="text-xs font-medium text-text-secondary">Consent:</span>
+                            <StatusBadge
+                              status={report.property_owner_consent_status}
+                              type="consent"
+                              size="small"
+                            />
+                          </div>
                         )}
                         {(report.stage || report.lifecycle_stage) && (
-                          <StatusBadge status={report.stage || report.lifecycle_stage} type="lifecycle" size="large" />
+                          <div className="flex items-center gap-1.5 px-3 py-1 bg-surface-elevated rounded-lg border border-border">
+                            <span className="text-xs font-medium text-text-secondary">Progress:</span>
+                            <StatusBadge status={report.stage || report.lifecycle_stage} type="lifecycle" size="small" />
+                          </div>
                         )}
                       </>
                     )}
@@ -528,8 +612,8 @@ export default function ReportDetailPage() {
                     return (
                       <div key={stage} className="flex-1 flex flex-col items-center z-10">
                         <div className={`w-6 h-6 rounded-full ${isCurrent ? 'bg-[var(--primary)] ring-4 ring-[var(--primary)]/20' : isCompleted ? 'bg-[var(--primary)]' : 'bg-gray-300 dark:bg-gray-700'} transition-all relative`} />
-                        <span className={`text-xs mt-2 font-medium ${isCurrent ? 'text-[var(--primary)]' : isCompleted ? 'text-[var(--primary)]' : 'text-text-muted'}`}>
-                          {stage.replace(/_/g, ' ').toUpperCase()}
+                        <span className={`text-xs mt-2 font-medium capitalize ${isCurrent || isCompleted ? 'text-[var(--workspace-link)]' : 'text-text-secondary'}`}>
+                          {stage.replace(/_/g, ' ')}
                         </span>
                       </div>
                     )
@@ -539,8 +623,8 @@ export default function ReportDetailPage() {
 
               {/* Report Information */}
               <div className="card">
-                <h1 className="text-3xl font-bold text-text-primary mb-2">{report.title}</h1>
-                <p className="text-lg text-text-secondary mb-6">Issue: {report.issue_type || 'General'}</p>
+                <h2 className="text-xl font-semibold text-text-primary mb-2">{report.title}</h2>
+                <p className="text-sm text-text-secondary mb-6">Issue: {report.issue_type?.replaceAll('_', ' ') || 'General'}</p>
 
                 <h2 className="text-lg font-semibold text-text-primary mb-3">Description</h2>
                 <p className="text-text-primary leading-relaxed mb-6">
@@ -552,12 +636,15 @@ export default function ReportDetailPage() {
               {/* Evidence Photos */}
               <div className="card">
                 <h2 className="text-xl font-bold text-text-primary mb-4">Evidence Photos</h2>
-                {evidence.length === 0 ? (
+                {(loading || isRefreshing) ? (
+                  <div className="h-48 bg-surface-elevated rounded-lg flex flex-col items-center justify-center border border-dashed border-border gap-2">
+                    <Loader2 className="w-8 h-8 text-[var(--primary)] animate-spin" aria-hidden="true" />
+                    <p className="text-sm text-text-muted">Loading evidence photos...</p>
+                  </div>
+                ) : evidence.length === 0 ? (
                   <div className="h-48 bg-surface-elevated rounded-lg flex items-center justify-center border border-dashed border-border">
                     <div className="text-center">
-                      <svg className="w-12 h-12 text-text-muted mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
+                      <ImageIcon size={48} className="text-text-muted mx-auto mb-2" aria-hidden="true" />
                       <p className="text-text-muted">No evidence images available</p>
                     </div>
                   </div>
@@ -569,7 +656,7 @@ export default function ReportDetailPage() {
                           src={img.url}
                           alt={`Evidence ${index + 1}`}
                           className="w-full h-48 object-cover rounded-lg border border-border cursor-pointer hover:opacity-90 transition-opacity"
-                          onClick={() => setSelectedImage(img.url)}
+                          onClick={() => openLightboxAtUrl(img.url)}
                         />
                       </div>
                     ))}
@@ -593,7 +680,12 @@ export default function ReportDetailPage() {
                       )}
                     </div>
                     {report.before_photo_url ? (
-                      <SecureImage src={report.before_photo_url} alt="Before" className="w-full h-48 object-cover rounded-lg" />
+                      <SecureImage
+                        src={report.before_photo_url}
+                        alt="Before"
+                        className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => openLightboxAtUrl(report.before_photo_url)}
+                      />
                     ) : user?.role === 'field_crew' ? (
                       <div
                         className={`border border-border border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${uploadingBefore ? 'border-border bg-surface' : 'border-border hover:border-accent-green hover:bg-accent-green/5'
@@ -624,9 +716,7 @@ export default function ReportDetailPage() {
                           </div>
                         ) : (
                           <>
-                            <svg className="w-12 h-12 text-text-muted mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
+                            <Upload size={48} className="text-text-muted mx-auto mb-2" aria-hidden="true" />
                             <p className="text-sm font-medium text-text-primary">Click or drag to upload</p>
                             <p className="text-xs text-text-muted mt-1">JPG, PNG, or WEBP • Max 10MB</p>
                           </>
@@ -653,10 +743,15 @@ export default function ReportDetailPage() {
                       )}
                     </div>
                     {report.after_photo_url ? (
-                      <SecureImage src={report.after_photo_url} alt="After" className="w-full h-48 object-cover rounded-lg" />
+                      <SecureImage
+                        src={report.after_photo_url}
+                        alt="After"
+                        className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => openLightboxAtUrl(report.after_photo_url)}
+                      />
                     ) : user?.role === 'field_crew' ? (
                       <div
-                        className={`border border-border border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${uploadingAfter ? 'border-border bg-surface' : 'border-border hover:border-accent-green hover:bg-accent-green/5'
+                        className={`border border-border border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${uploadingAfter ? 'border-border bg-surface' : 'border-border hover:border-primary hover:bg-primary/5'
                           }`}
                         onClick={() => document.getElementById('after-photo-input').click()}
                         onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-accent-green', 'bg-accent-green/10'); }}
@@ -684,9 +779,7 @@ export default function ReportDetailPage() {
                           </div>
                         ) : (
                           <>
-                            <svg className="w-12 h-12 text-text-muted mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
+                            <Upload size={48} className="text-text-muted mx-auto mb-2" aria-hidden="true" />
                             <p className="text-sm font-medium text-text-primary">Click or drag to upload</p>
                             <p className="text-xs text-text-muted mt-1">JPG, PNG, or WEBP • Max 10MB</p>
                           </>
@@ -714,7 +807,7 @@ export default function ReportDetailPage() {
             </div>
 
             {/* Sidebar - Simplified */}
-            <div className="space-y-6 sticky top-[160px] self-start">
+            <div className="space-y-6 self-start">
               {/* Report Metadata */}
               <div className="card">
                 <h2 className="text-lg font-bold text-text-primary mb-4">Report Details</h2>
@@ -779,17 +872,7 @@ export default function ReportDetailPage() {
                 <div className="card">
                   <div className="flex items-start justify-between mb-4">
                     <h2 className="text-lg font-bold text-text-primary">Property Owner Consent</h2>
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${
-                      report.property_owner_consent_status === 'obtained'
-                        ? 'bg-success/10 text-success border-success/30'
-                        : report.property_owner_consent_status === 'pending'
-                          ? 'bg-warning/10 text-warning border-warning/30'
-                          : report.property_owner_consent_status === 'denied'
-                            ? 'bg-error/10 text-error border-error/30'
-                            : 'bg-surface-elevated text-text-muted border-border'
-                    }`}>
-                      {report.property_owner_consent_status.replace(/_/g, ' ').toUpperCase()}
-                    </span>
+                    <StatusBadge status={report.property_owner_consent_status} type="consent" size="medium" />
                   </div>
                   <div className="space-y-3">
                     <div className="grid grid-cols-3 gap-2">
@@ -855,21 +938,21 @@ export default function ReportDetailPage() {
                 <div className="card">
                   <h2 className="text-lg font-bold text-text-primary mb-4">Actions</h2>
                   <div className="space-y-3">
-                  {/* Cleanup Task Link/Create */}
-                  {report.cleanup_task_id ? (
+                  {/* Cleanup Task Link/Dispatch - Same as cluster dispatch button */}
+                  {existingTask ? (
                     <button
-                      onClick={() => router.push(`/dashboard/officer/operations/${report.cleanup_task_id}`)}
+                      onClick={() => router.push(`/dashboard/officer/operations/${existingTask.id}`)}
                       className="btn-primary w-full"
                     >
-                      View Cleanup Task
+                      View Dispatched Task
                     </button>
                   ) : (
                     <button
-                      onClick={() => router.push(`/dashboard/officer/operations/create?preselect=${report.id}`)}
+                      onClick={() => router.push(`/dashboard/officer/operations/create?preselect=${report.cluster_id || report.id}`)}
                       disabled={report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review'}
                       className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Create Cleanup Task
+                      Dispatch Field Crew
                     </button>
                   )}
 
@@ -908,28 +991,16 @@ export default function ReportDetailPage() {
             </div>
           </div>
 
-      {/* Full Image Modal */}
-      {selectedImage && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-[2000]"
-          onClick={() => setSelectedImage(null)}
-        >
-          <div className="relative max-w-5xl max-h-[90vh] p-4">
-            <button
-              onClick={() => setSelectedImage(null)}
-              className="absolute -top-12 right-0 text-white text-4xl hover:text-gray-300 transition-colors"
-            >
-              ×
-            </button>
-            <SecureImage
-              src={selectedImage}
-              alt="Full size evidence"
-              className="max-w-full max-h-[90vh] object-contain rounded-lg"
-            />
-          </div>
-        </div>
-      )}
+      {/* Reusable Image Lightbox with Multi-Photo Navigation & Zoom */}
+      <ImageLightbox
+        images={allReportPhotos}
+        currentIndex={lightboxIndex}
+        isOpen={lightboxIndex !== null}
+        onClose={() => setLightboxIndex(null)}
+        onNavigate={(newIdx) => setLightboxIndex(newIdx)}
+      />
 
+      {confirmation}
       {notification && (
         <Notification
           message={notification.message}

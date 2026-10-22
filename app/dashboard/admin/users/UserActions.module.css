@@ -1,0 +1,15 @@
+.actions { display: flex; flex-wrap: nowrap; align-items: center; gap: 4px; }
+.action { position: relative; display: inline-flex; flex-shrink: 0; }
+.iconButton { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0;
+  border-radius: 12px; color: var(--workspace-link); }
+.iconButton:hover:not(:disabled) { background: var(--surface-elevated); }
+.iconButton:disabled { opacity: .5; cursor: not-allowed; }
+.deleteButton { color: var(--error); }
+.tooltip { position: absolute; right: 0; bottom: calc(100% + 4px); z-index: 50; padding: 4px 8px;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-primary);
+  font-family: var(--font-outfit), sans-serif; font-size: 12px; font-weight: 400; line-height: 1.5; white-space: nowrap;
+  box-shadow: var(--shadow-floating); pointer-events: none; opacity: 0; visibility: hidden; }
+.action:hover .tooltip, .action:focus-within .tooltip { opacity: 1; visibility: visible; }
+.busy { animation: actionSpin 1s linear infinite; }
+@keyframes actionSpin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .busy { animation: none; } }

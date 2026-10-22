@@ -19,24 +19,29 @@ export default function DateRangePicker({
   }
 
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
-      <div className="flex-1 min-w-[150px]">
+    <div className={`flex flex-wrap items-center gap-3 ${className}`} role="group" aria-label="Date range">
+      <label className="flex-1 min-w-0 text-sm text-text-secondary">
+        <span className="block mb-1">From</span>
         <input
           type="date"
           value={startDate}
+          aria-label="From date"
+          max={endDate || undefined}
           onChange={(e) => handleStartDateChange(e.target.value)}
-          className="w-full bg-surface border border-border text-sm font-bold uppercase tracking-wider p-3 outline-none focus:border-accent-green text-text-primary"
+          className="input"
         />
-      </div>
-      <div className="hidden sm:flex items-center text-text-muted">—</div>
-      <div className="flex-1 min-w-[150px]">
+      </label>
+      <label className="flex-1 min-w-0 text-sm text-text-secondary">
+        <span className="block mb-1">To</span>
         <input
           type="date"
           value={endDate}
+          aria-label="To date"
+          min={startDate || undefined}
           onChange={(e) => handleEndDateChange(e.target.value)}
-          className="w-full bg-surface border border-border text-sm font-bold uppercase tracking-wider p-3 outline-none focus:border-accent-green text-text-primary"
+          className="input"
         />
-      </div>
+      </label>
     </div>
   )
 }

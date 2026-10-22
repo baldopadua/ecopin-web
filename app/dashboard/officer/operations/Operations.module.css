@@ -1,0 +1,56 @@
+.page {
+  color: var(--text-primary);
+  font-family: var(--font-outfit), sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.createButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 20px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: #0052cc;
+  color: white;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.createButton:hover {
+  background: #003d99;
+}
+
+.createButton:focus-visible {
+  outline: 3px solid var(--workspace-link);
+  outline-offset: 2px;
+}
+
+.tableWorkspace {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tableContainer {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.tableViewport { flex: 1; min-height: 0; overflow: auto; border-radius: 14px; }
+
+.pagination {
+  margin-top: 0 !important;
+  flex-shrink: 0;
+  padding: 2px 0;
+}

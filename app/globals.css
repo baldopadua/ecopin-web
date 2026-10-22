@@ -16,6 +16,7 @@ body {
   --primary: #0052CC;
   --secondary: #60A5FA;
   --accent: #0052CC;
+  --accent-blue: #0052CC;
   --accent-green: #0052CC;
   --accent-green-dark: #0042A3;
 
@@ -50,16 +51,16 @@ body {
   --spacing-xxxl: 64px;
 
   /* Border Radius */
-  --radius-button: 0px;
-  --radius-card: 0px;
-  --radius-input: 0px;
-  --radius-dialog: 0px;
-  --radius-chip: 0px;
+  --radius-button: 999px;
+  --radius-card: 16px;
+  --radius-input: 12px;
+  --radius-dialog: 24px;
+  --radius-chip: 999px;
 
   /* Shadows */
   --shadow-card: var(--shadow-sm);
   --shadow-floating: var(--shadow-md);
-  --shadow-dialog: 12px 12px 0px rgba(0, 0, 0, 1);
+  --shadow-dialog: 0 24px 64px rgba(0, 0, 0, 0.15);
 
   /* Type Scale */
   --font-display-size: 48px;
@@ -126,6 +127,7 @@ body {
   --color-primary: var(--primary);
   --color-secondary: var(--secondary);
   --color-accent: var(--accent);
+  --color-accent-blue: var(--accent-blue);
   --color-accent-green: var(--accent-green);
   --color-accent-green-dark: var(--accent-green-dark);
   --color-status-success: var(--status-success);
@@ -150,6 +152,7 @@ html.dark {
   --primary: #0052CC;
   --secondary: #60A5FA;
   --accent: #0052CC;
+  --accent-blue: #0052CC;
   --accent-green: #0052CC;
   --accent-green-dark: #0042A3;
 
@@ -177,7 +180,7 @@ html.dark {
   /* Shadows adjusted for dark mode */
   --shadow-card: var(--shadow-sm);
   --shadow-floating: var(--shadow-md);
-  --shadow-dialog: 12px 12px 0px rgba(255, 255, 255, 1);
+  --shadow-dialog: 0 24px 64px rgba(0, 0, 0, 0.4);
 }
 
 body {
@@ -396,27 +399,34 @@ html.dark .card {
 
 /* Unified Table Styles */
 .ecopin-table-container {
-  @apply bg-surface-elevated border border-border  shadow-sm  overflow-x-auto w-full rounded-xl;
+  width: 100%; min-width: 0; overflow: auto;
+  border: 1px solid var(--border); border-radius: 16px; background: var(--surface);
 }
 
 .ecopin-table {
-  @apply w-full text-left font-mono;
+  width: 100%; min-width: 640px; height: auto; border-collapse: collapse; text-align: left;
+  font-family: var(--font-outfit), sans-serif; font-variant-numeric: tabular-nums;
 }
 
 .ecopin-table thead tr {
   @apply border-b border-border ;
 }
 
-.ecopin-table th {
-  @apply text-left py-3 px-4 text-xs font-bold uppercase tracking-widest text-text-muted;
+.ecopin-table thead th {
+  position: sticky; top: 0; z-index: 2; padding: 12px 16px;
+  background: var(--surface-elevated); color: var(--text-secondary);
+  font-family: inherit; font-size: 13px; font-weight: 500; line-height: 1.5;
+  text-align: left; text-transform: none; letter-spacing: 0;
 }
 
-.ecopin-table td {
-  @apply py-3 px-4 text-sm text-text-primary;
+.ecopin-table tbody td, .ecopin-table tbody th {
+  padding: 12px 16px; vertical-align: middle; text-align: left;
+  font-family: inherit; font-size: 14px; line-height: 1.5; color: var(--text-primary);
 }
 
 .ecopin-table tbody tr {
-  @apply border-b border-border  transition-colors cursor-pointer;
+  @apply border-b border-border transition-colors;
+  height: 56px; transition-duration: 150ms;
 }
 
 .ecopin-table tbody tr:last-child {
@@ -424,16 +434,35 @@ html.dark .card {
 }
 
 .ecopin-table tbody tr:hover {
-  @apply bg-primary;
+  background-color: var(--surface-elevated);
+}
+.ecopin-table .table-row-interactive { cursor: pointer; }
+.ecopin-table .table-sort { margin-block: -12px; }
+.ecopin-table .table-row-interactive:is(:hover, :focus-within) {
+  background-color: color-mix(in srgb, var(--workspace-link, var(--primary)) 6%, var(--surface));
+}
+.ecopin-table .table-row-action { width: 56px; padding: 4px 6px; text-align: right; }
+.ecopin-table .table-row-open {
+  display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px;
+  border: 0; border-radius: 12px; background: transparent; color: var(--workspace-link, var(--primary));
+  cursor: pointer; opacity: 0; transition: opacity 150ms ease, background-color 150ms ease;
+}
+.ecopin-table .table-row-interactive:is(:hover, :focus-within) .table-row-open { opacity: 1; }
+.ecopin-table .table-row-open:hover { background: color-mix(in srgb, var(--workspace-link, var(--primary)) 10%, var(--surface)); }
+.ecopin-table .table-row-open:focus-visible { outline: 3px solid var(--workspace-link, var(--primary)); outline-offset: -3px; }
+.ecopin-table tbody button, .ecopin-table tbody select { min-height: 44px; }
+.ecopin-table .table-empty { height: auto; }
+.ecopin-table .table-empty td { padding: 40px 16px; text-align: center; color: var(--text-secondary); }
+.ecopin-table .table-empty:hover { background: transparent; }
+.ecopin-table-container--compact .ecopin-table { min-width: 480px; }
+@media (hover: none) { .ecopin-table .table-row-open { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .ecopin-table tbody tr, .ecopin-table .table-row-open { transition: none; }
 }
 
-.ecopin-table tbody tr:hover td,
-.ecopin-table tbody tr:hover span,
-.ecopin-table tbody tr:hover div,
-.ecopin-table tbody tr:hover p,
-.ecopin-table tbody tr:hover button, .ecopin-table tbody tr:hover select, .ecopin-table tbody tr:hover .input {
-  @apply text-white border-white;
-}
+
+
+
 
 /* Chart card styles */
 .chart-card {
@@ -625,4 +654,36 @@ html.dark .bg-grid-pattern {
   background: radial-gradient(circle at 0 100%, transparent 23.5px, var(--background) 24px);
   pointer-events: none;
   z-index: 10;
+}
+
+/* Shimmer Loading Animation for Image Skeletons (WT-91) */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 1.8s infinite linear;
+}
+
+.shimmer-gradient {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+:root:not(.dark) .shimmer-gradient {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.06) 50%,
+    rgba(0, 0, 0, 0) 100%
+  );
 }

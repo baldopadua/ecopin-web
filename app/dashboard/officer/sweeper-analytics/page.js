@@ -1,298 +1,146 @@
 'use client'
 import { useEffect, useState } from 'react'
+import dynamic from 'next/dynamic'
+import Link from 'next/link'
 import PageHeader from '@/components/layout/PageHeader'
+import Notification from '@/components/ui/Notification'
 import { OfficerGuard } from '@/components/auth/RequireRole'
 import { fetchSweeperMetrics, exportSweeperMetrics } from '@/lib/api/sweeper'
-import { fetchClusters } from '@/lib/api/clusters'
-import { SkeletonStatCard, SkeletonChartCard } from '@/components/ui/Skeleton'
+import { SkeletonStatCard } from '@/components/ui/Skeleton'
 import Button from '@/components/ui/Button'
-import DatePicker from 'react-datepicker'
-import 'react-datepicker/dist/react-datepicker.css'
-import { Line, Bar } from 'react-chartjs-2'
-import EcoPinMap from '@/components/map/EcoPinMap'
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Tooltip,
-  Legend,
-} from 'chart.js'
+import DateRangePicker from '@/components/ui/DateRangePicker'
+import { buildSweeperSummary, initialMetricsRange, toMetricsDateRange } from '@/lib/sweeper-analytics.mjs'
+import styles from './SweeperAnalytics.module.css'
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Tooltip,
-  Legend
-)
+const EcoPinMap = dynamic(() => import('@/components/map/EcoPinMap'), {
+  ssr: false,
+  loading: () => <p role="status" className={styles.mapLoading}>Loading the current report map…</p>,
+})
+
+function MetricGroup({ title, description, cards }) {
+  return <section className={styles.section}>
+    <h2>{title}</h2>
+    <p className={styles.description}>{description}</p>
+    <dl className={styles.metrics}>
+      {cards.map(card => <div className={styles.card} key={card.label}>
+        <dt>{card.label}</dt>
+        <dd className={styles.value}>{card.value}</dd>
+        <dd className={styles.caption}>{card.description}</dd>
+      </div>)}
+    </dl>
+  </section>
+}
 
 export default function SweeperAnalyticsPage() {
-  const [metrics, setMetrics] = useState(null)
+  const [range, setRange] = useState(initialMetricsRange)
+  const [draft, setDraft] = useState(initialMetricsRange)
+  const [loaded, setLoaded] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [clusters, setClusters] = useState([])
+  const [validation, setValidation] = useState('')
+  const [reload, setReload] = useState(0)
+  const [notification, setNotification] = useState(null)
   const [isExporting, setIsExporting] = useState(false)
-  
-  const [dateRange, setDateRange] = useState({
-    start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    end: new Date()
-  })
-  const [region, setRegion] = useState('')
+  const [mapOpened, setMapOpened] = useState(false)
+  const changed = draft.start !== range.start || draft.end !== range.end
 
   useEffect(() => {
-    const loadData = async () => {
+    let current = true
+    async function load() {
+      setLoading(true)
+      setError(null)
       try {
-        setLoading(true)
-        const [metricsData, clustersData] = await Promise.all([
-          fetchSweeperMetrics(dateRange, region),
-          fetchClusters({ target_outliers_only: true })
-        ])
-        setMetrics(metricsData)
-        setClusters(clustersData || [])
-      } catch (err) {
-        console.error('Failed to load sweeper analytics:', err)
-        setError('Failed to load sweeper metrics.')
+        const metrics = await fetchSweeperMetrics(toMetricsDateRange(range))
+        if (current) setLoaded({ metrics, range })
+      } catch (failure) {
+        if (current) {
+          setError(failure.status === 403 ? 'forbidden' : 'failed')
+          if (failure.status === 403) setLoaded(null)
+        }
       } finally {
-        setLoading(false)
+        if (current) setLoading(false)
       }
     }
-    loadData()
-  }, [dateRange, region])
+    load()
+    return () => { current = false }
+  }, [range, reload])
 
-  const handleExport = async () => {
+  function apply(event) {
+    event.preventDefault()
     try {
-      setIsExporting(true)
-      await exportSweeperMetrics(dateRange, region)
-    } catch (error) {
-      console.error('Export failed:', error)
-      alert('Failed to export metrics. Please try again.')
-    } finally {
-      setIsExporting(false)
-    }
+      toMetricsDateRange(draft)
+      setValidation('')
+      setRange({ ...draft })
+    } catch (failure) { setValidation(failure.message) }
   }
 
-  // Generate mock trend data for charts since backend doesn't provide it yet
-  const generateTrendData = () => {
-    const labels = []
-    const outlierCounts = []
-    const complianceRates = []
-    
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date()
-      d.setDate(d.getDate() - i)
-      labels.push(d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }))
-      
-      // Random walk for mock data
-      const baseOutliers = Math.max(5, Math.floor(20 + Math.sin(i / 3) * 15 + Math.random() * 10))
-      outlierCounts.push(baseOutliers)
-      
-      const baseCompliance = Math.min(100, Math.max(70, 95 - (baseOutliers / 2) + Math.random() * 5))
-      complianceRates.push(baseCompliance.toFixed(1))
-    }
-    return { labels, outlierCounts, complianceRates }
-  }
-  
-  const trendData = generateTrendData()
-
-  const lineChartData = {
-    labels: trendData.labels,
-    datasets: [
-      {
-        label: 'Outlier Count',
-        data: trendData.outlierCounts,
-        borderColor: '#EF4444',
-        backgroundColor: 'rgba(239, 68, 68, 0.5)',
-        tension: 0.1,
-      }
-    ]
+  async function download() {
+    if (isExporting || !loaded || changed || loading || error) return
+    setIsExporting(true)
+    try {
+      await exportSweeperMetrics(toMetricsDateRange(loaded.range))
+      setNotification({ type: 'success', message: 'CSV download started. Check your browser downloads.' })
+    } catch (failure) {
+      setNotification({ type: 'error', message: failure.status === 403
+        ? 'This account does not have permission to export sweeper analytics.'
+        : 'The CSV could not download. Please try again.' })
+    } finally { setIsExporting(false) }
   }
 
-  const barChartData = {
-    labels: trendData.labels,
-    datasets: [
-      {
-        label: 'SLA Compliance Rate (%)',
-        data: trendData.complianceRates,
-        backgroundColor: '#3B82F6',
-        borderRadius: 4,
-      }
-    ]
-  }
+  const summary = loaded ? buildSweeperSummary(loaded.metrics) : null
+  const period = loaded ? toMetricsDateRange(loaded.range) : null
+  const displayDate = date => date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
 
-  const currentFlagged = metrics?.outlierMetrics?.currentFlagged || 0
-  const isCritical = currentFlagged > 50
+  return <OfficerGuard>
+    {notification && <Notification {...notification} onClose={() => setNotification(null)} />}
+    <div className={`workspace-page--flow ${styles.page}`}>
+      <PageHeader title="Sweeper analytics" subtitle="Review report deadlines and sweeper task outcomes across all areas."
+        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Sweeper analytics' }]}>
+        <Button variant="secondary" onClick={download} disabled={!loaded || loading || !!error || changed || isExporting}>
+          {isExporting ? 'Preparing CSV…' : 'Download CSV'}
+        </Button>
+      </PageHeader>
 
-  return (
-    <OfficerGuard>
-      <div className="p-8">
-        <PageHeader
-          title="Sweeper Workflow Analytics"
-          subtitle="Monitor SLA compliance and outlier collection performance"
-          breadcrumbs={[
-            { label: 'Dashboard', href: '/dashboard' },
-            { label: 'Sweeper Analytics' }
-          ]}
-        />
-
-        {error && (
-          <div className="mb-6 p-4 bg-error/10 border border-error/30 text-error rounded-lg">
-            {error}
-          </div>
-        )}
-
-        {isCritical && !loading && (
-          <div className="mb-6 p-4 bg-red-100 border-l-4 border-red-600 text-red-800 rounded shadow-sm flex items-center">
-            <span className="text-2xl mr-3">⚠️</span>
-            <div>
-              <h3 className="font-bold">Critical Alert: High Outlier Volume</h3>
-              <p>There are currently {currentFlagged} outlier reports exceeding the SLA threshold. Immediate sweeper dispatch recommended.</p>
-            </div>
-          </div>
-        )}
-
-        {/* Export Controls */}
-        <div className="bg-surface-elevated border-2 border-border p-4 mb-8 flex flex-col md:flex-row items-center gap-4 shadow-sm">
-          <div className="flex-1 font-bold text-lg text-gray-700">Filters & Export</div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-600">Region:</span>
-            <select 
-              value={region} 
-              onChange={(e) => setRegion(e.target.value)}
-              className="border border-border rounded p-2 text-sm"
-            >
-              <option value="">All Regions</option>
-              <option value="North">North District</option>
-              <option value="South">South District</option>
-              <option value="East">East District</option>
-              <option value="West">West District</option>
-            </select>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-600">Start:</span>
-            <DatePicker 
-              selected={dateRange.start} 
-              onChange={(date) => setDateRange(prev => ({...prev, start: date}))} 
-              className="border border-border rounded p-2 text-sm w-32"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-600">End:</span>
-            <DatePicker 
-              selected={dateRange.end} 
-              onChange={(date) => setDateRange(prev => ({...prev, end: date}))} 
-              className="border border-border rounded p-2 text-sm w-32"
-            />
-          </div>
-          <Button 
-            variant="primary" 
-            onClick={handleExport}
-            disabled={isExporting}
-          >
-            {isExporting ? 'Exporting...' : 'Export to CSV'}
-          </Button>
+      <form className={styles.filters} onSubmit={apply} noValidate aria-label="Analytics period">
+        <div className={styles.filterDates}>
+          <h2>Selected period</h2>
+          <DateRangePicker startDate={draft.start} endDate={draft.end} onChange={setDraft} />
         </div>
+        <Button type="submit" disabled={isExporting}>Apply dates</Button>
+        <Button type="button" variant="secondary" onClick={() => setReload(value => value + 1)} disabled={loading || isExporting}>Refresh</Button>
+        <p className={styles.filterNote}>All areas · Dates use your local time. Apply changes before downloading.</p>
+        {validation && <p className={styles.error} role="alert">{validation}</p>}
+      </form>
 
-        {loading ? (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              {Array.from({ length: 4 }).map((_, i) => <SkeletonStatCard key={`sla-${i}`} />)}
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              {Array.from({ length: 4 }).map((_, i) => <SkeletonStatCard key={`task-${i}`} />)}
-            </div>
-          </>
-        ) : metrics && (
-          <>
-            {/* SLA Compliance Overview */}
-            <h2 className="text-xl font-bold mb-4 text-gray-800">SLA Compliance Overview</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <div className="bg-surface-elevated border-2 border-border p-6 shadow-sm">
-                <div className="text-xs font-mono uppercase tracking-widest text-text-muted mb-2">Current Outliers</div>
-                <p className={`text-4xl font-black ${isCritical ? 'text-red-600' : 'text-gray-900'}`}>
-                  {metrics.outlierMetrics.currentFlagged}
-                </p>
-              </div>
-              <div className="bg-surface-elevated border-2 border-border p-6 shadow-sm">
-                <div className="text-xs font-mono uppercase tracking-widest text-text-muted mb-2">SLA Compliance Rate</div>
-                <p className="text-4xl font-black text-gray-900">{metrics.slaCompliance.rate}%</p>
-              </div>
-              <div className="bg-surface-elevated border-2 border-border p-6 shadow-sm">
-                <div className="text-xs font-mono uppercase tracking-widest text-text-muted mb-2">Avg Outlier Age</div>
-                <p className="text-4xl font-black text-gray-900">{metrics.outlierMetrics.averageAge}h</p>
-              </div>
-              <div className="bg-surface-elevated border-2 border-border p-6 shadow-sm">
-                <div className="text-xs font-mono uppercase tracking-widest text-text-muted mb-2">Avg Resolution Time</div>
-                <p className="text-4xl font-black text-gray-900">{metrics.outlierMetrics.averageResolutionTime}h</p>
-              </div>
-            </div>
-
-            {/* Sweeper Task Performance */}
-            <h2 className="text-xl font-bold mb-4 text-gray-800">Sweeper Task Performance</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <div className="bg-surface-elevated border-2 border-border p-6 shadow-sm">
-                <div className="text-xs font-mono uppercase tracking-widest text-text-muted mb-2">Tasks Created</div>
-                <p className="text-4xl font-black text-blue-600">{metrics.sweeperTasks.totalCreated}</p>
-              </div>
-              <div className="bg-surface-elevated border-2 border-border p-6 shadow-sm">
-                <div className="text-xs font-mono uppercase tracking-widest text-text-muted mb-2">Tasks Completed</div>
-                <p className="text-4xl font-black text-green-600">{metrics.sweeperTasks.totalCompleted}</p>
-              </div>
-              <div className="bg-surface-elevated border-2 border-border p-6 shadow-sm">
-                <div className="text-xs font-mono uppercase tracking-widest text-text-muted mb-2">Avg Route Time</div>
-                <p className="text-4xl font-black text-gray-900">{metrics.sweeperTasks.averageRouteTime}m</p>
-              </div>
-              <div className="bg-surface-elevated border-2 border-border p-6 shadow-sm">
-                <div className="text-xs font-mono uppercase tracking-widest text-text-muted mb-2">Avg Clusters/Task</div>
-                <p className="text-4xl font-black text-gray-900">{metrics.sweeperTasks.averageClustersPerTask}</p>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Historical Trends */}
-        <h2 className="text-xl font-bold mb-4 text-gray-800">Historical Trends & Distribution</h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div className="bg-surface-elevated border-2 border-border p-6 shadow-sm h-[400px]">
-            <h3 className="font-bold text-gray-700 mb-4 uppercase tracking-wider text-sm">30-Day Outlier Count Trend</h3>
-            <div className="h-[300px] w-full">
-              {loading ? <SkeletonChartCard /> : (
-                <Line data={lineChartData} options={{ maintainAspectRatio: false }} />
-              )}
-            </div>
-          </div>
-          
-          <div className="bg-surface-elevated border-2 border-border p-6 shadow-sm h-[400px]">
-            <h3 className="font-bold text-gray-700 mb-4 uppercase tracking-wider text-sm">Daily SLA Compliance Rate</h3>
-            <div className="h-[300px] w-full">
-              {loading ? <SkeletonChartCard /> : (
-                <Bar data={barChartData} options={{ maintainAspectRatio: false }} />
-              )}
-            </div>
-          </div>
+      {loading && <p role="status">{loaded ? 'Updating analytics. The previous summary remains below.' : 'Loading analytics…'}</p>}
+      {error && <div className={styles.notice} role="alert">
+        <h2>{error === 'forbidden' ? 'Sweeper analytics are restricted' : 'Analytics could not load'}</h2>
+        <p>{error === 'forbidden'
+          ? 'The current service requires administrator access for these metrics and exports. This officer account cannot load them.'
+          : loaded ? 'The last loaded summary remains below. Try again to get current figures.' : 'Try again to load the summary. No figures are shown until the service responds.'}</p>
+        <div className={styles.actions}>
+          <Button variant="secondary" onClick={() => setReload(value => value + 1)} disabled={loading}>Try again</Button>
+          <Link href="/dashboard/officer/metrics">View report analytics</Link>
         </div>
-        
-        {/* Geographic Heatmap */}
-        <div className="bg-surface-elevated border-2 border-border p-6 shadow-sm">
-          <h3 className="font-bold text-gray-700 mb-4 uppercase tracking-wider text-sm">Outlier Geographic Distribution</h3>
-          <div className="w-full h-[500px] relative border border-border">
-            {!loading && (
-              <EcoPinMap 
-                hideFilterPanel={true}
-                hideClusters={false}
-                hidePins={true}
-                selectedTemplate="sweeper"
-                externalShowHeatmap={true}
-              />
-            )}
-          </div>
-        </div>
+      </div>}
 
-      </div>
-    </OfficerGuard>
-  )
+      {loading && !loaded && <div className={styles.metrics} aria-hidden="true">{[0, 1, 2, 3].map(index => <SkeletonStatCard key={index} />)}</div>}
+      {summary && <div aria-busy={loading}>
+        <MetricGroup title="Current report snapshot" description="Not limited by the selected dates. Counts reflect the latest successful refresh." cards={summary.current} />
+        <MetricGroup title="Report deadlines and completed responses" description={`${displayDate(period.start)} – ${displayDate(period.end)} · All areas. Reports use their SLA start date; tasks use their creation date.`} cards={summary.period} />
+        <MetricGroup title="Sweeper task planning and outcomes" description="Tasks created during the same selected period. A completion count describes their current state." cards={summary.tasks} />
+      </div>}
+
+      <section className={`${styles.section} ${styles.notice}`}>
+        <h2>Historical trends are unavailable</h2>
+        <p>The service supplies period totals and current snapshots, without daily observations. A daily outlier or compliance chart cannot be shown from this data. Use the summary above or download the supported task records.</p>
+      </section>
+
+      <details className={styles.mapSection} onToggle={event => { if (event.currentTarget.open) setMapOpened(true) }}>
+        <summary>Current report map</summary>
+        <p className={styles.description}>Live report density and clusters, including reports beyond SLA. The selected dates do not filter this map; it loads independently of the analytics summary.</p>
+        {mapOpened && <div className={styles.map}><EcoPinMap hideFilterPanel hideClusters={false} hidePins selectedTemplate="sweeper" externalShowHeatmap /></div>}
+      </details>
+    </div>
+  </OfficerGuard>
 }

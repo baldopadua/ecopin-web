@@ -8,11 +8,16 @@ import 'leaflet/dist/leaflet.css'
 import 'leaflet.heat'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
-import { fetchValidatedReports, fetchIssueTypes, fetchClusters } from '@/lib/api'
+import { useQueryClient } from '@tanstack/react-query'
+import { useDashboardReports, useDashboardClusters } from '@/components/context/DashboardQueryProvider'
+import { DASHBOARD_QUERY_KEY } from '@/lib/dashboard-query-client.mjs'
 import { supabase } from '@/lib/supabase'
 import Button from '@/components/ui/Button'
 import OutlierClusterLayer from './OutlierClusterLayer'
 import EcoPinMarker from './EcoPinMarker'
+import useMapPhotoEvidence from './useMapPhotoEvidence'
+import { Filter, Check } from 'lucide-react'
+import { reportDiagnostic } from '../../lib/diagnostics.mjs';
 
 // Polyfill Buffer for browser environment
 if (typeof window !== 'undefined' && !window.Buffer) {
@@ -62,7 +67,7 @@ const parseGeometry = (geometry) => {
       return [lat, lng]
     }
   } catch (error) {
-    console.error('Error parsing geometry:', error)
+    reportDiagnostic('error', 'map', 'Error parsing geometry:', error)
   }
 
   return null
@@ -99,7 +104,7 @@ function MapResizer() {
 
   useEffect(() => {
     const resizeObserver = new ResizeObserver(() => {
-      map.invalidateSize()
+      if (container.clientWidth > 0 && container.clientHeight > 0) map.invalidateSize()
     })
 
     const container = map.getContainer()
@@ -118,30 +123,37 @@ function HeatmapLayer({ heatPoints, showHeatmap }) {
   const heatLayerRef = useRef(null)
 
   useEffect(() => {
-    if (showHeatmap && heatPoints.length > 0) {
-      if (!heatLayerRef.current) {
-        heatLayerRef.current = L.heatLayer(heatPoints, {
-          radius: 25,
-          blur: 15,
-          maxZoom: 17,
-          max: 1.0,
-          gradient: { 0.4: 'blue', 0.65: 'lime', 1: 'red' }
-        }).addTo(map)
-      } else {
-        heatLayerRef.current.setLatLngs(heatPoints)
+    const container = map.getContainer()
+    const update = () => {
+      if (showHeatmap && heatPoints.length > 0 && container.clientWidth > 0 && container.clientHeight > 0) {
+        if (!heatLayerRef.current) {
+          heatLayerRef.current = L.heatLayer(heatPoints, {
+            radius: 25,
+            blur: 15,
+            maxZoom: 17,
+            max: 1.0,
+            gradient: { 0.4: 'blue', 0.65: 'lime', 1: 'red' }
+          }).addTo(map)
+        } else {
+          heatLayerRef.current.setLatLngs(heatPoints)
+        }
+      } else if (heatLayerRef.current) {
+        heatLayerRef.current.remove()
+        heatLayerRef.current = null
       }
-    } else if (heatLayerRef.current) {
-      heatLayerRef.current.remove()
-      heatLayerRef.current = null
     }
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(container)
 
     return () => {
+      observer.disconnect()
       try {
         if (heatLayerRef.current && map) {
           map.removeLayer(heatLayerRef.current)
         }
       } catch (e) {
-        console.error(e)
+        reportDiagnostic('error', 'map', e)
       }
 
       heatLayerRef.current = null
@@ -158,7 +170,6 @@ function MapCenter({ centerLat, centerLng }) {
   useEffect(() => {
     let timeoutId
     if (centerLat && centerLng && !hasCentered.current) {
-      console.log('Centering map on:', centerLat, centerLng)
       hasCentered.current = true
       timeoutId = setTimeout(() => {
         if (map && map.getContainer && map.getContainer()) {
@@ -176,17 +187,16 @@ function MapCenter({ centerLat, centerLng }) {
   return null
 }
 
-export default function EcoPinMap({ centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode = false, selectedReports = [], onReportSelect, hideFilterPanel = false, hidePins = false, hideClusters = false, onReportClick, onClusterSelect, children, allowedClusterIds, allowedReportIds, externalStatusFilter, externalIssueTypeFilter, externalShowPins, externalShowClusters, externalShowHeatmap, externalMaxBounds, externalMinZoom, selectedTemplate = 'standard' }) {
-  console.log('EcoPinMap props:', { centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode, hideFilterPanel, hidePins, hideClusters, allowedClusterIds, allowedReportIds, externalMaxBounds, externalMinZoom, selectedTemplate })
+export default function EcoPinMap({ reports: externalReports, centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode = false, selectedReports = [], onReportSelect, hideFilterPanel = false, hidePins = false, hideClusters = false, onReportClick, onClusterSelect, children, allowedClusterIds, allowedReportIds, externalStatusFilter, externalIssueTypeFilter, externalShowPins, externalShowClusters, externalShowHeatmap, externalMaxBounds, externalMinZoom, selectedTemplate = 'standard', photoPins = false }) {
 
   const [mounted, setMounted] = useState(false)
-  const [reports, setReports] = useState([])
   const [filteredReports, setFilteredReports] = useState([])
   const [removingIds, setRemovingIds] = useState(new Set())
-  const [issueTypes, setIssueTypes] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [clusters, setClusters] = useState([])
-  const [clusterReports, setClusterReports] = useState({}) // Map of cluster_id -> array of reports
+  const reportQuery = useDashboardReports()
+  const clusterQuery = useDashboardClusters()
+  const queryClient = useQueryClient()
+  const clusters = useMemo(() => clusterQuery.data || [], [clusterQuery.data])
+  const loading = reportQuery.isPending || clusterQuery.isPending
   const [zoom, setZoom] = useState(DEFAULT_ZOOM)
   const [mapBounds, setMapBounds] = useState(null)
   const mapRef = useRef(null)
@@ -237,6 +247,16 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
   }
 
   const [validationStatusFilter, setValidationStatusFilter] = useState(getValidationFilterValue(initialValidationStatus))
+  const reports = useMemo(() => {
+    const source = externalReports !== undefined ? externalReports : (reportQuery.data || [])
+    return source.filter(report =>
+      validationStatusFilter === 'all' || (report.validation_status || '').toLowerCase() === validationStatusFilter.toLowerCase()
+    )
+  }, [externalReports, reportQuery.data, validationStatusFilter])
+  const issueTypes = useMemo(() => {
+    const source = externalReports !== undefined ? externalReports : (reportQuery.data || [])
+    return [...new Set(source.map(report => report.issue_type).filter(Boolean))]
+  }, [externalReports, reportQuery.data])
   const [issueTypeFilter, setIssueTypeFilter] = useState('all')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
@@ -266,39 +286,6 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
     import('@/lib/leaflet-fix')
     setMounted(true)
 
-    // Fetch data when component mounts
-    console.log(`[EcoPinMap Initial Fetch] Triggering fetch with initialValidationStatusFilter: ${validationStatusFilter}`)
-    Promise.all([
-      fetchValidatedReports({ validationStatus: validationStatusFilter }),
-      fetchIssueTypes(),
-      fetchClusters()
-    ]).then(([reportsData, typesData, clustersData]) => {
-      console.log(`[EcoPinMap Initial Fetch] Successfully fetched ${reportsData?.length || 0} reports`)
-      console.log('[EcoPinMap Initial Fetch] Validation statuses in fetched reports:', reportsData.map(r => ({ id: r.id, validation_status: r.validation_status })))
-      console.log('Clusters fetched:', clustersData)
-      console.log('Reports fetched:', reportsData)
-      console.log('Reports with cluster_id:', reportsData.filter(r => r.cluster_id))
-      setReports(reportsData)
-      setFilteredReports(reportsData)
-      setIssueTypes(typesData)
-      setClusters(clustersData)
-
-      // Group reports by cluster_id
-      const reportsByCluster = {}
-      reportsData.forEach(report => {
-        if (report.cluster_id) {
-          if (!reportsByCluster[report.cluster_id]) {
-            reportsByCluster[report.cluster_id] = []
-          }
-          reportsByCluster[report.cluster_id].push(report)
-        }
-      })
-      console.log('Reports by cluster:', reportsByCluster)
-      setClusterReports(reportsByCluster)
-
-      setLoading(false)
-    })
-
     // Set up real-time subscription for reports table
     const subscription = supabase
       .channel('reports-changes')
@@ -310,30 +297,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
           table: 'reports'
         },
         (payload) => {
-          console.log('Real-time update received:', payload)
-          console.log('[EcoPinMap Real-time Fetch] Triggering fetch due to real-time update. Current filter:', validationStatusFilter)
-          // Refetch reports when changes occur
-          Promise.all([
-            fetchValidatedReports({ validationStatus: validationStatusFilter }),
-            fetchClusters()
-          ]).then(([reportsData, clustersData]) => {
-            console.log(`[EcoPinMap Real-time Fetch] Successfully fetched ${reportsData?.length || 0} reports`)
-            console.log('[EcoPinMap Real-time Fetch] Validation statuses in fetched reports:', reportsData.map(r => ({ id: r.id, validation_status: r.validation_status })))
-            setReports(reportsData)
-            setClusters(clustersData)
-
-            // Group reports by cluster_id
-            const reportsByCluster = {}
-            reportsData.forEach(report => {
-              if (report.cluster_id) {
-                if (!reportsByCluster[report.cluster_id]) {
-                  reportsByCluster[report.cluster_id] = []
-                }
-                reportsByCluster[report.cluster_id].push(report)
-              }
-            })
-            setClusterReports(reportsByCluster)
-          })
+          void queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY })
         }
       )
       .subscribe()
@@ -342,7 +306,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
     return () => {
       subscription.unsubscribe()
     }
-  }, [])
+  }, [queryClient])
 
   // Apply filters
   useEffect(() => {
@@ -393,31 +357,6 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
     }
   }, [statusFilter, issueTypeFilter, startDate, endDate, reports, allowedClusterIds, allowedReportIds])
 
-  // Refetch reports when validation status filter changes
-  useEffect(() => {
-    if (mounted) {
-      console.log(`[EcoPinMap Filter Change] validationStatusFilter changed to: ${validationStatusFilter}. Triggering fetch.`)
-      fetchValidatedReports({ validationStatus: validationStatusFilter }).then(reportsData => {
-        console.log(`[EcoPinMap Filter Change] Successfully fetched ${reportsData?.length || 0} reports`)
-        console.log('[EcoPinMap Filter Change] Validation statuses in fetched reports:', reportsData.map(r => ({ id: r.id, validation_status: r.validation_status })))
-        setReports(reportsData)
-        setFilteredReports(reportsData)
-
-        // Update clusterReports when validation status filter changes
-        const reportsByCluster = {}
-        reportsData.forEach(report => {
-          if (report.cluster_id) {
-            if (!reportsByCluster[report.cluster_id]) {
-              reportsByCluster[report.cluster_id] = []
-            }
-            reportsByCluster[report.cluster_id].push(report)
-          }
-        })
-        setClusterReports(reportsByCluster)
-      })
-    }
-  }, [validationStatusFilter])
-
   // Pre-process reports to handle exactly overlapping pins (Spiderfy pattern)
   const processedReportsInfo = useMemo(() => {
     const coordsMap = {}
@@ -428,7 +367,10 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
         lng = report.longitude
       } else if (report.location) {
         try {
-          if (typeof report.location === 'string' && report.location.startsWith('{')) {
+          if (typeof report.location === 'object' && report.location !== null && report.location.type === 'Point' && Array.isArray(report.location.coordinates)) {
+            lng = report.location.coordinates[0]
+            lat = report.location.coordinates[1]
+          } else if (typeof report.location === 'string' && report.location.startsWith('{')) {
             const geoJSON = JSON.parse(report.location)
             if (geoJSON.type === 'Point' && geoJSON.coordinates) {
               lng = geoJSON.coordinates[0]
@@ -449,7 +391,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
             }
           }
         } catch (error) {
-          console.error('Error parsing location for report', report.id, ':', error)
+          reportDiagnostic('error', 'map', 'Error parsing location for report', report.id, ':', error)
         }
       }
 
@@ -506,6 +448,14 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
     }
     router.push(`/dashboard/raw-data/${reportId}`)
   }, [onReportClick, router])
+
+  const visiblePhotoReports = useMemo(() => !photoPins || !showPins || !mapBounds ? [] : processedReportsInfo.parsedReports.filter(report =>
+    Number.isFinite(report.parsedLat) && Number.isFinite(report.parsedLng) && mapBounds.contains([report.parsedLat, report.parsedLng]) &&
+    !(report.cluster_id && renderedClusterIds.has(report.cluster_id) && !hideClusters && showClusters && zoom <= 15)
+  ), [photoPins, showPins, mapBounds, processedReportsInfo, renderedClusterIds, hideClusters, showClusters, zoom])
+  const pinPhotos = useMapPhotoEvidence(visiblePhotoReports, photoPins)
+  
+  console.log('[EcoPinMap] photoPins:', photoPins, 'visiblePhotoReports:', visiblePhotoReports.length, 'pinPhotos:', Object.keys(pinPhotos).length)
 
   if (!mounted) return (
     <div className="h-full w-full flex items-center justify-center bg-surface dark:bg-[#000000] transition-colors duration-300">
@@ -588,6 +538,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
           key={centerLat && centerLng ? `map-${centerLat}-${centerLng}` : 'ecopin-map'}
           center={centerLat && centerLng ? [centerLat, centerLng] : PLP_CENTER}
           zoom={centerLat && centerLng ? 17 : DEFAULT_ZOOM}
+          trackResize={false}
           // maxBounds={externalMaxBounds}
           // minZoom={externalMinZoom}
           style={{ height: '100%', width: '100%' }}
@@ -610,6 +561,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
               selectionMode={selectionMode}
               onClusterSelect={onClusterSelect}
               clusterReportsMap={filteredClusterReports}
+              selectedReports={selectedReports}
               onClusterClick={(clusterId) => {
                 if (selectionMode && onClusterSelect) {
                   const memberReports = filteredClusterReports[clusterId]
@@ -624,7 +576,6 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
           {/* Cluster Polygons (shown when zoomed in - connects actual report pins) */}
           {!hideClusters && showClusters && zoom > 15 && filteredClusters.map((cluster) => {
             const memberReports = filteredClusterReports[cluster.id]
-            console.log('Cluster polygon check:', cluster.id, 'memberReports:', memberReports, 'zoom:', zoom)
             if (!memberReports || memberReports.length < 2) return null
 
             // Get coordinates of all member reports
@@ -657,7 +608,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                     }
                   }
                 } catch (error) {
-                  console.error('Error parsing location for report', report.id, ':', error)
+                  reportDiagnostic('error', 'map', 'Error parsing location for report', report.id, ':', error)
                 }
               }
 
@@ -667,7 +618,6 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
               return null
             }).filter(point => point !== null)
 
-            console.log('Cluster', cluster.id, 'polygon points:', polygonPoints.length)
             if (polygonPoints.length < 3) return null
 
             // Calculate center of points
@@ -743,7 +693,9 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                     />
                   )}
                   <EcoPinMarker 
-                    report={report} 
+                    report={report}
+                    photoPin={photoPins}
+                    photo={pinPhotos[report.id]}
                     position={[latitude, longitude]} 
                     isRemoving={isRemoving} 
                     isSelected={selectedReportsSet.has(report.id)} 
@@ -769,9 +721,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                 setShowFilterPanel(true);
               }}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-              </svg>
+              <Filter size={16} aria-hidden="true" />
               Show Filters
             </Button>
           </div>
@@ -808,9 +758,7 @@ export default function EcoPinMap({ centerLat, centerLng, focusReportId, initial
                     <input type="checkbox" checked={layer.state} onChange={(e) => layer.set(e.target.checked)} className="sr-only" />
                     <div className={`w-4 h-4 border border-border flex items-center justify-center transition-colors ${layer.state ? 'bg-primary border-primary' : 'border-border bg-surface-elevated'}`}>
                       {layer.state && (
-                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>
+                        <Check size={12} strokeWidth={3} className="text-white" aria-hidden="true" />
                       )}
                     </div>
                     <span className="text-xs font-bold uppercase tracking-wider">{layer.label}</span>

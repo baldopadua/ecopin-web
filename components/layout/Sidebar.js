@@ -1,26 +1,36 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
+import SecureImage from '@/components/ui/SecureImage'
 import { usePathname } from 'next/navigation'
 import { useUser } from '../auth/UserContext'
-import { OfficerGuard, FieldCrewGuard } from '../auth/RequireRole'
+import styles from './DashboardShell.module.css'
 import { useTask } from '../context/TaskContext'
+import { useNavigationLoading } from '../context/NavigationLoadingContext'
 import {
+    Menu,
+    X,
     LayoutDashboard,
     Map,
     Target,
+    ClipboardCheck,
     Wrench,
     Database,
     Terminal,
-    Activity,
     Scan,
     Users,
     Settings,
-    ScrollText,
     ChevronLeft,
     ChevronRight,
     Route,
-    CloudLightning,
+    FileText,
+    BarChart3,
+    SlidersHorizontal,
+    Truck,
+    ShieldCheck,
+    HardDrive,
+    Loader2,
 } from 'lucide-react'
 
 const citizenNavigation = [
@@ -33,11 +43,11 @@ const officerNavigation = [
     { name: 'Command Center', href: '/dashboard/officer', icon: LayoutDashboard },
     { name: 'Map Grid', href: '/dashboard/officer/map-grid', icon: Map },
     { name: 'Hotzone Intel', href: '/dashboard/officer/hotzone-intel', icon: Target },
-    { name: 'Operations', href: '/dashboard/officer/operations', icon: Wrench },
-    { name: 'Optimization', href: '/dashboard/officer/optimization', icon: CloudLightning },
+    { name: 'Operations', href: '/dashboard/officer/operations', icon: ClipboardCheck },
+    { name: 'Optimization', href: '/dashboard/officer/optimization', icon: Route },
     { name: 'Crew Management', href: '/dashboard/officer/crew-management', icon: Users },
-    { name: 'Reports', href: '/dashboard/officer/reports', icon: Database },
-    { name: 'Metrics', href: '/dashboard/officer/metrics', icon: Activity },
+    { name: 'Reports', href: '/dashboard/officer/reports', icon: FileText },
+    { name: 'Metrics', href: '/dashboard/officer/metrics', icon: BarChart3 },
     { name: 'Spatial Scan', href: '/dashboard/spatial-scan', icon: Scan },
 ]
 
@@ -53,9 +63,10 @@ const adminNavigation = [
     { name: 'Dashboard', href: '/dashboard/admin', icon: LayoutDashboard },
     { name: 'Users', href: '/dashboard/admin/users', icon: Users },
     { name: 'System', href: '/dashboard/admin/settings', icon: Settings },
-    { name: 'Optimization', href: '/dashboard/admin/optimization-settings', icon: Route },
-    { name: 'Sweeper Settings', href: '/dashboard/admin/sweeper-settings', icon: Route },
-    { name: 'Audit Logs', href: '/dashboard/admin/audit-logs', icon: ScrollText },
+    { name: 'Infrastructure', href: '/dashboard/admin/infrastructure', icon: HardDrive },
+    { name: 'Optimization', href: '/dashboard/admin/optimization-settings', icon: SlidersHorizontal },
+    { name: 'Sweeper Settings', href: '/dashboard/admin/sweeper-settings', icon: Truck },
+    { name: 'Audit Logs', href: '/dashboard/admin/audit-logs', icon: ShieldCheck },
     { name: 'System Logs', href: '/dashboard/admin/sys-logs', icon: Terminal },
 ]
 
@@ -64,104 +75,79 @@ export default function Sidebar() {
     const user = useUser()
     const { isOptimizing } = useTask()
     const [isCollapsed, setIsCollapsed] = useState(false)
+    const [drawerOpen, setDrawerOpen] = useState(false)
+    const drawer = useRef(null)
+    const menuButton = useRef(null)
+    const { startLoading } = useNavigationLoading()
+    const navigation = user?.role === 'admin' ? adminNavigation
+        : user?.role === 'officer' ? officerNavigation
+        : user?.role === 'field_crew' ? fieldCrewNavigation : citizenNavigation
 
-    const renderNavItems = (navigation) => {
-        return navigation.map((item) => {
-            const isRootPath = ['/dashboard/field-crew', '/dashboard/admin', '/dashboard/officer', '/dashboard'].includes(item.href);
-            const isActive = isRootPath ? pathname === item.href : pathname.startsWith(item.href);
-            const Icon = item.icon;
-            return (
-                <div key={item.name} className="relative w-full flex">
-                    <Link
-                        href={item.href}
-                        className={`sidebar-item flex-1 flex items-center gap-4 text-sm transition-all duration-300 w-full mb-1 ${
-                            isActive
-                                ? 'sidebar-item-active font-semibold'
-                                : 'text-white/70 hover:text-white font-medium hover:bg-surface/10'
-                        } ${isCollapsed ? 'justify-center pl-0 pr-4 py-4' : 'px-4 py-3'}`}
-                        title={isCollapsed ? item.name : undefined}
-                    >
-                        {Icon && item.name === 'Optimization' && isOptimizing ? (
-                            <svg className={`animate-spin w-5 h-5 shrink-0 ${isActive ? 'text-primary' : 'text-white/70 group-hover:text-white'}`} viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                            </svg>
-                        ) : Icon ? (
-                            <Icon className={`w-[22px] h-[22px] shrink-0 transition-transform duration-300 ${isActive ? 'stroke-[2.5px] text-primary scale-110' : 'stroke-[2px] group-hover:scale-110 text-white/70 group-hover:text-white'}`} />
-                        ) : null}
-                        {!isCollapsed && <span className="whitespace-nowrap tracking-wide">{item.name}</span>}
-                    </Link>
-                </div>
-            );
-        });
+    const closeDrawer = () => drawer.current?.close()
+    const openDrawer = () => { drawer.current?.showModal(); setDrawerOpen(true) }
+    useEffect(() => {
+        const desktop = matchMedia('(min-width: 1024px)')
+        const closeOnDesktop = () => { if (desktop.matches) drawer.current?.close() }
+        desktop.addEventListener('change', closeOnDesktop)
+        return () => desktop.removeEventListener('change', closeOnDesktop)
+    }, [])
+
+    const handleNavClick = (href, mobile = false) => {
+        if (mobile) closeDrawer()
+        if (pathname !== href) {
+            startLoading(href)
+        }
     }
 
-    return (
-        <aside className={`${isCollapsed ? 'w-24' : 'w-72'} bg-primary dark:bg-[#151515] dark:border-r dark:border-border h-screen flex flex-col transition-all duration-300 z-50 relative`}>
-
-            {/* Logo */}
-            <div className={`p-6 flex items-center h-[88px] ${isCollapsed ? 'justify-center px-2' : 'justify-between pl-8'}`}>
-                {!isCollapsed && (
-                    <Link href="/" className="cursor-pointer hover:opacity-80 transition-opacity">
-                        <img src="/Full Logo Dark.png" alt="EcoPin" className="h-8 md:h-10 w-auto" />
-                    </Link>
-                )}
-                <button
-                    onClick={() => setIsCollapsed(!isCollapsed)}
-                    className="p-2 text-white/70 hover:text-white transition-colors rounded-full hover:bg-surface/10"
-                    title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-                >
-                    {isCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
-                </button>
-            </div>
-
-            {/* Navigation */}
-            <nav className="flex-1 py-4 space-y-2 overflow-y-auto scrollbar-hide flex flex-col relative w-full pr-0 pl-4">
-                {/* Admin Navigation */}
-                {user?.role === 'admin' && renderNavItems(adminNavigation)}
-
-                {/* Officer Navigation */}
-                {user?.role === 'officer' && renderNavItems(officerNavigation)}
-
-                {/* Field Crew Navigation */}
-                {user?.role === 'field_crew' && renderNavItems(fieldCrewNavigation)}
-
-                {/* Citizen Navigation */}
-                {user?.role === 'citizen' && renderNavItems(citizenNavigation)}
-            </nav>
-
-            {/* User Info */}
-            <div className={`mt-auto ${isCollapsed ? 'p-4' : 'p-6'}`}>
-                <Link
-                    href="/dashboard/profile"
-                    className={`flex items-center hover:bg-surface/10 transition-colors rounded-2xl border border-white/10 ${isCollapsed ? 'p-2 justify-center' : 'p-3 justify-between'}`}
-                    title={isCollapsed ? (user?.full_name || user?.email || 'User') : undefined}
-                >
-                    <div className={`flex items-center w-full ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
-                        {user?.avatar_url ? (
-                            <img
-                                src={user.avatar_url}
-                                alt="Avatar"
-                                className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-full object-cover shadow-sm border border-white/20 shrink-0"
-                            />
-                        ) : (
-                            <div className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-full bg-surface text-primary flex items-center justify-center font-bold text-sm shadow-sm border border-white/20 shrink-0">
-                                {user?.full_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
-                            </div>
-                        )}
-                        {!isCollapsed && (
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold truncate text-white">
-                                    {user?.full_name || user?.email || 'User'}
-                                </p>
-                                <p className="text-xs text-white/70 capitalize">
-                                    {user?.role?.replace('_', ' ')}
-                                </p>
-                            </div>
-                        )}
-                    </div>
+    const content = (collapsed, mobile = false) => <aside className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''}`}>
+        <div className={styles.brand}>
+            {!collapsed && <Link href="/" aria-label="EcoPin home" onClick={mobile ? closeDrawer : undefined}>
+                <Image src="/Full Logo Light.png" width={112} height={32} alt="EcoPin" style={{ width: 'auto', height: 32 }} className="dark:brightness-0 dark:invert" />
+            </Link>}
+            <button type="button" className={styles.iconButton}
+                aria-label={mobile ? 'Close navigation' : collapsed ? 'Expand navigation' : 'Collapse navigation'}
+                aria-expanded={mobile ? undefined : !collapsed}
+                onClick={mobile ? closeDrawer : () => setIsCollapsed(value => !value)}>
+                {mobile ? <X aria-hidden="true" size={20} strokeWidth={1.75} /> : collapsed ? <ChevronRight aria-hidden="true" size={20} strokeWidth={1.75} /> : <ChevronLeft aria-hidden="true" size={20} strokeWidth={1.75} />}
+            </button>
+        </div>
+        <nav aria-label="Workspace" className={styles.navigation}>
+            {navigation.map(item => {
+                const root = ['/dashboard/field-crew', '/dashboard/admin', '/dashboard/officer', '/dashboard'].includes(item.href)
+                const active = root ? pathname === item.href : pathname.startsWith(`${item.href}/`) || pathname === item.href
+                const isOpt = item.name === 'Optimization' && isOptimizing
+                const Icon = isOpt ? Loader2 : item.icon
+                return <Link key={item.href} href={item.href} aria-current={active ? 'page' : undefined}
+                    aria-label={collapsed ? item.name : undefined} title={collapsed ? item.name : undefined}
+                    onClick={() => handleNavClick(item.href, mobile)} className={`${styles.navLink} ${active ? styles.active : ''}`}>
+                    <Icon aria-hidden="true" size={20} strokeWidth={1.75} className={isOpt ? 'animate-spin' : ''} />
+                    {!collapsed && <span>{item.name}</span>}
+                    {isOpt && <span className="sr-only">Planning in progress</span>}
                 </Link>
-            </div>
-        </aside>
-    )
+            })}
+        </nav>
+        <div className={styles.account}>
+            <Link href="/dashboard/profile" className={styles.profile} onClick={() => handleNavClick('/dashboard/profile', mobile)}
+                aria-label={collapsed ? `Profile for ${user?.full_name || user?.email || 'your account'}` : undefined}>
+                {user?.avatar_url ? <SecureImage src={user.avatar_url} alt="" className={styles.avatar} />
+                    : <img src={`https://ui-avatars.com/api/?name=${user?.full_name || user?.email || 'User'}&background=random&color=fff&size=128`} alt="" className={styles.avatar} />}
+                {!collapsed && <span className={styles.identity}>{user?.full_name || user?.email || 'Your account'}
+                    <small>{user?.role?.replaceAll('_', ' ')}</small></span>}
+            </Link>
+        </div>
+    </aside>
+
+    return <>
+        <div className={styles.desktopSidebar}>{content(isCollapsed)}</div>
+        <div className={styles.mobileBar}>
+            <Link href="/" aria-label="EcoPin home"><Image src="/Full Logo Light.png" width={112} height={32} alt="EcoPin" style={{ width: 'auto', height: 28 }} className="dark:brightness-0 dark:invert" /></Link>
+            <button ref={menuButton} type="button" className={styles.iconButton} aria-label="Open navigation"
+                aria-expanded={drawerOpen} aria-controls="workspace-drawer" onClick={openDrawer}><Menu size={24} strokeWidth={1.75} aria-hidden="true" /></button>
+        </div>
+        <dialog ref={drawer} id="workspace-drawer" className={styles.drawer} aria-label="Workspace navigation"
+            onClick={event => { if (event.target === event.currentTarget) closeDrawer() }}
+            onClose={() => { setDrawerOpen(false); if (menuButton.current?.getClientRects().length) menuButton.current.focus() }}>
+            {content(false, true)}
+        </dialog>
+    </>
 }

@@ -1,59 +1,85 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { fetchClusters } from '@/lib/api'
+import { useDashboardClusters, useDashboardTasks, useDashboardReports } from '@/components/context/DashboardQueryProvider'
 import PageHeader from '@/components/layout/PageHeader'
 import { OfficerGuard } from '@/components/auth/RequireRole'
-import { Target, Map as MapIcon, List } from 'lucide-react'
 import FilterBar from '@/components/ui/FilterBar'
 import DataTable from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
+import useTablePageSize from '@/components/ui/useTablePageSize'
+import StatusBadge from '@/components/ui/StatusBadge'
+import styles from './HotzoneIntel.module.css'
+
 export default function ClustersPage() {
-  const [clusters, setClusters] = useState([])
-  const [filteredClusters, setFilteredClusters] = useState([])
-  const [loading, setLoading] = useState(true)
+  const clusterQuery = useDashboardClusters()
+  const taskQuery = useDashboardTasks()
+  const reportsQuery = useDashboardReports()
+  const loading = clusterQuery.isPending || taskQuery.isPending
+  const clusters = useMemo(() => {
+    const severityRank = { high: 3, medium: 2, low: 1 }
+    return (clusterQuery.data || []).filter(c => c.report_count > 0).sort((a, b) =>
+      (severityRank[b.severity] || 0) - (severityRank[a.severity] || 0) || (b.report_count || 0) - (a.report_count || 0)
+    )
+  }, [clusterQuery.data])
+
+  const tasks = useMemo(() => {
+    return Array.isArray(taskQuery.data) ? taskQuery.data : (taskQuery.data?.tasks || [])
+  }, [taskQuery.data])
+
+  // Map clusterId -> task (by direct cluster_id or member report_ids)
+  const clusterTaskMap = useMemo(() => {
+    const map = new Map()
+    const reportClusterMap = new Map()
+
+    const reportsList = reportsQuery.data || []
+    reportsList.forEach(r => {
+      if (r.cluster_id) {
+        reportClusterMap.set(String(r.cluster_id), String(r.cluster_id))
+        reportClusterMap.set(String(r.id), String(r.cluster_id))
+      }
+    })
+
+    tasks.forEach(task => {
+      if (task.cluster_id) {
+        const cId = String(task.cluster_id)
+        const current = map.get(cId)
+        if (!current || (current.status === 'cancelled' && task.status !== 'cancelled')) {
+          map.set(cId, task)
+        }
+      }
+
+      if (Array.isArray(task.report_ids)) {
+        task.report_ids.forEach(repId => {
+          const cId = reportClusterMap.get(String(repId))
+          if (cId && !map.has(cId)) {
+            map.set(cId, task)
+          }
+        })
+      }
+    })
+
+    return map
+  }, [tasks, reportsQuery.data])
   
   // List view states
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
   const [severityFilter, setSeverityFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [taskFilter, setTaskFilter] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 6
+  const { containerRef, pageSize: itemsPerPage } = useTablePageSize({ resetKey: `${searchQuery}|${typeFilter}|${severityFilter}|${statusFilter}|${taskFilter}` })
   
   const router = useRouter()
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const clustersData = await fetchClusters()
-        const severityRank = { high: 3, medium: 2, low: 1 }
-        const sorted = (clustersData || [])
-          .filter(c => c.report_count > 0)
-          .sort((a, b) => {
-          const rankA = severityRank[a.severity] || 0
-          const rankB = severityRank[b.severity] || 0
-          if (rankA !== rankB) return rankB - rankA
-          return (b.report_count || 0) - (a.report_count || 0)
-        })
-        setClusters(sorted)
-        setFilteredClusters(sorted)
-      } catch (error) {
-        console.error('Error fetching clusters:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-    loadData()
-  }, [])
-
-  useEffect(() => {
+  const filteredClusters = useMemo(() => {
     let result = clusters
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase()
       result = result.filter(c => {
-        const generatedLabel = `cluster ${c.id.slice(0,6)}`.toLowerCase()
+        const generatedLabel = `cluster ${c.id.slice(0, 6)}`.toLowerCase()
         return (c.label && c.label.toLowerCase().includes(q)) || 
                c.id.toLowerCase().includes(q) ||
                generatedLabel.includes(q)
@@ -69,85 +95,129 @@ export default function ClustersPage() {
     }
 
     if (statusFilter !== 'all') {
-      // If status is null/undefined in DB, it implies unresolved
       if (statusFilter === 'unresolved') result = result.filter(c => !c.status || c.status === 'unresolved')
       else result = result.filter(c => c.status === statusFilter)
     }
 
-    setFilteredClusters(result)
-    setCurrentPage(1)
-  }, [searchQuery, typeFilter, severityFilter, statusFilter, clusters])
+    if (taskFilter !== 'all') {
+      if (taskFilter === 'has_task') result = result.filter(c => clusterTaskMap.has(String(c.id)))
+      else if (taskFilter === 'no_task') result = result.filter(c => !clusterTaskMap.has(String(c.id)))
+    }
 
-  // Top 3 Critical Hotzones (always based on unfiltered data)
-  const criticalClusters = clusters
-    .filter(c => c.severity === 'high')
-    .slice(0, 3)
+    return result
+  }, [searchQuery, typeFilter, severityFilter, statusFilter, taskFilter, clusters, clusterTaskMap])
 
   // Derived filters
-  const issueTypes = [...new Set(clusters.map(c => c.issue_type).filter(Boolean))]
+  const issueTypes = useMemo(() => [...new Set(clusters.map(c => c.issue_type).filter(Boolean))], [clusters])
 
   const handleResetFilters = () => {
     setSearchQuery('')
     setTypeFilter('all')
     setSeverityFilter('all')
     setStatusFilter('all')
+    setTaskFilter('all')
+    setCurrentPage(1)
   }
 
   // Pagination logic
-  const totalPages = Math.ceil(filteredClusters.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
+  const totalPages = Math.ceil(filteredClusters.length / itemsPerPage) || 1
+  const safeCurrentPage = Math.min(currentPage, totalPages)
+  const startIndex = (safeCurrentPage - 1) * itemsPerPage
   const paginatedClusters = filteredClusters.slice(startIndex, startIndex + itemsPerPage)
 
   const listColumns = [
     { 
       key: 'label', 
-      label: 'Cluster ID / Label', 
-      width: '20%',
+      label: 'Cluster ID / label',
+      width: '22%',
       render: (val, row) => (
         <div>
-          <div className="font-bold">{val || `Cluster ${row.id.slice(0,6)}`}</div>
-          <div className="text-[10px] font-mono text-text-muted">{row.id}</div>
+          <div className={styles.clusterTitle}>{val || `Cluster ${row.id.slice(0, 6)}`}</div>
+          <div className={styles.clusterId}>{row.id}</div>
         </div>
       )
     },
-    { key: 'issue_type', label: 'Pollution Type', width: '20%' },
+    { 
+      key: 'issue_type', 
+      label: 'Pollution type', 
+      width: '16%',
+      render: (val) => <span className="capitalize">{val ? val.replaceAll('_', ' ') : 'General'}</span>
+    },
     { 
       key: 'severity', 
       label: 'Severity', 
-      width: '15%',
-      render: (val) => (
-        <span className={`font-bold uppercase tracking-widest text-xs ${val === 'high' ? 'text-error' : val === 'medium' ? 'text-warning' : 'text-info'}`}>
-          {val || 'UNKNOWN'}
-        </span>
-      )
+      width: '12%',
+      render: (val) => {
+        const tone = val === 'high' ? styles.severityHigh : val === 'medium' ? styles.severityMedium : styles.severityLow
+        return (
+          <span className={`${styles.severityBadge} ${tone}`}>
+            {val ? val.charAt(0).toUpperCase() + val.slice(1).toLowerCase() : 'Unknown'}
+          </span>
+        )
+      }
     },
     { 
       key: 'report_count', 
-      label: 'Total Reports', 
-      width: '10%',
+      label: 'Reports', 
+      width: '9%',
       render: (val, row) => row.reports?.length || row.report_ids?.length || val || 0
     },
     { 
       key: 'radius_meters', 
       label: 'Radius', 
-      width: '10%',
+      width: '9%',
       render: (val) => `${Math.round(val || 50)}m`
+    },
+    {
+      key: 'task',
+      label: 'Task',
+      width: '16%',
+      render: (_, row) => {
+        const task = clusterTaskMap.get(String(row.id))
+        if (!task) {
+          return <span className={styles.noTaskBadge}>No task</span>
+        }
+        return (
+          <div
+            className={styles.taskCell}
+            onClick={(e) => {
+              e.stopPropagation()
+              router.push(`/dashboard/officer/operations/${task.id}`)
+            }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.stopPropagation()
+                router.push(`/dashboard/officer/operations/${task.id}`)
+              }
+            }}
+            title={task.title ? `View task: ${task.title}` : 'View task'}
+          >
+            <StatusBadge status={task.status || 'created'} type="task" />
+            {task.title && (
+              <span className={styles.taskTitleSnippet}>
+                {task.title}
+              </span>
+            )}
+          </div>
+        )
+      }
     },
     {
       key: 'status',
       label: 'Status',
-      width: '10%',
+      width: '16%',
       render: (val) => {
-        let label = val || 'UNRESOLVED'
-        let subLabel = '(New)'
-        if (label === 'unresolved') subLabel = '(New)'
-        else if (label === 'in_progress') { label = 'IN PROGRESS'; subLabel = '(Scheduled/Prioritized)' }
-        else if (label === 'resolved') { label = 'RESOLVED'; subLabel = '(Completed)' }
+        let label = 'Unresolved'
+        let subLabel = 'New'
+        if (val === 'in_progress') { label = 'In progress'; subLabel = 'Scheduled' }
+        else if (val === 'resolved') { label = 'Resolved'; subLabel = 'Completed' }
         
         return (
-          <div className="flex flex-col">
-            <span className="uppercase text-[10px] font-bold font-mono tracking-widest text-text-secondary">{label}</span>
-            <span className="text-[9px] text-text-muted">{subLabel}</span>
+          <div className={styles.statusWrapper}>
+            <span className={styles.statusText}>{label}</span>
+            <span className={styles.statusSub}>({subLabel})</span>
           </div>
         )
       }
@@ -156,7 +226,7 @@ export default function ClustersPage() {
 
   return (
     <OfficerGuard>
-      <div className="p-8 h-[calc(100vh-64px)] flex flex-col">
+      <div className={`workspace-page ${styles.page}`}>
         <PageHeader
           title="Hotzone Intel"
           subtitle="Spatial intelligence and cluster mapping"
@@ -166,71 +236,90 @@ export default function ClustersPage() {
           ]}
         />
 
-        <div className="flex-1 flex flex-col pb-8">
-            <FilterBar
-              searchPlaceholder="Search clusters by ID or label..."
-              searchValue={searchQuery}
-              onSearchChange={setSearchQuery}
-              filters={[
-                {
-                  label: 'Pollution Type',
-                  value: typeFilter,
-                  onChange: setTypeFilter,
-                  options: [
-                    { value: 'all', label: 'All Types' },
-                    ...issueTypes.map(type => ({ value: type, label: type }))
-                  ]
-                },
-                {
-                  label: 'Severity',
-                  value: severityFilter,
-                  onChange: setSeverityFilter,
-                  options: [
-                    { value: 'all', label: 'All Severities' },
-                    { value: 'high', label: 'High (70+)' },
-                    { value: 'medium', label: 'Medium (30-69)' },
-                    { value: 'low', label: 'Low (<30)' }
-                  ]
-                },
-                {
-                  label: 'Status',
-                  value: statusFilter,
-                  onChange: setStatusFilter,
-                  options: [
-                    { value: 'all', label: 'All Statuses' },
-                    { value: 'unresolved', label: 'Unresolved (New)' },
-                    { value: 'in_progress', label: 'In Progress (Scheduled/Prioritized)' },
-                    { value: 'resolved', label: 'Resolved (Completed)' }
-                  ]
-                }
-              ]}
-              onReset={handleResetFilters}
-              resultsCount={filteredClusters.length}
-              loading={loading}
-            />
+        <FilterBar
+          searchPlaceholder="Search clusters by ID or label..."
+          searchValue={searchQuery}
+          onSearchChange={val => { setSearchQuery(val); setCurrentPage(1) }}
+          filters={[
+            {
+              label: 'Pollution type',
+              value: typeFilter,
+              onChange: val => { setTypeFilter(val); setCurrentPage(1) },
+              options: [
+                { value: 'all', label: 'All types' },
+                ...issueTypes.map(type => ({ value: type, label: type.replaceAll('_', ' ') }))
+              ]
+            },
+            {
+              label: 'Severity',
+              value: severityFilter,
+              onChange: val => { setSeverityFilter(val); setCurrentPage(1) },
+              options: [
+                { value: 'all', label: 'All severities' },
+                { value: 'high', label: 'High' },
+                { value: 'medium', label: 'Medium' },
+                { value: 'low', label: 'Low' }
+              ]
+            },
+            {
+              label: 'Status',
+              value: statusFilter,
+              onChange: val => { setStatusFilter(val); setCurrentPage(1) },
+              options: [
+                { value: 'all', label: 'All statuses' },
+                { value: 'unresolved', label: 'Unresolved' },
+                { value: 'in_progress', label: 'In progress' },
+                { value: 'resolved', label: 'Resolved' }
+              ]
+            },
+            {
+              label: 'Task',
+              value: taskFilter,
+              onChange: val => { setTaskFilter(val); setCurrentPage(1) },
+              options: [
+                { value: 'all', label: 'All tasks' },
+                { value: 'has_task', label: 'Has task' },
+                { value: 'no_task', label: 'No task' }
+              ]
+            }
+          ]}
+          onReset={handleResetFilters}
+          resultsCount={filteredClusters.length}
+          loading={loading}
+          sticky={false}
+        />
 
-            <div className="flex-1 flex flex-col min-h-0">
-              <DataTable 
-                columns={listColumns}
-                data={paginatedClusters}
-                loading={loading}
-                emptyMessage="No hotzones match your filters."
-                onRowClick={(row) => router.push(`/dashboard/officer/hotzone-intel/${row.id}`)}
-                className="flex-1 min-h-0"
-              />
-              
-              {totalPages > 1 && (
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={setCurrentPage}
-                  itemsPerPage={itemsPerPage}
-                  totalItems={filteredClusters.length}
-                  className="mt-6"
-                />
-              )}
-            </div>
+        <div className={`workspace-fill ${styles.tableWorkspace}`}>
+          {clusterQuery.isError && <div role="alert">
+            Hotzones could not refresh. Previously loaded hotzones remain below if available.
+            <button type="button" onClick={() => { void clusterQuery.refetch() }}>Try again</button>
+          </div>}
+          {(!clusterQuery.isError || clusterQuery.data) && <>
+          <div ref={containerRef} className={styles.tableViewport}>
+          <DataTable 
+            columns={listColumns}
+            data={paginatedClusters}
+            loading={loading}
+            emptyMessage="No hotzones match your filters."
+            onRowClick={(row) => router.push(`/dashboard/officer/hotzone-intel/${row.id}`)}
+            rowActionLabel={(row) => `Open ${row.label || `cluster ${row.id.slice(0, 6)}`} details`}
+            className={styles.tableContainer}
+            caption="Hotzone clusters"
+          />
           </div>
+          
+          {totalPages > 1 && (
+            <Pagination
+              currentPage={safeCurrentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              itemsPerPage={itemsPerPage}
+              totalItems={filteredClusters.length}
+              className={styles.pagination}
+            />
+          )}
+          </>}
+        </div>
       </div>
     </OfficerGuard>
   )

@@ -1,6 +1,7 @@
 'use client'
 import SecureImage from '@/components/ui/SecureImage'
 import React, { useState } from 'react'
+import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 
 export default function PhotoGalleryCard({ task, reports }) {
   const [lightboxImage, setLightboxImage] = useState(null)
@@ -49,7 +50,7 @@ export default function PhotoGalleryCard({ task, reports }) {
           {task.before_photo_url && (
             <div className="relative cursor-pointer" onClick={() => setLightboxImage({ url: task.before_photo_url, type: 'before', index: 0 })}>
               <SecureImage src={task.before_photo_url} alt="Before cleanup" className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity border border-border" />
-              <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">Task Before</span>
+              <span className="absolute bottom-2 left-2 z-20 bg-black/70 text-white text-xs px-2 py-1 rounded">Task Before</span>
             </div>
           )}
           {reports.filter(r => r.before_photo_url).map((report, idx) => (
@@ -59,7 +60,7 @@ export default function PhotoGalleryCard({ task, reports }) {
               onClick={() => setLightboxImage({ url: report.before_photo_url, type: 'before', index: (task.before_photo_url ? 1 : 0) + idx })}
             >
               <SecureImage src={report.before_photo_url} alt={`Report ${report.title} Before`} className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity border border-border" />
-              <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded truncate max-w-[90%]">{report.title}</span>
+              <span className="absolute bottom-2 left-2 z-20 bg-black/70 text-white text-xs px-2 py-1 rounded truncate max-w-[90%]">{report.title}</span>
             </div>
           ))}
         </div>
@@ -77,7 +78,7 @@ export default function PhotoGalleryCard({ task, reports }) {
           {task.after_photo_url && (
             <div className="relative cursor-pointer" onClick={() => setLightboxImage({ url: task.after_photo_url, type: 'after', index: 0 })}>
               <SecureImage src={task.after_photo_url} alt="After cleanup" className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity border border-border" />
-              <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">Task After</span>
+              <span className="absolute bottom-2 left-2 z-20 bg-black/70 text-white text-xs px-2 py-1 rounded">Task After</span>
             </div>
           )}
           {reports.filter(r => r.after_photo_url).map((report, idx) => (
@@ -87,7 +88,7 @@ export default function PhotoGalleryCard({ task, reports }) {
               onClick={() => setLightboxImage({ url: report.after_photo_url, type: 'after', index: (task.after_photo_url ? 1 : 0) + idx })}
             >
               <SecureImage src={report.after_photo_url} alt={`Report ${report.title} After`} className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity border border-border" />
-              <span className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded truncate max-w-[90%]">{report.title}</span>
+              <span className="absolute bottom-2 left-2 z-20 bg-black/70 text-white text-xs px-2 py-1 rounded truncate max-w-[90%]">{report.title}</span>
             </div>
           ))}
         </div>
@@ -106,33 +107,34 @@ export default function PhotoGalleryCard({ task, reports }) {
         >
           <div className="relative max-w-7xl max-h-screen p-4 flex items-center justify-center" onClick={e => e.stopPropagation()}>
             <button 
-              className="absolute top-4 right-4 text-white hover:text-gray-300 z-50 bg-black/50 rounded-full p-2"
+              type="button"
+              aria-label="Close lightbox"
+              className="absolute top-4 right-4 text-white hover:text-gray-300 z-50 bg-black/50 rounded-full p-2 flex items-center justify-center"
               onClick={() => setLightboxImage(null)}
             >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <X size={24} aria-hidden="true" />
             </button>
             <button 
-              className="absolute left-4 text-white hover:text-gray-300 z-50 bg-black/50 rounded-full p-3"
+              type="button"
+              aria-label="Previous photo"
+              className="absolute left-4 text-white hover:text-gray-300 z-50 bg-black/50 rounded-full p-3 flex items-center justify-center"
               onClick={handlePreviousPhoto}
             >
-              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
+              <ChevronLeft size={32} aria-hidden="true" />
             </button>
             <SecureImage 
               src={lightboxImage.url} 
               alt="Lightbox" 
               className="max-w-full max-h-[90vh] object-contain rounded-lg"
+              wrapperClassName="min-w-[280px] min-h-[280px] md:min-w-[480px] md:min-h-[400px] flex items-center justify-center"
             />
             <button 
-              className="absolute right-4 text-white hover:text-gray-300 z-50 bg-black/50 rounded-full p-3"
+              type="button"
+              aria-label="Next photo"
+              className="absolute right-4 text-white hover:text-gray-300 z-50 bg-black/50 rounded-full p-3 flex items-center justify-center"
               onClick={handleNextPhoto}
             >
-              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
+              <ChevronRight size={32} aria-hidden="true" />
             </button>
             <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white bg-black/50 px-4 py-2 rounded-full">
               {getPhotosByType(lightboxImage.type)[lightboxImage.index].label}

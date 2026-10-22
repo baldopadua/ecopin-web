@@ -1,0 +1,33 @@
+.main { max-width: 1184px; margin: auto; padding: 64px 48px 32px; }
+.hero { display: grid; grid-template-columns: 1.2fr 1fr; gap: 80px; align-items: center; padding-bottom: 64px; }
+.hero h1 { font-size: clamp(36px, 4.5vw, 56px); font-weight: 500; line-height: 1.1; letter-spacing: -.045em; margin: 0; }
+.hero > div > p { font-size: 16px; line-height: 1.75; color: var(--landing-muted); max-width: 440px; margin: 24px 0; }
+.downloadCard { padding: 32px; border-radius: 24px; border: 1px solid var(--landing-border); background: var(--landing-green-bg); }
+.appIcon { display: grid; place-items: center; width: 64px; height: 64px; background: var(--landing-bg); color: var(--landing-green); border: 1px solid var(--landing-border); border-radius: 16px; margin-bottom: 24px; }
+.downloadCard h2 { font-size: 24px; font-weight: 500; }
+.downloadCard p { font-size: 13px !important; margin: 12px 0 24px !important; }
+.downloadCard a { width: 100%; gap: 8px; font-size: 14px; }
+.downloadStatus { display: block; font-size: 12px; line-height: 1.7; color: var(--landing-muted); margin-top: 16px; }
+.guide { padding: 64px 0; border-top: 1px solid var(--landing-border); }
+.guide ol { display: grid; grid-template-columns: repeat(3, 1fr); list-style: none; padding: 0; margin: 40px 0 0; gap: 40px; }
+.guide li { padding-top: 24px; border-top: 1px solid var(--landing-border); }
+.stepTop { color: var(--landing-blue); display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; font-size: 14px; }
+.guide h3 { font-size: 20px; font-weight: 500; margin: 0 0 12px; letter-spacing: -.02em; }
+.guide li p { font-size: 14px; line-height: 1.75; color: var(--landing-muted); margin: 0; }
+.note { display: flex; gap: 12px; align-items: flex-start; padding: 20px 24px; border-radius: 12px; background: var(--landing-green-bg); color: var(--landing-green); margin-top: 32px; }
+.note svg { flex-shrink: 0; margin-top: 2px; }
+.note p { font-size: 13px; line-height: 1.7; margin: 0; }
+.help { display: grid; grid-template-columns: 1fr 1.5fr; gap: 64px; padding-bottom: 64px; }
+.help > div > p { color: var(--landing-muted); margin-top: 16px; font-size: 14px; }
+.questions details { border-bottom: 1px solid var(--landing-border); padding: 16px 0; }
+.questions summary { display: flex; justify-content: space-between; gap: 16px; align-items: center; min-height: 44px; font-size: 15px; cursor: pointer; list-style: none; }
+.questions summary::-webkit-details-marker { display: none; }
+.questions summary svg { color: var(--landing-muted); flex-shrink: 0; transition: rotate .2s; }
+.questions details[open] summary svg { rotate: 180deg; }
+.questions summary:focus-visible { outline: 2px solid var(--landing-blue); outline-offset: 4px; border-radius: 8px; }
+.questions p { color: var(--landing-muted); font-size: 14px; line-height: 1.75; margin: 12px 0; }
+.questions a, .footer a { display: inline-flex; gap: 8px; align-items: center; min-height: 44px; color: var(--landing-blue); font-size: 14px; }
+.footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; border-top: 1px solid var(--landing-border); padding-top: 24px; }
+.footer span { color: var(--landing-muted); font-size: 12px; }
+@media (max-width: 1024px) { .main { padding: 48px 24px 24px; } .hero, .help { gap: 40px; } .guide ol { gap: 24px; } }
+@media (max-width: 767px) { .hero, .help { grid-template-columns: 1fr; gap: 32px; } .hero { padding-bottom: 40px; } .main { padding-top: 32px; } .downloadCard { padding: 24px; } .guide { padding: 40px 0; } .guide ol { grid-template-columns: 1fr; margin-top: 32px; gap: 32px; } .help { padding-bottom: 40px; } }

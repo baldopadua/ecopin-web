@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { Sun, Moon, Menu, X } from 'lucide-react';
 
 import LoadingScreen from '@/components/ui/LoadingScreen';
 
@@ -15,18 +16,26 @@ export default function Navbar({
   className = '' 
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isExiting, setIsExiting] = useState(false);
+  const [transitionState, setTransitionState] = useState(null); // 'in' | 'out' | null
   const pathname = usePathname();
   const router = useRouter();
+
+  const navigateWithTransition = (targetPath) => {
+    setTransitionState('in');
+    setTimeout(() => {
+      setIsMenuOpen(false);
+      router.push(targetPath);
+      setTransitionState('out');
+      setTimeout(() => {
+        setTransitionState(null);
+      }, 380);
+    }, 420);
+  };
 
   const handleLogoClick = (e) => {
     e.preventDefault();
     if (pathname !== '/') {
-      setIsExiting(true);
-      setTimeout(() => {
-        router.push('/');
-        setTimeout(() => setIsExiting(false), 100);
-      }, 900);
+      navigateWithTransition('/');
     } else {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -35,12 +44,7 @@ export default function Navbar({
   const handleLinkClick = (e, path) => {
     e.preventDefault();
     if (pathname !== path) {
-      setIsExiting(true);
-      setTimeout(() => {
-        setIsMenuOpen(false);
-        router.push(path);
-        setTimeout(() => setIsExiting(false), 100);
-      }, 900);
+      navigateWithTransition(path);
     } else {
       setIsMenuOpen(false);
     }
@@ -48,7 +52,7 @@ export default function Navbar({
 
   const navContent = (
     <>
-      {isExiting && <LoadingScreen mode="in" />}
+      {transitionState && <LoadingScreen mode={transitionState} variant="iris" label="Opening view" />}
       <button onClick={handleLogoClick} className="cursor-pointer transition-all bg-transparent border-none p-0 outline-none">
         <img src="/Full Logo Light.png" alt="EcoPin" className="h-8 md:h-10 w-auto dark:hidden" />
         <img src="/Full Logo Dark.png" alt="EcoPin" className="h-8 md:h-10 w-auto hidden dark:block" />
@@ -64,20 +68,22 @@ export default function Navbar({
 
         <div className="hidden md:flex items-center gap-4">
           <button
+            type="button"
             onClick={toggleTheme}
-            className="text-text-primary  hover:opacity-70 transition-all flex items-center justify-center"
-            title="Toggle Theme"
+            className="text-text-primary hover:opacity-70 transition-all flex items-center justify-center p-2 rounded-full"
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             {theme === 'dark' ? (
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+              <Sun size={20} aria-hidden="true" />
             ) : (
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+              <Moon size={20} aria-hidden="true" />
             )}
           </button>
 
           {hasSession ? (
             <a href="/dashboard" className="w-9 h-9 rounded-full border border-border overflow-hidden hover:opacity-80 transition-opacity flex-shrink-0 bg-black" title="Dashboard">
-              <img src={user?.avatar_url || `https://ui-avatars.com/api/?name=${user?.full_name || 'User'}&background=random&color=fff`} alt="Profile" className="w-full h-full object-cover" />
+              <img src={user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.full_name || user?.email || 'User')}&background=random&color=fff&size=128`} alt="Profile" className="w-full h-full object-cover" />
             </a>
           ) : (
             <Link href="/auth" className="text-xs font-bold uppercase tracking-widest text-text-primary  hover:text-white hover:bg-black dark:hover:bg-surface dark:hover:text-text-primary rounded-full px-6 py-2 border border-border  transition-all">LOGIN</Link>
@@ -85,13 +91,16 @@ export default function Navbar({
         </div>
 
         <button
-          className="md:hidden p-2 text-text-primary  hover:opacity-70 transition-all z-[60]"
+          type="button"
+          className="md:hidden p-2 text-text-primary hover:opacity-70 transition-all z-[60] flex items-center justify-center"
+          aria-label={isMenuOpen ? 'Close navigation' : 'Open navigation'}
+          aria-expanded={isMenuOpen}
           onClick={() => setIsMenuOpen(!isMenuOpen)}
         >
           {isMenuOpen ? (
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
+            <X size={24} aria-hidden="true" />
           ) : (
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 6h16M4 12h16M4 18h16" /></svg>
+            <Menu size={24} aria-hidden="true" />
           )}
         </button>
       </div>
@@ -115,7 +124,7 @@ export default function Navbar({
 
         {hasSession ? (
           <a href="/dashboard" onClick={() => setIsMenuOpen(false)} className="w-16 h-16 rounded-full border border-border overflow-hidden hover:opacity-80 transition-opacity mt-4 mx-auto bg-black" title="Dashboard">
-            <img src={user?.avatar_url || `https://ui-avatars.com/api/?name=${user?.full_name || 'User'}&background=random&color=fff`} alt="Profile" className="w-full h-full object-cover" />
+            <img src={user?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.full_name || user?.email || 'User')}&background=random&color=fff&size=128`} alt="Profile" className="w-full h-full object-cover" />
           </a>
         ) : (
           <Link href="/auth" onClick={() => setIsMenuOpen(false)} className="w-full text-center mt-4 p-4 text-xl font-bold uppercase tracking-widest bg-black text-white rounded-full border border-border">LOGIN</Link>

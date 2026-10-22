@@ -104,21 +104,21 @@ export function CrewRouteCard({ route, index, color }) {
       <div className="p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex flex-col gap-2">
-            <h4 className="font-bold text-text-primary flex items-center gap-2">
+            <h4 className="font-semibold text-text-primary flex items-center gap-2">
               <span className="w-3 h-3 rounded-full" style={{ backgroundColor: color }}></span>
               {crewName}
-              <span className="text-xs text-text-muted font-mono">({route.task_count || taskWaypoints.length} tasks)</span>
+              <span className="text-xs text-text-muted font-sans">({route.task_count || taskWaypoints.length} tasks)</span>
             </h4>
             <div className="flex items-center gap-2">
-              <span className={`text-xs px-2 py-0.5 border font-bold font-mono tracking-wide ${badgeStyle}`}>
+              <span className={`text-xs px-2 py-0.5 border font-semibold font-sans tracking-normal ${badgeStyle}`}>
                 {badgeIcon} {dominantType} Route
               </span>
-              <span className="text-[10px] font-mono text-text-muted uppercase tracking-wider">
+              <span className="text-xs font-sans text-text-muted normal-case tracking-normal">
                 ({scoutingCount} Scout, {cleanupCount} Clean, {mixedCount} Mix)
               </span>
             </div>
           </div>
-          <div className="flex gap-4 text-xs font-mono text-text-muted">
+          <div className="flex gap-4 text-xs font-sans text-text-muted">
             <span className="flex items-center"><Ruler className="w-4 h-4 mr-1" /> {formatDistance(route.total_distance_meters)}</span>
             <span className="flex items-center"><Timer className="w-4 h-4 mr-1" /> {formatDuration(route.total_duration_min)}</span>
           </div>
@@ -129,7 +129,7 @@ export function CrewRouteCard({ route, index, color }) {
             {taskWaypoints.map((wp, wpIdx) => (
               <div key={wp.id} className="flex items-center gap-2 bg-surface border border-border px-2 py-1 rounded-sm">
                 <span 
-                  className="w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-bold text-white"
+                  className="w-5 h-5 flex items-center justify-center rounded-full text-xs font-semibold text-white"
                   style={{ backgroundColor: color }}
                 >
                   {wp.sequence_order || wpIdx + 1}
@@ -139,7 +139,7 @@ export function CrewRouteCard({ route, index, color }) {
                     Task #{wp.cleanup_task_id?.slice(0, 8)}...
                   </span>
                   {wp.cleanup_tasks?.task_type && (
-                    <span className={`text-[10px] uppercase font-bold font-mono tracking-wider px-1.5 py-0.5 border ${
+                    <span className={`text-xs normal-case font-semibold font-sans tracking-normal px-1.5 py-0.5 border ${
                       wp.cleanup_tasks.task_type === 'Scouting' ? 'bg-info/10 text-info border-info/20' :
                       wp.cleanup_tasks.task_type === 'Cleanup' ? 'bg-success/10 text-success border-success/20' :
                       'bg-purple/10 text-purple border-purple/20'
@@ -148,7 +148,7 @@ export function CrewRouteCard({ route, index, color }) {
                     </span>
                   )}
                 </div>
-                <span className="text-xs text-text-muted font-mono whitespace-nowrap">
+                <span className="text-xs text-text-muted font-sans whitespace-nowrap">
                   +{formatDistance(wp.distance_from_previous_meters)} | +{formatDuration(wp.estimated_time_from_previous_min)}
                 </span>
               </div>
@@ -164,22 +164,26 @@ export function CrewRouteCard({ route, index, color }) {
 
 const PLP_CENTER = [14.561433, 121.075636]
 
-export function RouteMapView({ routes }) {
+export function RouteMapView({ routes, travelMode = 'DRIVING' }) {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    import('@/lib/leaflet-fix')
-    setMounted(true)
+    let cancelled = false
+    import('@/lib/leaflet-fix').then(() => {
+      if (!cancelled) setMounted(true)
+    })
+    return () => { cancelled = true }
   }, [])
 
   const routeData = useMemo(() => {
     if (!routes) return []
     return routes.map((route, idx) => ({
       ...route,
+      travelMode: route.travel_mode || route.travelMode || travelMode,
       crewName: route.field_crews?.name || `Crew ${idx + 1}`,
       color: CREW_COLORS[idx % CREW_COLORS.length],
     }))
-  }, [routes])
+  }, [routes, travelMode])
 
   if (!mounted) {
     return (
@@ -199,7 +203,7 @@ export function RouteMapView({ routes }) {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
       />
-      <RouteLayer routes={routeData} />
+      <RouteLayer routes={routeData} travelMode={travelMode} />
     </MapContainer>
   )
 }

@@ -8,6 +8,7 @@ import { useUser } from '@/components/auth/UserContext'
 import { FieldCrewGuard } from '@/components/auth/RequireRole'
 import PageHeader from '@/components/layout/PageHeader'
 import RouteLayer from '@/components/map/RouteLayer'
+import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
 
 const MicroRouteLayer = dynamic(() => import('@/components/map/MicroRouteLayer'), { ssr: false })
 
@@ -58,7 +59,7 @@ export default function MyRoutePage() {
         // We'll just assume they don't have a route if we can't link it via tasks.
         setMyRoute(userRoute)
       } catch (err) {
-        console.error('Failed to load route details:', err)
+        reportDiagnostic('error', 'other', 'Failed to load route details:', err)
       } finally {
         setLoading(false)
       }
