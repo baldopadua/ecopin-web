@@ -1,62 +1,46 @@
 'use client'
-import React from 'react'
+import { useEffect, useId, useRef } from 'react'
 import Image from 'next/image'
 import { useNavigationLoading } from '@/components/context/NavigationLoadingContext'
 import styles from './NavigationLoadingScreen.module.css'
 
 export default function NavigationLoadingScreen() {
   const { isLoading, targetName } = useNavigationLoading()
+  const dialogRef = useRef(null)
+  const titleId = useId()
+
+  useEffect(() => {
+    if (!isLoading) return
+    const dialog = dialogRef.current
+    // The modal top layer escapes the workspace scrollport and makes the sidebar inert.
+    const scrollports = [document.documentElement, document.body, document.getElementById('workspace-content')].filter(Boolean)
+    const previousOverflow = scrollports.map(element => element.style.overflow)
+    scrollports.forEach(element => { element.style.overflow = 'hidden' })
+    dialog.showModal()
+    dialog.focus({ preventScroll: true })
+    return () => {
+      dialog.close()
+      scrollports.forEach((element, index) => { element.style.overflow = previousOverflow[index] })
+    }
+  }, [isLoading])
 
   if (!isLoading) return null
 
   return (
-    <aside
-      className={styles.overlay}
-      role="status"
-      aria-live="polite"
-      aria-label="Loading workspace view"
-    >
-      <div className={styles.topAccentBar} />
-      <div className={styles.container}>
-        {/* Animated Brand Emblem */}
-        <div className={styles.emblemContainer}>
-          <div className={styles.brandIconWrapper}>
-            <Image
-              src="/Solo Logo Light.png"
-              width={42}
-              height={65}
-              alt="EcoPin"
-              className={`${styles.brandIcon} dark:hidden`}
-              priority
-            />
-            <Image
-              src="/Solo Logo Dark.png"
-              width={42}
-              height={65}
-              alt="EcoPin"
-              className={`${styles.brandIcon} hidden dark:block`}
-              priority
-            />
-          </div>
+    <dialog ref={dialogRef} className={styles.overlay} aria-labelledby={titleId}
+      tabIndex={-1} onCancel={event => event.preventDefault()}>
+      <div className={styles.content} role="status" aria-live="polite" aria-label="Loading workspace view">
+        <div className={styles.emblem} aria-hidden="true">
+          <svg className={styles.ring} viewBox="0 0 96 96" fill="none">
+            <circle className={styles.track} cx="48" cy="48" r="44" />
+            <circle className={styles.arc} cx="48" cy="48" r="44" pathLength="100" />
+          </svg>
+          <Image src="/Solo Logo Light.png" width={26} height={40} alt="" className={`${styles.logo} dark:hidden`} priority />
+          <Image src="/Solo Logo Dark.png" width={26} height={40} alt="" className={`${styles.logo} hidden dark:block`} priority />
         </div>
-
-        {/* Text Information */}
-        <div className={styles.textContainer}>
-          <div className={styles.routeBadge}>
-            <span className={styles.statusDot} />
-            <span>Switching View</span>
-          </div>
-          <h2 className={styles.title}>
-            {targetName ? `Loading ${targetName}` : 'Loading page...'}
-          </h2>
-          <p className={styles.subtitle}>Synchronizing spatial data & workspace layout</p>
-        </div>
-
-        {/* Dynamic Progress Bar */}
-        <div className={styles.progressTrack}>
-          <div className={styles.progressBar} />
-        </div>
+        <h2 id={titleId} className={styles.title}>{targetName ? `Opening ${targetName}` : 'Opening your workspace'}</h2>
+        <p className={styles.subtitle}>Getting your page ready. One moment.</p>
       </div>
-    </aside>
+    </dialog>
   )
 }

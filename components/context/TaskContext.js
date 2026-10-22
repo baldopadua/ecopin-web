@@ -4,6 +4,7 @@ import { generatePlan, getPlanJob, getDispatchPlan, commitPlan, disassemblePlan 
 import { useRouter } from 'next/navigation'
 import Notification from '@/components/ui/Notification'
 import { reportDiagnostic } from '../../lib/diagnostics.mjs';
+import { dispatchResultNotice } from '../../lib/dispatch-result-notice.mjs';
 
 const TaskContext = createContext()
 
@@ -129,20 +130,15 @@ export function TaskProvider({ children }) {
       let toastMessage = 'Dispatch Confirmed! Routes have been published and assigned to field crews.'
       let toastType = 'success'
 
-      if (isEmpty) {
-        toastMessage = 'No tasks could be dispatched. Please verify that field crews are available and on shift.'
-        toastType = 'warning'
-      } else if (isFailed) {
-        toastMessage = result.warning || 'Could not finalize routes due to shift schedule limits. All reports were safely returned to your backlog.'
-        toastType = 'error'
-      } else if (isPending) {
-        toastMessage = 'Routes are currently being computed in the background. Please check the dashboard shortly.'
-        toastType = 'info'
+      const notice = dispatchResultNotice(result)
+      if (notice) {
+        toastMessage = notice.message
+        toastType = notice.type
       }
 
       setOptimizationProgress({
         percent: 100,
-        message: isEmpty ? 'No tasks scheduled' : isFailed ? 'Routing failed — reports restored' : isPending ? 'Routes computing...' : 'Dispatch complete'
+        message: isFailed ? 'Routing failed' : isPending ? 'Routes computing...' : isEmpty ? 'No tasks scheduled' : 'Dispatch complete'
       })
       setGlobalNotification({
         message: toastMessage,

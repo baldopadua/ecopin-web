@@ -120,9 +120,8 @@ export default function OptimizationPage() {
   const [dispatchSuccess, setDispatchSuccess] = useState(null)
   const [disassembleTargetId, setDisassembleTargetId] = useState(null)
   const [isDisassembleModalOpen, setIsDisassembleModalOpen] = useState(false)
-  /** WT-80: prior-run incomplete task carryover state */
+  // Existing assignments remain assigned and consume capacity in the planner.
   const [incompleteTasks, setIncompleteTasks] = useState(null)   // null = not loaded, {} = loaded
-  const [carryoverIncomplete, setCarryoverIncomplete] = useState(false)
   const { containerRef: runsContainerRef, pageSize: runsPerPage } = useTablePageSize({ rowHeight: 64 })
   const totalRunPages = Math.max(1, Math.ceil(previousRuns.length / runsPerPage))
   const safeRunPage = Math.min(currentPage, totalRunPages)
@@ -234,14 +233,6 @@ export default function OptimizationPage() {
     const activeSettings = {
       ...normalized,
       mode: selectedTemplate
-    }
-
-    // WT-80: inject incomplete prior-task cluster IDs as priority constraints when carryover is enabled
-    if (carryoverIncomplete && incompleteTasks?.cluster_ids_to_carry?.length) {
-      const existing = Array.isArray(activeSettings.cluster_ids) ? activeSettings.cluster_ids : []
-      activeSettings.cluster_ids = [
-        ...new Set([...incompleteTasks.cluster_ids_to_carry, ...existing])
-      ]
     }
 
     await startOptimization(
@@ -419,60 +410,6 @@ export default function OptimizationPage() {
         </div>
       )}
 
-      {/* WT-80: Prior-run incomplete tasks warning banner */}
-      {incompleteTasks?.hasPriorIncomplete && (
-        <div className={`${styles.banner} border border-orange-500/40 bg-orange-500/10`}>
-          <div className="flex items-start gap-2.5 flex-1">
-            <AlertCircle className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-orange-600 dark:text-orange-400 font-semibold normal-case tracking-normal text-xs m-0">
-                  {incompleteTasks.count} unfinished task{incompleteTasks.count !== 1 ? 's' : ''} from a prior run
-                </h3>
-                <span className="text-[11px] px-2.5 py-0.5 font-medium rounded-full bg-orange-500/20 text-orange-700 dark:text-orange-300 border border-orange-500/30 shrink-0">
-                  {incompleteTasks.count} task{incompleteTasks.count !== 1 ? 's' : ''} pending
-                </span>
-              </div>
-              <p className="text-xs text-text-secondary mt-0.5 mb-2 font-sans">
-                Field crews still have tasks dispatched in a previous run but not yet completed. Generating a new plan without including these may leave sites unattended. Enable carryover to automatically include their clusters.
-              </p>
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                {incompleteTasks.tasks.slice(0, 6).map(task => (
-                  <span key={task.id} className="text-[11px] px-2 py-0.5 rounded-md bg-surface border border-border text-text-secondary flex items-center gap-1">
-                    <span className="font-medium text-text-primary truncate max-w-[120px]">{task.title}</span>
-                    <span className="text-text-muted">·</span>
-                    <span>{formatStatusLabel(task.status)}</span>
-                    {task.crew_name && <><span className="text-text-muted">·</span><span>{task.crew_name}</span></>}
-                  </span>
-                ))}
-                {incompleteTasks.tasks.length > 6 && (
-                  <span className="text-[11px] px-2 py-0.5 rounded-md bg-surface border border-border text-text-muted">
-                    +{incompleteTasks.tasks.length - 6} more
-                  </span>
-                )}
-              </div>
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <div
-                  onClick={() => setCarryoverIncomplete(v => !v)}
-                  role="switch"
-                  aria-checked={carryoverIncomplete}
-                  tabIndex={0}
-                  onKeyDown={e => (e.key === ' ' || e.key === 'Enter') && setCarryoverIncomplete(v => !v)}
-                  className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer ${carryoverIncomplete ? 'bg-orange-500' : 'bg-border'}`}
-                >
-                  <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${carryoverIncomplete ? 'translate-x-4' : 'translate-x-0'}`} />
-                </div>
-                <span className="text-xs text-text-primary font-medium">
-                  {carryoverIncomplete
-                    ? `Include ${incompleteTasks.cluster_ids_to_carry.length} prior cluster${incompleteTasks.cluster_ids_to_carry.length !== 1 ? 's' : ''} in new run`
-                    : 'Include prior incomplete tasks in new run'}
-                </span>
-              </label>
-            </div>
-          </div>
-        </div>
-      )}
-
       {notification && (
         <Notification
           message={notification.message}
@@ -580,6 +517,29 @@ export default function OptimizationPage() {
                   </span>
                 </div>
               </div>
+
+              <p className="text-sm text-text-secondary mb-4">
+                Plans automatically fit the crew capacity left after existing assignments. Extra work stays in the backlog.
+              </p>
+              {incompleteTasks?.hasPriorIncomplete && (
+                <details className="mb-4 rounded-xl border border-border bg-surface-elevated p-4" aria-label="Unfinished assignments">
+                  <summary className="cursor-pointer text-sm font-medium text-text-primary">
+                    {incompleteTasks.count} unfinished task{incompleteTasks.count !== 1 ? 's' : ''} from prior runs
+                  </summary>
+                  <p className="text-sm text-text-secondary mt-2 mb-3">
+                    These tasks stay assigned and already count toward crew capacity. New plans use the remaining slots, time and vehicle load without duplicating them.
+                  </p>
+                  <ul className="m-0 pl-5 space-y-2 text-sm text-text-secondary">
+                    {incompleteTasks.tasks.slice(0, 6).map(task => (
+                      <li key={task.id}>
+                        <span className="font-medium text-text-primary">{task.title}</span>
+                        {' · '}{formatStatusLabel(task.status)}{task.crew_name && ` · ${task.crew_name}`}
+                      </li>
+                    ))}
+                  </ul>
+                  {incompleteTasks.tasks.length > 6 && <p className="text-sm text-text-muted mt-2 mb-0">+{incompleteTasks.tasks.length - 6} more assignments</p>}
+                </details>
+              )}
 
               {/* 1. Target dispatch focus */}
               <div className="mb-4">
