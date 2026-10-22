@@ -1,3 +1,4 @@
+import PublicLoadingState from '@/components/ui/PublicLoadingState'
 import ExplorePage from './ExplorePage'
 import { Suspense } from 'react'
 
@@ -7,5 +8,5 @@ export const metadata = {
 }
 
 export default function ExploreRoute() {
-  return <Suspense fallback={<p role="status">Loading Explore…</p>}><ExplorePage /></Suspense>
+  return <Suspense fallback={<PublicLoadingState label="Loading Explore…" fullScreen />}><ExplorePage /></Suspense>
 }

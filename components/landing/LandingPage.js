@@ -9,11 +9,12 @@ import styles from './LandingPage.module.css'
 import usePublicTheme from './usePublicTheme'
 import useLandingMotion from './useLandingMotion'
 import LandingNavigation from './LandingNavigation'
+import PublicLoadingState from '@/components/ui/PublicLoadingState'
 import { getPublicCmsSettings } from '@/lib/api'
 
 const LandingMap = dynamic(() => import('./LandingMap'), {
   ssr: false,
-  loading: () => <div className={styles.mapLoading} role="status">Loading the Pasig map…</div>,
+  loading: () => <PublicLoadingState label="Loading the Pasig map…" />,
 })
 
 const steps = [
@@ -253,12 +254,29 @@ export default function LandingPage() {
         <section id="mobile-app" className={styles.mobileSection} aria-labelledby="mobile-heading">
           <div className={styles.phoneStage} data-reveal="100">
             <div className={styles.phoneOrbit} aria-hidden="true" />
-            <div className={styles.phone} aria-label="Illustration of the EcoPin mobile reporting app">
-              <div className={styles.phoneCamera} />
-              <div className={styles.phoneHeader}><Image src="/Solo Logo Light.png" alt="" width={24} height={24} style={{ width: 'auto', height: 'auto' }} /><strong>EcoPin</strong><span>Pasig City</span></div>
-              <div className={styles.phoneMap}><Image src="/pasig.svg" alt="" width={400} height={400} unoptimized /><span className={styles.phonePin}><MapPin size={30} /></span><span className={styles.phonePinSmall}><MapPin size={22} /></span><div className={styles.phoneLocation}><MapPin size={14} /> Your neighborhood</div></div>
-              <div className={styles.phoneSheet}><span>Make a difference nearby</span><strong>What did you notice?</strong><div><Camera size={18} /> Capture an issue <ArrowRight size={16} /></div><small>Photo · Location · Description</small></div>
-              <div className={styles.phoneHome} />
+            <div
+              className={styles.phoneTilt}
+              onPointerMove={event => {
+                if (event.pointerType !== 'mouse' || !window.matchMedia('(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)').matches) return
+                const bounds = event.currentTarget.getBoundingClientRect()
+                event.currentTarget.style.setProperty('--tilt-x', `${(0.5 - (event.clientY - bounds.top) / bounds.height) * 12}deg`)
+                event.currentTarget.style.setProperty('--tilt-y', `${((event.clientX - bounds.left) / bounds.width - 0.5) * 16}deg`)
+              }}
+              onPointerLeave={event => {
+                event.currentTarget.style.removeProperty('--tilt-x')
+                event.currentTarget.style.removeProperty('--tilt-y')
+              }}
+            >
+              <div className={styles.phone}>
+                <Image
+                  src={`/images/app/welcome-${isDark ? 'dark' : 'light'}.webp`}
+                  alt="EcoPin Android welcome screen: A cleaner Pasig starts with us, with sign in and create account options"
+                  width={648}
+                  height={1476}
+                  sizes="(max-width: 480px) 210px, 248px"
+                  draggable={false}
+                />
+              </div>
             </div>
             <span className={styles.phoneCaption}><CheckCircle2 size={16} /> A small action, wherever you are.</span>
           </div>

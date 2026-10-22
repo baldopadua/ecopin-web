@@ -136,6 +136,7 @@ function OfficerMapContent() {
       >
         <section className={styles.mapPanel} aria-label="Environmental reports map">
           <EcoPinMap
+            searchable
             centerLat={searchParams.get('lat') ? parseFloat(searchParams.get('lat')) : undefined}
             centerLng={searchParams.get('lng') ? parseFloat(searchParams.get('lng')) : undefined}
             focusReportId={searchParams.get('id')}

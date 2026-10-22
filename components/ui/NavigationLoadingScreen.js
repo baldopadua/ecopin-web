@@ -1,13 +1,12 @@
 'use client'
-import { useEffect, useId, useRef } from 'react'
-import Image from 'next/image'
+import { useEffect, useRef } from 'react'
+import PageLoadingIndicator from './PageLoadingIndicator'
 import { useNavigationLoading } from '@/components/context/NavigationLoadingContext'
 import styles from './NavigationLoadingScreen.module.css'
 
 export default function NavigationLoadingScreen() {
   const { isLoading, targetName } = useNavigationLoading()
   const dialogRef = useRef(null)
-  const titleId = useId()
 
   useEffect(() => {
     if (!isLoading) return
@@ -27,20 +26,9 @@ export default function NavigationLoadingScreen() {
   if (!isLoading) return null
 
   return (
-    <dialog ref={dialogRef} className={styles.overlay} aria-labelledby={titleId}
+    <dialog ref={dialogRef} className={styles.overlay} aria-label={targetName ? `Opening ${targetName}` : 'Opening your page'}
       tabIndex={-1} onCancel={event => event.preventDefault()}>
-      <div className={styles.content} role="status" aria-live="polite" aria-label="Loading workspace view">
-        <div className={styles.emblem} aria-hidden="true">
-          <svg className={styles.ring} viewBox="0 0 96 96" fill="none">
-            <circle className={styles.track} cx="48" cy="48" r="44" />
-            <circle className={styles.arc} cx="48" cy="48" r="44" pathLength="100" />
-          </svg>
-          <Image src="/Solo Logo Light.png" width={26} height={40} alt="" className={`${styles.logo} dark:hidden`} priority />
-          <Image src="/Solo Logo Dark.png" width={26} height={40} alt="" className={`${styles.logo} hidden dark:block`} priority />
-        </div>
-        <h2 id={titleId} className={styles.title}>{targetName ? `Opening ${targetName}` : 'Opening your workspace'}</h2>
-        <p className={styles.subtitle}>Getting your page ready. One moment.</p>
-      </div>
+      <PageLoadingIndicator label={targetName ? `Opening ${targetName}` : 'Opening your page'} />
     </dialog>
   )
 }

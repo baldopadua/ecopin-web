@@ -1,3 +1,5 @@
+import { NavigationLoadingProvider } from '@/components/context/NavigationLoadingContext'
+import NavigationLoadingScreen from '@/components/ui/NavigationLoadingScreen'
 import { Outfit } from "next/font/google";
 import "./globals.css";
 import 'leaflet/dist/leaflet.css'
@@ -38,7 +40,10 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="min-h-full flex flex-col">
-        {children}
+        <NavigationLoadingProvider>
+          <NavigationLoadingScreen />
+          {children}
+        </NavigationLoadingProvider>
       </body>
     </html>
   );

@@ -72,3 +72,16 @@
   line-height: 1.6;
 }
 @keyframes turn { to { transform: rotate(360deg); } }
+
+.inlineLoading, .pageLoading {
+  display: grid;
+  place-items: center;
+  padding: 32px 24px;
+  background: var(--background, #fff);
+  color: var(--text-primary, #17212e);
+}
+.inlineLoading { min-height: 280px; height: 100%; }
+.pageLoading { min-height: 100dvh; }
+@media (prefers-reduced-motion: reduce) {
+  .ring { animation: none; }
+}

@@ -29,7 +29,6 @@ import {
     SlidersHorizontal,
     Truck,
     ShieldCheck,
-    HardDrive,
     Loader2,
 } from 'lucide-react'
 
@@ -63,7 +62,6 @@ const adminNavigation = [
     { name: 'Dashboard', href: '/dashboard/admin', icon: LayoutDashboard },
     { name: 'Users', href: '/dashboard/admin/users', icon: Users },
     { name: 'System', href: '/dashboard/admin/settings', icon: Settings },
-    { name: 'Infrastructure', href: '/dashboard/admin/infrastructure', icon: HardDrive },
     { name: 'Optimization', href: '/dashboard/admin/optimization-settings', icon: SlidersHorizontal },
     { name: 'Sweeper Settings', href: '/dashboard/admin/sweeper-settings', icon: Truck },
     { name: 'Audit Logs', href: '/dashboard/admin/audit-logs', icon: ShieldCheck },

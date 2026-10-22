@@ -17,6 +17,7 @@ import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
 import useConfirmation from '@/components/ui/useConfirmation'
 import StatusBadge from '@/components/ui/StatusBadge'
+import ReportApprovalDialog from '@/components/reports/ReportApprovalDialog'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
 import { useUser } from '@/components/auth/UserContext'
 import {
@@ -165,6 +166,7 @@ export default function ReportDetailPage() {
   const [agencyResponses, setAgencyResponses] = useState([])
   const [resolvingReport, setResolvingReport] = useState(false)
   const [validatingReport, setValidatingReport] = useState(null)
+  const [showApproval, setShowApproval] = useState(false)
   const [activityLogPage, setActivityLogPage] = useState(1)
   const activityLogPerPage = 10
   const [copiedField, setCopiedField] = useState(null)
@@ -531,18 +533,10 @@ export default function ReportDetailPage() {
     }
   }
 
-  const handleValidateReport = async () => {
-    setValidatingReport(reportId)
-    try {
-      await updateReportValidation(reportId, 'approved')
-      setReport({ ...report, validation_status: 'approved' })
-      setNotification({ message: 'Report approved successfully', type: 'success' })
-    } catch (error) {
-      reportDiagnostic('error', 'media', 'Failed to approve report:', error)
-      setNotification({ message: 'Failed to approve report. Please try again.', type: 'error' })
-    } finally {
-      setValidatingReport(null)
-    }
+  const handleReportApproved = updatedReport => {
+    setReport(previous => ({ ...previous, ...updatedReport }))
+    setShowApproval(false)
+    setNotification({ message: 'Report approval and severity saved successfully', type: 'success' })
   }
 
   const handleResolveReport = async () => {
@@ -906,6 +900,22 @@ export default function ReportDetailPage() {
               </div>
 
               {/* Evidence Photos & Videos */}
+              {['officer', 'admin'].includes(user?.role) &&
+                typeof report.notes === 'string' &&
+                report.notes.startsWith('Reporter requested manual review:') && (
+                  <section className="card" aria-labelledby="manual-review-request-title">
+                    <h2 id="manual-review-request-title" className="text-xl font-semibold text-text-primary mb-2">
+                      Manual review request
+                    </h2>
+                    <p className="text-sm text-text-secondary mb-4">
+                      The citizen requested a human review. Read their explanation alongside the evidence before making a decision. Any recorded officer rejection reason appears below as well.
+                    </p>
+                    <p className="text-text-primary leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                      {report.notes}
+                    </p>
+                  </section>
+                )}
+
               <div className="card">
                 <h2 className="text-xl font-bold text-text-primary mb-4">Evidence Media</h2>
                 {(loading || isRefreshing) ? (
@@ -1112,6 +1122,13 @@ export default function ReportDetailPage() {
                 <h2 className="text-lg font-bold text-text-primary mb-4">Report Details</h2>
                 <div className="space-y-3">
                   <div>
+                    <p className="text-xs text-text-muted">Severity score</p>
+                    <p className="text-text-primary font-medium text-sm">{report.severity_score == null ? 'Not assigned' : `${report.severity_score} / 100${report.severity_level ? ` · ${report.severity_level}` : ''}`}</p>
+                    {report.validation_status === 'approved' && report.severity_score == null && ['officer', 'admin'].includes(user?.role) && (
+                      <button type="button" className="btn-secondary mt-2 min-h-11" onClick={() => setShowApproval(true)}>Set severity</button>
+                    )}
+                  </div>
+                  <div>
                     <p className="text-xs text-text-muted">Report ID</p>
                     <p className="text-text-primary font-medium text-sm font-mono">{report.id}</p>
                   </div>
@@ -1313,10 +1330,10 @@ export default function ReportDetailPage() {
                   )}
 
                   {/* Validate/Reject Report for Manual Review */}
-                  {(report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review') && (
+                  {(report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review') && ['officer', 'admin'].includes(user?.role) && (
                     <div className="flex flex-col gap-2.5 pt-2 border-t border-border">
                       <button
-                        onClick={handleValidateReport}
+                        onClick={() => setShowApproval(true)}
                         disabled={validatingReport === reportId}
                         className="w-full min-h-[44px] px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-medium rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
@@ -1377,6 +1394,7 @@ export default function ReportDetailPage() {
       />
 
       {confirmation}
+      {showApproval && <ReportApprovalDialog report={report} onClose={() => setShowApproval(false)} onApproved={handleReportApproved} />}
       {notification && (
         <Notification
           message={notification.message}

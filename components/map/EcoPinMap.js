@@ -14,6 +14,7 @@ import { DASHBOARD_QUERY_KEY } from '@/lib/dashboard-query-client.mjs'
 import { supabase } from '@/lib/supabase'
 import Button from '@/components/ui/Button'
 import OutlierClusterLayer from './OutlierClusterLayer'
+import MapSearch from './MapSearch'
 import EcoPinMarker from './EcoPinMarker'
 import useMapPhotoEvidence from './useMapPhotoEvidence'
 import { Filter, Check } from 'lucide-react'
@@ -187,7 +188,7 @@ function MapCenter({ centerLat, centerLng }) {
   return null
 }
 
-export default function EcoPinMap({ reports: externalReports, centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode = false, selectedReports = [], onReportSelect, hideFilterPanel = false, hidePins = false, hideClusters = false, onReportClick, onClusterSelect, children, allowedClusterIds, allowedReportIds, externalStatusFilter, externalIssueTypeFilter, externalShowPins, externalShowClusters, externalShowHeatmap, externalMaxBounds, externalMinZoom, selectedTemplate = 'standard', photoPins = false }) {
+export default function EcoPinMap({ reports: externalReports, centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode = false, selectedReports = [], onReportSelect, hideFilterPanel = false, hidePins = false, hideClusters = false, onReportClick, onClusterSelect, children, allowedClusterIds, allowedReportIds, externalStatusFilter, externalIssueTypeFilter, externalShowPins, externalShowClusters, externalShowHeatmap, externalMaxBounds, externalMinZoom, selectedTemplate = 'standard', photoPins = false, searchable = false }) {
 
   const [mounted, setMounted] = useState(false)
   const [filteredReports, setFilteredReports] = useState([])
@@ -545,6 +546,7 @@ export default function EcoPinMap({ reports: externalReports, centerLat, centerL
           ref={mapRef}
         >
           <MapResizer />
+          {searchable && <MapSearch reports={processedReportsInfo.parsedReports} clusters={filteredClusters.map(cluster => ({ ...cluster, coords: parseGeometry(cluster.center || cluster.location) }))} />}
           <MapViewportTracker setZoom={setZoom} setMapBounds={setMapBounds} />
           <TileLayer
             url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
