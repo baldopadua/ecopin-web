@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { fetchBatchReportEvidence } from '@/lib/api/reports'
+import { isVideoResource, getVideoPosterUrl } from '@/lib/helpers/mediaHelpers'
 
 export default function useMapPhotoEvidence(reports, enabled) {
   const [photos, setPhotos] = useState({})
@@ -25,9 +26,17 @@ export default function useMapPhotoEvidence(reports, enabled) {
           const received = {}
           for (const id of ids) {
             loaded.current.add(id)
-            const photo = (result[id] || []).find(item => !item.resource_type || item.resource_type === 'image')
-            received[id] = photo?.url || null
-            console.log(`[useMapPhotoEvidence] Report ${id}:`, photo?.url ? 'has photo' : 'no photo', 'evidence count:', (result[id] || []).length)
+            const items = result[id] || []
+            const imageItem = items.find(item => (!item.resource_type || item.resource_type === 'image') && !isVideoResource(item.url))
+            let photoUrl = imageItem?.url || null
+            if (!photoUrl) {
+              const videoItem = items.find(item => item.resource_type === 'video' || isVideoResource(item.url))
+              if (videoItem?.url) {
+                photoUrl = getVideoPosterUrl(videoItem.url) || videoItem.url
+              }
+            }
+            received[id] = photoUrl
+            console.log(`[useMapPhotoEvidence] Report ${id}:`, photoUrl ? 'has photo/thumbnail' : 'no photo', 'evidence count:', items.length)
           }
           setPhotos(previous => ({ ...previous, ...received }))
         } catch (error) {

@@ -2,17 +2,29 @@
 import SecureImage from '@/components/ui/SecureImage'
 import ImageLightbox from '@/components/ui/ImageLightbox'
 import React, { useState, useEffect, useMemo } from 'react'
+import { Play } from 'lucide-react'
 import { fetchBatchReportEvidence } from '@/lib/api/reports'
+import { isVideoResource, getVideoPosterUrl } from '@/lib/helpers/mediaHelpers'
 
 // Efficiently transforms Cloudinary media URLs into lightweight, auto-formatted thumbnails or previews
 export function getOptimizedImageUrl(url, { width = 400, quality = 'auto', format = 'auto' } = {}) {
   if (!url || typeof url !== 'string') return url
-  if (url.includes('res.cloudinary.com') && url.includes('/image/upload/')) {
-    if (url.includes('/image/upload/w_') || url.includes('/image/upload/f_auto')) {
-      return url
+  if (url.includes('res.cloudinary.com')) {
+    if (url.includes('/video/upload/')) {
+      const posterUrl = getVideoPosterUrl(url) || url
+      if (posterUrl.includes('/video/upload/w_') || posterUrl.includes('/video/upload/f_auto')) {
+        return posterUrl
+      }
+      const transform = `f_${format},q_${quality},w_${width},c_limit/`
+      return posterUrl.replace('/video/upload/', `/video/upload/${transform}`)
     }
-    const transform = `f_${format},q_${quality},w_${width},c_limit/`
-    return url.replace('/image/upload/', `/image/upload/${transform}`)
+    if (url.includes('/image/upload/')) {
+      if (url.includes('/image/upload/w_') || url.includes('/image/upload/f_auto')) {
+        return url
+      }
+      const transform = `f_${format},q_${quality},w_${width},c_limit/`
+      return url.replace('/image/upload/', `/image/upload/${transform}`)
+    }
   }
   return url
 }
@@ -66,12 +78,13 @@ export default function EvidenceGallery({ reports = [] }) {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {visibleEvidence.map((item, idx) => {
               const rawUrl = item.photo_url || item.url
+              const isVideo = item.resource_type === 'video' || isVideoResource(rawUrl, item.resource_type)
               const thumbUrl = getOptimizedImageUrl(rawUrl, { width: 400 })
               return (
                 <button type="button"
                   key={item.id || item.public_id || idx} 
                   className="relative text-left border border-border overflow-hidden group bg-surface rounded-xl"
-                  aria-label={`Open evidence photo ${idx + 1} for ${item.reportTitle || 'this report'}`}
+                  aria-label={`Open evidence ${isVideo ? 'video' : 'photo'} ${idx + 1} for ${item.reportTitle || 'this report'}`}
                   onClick={() => setLightboxImage(idx)}
                 >
                   <SecureImage 
@@ -81,6 +94,13 @@ export default function EvidenceGallery({ reports = [] }) {
                     decoding="async"
                     className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300" 
                   />
+                  {isVideo && (
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none group-hover:bg-black/35 transition-colors">
+                      <span className="w-10 h-10 rounded-full bg-black/60 border border-white/60 flex items-center justify-center shadow-lg backdrop-blur-xs">
+                        <Play size={18} className="text-white fill-white translate-x-0.5" />
+                      </span>
+                    </span>
+                  )}
                   <span className="absolute bottom-2 left-2 bg-black/80 text-white text-xs px-2 py-1 truncate max-w-[90%] border border-white/20">
                     {item.reportTitle || `Report ${item.reportId}`}
                   </span>

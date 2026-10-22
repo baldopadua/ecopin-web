@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, MapPin, X, ImageOff } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, MapPin, X, ImageOff, Play, Video } from 'lucide-react'
 import SecureImage from '@/components/ui/SecureImage'
+import { isVideoResource, getVideoPosterUrl } from '@/lib/helpers/mediaHelpers'
 import {
   fetchBatchReportEvidence,
   getCachedEvidence,
@@ -23,6 +24,61 @@ function preloadImage(url) {
   const img = new Image()
   img.decoding = 'async'
   img.src = url
+}
+
+function ViewerVideoPlayer({ src, poster }) {
+  const videoRef = useRef(null)
+  const [isPlaying, setIsPlaying] = useState(false)
+
+  if (!src) return null
+
+  const handlePlayClick = (e) => {
+    e.stopPropagation()
+    const v = videoRef.current
+    if (!v) return
+    if (v.paused) {
+      const playPromise = v.play()
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          if (err?.name === 'NotAllowedError') {
+            v.muted = true
+            v.play().catch(() => {})
+          }
+        })
+      }
+    } else {
+      v.pause()
+    }
+  }
+
+  return (
+    <div className="relative w-full h-full flex items-center justify-center bg-black rounded-lg overflow-hidden group">
+      <video
+        ref={videoRef}
+        key={src}
+        src={src}
+        poster={poster || undefined}
+        controls
+        playsInline
+        preload="metadata"
+        onPlay={() => setIsPlaying(true)}
+        onPlaying={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        onEnded={() => setIsPlaying(false)}
+        className="max-w-full max-h-full object-contain"
+      />
+      {!isPlaying && (
+        <button
+          type="button"
+          onClick={handlePlayClick}
+          aria-label="Play video"
+          className="absolute inset-0 m-auto w-16 h-16 rounded-full bg-slate-900/80 hover:bg-slate-900 text-white flex items-center justify-center shadow-2xl backdrop-blur-sm border border-white/20 transition-transform active:scale-95 cursor-pointer z-10"
+        >
+          <Play size={28} className="translate-x-0.5 fill-white text-white" />
+        </button>
+      )}
+    </div>
+  )
 }
 
 export default function PhotoViewer({
@@ -134,18 +190,50 @@ export default function PhotoViewer({
 
   const photos = []
   if (currentReport?.before_photo_url) {
-    photos.push({ url: currentReport.before_photo_url, label: 'Before photo' })
+    const isVideo = isVideoResource(currentReport.before_photo_url)
+    photos.push({
+      url: currentReport.before_photo_url,
+      label: isVideo ? 'Before video' : 'Before photo',
+      isVideo,
+      poster: isVideo ? getVideoPosterUrl(currentReport.before_photo_url) : null
+    })
   }
   if (currentReport?.after_photo_url) {
-    photos.push({ url: currentReport.after_photo_url, label: 'After photo' })
+    const isVideo = isVideoResource(currentReport.after_photo_url)
+    photos.push({
+      url: currentReport.after_photo_url,
+      label: isVideo ? 'After video' : 'After photo',
+      isVideo,
+      poster: isVideo ? getVideoPosterUrl(currentReport.after_photo_url) : null
+    })
+  }
+  if (currentReport?.video_url && !photos.some(p => p.url === currentReport.video_url)) {
+    photos.push({
+      url: currentReport.video_url,
+      label: 'Report video',
+      isVideo: true,
+      poster: getVideoPosterUrl(currentReport.video_url)
+    })
   }
   if (currentReport?.image && !photos.some(p => p.url === currentReport.image)) {
-    photos.push({ url: currentReport.image, label: 'Report photo' })
+    const isVideo = isVideoResource(currentReport.image)
+    photos.push({
+      url: currentReport.image,
+      label: isVideo ? 'Report video' : 'Report photo',
+      isVideo,
+      poster: isVideo ? getVideoPosterUrl(currentReport.image) : null
+    })
   }
   for (const item of cachedEvidence) {
-    if (item.url && (!item.resource_type || item.resource_type === 'image')) {
+    if (item.url) {
+      const isVideo = item.resource_type === 'video' || isVideoResource(item.url, item.resource_type)
       if (!photos.some(p => p.url === item.url)) {
-        photos.push({ url: item.url, label: item.name || 'Report photo' })
+        photos.push({
+          url: item.url,
+          label: item.name || (isVideo ? 'Report video' : 'Report photo'),
+          isVideo,
+          poster: isVideo ? getVideoPosterUrl(item.url) : null
+        })
       }
     }
   }
@@ -240,6 +328,12 @@ export default function PhotoViewer({
                   <ImageOff size={48} />
                   <span>No photos available for this report</span>
                 </div>
+              ) : activePhoto?.isVideo ? (
+                <ViewerVideoPlayer
+                  key={activePhoto.url}
+                  src={activePhoto.url}
+                  poster={activePhoto.poster || undefined}
+                />
               ) : (
                 <SecureImage
                   key={activePhoto?.url}
@@ -284,11 +378,25 @@ export default function PhotoViewer({
                   <button
                     key={`${photo.url}-${pIdx}`}
                     type="button"
-                    aria-label={`View photo ${pIdx + 1}`}
+                    aria-label={`View ${photo.isVideo ? 'video' : 'photo'} ${pIdx + 1}`}
                     aria-pressed={safePhotoIndex === pIdx}
                     onClick={() => setPhotoIndex(pIdx)}
+                    className="relative overflow-hidden"
                   >
-                    <SecureImage src={photo.url} alt="" />
+                    {photo.isVideo ? (
+                      <div className="relative w-full h-full flex items-center justify-center bg-black">
+                        {photo.poster || getVideoPosterUrl(photo.url) ? (
+                          <SecureImage src={photo.poster || getVideoPosterUrl(photo.url)} alt="" />
+                        ) : (
+                          <video src={`${photo.url}#t=0.001`} preload="metadata" muted playsInline className="w-full h-full object-cover pointer-events-none" />
+                        )}
+                        <span className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
+                          <Play size={12} className="text-white fill-white" />
+                        </span>
+                      </div>
+                    ) : (
+                      <SecureImage src={photo.url} alt="" />
+                    )}
                   </button>
                 ))}
               </div>
