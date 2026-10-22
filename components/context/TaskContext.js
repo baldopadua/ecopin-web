@@ -145,6 +145,9 @@ export function TaskProvider({ children }) {
         type: toastType,
         link: !isEmpty && !isFailed && result.run?.id ? `/dashboard/officer/optimization/${result.run.id}` : null
       })
+      if (!isFailed && !isEmpty) {
+        setDraftPlan(null)
+      }
       if (onSuccess && !isFailed) onSuccess(result)
       else if (onError && isFailed) onError(new Error(toastMessage))
     } catch (error) {

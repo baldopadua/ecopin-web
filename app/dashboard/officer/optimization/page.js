@@ -279,6 +279,7 @@ export default function OptimizationPage() {
   }
 
   const handleCommitPlan = async (planId) => {
+    if (actionLoading || isOptimizing) return
     setActionLoading('commit')
     
     await commitOptimization(
@@ -304,10 +305,18 @@ export default function OptimizationPage() {
           })
         }
 
-        if (!isPending && !isEmpty && !isFailed) setDraftPlan(null)
+        if (!isPending && !isEmpty && !isFailed) {
+          setDraftPlan(null)
+          setCurrentProposal(null)
+          setCurrentProposalRoutes([])
+        }
         loadPreviousRuns()
         loadPendingClusters()
         setActionLoading(null)
+
+        if (result.run?.id && !isFailed && !isEmpty) {
+          router.push(`/dashboard/officer/optimization/${result.run.id}`)
+        }
       },
       (error) => {
         setNotification({ message: error.message || 'Failed to commit plan', type: 'error' })
@@ -634,11 +643,14 @@ export default function OptimizationPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <button
                       onClick={() => handleCommitPlan(currentProposal.id)}
-                      disabled={Boolean(actionLoading) || !currentProposal.selectedCount}
+                      disabled={Boolean(actionLoading) || isOptimizing || !currentProposal.selectedCount}
                       className="px-5 py-2.5 bg-primary text-white font-semibold normal-case tracking-normal text-xs border border-primary hover:bg-action-hover transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap cursor-pointer rounded-full"
                     >
-                      {actionLoading === 'commit' ? (
-                        'Publishing Routes...'
+                      {actionLoading === 'commit' || isOptimizing ? (
+                        <span className="flex items-center gap-2">
+                          <Loader2 size={14} className="animate-spin" aria-hidden="true" />
+                          Publishing Routes...
+                        </span>
                       ) : (
                         <>
                           <Check className="w-4 h-4 mr-0.5" /> Confirm and dispatch crews
