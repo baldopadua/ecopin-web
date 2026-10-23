@@ -285,7 +285,7 @@ export default function LandingPage() {
             <h2 id="mobile-heading">Notice something?<br /><span className={styles.blueText}>Make it count.</span></h2>
             <p>Turn a photo into a report. With the EcoPin Android app, you can share environmental concerns and follow what happens next.</p>
             <ul><li><CheckCircle2 /> Add a photo and the location</li><li><CheckCircle2 /> Describe the issue in your own words</li><li><CheckCircle2 /> Keep track of your reports</li></ul>
-            <a href={cms.app_download_url || '/ecopin-app-release.apk'} download className={styles.primaryButton}><Download size={18} /> Download for Android {cms.app_version_name ? `(${cms.app_version_name})` : ''} <ArrowRight size={18} /></a>
+            <a href="/ecopin-app-release.apk" download className={styles.primaryButton}><Download size={18} /> Download for Android <ArrowRight size={18} /></a>
             <span className={styles.downloadNote}>Free Android app · Direct APK download</span>
             <a href="/downloads" className={styles.installHelp}>Need help installing? <ArrowRight size={14} /></a>
           </div>
