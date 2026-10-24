@@ -37,6 +37,7 @@ function TacticalScanContent() {
   const [query, setQuery] = useState('');
   const [futureStepIndex, setFutureStepIndex] = useState(0);
   const [lastValidHistoricalData, setLastValidHistoricalData] = useState(null);
+  const refreshRef = useRef(false);
   const currentKey = `${timeHorizon}-${attempt}`;
   const historyKey = `${timeHorizon}-${selectedDate}-${attempt}`;
   const datesKey = `${timeHorizon}-${datesAttempt}`;
@@ -48,7 +49,9 @@ function TacticalScanContent() {
 
   useEffect(() => {
     const controller = new AbortController();
-    getCurrentPredictions(timeHorizon, { signal: controller.signal }).then(response => {
+    const shouldRefresh = refreshRef.current;
+    refreshRef.current = false;
+    getCurrentPredictions(timeHorizon, { signal: controller.signal, refresh: shouldRefresh }).then(response => {
       if (!controller.signal.aborted) {
         const data = response.data ?? response;
         setCurrentResult({ key: currentKey, data: normalizeForecast(data), error: data.status === 'setup_required'
@@ -139,11 +142,11 @@ function TacticalScanContent() {
   const observed = viewMode === 'heatmap';
   const rawAreas = useMemo(() => labelForecastAreas(currentData?.geojson?.features || []), [currentData]);
 
-  // Extract distinct future steps across all areas (Week 1, Week 2, etc.)
+  // Extract distinct future steps across all areas (Full horizon + Week 1, Week 2, etc.)
   const futureSteps = useMemo(() => extractForecastSteps(rawAreas), [rawAreas]);
   const activeStep = activeTab === 'current' && futureSteps.length > 0 ? futureSteps[Math.min(futureStepIndex, futureSteps.length - 1)] : null;
 
-  // Project areas to the currently selected future week when in live mode
+  // Project areas to the currently selected future week when scrubbing beyond Full horizon
   const allAreas = useMemo(() => {
     if (activeTab === 'current' && activeStep?.date) {
       return projectFeaturesToStep(rawAreas, activeStep.date);
@@ -192,7 +195,7 @@ function TacticalScanContent() {
             <History size={16} aria-hidden="true" /><span>Past Snapshots</span>
           </button>
         )}
-        <button type="button" aria-label="Refresh forecast" disabled={feedLoading} onClick={() => { setAttempt(value => value + 1); setDatesAttempt(value => value + 1); }}><RefreshCw size={16} className={feedLoading ? styles.refreshing : ''} aria-hidden="true" /></button>
+        <button type="button" aria-label="Refresh forecast" disabled={feedLoading} onClick={() => { refreshRef.current = true; setAttempt(value => value + 1); setDatesAttempt(value => value + 1); }}><RefreshCw size={16} className={feedLoading ? styles.refreshing : ''} aria-hidden="true" /></button>
       </div>
     </PageHeader>
     <CommandHUD viewMode={viewMode} setViewMode={value => { setViewMode(value); setCompactView('map'); setFocusedItem(null); }} timeHorizon={timeHorizon} setTimeHorizon={changeHorizon} activeTab={activeTab} selectedDate={selectedDate} />
@@ -217,7 +220,7 @@ function TacticalScanContent() {
         <div className={styles.mapHeading}>
           <div>
             <MapPin size={16} aria-hidden="true" />
-            <h2>{observed ? 'Today’s reported locations' : activeTab === 'historical' ? `Archived footprint · ${selectedDate ? forecastDate(selectedDate) : 'Past date'}` : (activeStep ? `Projected map · ${activeStep.label}` : 'Where to look next')}</h2>
+            <h2>{observed ? 'Today’s reported locations' : activeTab === 'historical' ? `Archived footprint · ${selectedDate ? forecastDate(selectedDate) : 'Past date'}` : (activeStep?.date ? `Projected map · ${activeStep.label}` : 'Where to look next')}</h2>
           </div>
           <span>{observed ? 'Actual reports' : activeTab === 'historical' ? `${filteredAreas.length} flagged areas` : `${filteredAreas.length} of ${allAreas.length} areas`}</span>
         </div>
@@ -266,7 +269,7 @@ function TacticalScanContent() {
         {!observed && <div className={styles.legend} aria-label="Risk level legend"><span><i className={styles.high} />High risk</span><span><i className={styles.medium} />Medium risk</span><span><i className={styles.low} />Low risk</span></div>}
         <p className={styles.mapNote}>{observed ? 'Reports submitted today, from midnight in Manila. Select a report in the list to locate it.'
           : activeTab === 'historical' ? `Historical archive: Displaying the AI prediction footprint originally generated on ${selectedDate ? forecastDate(selectedDate) : 'the selected date'}.`
-          : activeStep ? `Displaying projected hotspot intensity for ${activeStep.label}. Scrub the future timeline below to step forward/backward.`
+          : activeStep?.date ? `Displaying projected hotspot intensity for ${activeStep.label}. Scrub the future timeline below to step forward/backward.`
           : `${forecastDate(currentData?.forecast_date_start)} – ${forecastDate(currentData?.forecast_date_end)} · Select an area to explore its forecast.`}</p>
       </section>
       <DynamicFeed key={`${activeTab}-${timeHorizon}-${observed}`} items={feedLoading && !hasMapData || feedError ? [] : feedItems} selectedItem={focusedItem} loading={feedLoading && !hasMapData} error={feedError}
