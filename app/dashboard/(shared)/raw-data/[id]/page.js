@@ -408,6 +408,8 @@ export default function ReportDetailPage() {
   const [reverseGeocodedAddress, setReverseGeocodedAddress] = useState(null)
 
   useEffect(() => {
+    // If the report already has a verified street address, skip client reverse geocoding
+    if (report?.street_address) return
     if (!location.latitude || !location.longitude) return
     let active = true
     const lat = location.latitude
@@ -429,8 +431,9 @@ export default function ReportDetailPage() {
           const street = addr.road || addr.pedestrian || addr.street || ''
           const district = addr.quarter || addr.neighbourhood || addr.suburb || ''
           const city = addr.city || addr.town || 'Pasig City'
-          const parts = [street, district ? `Brgy. ${district}` : '', city].filter(Boolean)
-          if (parts.length > 0) {
+          // Only set client reverseGeocodedAddress if an actual street was found
+          if (street) {
+            const parts = [street, district ? `Brgy. ${district}` : '', city].filter(Boolean)
             setReverseGeocodedAddress(parts.join(', '))
           }
         }
@@ -442,24 +445,33 @@ export default function ReportDetailPage() {
       clearTimeout(timer)
       controller.abort()
     }
-  }, [location.latitude, location.longitude])
+  }, [report?.street_address, location.latitude, location.longitude])
 
   const effectiveAddress = useMemo(() => {
-    if (reverseGeocodedAddress) return reverseGeocodedAddress
+    // 1. If report has verified street_address, combine with barangay and city
     if (report?.street_address && typeof report.street_address === 'string' && report.street_address.trim()) {
-      return report.street_address
-    }
-    if (report?.address && typeof report.address === 'string' && report.address.trim()) {
-      return report.address
-    }
-    if (location.latitude && location.longitude) {
       return formatReportAddress({
         ...report,
         latitude: location.latitude,
         longitude: location.longitude
       })
     }
-    return report?.barangay ? `Barangay ${report.barangay}, Pasig City` : 'Street address not available'
+    // 2. Fallback to client reverse geocode if an exact street was found
+    if (reverseGeocodedAddress) return reverseGeocodedAddress
+    // 3. Fallback to general formatted address
+    if (location.latitude && location.longitude) {
+      const formatted = formatReportAddress({
+        ...report,
+        latitude: location.latitude,
+        longitude: location.longitude
+      })
+      if (formatted && formatted !== 'Pasig City') return formatted
+    }
+    if (report?.address && typeof report.address === 'string' && report.address.trim()) {
+      return report.address
+    }
+    const fallbackCity = report?.city ? (report.city.toLowerCase().endsWith('city') ? report.city : `${report.city} City`) : 'Pasig City'
+    return report?.barangay ? `Barangay ${report.barangay}, ${fallbackCity}` : 'Street address not available'
   }, [reverseGeocodedAddress, report, location.latitude, location.longitude])
 
   const getSatisfactionEmoji = (rating) => {

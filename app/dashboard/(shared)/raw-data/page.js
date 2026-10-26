@@ -9,8 +9,8 @@ import DataTable from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
 import useTablePageSize from '@/components/ui/useTablePageSize'
 import StatusBadge from '@/components/ui/StatusBadge'
-import { useUser } from '@/components/auth/UserContext'
-import { Wrench, ClipboardCheck } from 'lucide-react'
+import { Wrench, ClipboardCheck, MapPin } from 'lucide-react'
+import { formatReportAddress } from '@/lib/format-location.mjs'
 
 const terminalStatuses = ['resolved', 'closed', 'completed', 'rejected']
 
@@ -211,9 +211,15 @@ function RawDataContent() {
       { 
         key: 'title', 
         label: 'Title', 
-        width: isStaff ? '18%' : '25%',
-        render: (value) => (
-          <span className="font-medium text-text-primary">{value}</span>
+        width: isStaff ? '20%' : '26%',
+        render: (value, row) => (
+          <div className="flex flex-col min-w-0 py-0.5">
+            <span className="font-medium text-text-primary truncate">{value}</span>
+            <span className="text-[11px] text-text-muted flex items-center gap-1 mt-0.5 truncate" title={formatReportAddress(row)}>
+              <MapPin size={11} className="shrink-0 text-primary/70" />
+              <span>{formatReportAddress(row, { short: true })}</span>
+            </span>
+          </div>
         )
       },
       { 

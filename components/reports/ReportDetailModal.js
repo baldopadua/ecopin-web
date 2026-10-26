@@ -76,7 +76,10 @@ export default function ReportDetailModal({ report, evidence = [], agencyRespons
 
   if (!report) return null
 
-  const locationAddress = report.street_address || report.location_address || report.address || (report.latitude && report.longitude ? formatReportAddress(report) : null)
+  const formattedAddr = formatReportAddress(report)
+  const locationAddress = formattedAddr && formattedAddr !== 'Pasig City'
+    ? formattedAddr
+    : (report.street_address || report.location_address || report.address || formattedAddr)
 
   // Aggregate all photos and videos for this report
   const images = []
