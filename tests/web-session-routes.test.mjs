@@ -48,6 +48,7 @@ function fakeServices(t, { loginFailure = false, temporary = false, commitDelay 
       }
       if (target.pathname === '/api/cleanup-tasks/custom') return Response.json({ message: 'synthetic private backend detail', status: 'conflict', reason: 'stale_or_blocked_report' }, { status: 409 });
       if (target.pathname === '/api/optimization/blocks') return Response.json([]);
+      if (target.pathname === '/api/optimization/crews/unassigned-members') return Response.json([{ id: 'crew-user-1', full_name: 'Test Crew Member' }]);
       if (target.pathname === '/api/auth/login') {
         if (loginFailure) return Response.json({ error: 'synthetic upstream secret detail', stack: 'synthetic stack' }, { status: 500 });
         return Response.json({ token: 'synthetic-access-token', session: { refresh_token: 'synthetic-refresh-token' }, requirePasswordChange: temporary });
@@ -125,6 +126,15 @@ test('dispatch block lookup reaches the authenticated backend', async t => {
   const response = await proxy.GET(new Request('https://web.example.invalid/api/backend/api/optimization/blocks', { headers: { Cookie: cookie } }));
   assert.equal(response.status, 200);
   assert.ok(calls.some(call => call.target.endsWith('/api/optimization/blocks') && call.options.headers.Authorization === 'Bearer synthetic-access-token'));
+});
+
+test('unassigned field crew lookup reaches the authenticated backend via GET', async t => {
+  const { calls } = fakeServices(t);
+  const login = await route.POST(loginRequest({ email: 'person@example.invalid', password: 'synthetic-password' }), context(['login']));
+  const cookie = login.headers.get('set-cookie').split(';', 1)[0];
+  const response = await proxy.GET(new Request('https://web.example.invalid/api/backend/api/optimization/crews/unassigned-members', { headers: { Cookie: cookie } }));
+  assert.equal(response.status, 200);
+  assert.ok(calls.some(call => call.target.endsWith('/api/optimization/crews/unassigned-members') && call.options.headers.Authorization === 'Bearer synthetic-access-token'));
 });
 
 test('login returns only public session metadata, never backend tokens', async t => {
