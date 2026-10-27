@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import ResponseDeadline from '@/components/ui/ResponseDeadline'
 import { ArrowUpRight } from 'lucide-react'
 import styles from './LandingPage.module.css'
 
@@ -10,6 +11,7 @@ export default function PublicReportPopup({ report, onOpen }) {
     <strong>{report.title || 'Reported environmental concern'}</strong>
     <p>{report.description || 'Open the report for more details.'}</p>
     <small>Status: {(report.status || 'Under review').replaceAll('_', ' ')}</small>
+    <ResponseDeadline report={report} />
     {onOpen ? <button type="button" className={styles.popupAction} onClick={onOpen}>View report <ArrowUpRight size={14} /></button> : <Link className={styles.popupAction} href={`/explore?report=${encodeURIComponent(report.id)}`}>Explore full map <ArrowUpRight size={14} /></Link>}
   </div>
 }

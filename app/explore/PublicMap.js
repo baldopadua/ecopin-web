@@ -20,6 +20,7 @@ import GalleryToolbar from './GalleryToolbar'
 import StatusTabs from './StatusTabs'
 import PublicSelect from '@/components/ui/PublicSelect'
 import PublicReportPopup from '@/components/landing/PublicReportPopup'
+import ResponseDeadline from '@/components/ui/ResponseDeadline'
 import landingStyles from '@/components/landing/LandingPage.module.css'
 import { exploreUrl } from '@/lib/explore-url.mjs'
 import { formatReportAddress } from '@/lib/format-location.mjs'
@@ -1676,6 +1677,7 @@ export default function PublicMap({ theme = 'light' }) {
             </div>
 
             {/* Quick Info Bento Grid */}
+            <ResponseDeadline report={detailedReport} details />
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="p-3 bg-gray-50/80 dark:bg-[#242424] rounded-2xl border border-gray-100 dark:border-[#2A2A2A] flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-gray-200/60 dark:bg-white/5 flex items-center justify-center flex-shrink-0 text-gray-500 dark:text-gray-400">
@@ -2599,6 +2601,8 @@ export default function PublicMap({ theme = 'light' }) {
                                 <span className="normal-case"> • By {publisherMap[report.id]?.publisher_name || getCachedPublisher(report.id)?.publisher_name || report.publisher_name || 'Anonymous'}</span>
                               </p>
 
+                              <ResponseDeadline report={report} />
+
                               <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 truncate flex items-center gap-1" title={formatReportAddress(report)}>
                                 <MapPin className="w-3 h-3 text-[var(--landing-blue)] flex-shrink-0" />
                                 <span className="font-medium text-gray-700 dark:text-gray-300">
@@ -2761,6 +2765,7 @@ export default function PublicMap({ theme = 'light' }) {
 
                         {/* Content Card Body */}
                         <div className="p-4 flex-1 flex flex-col justify-between">
+                          <ResponseDeadline report={report} />
                           <div>
                             <div className="flex items-center justify-between gap-2 mb-1">
                               <span className="text-[10px] font-mono text-gray-400 dark:text-gray-500 truncate">

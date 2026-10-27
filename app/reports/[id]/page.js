@@ -21,6 +21,7 @@ import LandingNavigation from '@/components/landing/LandingNavigation'
 import usePublicTheme from '@/components/landing/usePublicTheme'
 import publicStyles from '@/components/landing/LandingPage.module.css'
 import StatusBadge from '@/components/ui/StatusBadge'
+import ResponseDeadline from '@/components/ui/ResponseDeadline'
 import PublicLoadingState from '@/components/ui/PublicLoadingState'
 
 export default function PublicReportPage() {
@@ -200,6 +201,7 @@ export default function PublicReportPage() {
 
             {/* Content Body */}
             <div style={{ padding: '28px 24px' }}>
+              <ResponseDeadline report={report} details />
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
                 <span style={{ 
                   display: 'inline-block',
