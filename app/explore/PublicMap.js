@@ -1699,7 +1699,7 @@ export default function PublicMap({ theme = 'light' }) {
                 </div>
                 <div className="min-w-0">
                   <p className="text-[10px] text-gray-400 uppercase font-semibold tracking-wider group-hover:text-[#0052CC] dark:group-hover:text-[#60A5FA] transition-colors">Location</p>
-                  <p className="text-gray-800 dark:text-gray-200 font-semibold truncate text-xs mt-0.5" title={formatReportAddress(detailedReport)}>
+                  <p className="text-gray-800 dark:text-gray-200 font-semibold line-clamp-2 text-xs mt-0.5 leading-snug" title={formatReportAddress(detailedReport)}>
                     {formatReportAddress(detailedReport)}
                   </p>
                   <p className="font-mono text-[10px] text-gray-400 dark:text-gray-500 truncate mt-0.5">
@@ -2440,6 +2440,7 @@ export default function PublicMap({ theme = 'light' }) {
                         <Marker
                           position={[latitude, longitude]}
                           icon={createPinIcon(reportImage, isSelected, isDark, report.status, false)}
+                          title={formatReportAddress(report) ? `${report.title || 'Environmental Incident'} • ${formatReportAddress(report)}` : (report.title || 'Environmental Incident')}
                           zIndexOffset={isSelected ? 1000 : 0}
                           ref={(el) => {
                             if (el) markerRefs.current[report.id] = el
@@ -2539,7 +2540,10 @@ export default function PublicMap({ theme = 'light' }) {
                                 : 'border-gray-200/80 dark:border-[#2A2A2A] hover:border-gray-300 dark:hover:border-gray-700 hover:shadow-md'
                             }`}
                           >
-                            <div className="relative w-28 h-20 sm:w-32 sm:h-24 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 flex-shrink-0">
+                            <div
+                              className="relative w-28 h-20 sm:w-32 sm:h-24 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 flex-shrink-0"
+                              title={formatReportAddress(report)}
+                            >
                               {thumbImg === null ? (
                                 <div className="w-full h-full flex flex-col items-center justify-center bg-gray-200 dark:bg-[#333]">
                                   <ImageOff className="w-5 h-5 text-gray-400" />
@@ -2599,9 +2603,9 @@ export default function PublicMap({ theme = 'light' }) {
                                 <span className="normal-case"> • By {publisherMap[report.id]?.publisher_name || getCachedPublisher(report.id)?.publisher_name || report.publisher_name || 'Anonymous'}</span>
                               </p>
 
-                              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 truncate flex items-center gap-1" title={formatReportAddress(report)}>
-                                <MapPin className="w-3 h-3 text-[var(--landing-blue)] flex-shrink-0" />
-                                <span className="font-medium text-gray-700 dark:text-gray-300">
+                              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 flex items-start gap-1" title={formatReportAddress(report)}>
+                                <MapPin className="w-3.5 h-3.5 text-[var(--landing-blue)] flex-shrink-0 mt-0.5" />
+                                <span className="font-medium text-gray-700 dark:text-gray-300 line-clamp-2 leading-tight">
                                   {formatReportAddress(report)}
                                 </span>
                               </p>
@@ -2690,7 +2694,7 @@ export default function PublicMap({ theme = 'light' }) {
                         } overflow-hidden transition-[border-color,box-shadow] duration-200 flex flex-col`}
                       >
                         {/* Photo Container */}
-                        <button type="button" aria-label={`View photos for ${report.title || "Environmental concern"}`} onClick={() => setPhotoSelection({ report, index: 0 })} className={`w-full relative ${galleryViewMode === 'showcase' ? 'aspect-[16/9]' : 'aspect-[16/10]'} bg-gray-100 dark:bg-gray-800 overflow-hidden`}>
+                        <button type="button" aria-label={`View photos for ${report.title || "Environmental concern"}`} title={formatReportAddress(report)} onClick={() => setPhotoSelection({ report, index: 0 })} className={`w-full relative ${galleryViewMode === 'showcase' ? 'aspect-[16/9]' : 'aspect-[16/10]'} bg-gray-100 dark:bg-gray-800 overflow-hidden`}>
                           {imgUrl === null ? (
                             <div className="w-full h-full flex flex-col items-center justify-center bg-gray-200 dark:bg-[#333]">
                               <ImageOff className="w-8 h-8 text-gray-400" />
@@ -2787,10 +2791,10 @@ export default function PublicMap({ theme = 'light' }) {
                                 <Calendar className="w-3.5 h-3.5" />
                                 {new Date(report.created_at).toLocaleDateString()}
                               </span>
-                              <span className="flex items-center gap-1 truncate max-w-[170px] text-gray-600 dark:text-gray-300" title={formatReportAddress(report)}>
-                                <MapPin className="w-3.5 h-3.5 text-[#0052CC] flex-shrink-0" />
-                                <span className="truncate font-medium">
-                                  {formatReportAddress(report, { short: true })}
+                              <span className="flex items-start gap-1 flex-1 min-w-0 justify-end ml-2 text-gray-600 dark:text-gray-300" title={formatReportAddress(report)}>
+                                <MapPin className="w-3.5 h-3.5 text-[#0052CC] flex-shrink-0 mt-0.5" />
+                                <span className="line-clamp-2 text-right font-medium leading-tight">
+                                  {formatReportAddress(report)}
                                 </span>
                               </span>
                             </div>

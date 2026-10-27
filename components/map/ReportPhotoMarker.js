@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, forwardRef } from 'react'
 import { createPortal } from 'react-dom'
 import { Marker } from 'react-leaflet'
 import L from 'leaflet'
@@ -65,7 +65,7 @@ function PinPhoto({ source }) {
 }
 
 // A React portal keeps private evidence on the existing authenticated image path.
-export default function ReportPhotoMarker({ report, image, selected, removing, children, ...markerProps }) {
+const ReportPhotoMarker = forwardRef(function ReportPhotoMarker({ report, image, selected, removing, children, ...markerProps }, ref) {
   const container = useMemo(() => document.createElement('div'), [])
   const icon = useMemo(() => L.divIcon({ html: container, className: styles.marker,
     iconSize: [50, 58], iconAnchor: [25, 58], popupAnchor: [0, -62] }), [container])
@@ -75,10 +75,13 @@ export default function ReportPhotoMarker({ report, image, selected, removing, c
   const effectiveImage = image || report?.photo_url || report?.file_url || report?.image_url || report?.image || report?.before_photo_url || report?.video_url
 
   return <>
-    <Marker {...markerProps} icon={icon} title={title} alt={title} zIndexOffset={selected ? 1000 : 0}>{children}</Marker>
+    <Marker ref={ref} {...markerProps} icon={icon} title={title} alt={title} zIndexOffset={selected ? 1000 : 0}>{children}</Marker>
     {createPortal(<div className={`${styles.pin} ${styles[status.tone]} ${selected ? styles.selected : ''} ${removing ? styles.removing : ''}`}>
       <div className={styles.photo}><PinPhoto key={effectiveImage || 'no-photo'} source={effectiveImage} /></div>
       <span className={styles.status} aria-hidden="true"><Icon size={14} strokeWidth={2.5} /></span>
     </div>, container)}
   </>
-}
+})
+
+export default ReportPhotoMarker
+

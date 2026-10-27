@@ -27,7 +27,7 @@ export const createEcoPinIcon = (status, isRemoving = false, isSelected = false)
   })
 }
 
-export default function EcoPinMarker({ report, position, isRemoving = false, isSelected = false, selectionMode = false, onReportSelect, customUrl, photoPin = false, photo, buttonLabel }) {
+const EcoPinMarker = React.forwardRef(function EcoPinMarker({ report, position, isRemoving = false, isSelected = false, selectionMode = false, onReportSelect, customUrl, photoPin = false, photo, buttonLabel }, ref) {
   const router = useRouter()
 
   const handlePopupRouting = (e, reportId) => {
@@ -43,10 +43,8 @@ export default function EcoPinMarker({ report, position, isRemoving = false, isS
   const MarkerView = photoPin ? ReportPhotoMarker : Marker
   const photoProps = photoPin ? { report, image: photoSource, selected: isSelected, removing: isRemoving } : {}
   
-  console.log(`[EcoPinMarker] Report ${report.id}: photoPin=${photoPin}, photoSource=${photoSource ? 'has photo' : 'no photo'}`)
-  
   return (
-    <MarkerView {...photoProps}
+    <MarkerView ref={ref} {...photoProps}
       position={position}
       icon={createEcoPinIcon(report?.status, isRemoving, isSelected)}
       eventHandlers={{
@@ -112,4 +110,7 @@ export default function EcoPinMarker({ report, position, isRemoving = false, isS
       </Popup>
     </MarkerView>
   )
-}
+})
+
+export default EcoPinMarker
+

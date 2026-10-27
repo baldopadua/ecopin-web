@@ -10,7 +10,17 @@ The Officer Map Grid page preserves PageHeader's title, subtitle, and breadcrumb
 - **Compact screens (< 900px):** A segmented view switcher (`Map` / `Controls & filters`) allows quick switching between full map inspection and full control tuning, while the header toggle button remains accessible and functional.
 - **Controls & Legend organization:**
   - 4 map layer toggles (Report pins, Report clusters, Heatmap, Cleanup task pins) arranged in a responsive 2-column grid with 44px minimum touch targets.
-  - Report filters with 12px input corners, labeled Report status and Issue type dropdowns, and an explicit Reset button disabled when inactive.
+  - Report filters with 12px input corners, labeled Location / Area, Report status, and Issue type dropdowns, and an explicit Reset button disabled when inactive.
   - Report pin legend and Cluster legend laid out in a 2-column grid with clear icon indicators and written status labels.
-  - Controls body includes self-contained scrolling (`overflow-y: auto`) with stable scrollbar gutter.
+  - Controls body features a compact, high-density layout designed to fit fully within the card without vertical scrolling.
+- **Searching capabilities parity with public map grid:**
+  - Interactive on-map search bar powered by `MapSearch` supporting multi-word queries across civic street addresses, barangays, landmarks, issue types, and IDs.
+  - Comprehensive curated Pasig landmark directory (`PASIG_LANDMARKS_AND_ADDRESSES`) encompassing civic landmarks (City Hall, Mega Market, Cathedral, PLP, RHS, Medical City, RAVE, etc.), all 30 official barangays, and major avenues.
+  - Dynamic forward address geocoding search (via Photon API) enabling officers to type arbitrary street addresses and locations in Pasig City.
+  - High-visibility pulsating searched location pin with detailed popup showing GPS coordinates, category, civic address, and dismissal options.
+  - Quick Points of Interest / Hotspot pill trigger with cluster count badge, formatted landmark proximity, and report counts.
+  - Category tabs (`All`, `Landmarks & Addresses`, `Hotspots`, `Reports`, `Tasks`) allowing instant filtering of search results.
+  - Direct location and area filtering via `MAP_LOCATIONS` (Ortigas Center, San Antonio, Kapasigan Plaza, Ugong North, Rosario / Tramo, Maybunga Riverbank) both on the map and in the controls sidebar.
+  - Interactive selection focusing pins, flying the camera to target coordinates, and opening detail popups automatically.
 - **Design system adherence:** Adheres to `DESIGN.md` Section 21: Outfit typography, civic blue actions (`#0052cc`, hover `#003d99`), semantic status colors, 12px input corners, 16px container panels, pill action buttons (9999px), and minimum 44px interactive touch targets.
+

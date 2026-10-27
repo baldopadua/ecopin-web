@@ -3,11 +3,12 @@ import { useState, useRef, useId, useEffect, Suspense } from 'react'
 import dynamic from 'next/dynamic'
 import { useSearchParams } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
-import { useDashboardReports, useDashboardTasks } from '@/components/context/DashboardQueryProvider'
+import { useDashboardReports, useDashboardTasks, useDashboardClusters } from '@/components/context/DashboardQueryProvider'
 import { OfficerGuard } from '@/components/auth/RequireRole'
-import { Map, SlidersHorizontal, X, AlertTriangle, RotateCcw } from 'lucide-react'
+import { Map, SlidersHorizontal, X, AlertTriangle, RotateCcw, MapPin, Layers, Flame, ClipboardList } from 'lucide-react'
 import styles from './MapGrid.module.css'
 import { REPORT_PIN_STATUSES } from '@/components/map/reportPinStatus'
+import { MAP_LOCATIONS } from '@/lib/map-search.mjs'
 
 
 const EcoPinMap = dynamic(
@@ -23,11 +24,14 @@ function OfficerMapContent() {
   const searchParams = useSearchParams()
   const reportQuery = useDashboardReports()
   const taskQuery = useDashboardTasks()
+  const clusterQuery = useDashboardClusters()
   const reports = reportQuery.data || []
   const tasks = taskQuery.data || []
+  const clusters = clusterQuery.data || []
 
   const [statusFilter, setStatusFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState('all')
+  const [locationFilter, setLocationFilter] = useState('all')
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -45,15 +49,17 @@ function OfficerMapContent() {
   const [showTaskPins, setShowTaskPins] = useState(true)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [activeView, setActiveView] = useState('map')
-  const dataError = reportQuery.isError || taskQuery.isError
+  const dataError = reportQuery.isError || taskQuery.isError || clusterQuery.isError
   const controlsRef = useRef(null)
 
   const statusSelectId = useId()
   const typeSelectId = useId()
+  const locationSelectId = useId()
 
   const handleRetry = () => {
     void reportQuery.refetch()
     void taskQuery.refetch()
+    void clusterQuery.refetch()
   }
 
   const issueTypes = [...new Set(reports.map(r => r.issue_type).filter(Boolean))]
@@ -64,8 +70,8 @@ function OfficerMapContent() {
     controlsRef.current?.focus()
   }
 
-  const filtersActive = statusFilter !== 'all' || typeFilter !== 'all'
-  const activeFilterCount = (statusFilter !== 'all' ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0)
+  const filtersActive = statusFilter !== 'all' || typeFilter !== 'all' || locationFilter !== 'all'
+  const activeFilterCount = (statusFilter !== 'all' ? 1 : 0) + (typeFilter !== 'all' ? 1 : 0) + (locationFilter !== 'all' ? 1 : 0)
 
   const handleToggleControls = () => {
     setIsSidebarOpen(open => {
@@ -137,6 +143,7 @@ function OfficerMapContent() {
         <section className={styles.mapPanel} aria-label="Environmental reports map">
           <EcoPinMap
             searchable
+            tasks={tasks.filter(task => task.status !== 'completed')}
             centerLat={searchParams.get('lat') ? parseFloat(searchParams.get('lat')) : undefined}
             centerLng={searchParams.get('lng') ? parseFloat(searchParams.get('lng')) : undefined}
             focusReportId={searchParams.get('id')}
@@ -144,6 +151,7 @@ function OfficerMapContent() {
             photoPins={true}
             externalStatusFilter={statusFilter}
             externalIssueTypeFilter={typeFilter}
+            externalLocationFilter={locationFilter}
             externalShowPins={showPins}
             externalShowClusters={showClusters}
             externalShowHeatmap={showHeatmap}
@@ -181,20 +189,24 @@ function OfficerMapContent() {
                 <legend>Map layers</legend>
                 <div className={styles.layerGrid}>
                   {[
-                    { label: 'Report pins', checked: showPins, onChange: setShowPins },
-                    { label: 'Report clusters', checked: showClusters, onChange: setShowClusters },
-                    { label: 'Heatmap', checked: showHeatmap, onChange: setShowHeatmap },
-                    { label: 'Cleanup task pins', checked: showTaskPins, onChange: setShowTaskPins },
-                  ].map(layer => (
-                    <label key={layer.label} className={styles.layer}>
-                      <input
-                        type="checkbox"
-                        checked={layer.checked}
-                        onChange={event => layer.onChange(event.target.checked)}
-                      />
-                      <span>{layer.label}</span>
-                    </label>
-                  ))}
+                    { label: 'Report pins', checked: showPins, onChange: setShowPins, icon: MapPin },
+                    { label: 'Report clusters', checked: showClusters, onChange: setShowClusters, icon: Layers },
+                    { label: 'Heatmap', checked: showHeatmap, onChange: setShowHeatmap, icon: Flame },
+                    { label: 'Cleanup task pins', checked: showTaskPins, onChange: setShowTaskPins, icon: ClipboardList },
+                  ].map(layer => {
+                    const LayerIcon = layer.icon
+                    return (
+                      <label key={layer.label} className={styles.layer}>
+                        <input
+                          type="checkbox"
+                          checked={layer.checked}
+                          onChange={event => layer.onChange(event.target.checked)}
+                        />
+                        {LayerIcon && <LayerIcon size={14} className={styles.layerIcon} aria-hidden="true" />}
+                        <span>{layer.label}</span>
+                      </label>
+                    )
+                  })}
                 </div>
               </fieldset>
 
@@ -212,13 +224,26 @@ function OfficerMapContent() {
                     type="button"
                     className={styles.reset}
                     disabled={!filtersActive}
-                    onClick={() => { setStatusFilter('all'); setTypeFilter('all') }}
+                    onClick={() => { setStatusFilter('all'); setTypeFilter('all'); setLocationFilter('all') }}
                   >
                     <RotateCcw size={14} aria-hidden="true" />
                     Reset
                   </button>
                 </div>
                 <div className={styles.filters}>
+                  <div className={`${styles.filterField} ${styles.filterFieldFull}`}>
+                    <label htmlFor={locationSelectId}>Location / Area</label>
+                    <select
+                      id={locationSelectId}
+                      value={locationFilter}
+                      onChange={event => setLocationFilter(event.target.value)}
+                    >
+                      <option value="all">All Pasig Areas ({reports.length})</option>
+                      {MAP_LOCATIONS.filter(loc => loc.name !== 'Pasig City (All)').map(loc => (
+                        <option key={loc.name} value={loc.name}>{loc.name}</option>
+                      ))}
+                    </select>
+                  </div>
                   <div className={styles.filterField}>
                     <label htmlFor={statusSelectId}>Report status</label>
                     <select
@@ -253,43 +278,71 @@ function OfficerMapContent() {
                     </select>
                   </div>
                 </div>
-                <p className={styles.helper}>These filters apply to reports. Active cleanup task pins are a separate layer.</p>
               </section>
 
               <section className={styles.section} aria-labelledby="map-grid-report-legend">
                 <h3 id="map-grid-report-legend">Report pin legend</h3>
                 <ul className={styles.legendGrid}>
                   {Object.entries(REPORT_PIN_STATUSES).map(([status, { label, tone, Icon }]) => (
-                    <li key={status} className={styles.legendItem}>
+                    <li key={status} className={styles.legendItem} title={label}>
                       <span className={`${styles.photoStatus} ${styles[tone] || styles.muted}`} aria-hidden="true">
-                        <Icon size={14} />
+                        <Icon size={12} />
                       </span>
                       <span>{label}</span>
                     </li>
                   ))}
                 </ul>
-                <p className={styles.helper}>Photo pins use a colored ring and status symbol. Where a report photo is unavailable, a neutral image placeholder appears. Open a pin for its written status and details.</p>
               </section>
 
               <section className={styles.section} aria-labelledby="map-grid-cluster-legend">
                 <h3 id="map-grid-cluster-legend">Cluster & route legend</h3>
                 <ul className={styles.legendGrid}>
-                  <li className={styles.legendItem}>
+                  <li className={styles.legendItem} title="Cluster marker with aggregated report count">
                     <span className={styles.standardCluster} aria-hidden="true">#</span>
                     <span>Standard cluster</span>
                   </li>
-                  <li className={styles.legendItem}>
+                  <li className={styles.legendItem} title="Overdue cluster exceeding SLA window">
                     <span className={styles.overdueCluster} aria-hidden="true">
-                      <AlertTriangle size={14} />
+                      <AlertTriangle size={12} />
                     </span>
                     <span>Overdue cluster</span>
                   </li>
-                  <li className={styles.legendItem} title="Dashed blue line (#0052cc) represents the task micro-route connecting cluster centroid to constituent report sub-pins.">
+                  <li className={`${styles.legendItem} ${styles.legendItemFull}`} title="Dashed blue line (#0052cc) represents the task micro-route connecting cluster centroid to constituent report sub-pins.">
                     <span className={styles.microRouteLine} aria-hidden="true" />
                     <span>Task micro-route (<code className={styles.microRouteCode}>#0052cc</code>)</span>
                   </li>
                 </ul>
-                <p className={styles.helper}>Numbers on cluster markers show their report counts. Dashed blue line (#0052cc) represents the task micro-route connecting cluster centroid to constituent report sub-pins.</p>
+              </section>
+
+              <section className={styles.section} aria-labelledby="map-grid-telemetry-title">
+                <div className={styles.sectionHeader}>
+                  <h3 id="map-grid-telemetry-title">Live map summary</h3>
+                  <span className={styles.telemetryTag}>Active</span>
+                </div>
+                <div className={styles.statsGrid}>
+                  <div className={styles.statCard}>
+                    <span className={styles.statValue}>{reports.length}</span>
+                    <span className={styles.statLabel}>Total reports</span>
+                  </div>
+                  <div className={styles.statCard}>
+                    <span className={`${styles.statValue} ${styles.statWarning}`}>
+                      {reports.filter(r => r.status === 'unresolved').length}
+                    </span>
+                    <span className={styles.statLabel}>Unresolved</span>
+                  </div>
+                  <div className={styles.statCard}>
+                    <span className={`${styles.statValue} ${styles.statInfo}`}>
+                      {clusters.length}
+                    </span>
+                    <span className={styles.statLabel}>Clusters</span>
+                  </div>
+                  <div className={styles.statCard}>
+                    <span className={`${styles.statValue} ${styles.statSuccess}`}>
+                      {tasks.filter(t => t.status !== 'completed').length}
+                    </span>
+                    <span className={styles.statLabel}>Active tasks</span>
+                  </div>
+                </div>
               </section>
             </div>
           </aside>

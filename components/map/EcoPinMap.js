@@ -19,6 +19,7 @@ import EcoPinMarker from './EcoPinMarker'
 import useMapPhotoEvidence from './useMapPhotoEvidence'
 import { Filter, Check } from 'lucide-react'
 import { reportDiagnostic } from '../../lib/diagnostics.mjs';
+import { MAP_LOCATIONS, getDistanceKm } from '@/lib/map-search.mjs';
 
 // Polyfill Buffer for browser environment
 if (typeof window !== 'undefined' && !window.Buffer) {
@@ -40,6 +41,30 @@ const PASIG_BOUNDS = [
 ]
 
 // createIcon moved to EcoPinMarker
+
+const createSearchLocationIcon = (category) => {
+  const isAddress = category === 'Address' || category === 'Thoroughfare'
+  const bgColor = isAddress ? '#0ea5e9' : '#0052cc'
+  const pulseColor = isAddress ? 'rgba(14, 165, 233, 0.35)' : 'rgba(0, 82, 204, 0.35)'
+
+  return L.divIcon({
+    className: 'custom-searched-location-pin',
+    html: `
+      <div style="position: relative; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;">
+        <span style="position: absolute; width: 38px; height: 38px; border-radius: 9999px; background: ${pulseColor}; animation: pulsePing 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;"></span>
+        <div style="position: relative; width: 28px; height: 28px; border-radius: 9999px; background: ${bgColor}; color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35); border: 2.5px solid white;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+        </div>
+      </div>
+    `,
+    iconSize: [38, 38],
+    iconAnchor: [19, 19],
+    popupAnchor: [0, -19],
+  })
+}
 
 // Removed createClusterIcon in favor of OutlierClusterLayer
 
@@ -188,11 +213,13 @@ function MapCenter({ centerLat, centerLng }) {
   return null
 }
 
-export default function EcoPinMap({ reports: externalReports, centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode = false, selectedReports = [], onReportSelect, hideFilterPanel = false, hidePins = false, hideClusters = false, onReportClick, onClusterSelect, children, allowedClusterIds, allowedReportIds, externalStatusFilter, externalIssueTypeFilter, externalShowPins, externalShowClusters, externalShowHeatmap, externalMaxBounds, externalMinZoom, selectedTemplate = 'standard', photoPins = false, searchable = false }) {
+export default function EcoPinMap({ reports: externalReports, centerLat, centerLng, focusReportId, initialValidationStatus, initialStatus, selectionMode = false, selectedReports = [], onReportSelect, hideFilterPanel = false, hidePins = false, hideClusters = false, onReportClick, onClusterSelect, children, allowedClusterIds, allowedReportIds, externalStatusFilter, externalIssueTypeFilter, externalLocationFilter, externalShowPins, externalShowClusters, externalShowHeatmap, externalMaxBounds, externalMinZoom, selectedTemplate = 'standard', photoPins = false, searchable = false, tasks = [], selectedReportId: externalSelectedReportId }) {
 
   const [mounted, setMounted] = useState(false)
   const [filteredReports, setFilteredReports] = useState([])
   const [removingIds, setRemovingIds] = useState(new Set())
+  const [selectedReportId, setSelectedReportId] = useState(externalSelectedReportId || focusReportId || null)
+  const markerRefs = useRef({})
   const reportQuery = useDashboardReports()
   const clusterQuery = useDashboardClusters()
   const queryClient = useQueryClient()
@@ -232,6 +259,47 @@ export default function EcoPinMap({ reports: externalReports, centerLat, centerL
     })
     return map
   }, [filteredReports])
+
+  const activeReportId = externalSelectedReportId !== undefined ? externalSelectedReportId : (selectedReportId || focusReportId)
+
+  useEffect(() => {
+    if (activeReportId && markerRefs.current[activeReportId]) {
+      markerRefs.current[activeReportId].openPopup()
+    }
+  }, [activeReportId, filteredReports])
+
+  const handleSearchSelectReport = useCallback((report) => {
+    if (!report) return
+    setSelectedReportId(report.id)
+    if (onReportClick) {
+      onReportClick(report)
+    }
+  }, [onReportClick])
+
+  const handleSearchSelectCluster = useCallback((cluster) => {
+    if (!cluster) return
+    const memberReports = filteredClusterReports[cluster.id] || []
+    if (memberReports.length > 0) {
+      setSelectedReportId(memberReports[0].id)
+      if (onClusterSelect) {
+        onClusterSelect(memberReports.map(r => r.id))
+      }
+    }
+  }, [filteredClusterReports, onClusterSelect])
+
+  const [searchedLocation, setSearchedLocation] = useState(null)
+  const searchedLocationRef = useRef(null)
+
+  const handleSearchSelectLocation = useCallback((locationItem) => {
+    if (!locationItem || !locationItem.coords) return
+    setSearchedLocation(locationItem)
+  }, [])
+
+  useEffect(() => {
+    if (searchedLocation && searchedLocationRef.current) {
+      searchedLocationRef.current.openPopup()
+    }
+  }, [searchedLocation])
 
   // Filter states
   const [showPins, setShowPins] = useState(!hidePins)
@@ -331,6 +399,26 @@ export default function EcoPinMap({ reports: externalReports, centerLat, centerL
       filtered = filtered.filter(r => r.issue_type === issueTypeFilter)
     }
 
+    if (externalLocationFilter && externalLocationFilter !== 'all' && externalLocationFilter !== 'Pasig City (All)') {
+      const targetLoc = MAP_LOCATIONS.find(l => l.name.toLowerCase().includes(externalLocationFilter.toLowerCase()))
+      if (targetLoc) {
+        filtered = filtered.filter(r => {
+          let lat = r.latitude != null ? Number(r.latitude) : r.parsedLat
+          let lng = r.longitude != null ? Number(r.longitude) : r.parsedLng
+          if (!lat || !lng) {
+            const geom = parseGeometry(r.location)
+            if (geom) { lat = geom[0]; lng = geom[1] }
+          }
+          if (lat && lng) {
+            const dist = getDistanceKm(lat, lng, targetLoc.lat, targetLoc.lng)
+            if (dist <= 2.8) return true
+          }
+          const text = `${r.title || ''} ${r.description || ''} ${r.street_address || ''} ${r.barangay || ''}`.toLowerCase()
+          return text.includes(externalLocationFilter.toLowerCase().split(' ')[0])
+        })
+      }
+    }
+
     if (startDate) {
       filtered = filtered.filter(r => new Date(r.created_at) >= new Date(startDate))
     }
@@ -356,7 +444,7 @@ export default function EcoPinMap({ reports: externalReports, centerLat, centerL
     } else {
       setFilteredReports(filtered)
     }
-  }, [statusFilter, issueTypeFilter, startDate, endDate, reports, allowedClusterIds, allowedReportIds])
+  }, [statusFilter, issueTypeFilter, externalLocationFilter, startDate, endDate, reports, allowedClusterIds, allowedReportIds])
 
   // Pre-process reports to handle exactly overlapping pins (Spiderfy pattern)
   const processedReportsInfo = useMemo(() => {
@@ -455,8 +543,6 @@ export default function EcoPinMap({ reports: externalReports, centerLat, centerL
     !(report.cluster_id && renderedClusterIds.has(report.cluster_id) && !hideClusters && showClusters && zoom <= 15)
   ), [photoPins, showPins, mapBounds, processedReportsInfo, renderedClusterIds, hideClusters, showClusters, zoom])
   const pinPhotos = useMapPhotoEvidence(visiblePhotoReports, photoPins)
-  
-  console.log('[EcoPinMap] photoPins:', photoPins, 'visiblePhotoReports:', visiblePhotoReports.length, 'pinPhotos:', Object.keys(pinPhotos).length)
 
   if (!mounted) return (
     <div className="h-full w-full flex items-center justify-center bg-surface dark:bg-[#000000] transition-colors duration-300">
@@ -491,6 +577,16 @@ export default function EcoPinMap({ reports: externalReports, centerLat, centerL
           }
           100% {
             transform: scale(0);
+            opacity: 0;
+          }
+        }
+        @keyframes pulsePing {
+          0% {
+            transform: scale(0.95);
+            opacity: 0.8;
+          }
+          100% {
+            transform: scale(1.6);
             opacity: 0;
           }
         }
@@ -546,7 +642,17 @@ export default function EcoPinMap({ reports: externalReports, centerLat, centerL
           ref={mapRef}
         >
           <MapResizer />
-          {searchable && <MapSearch reports={processedReportsInfo.parsedReports} clusters={filteredClusters.map(cluster => ({ ...cluster, coords: parseGeometry(cluster.center || cluster.location) }))} />}
+          {searchable && (
+            <MapSearch
+              reports={processedReportsInfo.parsedReports}
+              clusters={filteredClusters}
+              tasks={tasks}
+              onSelectReport={handleSearchSelectReport}
+              onSelectCluster={handleSearchSelectCluster}
+              onSelectLocation={handleSearchSelectLocation}
+              selectedReportId={activeReportId}
+            />
+          )}
           <MapViewportTracker setZoom={setZoom} setMapBounds={setMapBounds} />
           <TileLayer
             url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
@@ -554,6 +660,50 @@ export default function EcoPinMap({ reports: externalReports, centerLat, centerL
             className={isDark ? 'dark-mode-tiles' : ''}
           />
           <HeatmapLayer heatPoints={heatPoints} showHeatmap={showHeatmap} />
+
+          {/* Active Searched Landmark / Address Pin */}
+          {searchedLocation && (
+            <Marker
+              ref={searchedLocationRef}
+              position={searchedLocation.coords}
+              icon={createSearchLocationIcon(searchedLocation.category)}
+              zIndexOffset={2000}
+            >
+              <Popup
+                className="searched-location-popup"
+                autoPan={false}
+                onClose={() => setSearchedLocation(null)}
+              >
+                <div className="p-3 text-xs font-sans min-w-[220px] max-w-[280px]">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-1.5 text-[#0052cc] dark:text-[#60A5FA] font-bold text-[13px] leading-tight">
+                      <span className="truncate">{searchedLocation.title}</span>
+                    </div>
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#0052cc]/15 text-[#0052cc] dark:text-[#60A5FA] shrink-0">
+                      {searchedLocation.category || 'Landmark'}
+                    </span>
+                  </div>
+                  {searchedLocation.subtitle && (
+                    <p className="mt-1 text-[11px] text-gray-600 dark:text-gray-300 leading-snug">
+                      {searchedLocation.subtitle}
+                    </p>
+                  )}
+                  <div className="mt-2.5 pt-2 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between text-[10px] text-gray-500 dark:text-gray-400">
+                    <span>
+                      GPS: {Number(searchedLocation.coords[0]).toFixed(4)}, {Number(searchedLocation.coords[1]).toFixed(4)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSearchedLocation(null)}
+                      className="text-red-500 hover:text-red-600 font-semibold cursor-pointer"
+                    >
+                      Clear pin
+                    </button>
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          )}
 
           {/* Cluster Markers (shown when zoomed out) */}
           {!hideClusters && showClusters && zoom <= 15 && (
@@ -695,12 +845,16 @@ export default function EcoPinMap({ reports: externalReports, centerLat, centerL
                     />
                   )}
                   <EcoPinMarker 
+                    ref={el => {
+                      if (el) markerRefs.current[report.id] = el
+                      else delete markerRefs.current[report.id]
+                    }}
                     report={report}
                     photoPin={photoPins}
                     photo={pinPhotos[report.id]}
                     position={[latitude, longitude]} 
                     isRemoving={isRemoving} 
-                    isSelected={selectedReportsSet.has(report.id)} 
+                    isSelected={selectedReportsSet.has(report.id) || selectedReportId === report.id || focusReportId === String(report.id)} 
                     selectionMode={selectionMode} 
                     onReportSelect={onReportSelect} 
                   />
