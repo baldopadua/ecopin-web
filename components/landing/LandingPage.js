@@ -1,16 +1,18 @@
 'use client'
 
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState } from 'react'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { ArrowDown, ArrowRight, Camera, CheckCircle2, Download, Leaf, MapPin, ShieldCheck, Smartphone, Send, Megaphone, Info, AlertTriangle, Check, Loader2 } from 'lucide-react'
+import { ArrowDown, ArrowRight, Camera, CheckCircle2, Download, Leaf, MapPin, ShieldCheck, Smartphone, Megaphone, Info, AlertTriangle } from 'lucide-react'
 import styles from './LandingPage.module.css'
 import usePublicTheme from './usePublicTheme'
 import useLandingMotion from './useLandingMotion'
 import LandingNavigation from './LandingNavigation'
+import PublicFooter from './PublicFooter'
 import PublicLoadingState from '@/components/ui/PublicLoadingState'
-import { getPublicCmsSettings } from '@/lib/api'
+import { usePublicCms } from '@/components/public/PublicSiteProvider'
+import { safeCmsUrl } from '@/lib/public-cms.mjs'
 
 const LandingMap = dynamic(() => import('./LandingMap'), {
   ssr: false,
@@ -23,126 +25,42 @@ const steps = [
   { icon: CheckCircle2, title: 'Send it. Stay updated.', text: 'Submit your report for review, then follow its progress in the app.' },
 ]
 
+function LandingPhoto({ src, alt, fill = true, sizes, className = '', style, priority }) {
+  const [isLoaded, setIsLoaded] = useState(false)
+  return (
+    <>
+      {!isLoaded && (
+        <span
+          className="absolute inset-0 z-10 flex items-center justify-center bg-surface-elevated/70 backdrop-blur-xs select-none pointer-events-none"
+          role="status"
+          aria-label="Loading photo..."
+        >
+          <span className="p-2.5 rounded-full bg-surface/80 dark:bg-surface-elevated/80 border border-border/40 shadow-xs flex items-center justify-center">
+            <Loader2 className="w-6 h-6 text-primary animate-spin" aria-hidden="true" />
+          </span>
+        </span>
+      )}
+      <Image
+        src={src}
+        alt={alt}
+        fill={fill}
+        sizes={sizes}
+        priority={priority}
+        className={`${className} transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+        style={style}
+        onLoad={() => setIsLoaded(true)}
+      />
+    </>
+  )
+}
+
 export default function LandingPage() {
   const { isDark, toggleTheme } = usePublicTheme()
   const heroRef = useRef(null)
   const pageRef = useRef(null)
   useLandingMotion(pageRef)
 
-  const [cms, setCms] = useState({
-    contact_support_email: 'ecopinmail@gmail.com',
-    contact_office_email: 'swmo@pasigcity.gov.ph',
-    contact_phone: '09173726888',
-    contact_office_name: 'Pasig Solid Waste Management Office (SWMO)',
-    contact_operating_hours: 'Monday – Friday: 8:00 AM – 5:00 PM',
-    lead_story_title: 'From reports to response.',
-    lead_story_subtitle: 'Meet the field crews of Pasig’s Solid Waste Management Office (SWMO), working on the ground to collect waste and clear neighborhood streets.',
-    lead_photo_url: '/images/community/street-cleanup.jpg',
-    lead_photo_caption: 'Pasig Solid Waste Management Office',
-    lead_photo_tagline: 'On the ground. Getting it done.',
-    lead_photo_credit_name: 'Pasig Tayo (Jonah Talagtag)',
-    lead_photo_credit_url: 'https://www.facebook.com/share/p/19hk6BA5W8/',
-    gallery_photo_1_url: '/images/community/neighborhood-team.jpg',
-    gallery_photo_1_caption: 'SWMO crews collecting waste.',
-    gallery_photo_2_url: '/images/community/working-together.jpg',
-    gallery_photo_2_caption: 'Working together to clear bulky debris.',
-    announcement_enabled: false,
-    announcement_title: '',
-    announcement_message: '',
-    announcement_severity: 'info',
-    announcement_link_url: '',
-    announcement_link_text: 'Read advisory',
-    app_download_url: '/ecopin-app-release.apk',
-    app_version_name: 'v1.0.0'
-  })
-
-  useEffect(() => {
-    let mounted = true
-    getPublicCmsSettings().then(data => {
-      if (mounted && data) {
-        setCms(prev => ({ ...prev, ...data }))
-      }
-    }).catch(() => {})
-    return () => { mounted = false }
-  }, [])
-
-  const [emailForm, setEmailForm] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: '',
-    recipient: 'ecopinmail@gmail.com'
-  })
-  const [emailSending, setEmailSending] = useState(false)
-  const [emailSent, setEmailSent] = useState(false)
-  const [emailError, setEmailError] = useState(null)
-  const [emailSuccess, setEmailSuccess] = useState(null)
-
-  const handleEmailSubmit = async (e) => {
-    e.preventDefault()
-    setEmailSending(true)
-    setEmailError(null)
-
-    try {
-      const API_BASE = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:3000'
-      console.log('Contact form submitting to:', `${API_BASE}/api/contact/send`)
-
-      const response = await fetch(`${API_BASE}/api/contact/send`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: emailForm.name,
-          email: emailForm.email || 'no-reply@ecopin.com',
-          subject: emailForm.subject,
-          message: emailForm.message,
-          recipient: emailForm.recipient || cms.contact_support_email || 'ecopinmail@gmail.com'
-        })
-      })
-
-      let data
-      try {
-        data = await response.json()
-      } catch {
-        data = { message: 'Server error. Please try again.' }
-      }
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to send message')
-      }
-
-      setEmailSuccess("Message sent successfully! We'll get back to you soon.")
-      setEmailSent(true)
-      setEmailForm({
-        name: '',
-        email: '',
-        subject: '',
-        message: '',
-        recipient: cms.contact_support_email || 'ecopinmail@gmail.com'
-      })
-
-      setTimeout(() => {
-        setEmailSuccess(null)
-        setEmailSent(false)
-      }, 4000)
-    } catch (error) {
-      console.error('Error sending contact form:', error)
-
-      let errorMessage = 'Failed to send message. Please try again or email us directly.'
-      if (error.message === 'Failed to fetch') {
-        errorMessage = 'Unable to connect to server. Please email us directly at ' + (emailForm.recipient || 'ecopinmail@gmail.com')
-      }
-
-      setEmailError(errorMessage)
-    } finally {
-      setEmailSending(false)
-    }
-  }
-
-  const handleEmailChange = (e) => {
-    setEmailForm({ ...emailForm, [e.target.name]: e.target.value })
-  }
+  const { cms } = usePublicCms()
 
   return (
     <div className={styles.page} ref={pageRef} data-motion="full">
@@ -168,9 +86,9 @@ export default function LandingPage() {
                 {cms.announcement_title ? <strong>{cms.announcement_title}: </strong> : null}
                 {cms.announcement_message}
               </span>
-              {cms.announcement_link_url && (
+              {safeCmsUrl(cms.announcement_link_url) && (
                 <a
-                  href={cms.announcement_link_url}
+                  href={safeCmsUrl(cms.announcement_link_url)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className={styles.announcementLink}
@@ -225,7 +143,7 @@ export default function LandingPage() {
           </div>
           <div className={styles.photoStory}>
             <figure className={styles.photoLead} data-reveal>
-              <div className={styles.photoFrame}><Image src={cms.lead_photo_url || '/images/community/street-cleanup.jpg'} alt="A Pasig cleanup vehicle collecting roadside waste beside a blue fence" fill sizes="(max-width: 767px) 100vw, 65vw" /></div>
+              <div className={styles.photoFrame}><LandingPhoto src={cms.lead_photo_url || '/images/community/street-cleanup.jpg'} alt="A Pasig cleanup vehicle collecting roadside waste beside a blue fence" fill sizes="(max-width: 767px) 100vw, 65vw" /></div>
               <figcaption>
                 <span>{cms.lead_photo_caption || 'Pasig Solid Waste Management Office'}</span>
                 <strong>{cms.lead_photo_tagline || 'On the ground. Getting it done.'}</strong>
@@ -233,7 +151,7 @@ export default function LandingPage() {
                   <span className={styles.leadCredit}>
                     Photo:{' '}
                     {cms.lead_photo_credit_url ? (
-                      <a href={cms.lead_photo_credit_url} target="_blank" rel="noopener noreferrer">
+                      <a href={safeCmsUrl(cms.lead_photo_credit_url)} target="_blank" rel="noopener noreferrer">
                         {cms.lead_photo_credit_name}
                       </a>
                     ) : (
@@ -244,8 +162,8 @@ export default function LandingPage() {
               </figcaption>
             </figure>
             <div className={styles.photoDetails}>
-              <figure data-reveal="100"><div className={styles.photoFrame}><Image src={cms.gallery_photo_1_url || '/images/community/neighborhood-team.jpg'} alt="SWMO field crew members lifting collected waste into a truck" fill sizes="(max-width: 767px) 100vw, 35vw" /></div><figcaption>{cms.gallery_photo_1_caption || 'SWMO crews collecting waste.'}</figcaption></figure>
-              <figure data-reveal="200"><div className={styles.photoFrame}><Image src={cms.gallery_photo_2_url || '/images/community/working-together.jpg'} alt="Two SWMO field crew members carrying a large piece of wood together beside a collection truck" fill sizes="(max-width: 767px) 100vw, 35vw" /></div><figcaption>{cms.gallery_photo_2_caption || 'Working together to clear bulky debris.'}</figcaption></figure>
+              <figure data-reveal="100"><div className={styles.photoFrame}><LandingPhoto src={cms.gallery_photo_1_url || '/images/community/neighborhood-team.jpg'} alt="SWMO field crew members lifting collected waste into a truck" fill sizes="(max-width: 767px) 100vw, 35vw" /></div><figcaption>{cms.gallery_photo_1_caption || 'SWMO crews collecting waste.'}</figcaption></figure>
+              <figure data-reveal="200"><div className={styles.photoFrame}><LandingPhoto src={cms.gallery_photo_2_url || '/images/community/working-together.jpg'} alt="Two SWMO field crew members carrying a large piece of wood together beside a collection truck" fill sizes="(max-width: 767px) 100vw, 35vw" /></div><figcaption>{cms.gallery_photo_2_caption || 'Working together to clear bulky debris.'}</figcaption></figure>
             </div>
           </div>
           <div className={styles.communityFoot} data-reveal><p>Notice a concern in your area? Give it a place on the map.</p><a href="#mobile-app" className={styles.textButton}>Start with the EcoPin app <ArrowRight size={18} /></a></div>
@@ -285,7 +203,10 @@ export default function LandingPage() {
             <h2 id="mobile-heading">Notice something?<br /><span className={styles.blueText}>Make it count.</span></h2>
             <p>Turn a photo into a report. With the EcoPin Android app, you can share environmental concerns and follow what happens next.</p>
             <ul><li><CheckCircle2 /> Add a photo and the location</li><li><CheckCircle2 /> Describe the issue in your own words</li><li><CheckCircle2 /> Keep track of your reports</li></ul>
-            <a href="/ecopin-app-release.apk" download className={styles.primaryButton}><Download size={18} /> Download for Android <ArrowRight size={18} /></a>
+            <a href={safeCmsUrl(cms.app_download_url, "/ecopin-app-release.apk")} download className={styles.primaryButton}><Download size={18} /> Download for Android <ArrowRight size={18} /></a>
+            {cms.app_version_name && <p>Latest release: {cms.app_version_name}</p>}
+            {cms.app_release_notes && <p className="whitespace-pre-line">{cms.app_release_notes}</p>}
+            {safeCmsUrl(cms.app_playstore_url) && <a href={safeCmsUrl(cms.app_playstore_url)} className={styles.textButton} target="_blank" rel="noopener noreferrer">Get it on Google Play <ArrowRight size={18} /></a>}
             <span className={styles.downloadNote}>Free Android app · Direct APK download</span>
             <a href="/downloads" className={styles.installHelp}>Need help installing? <ArrowRight size={14} /></a>
           </div>
@@ -299,174 +220,7 @@ export default function LandingPage() {
 
         <section className={styles.closing}><div data-reveal><Leaf size={28} /><h2>A better Pasig begins<br />with the people in it.</h2><a href="#mobile-app" className={styles.primaryButton}>Take the first step <ArrowRight size={18} /></a></div></section>
       </main>
-      <footer id="contact" className={styles.footer}>
-        <div className={styles.footerContainer}>
-          {/* Column 1: Brand & Civic Mission */}
-          <div className={styles.footerColBrand}>
-            <Link href="/" aria-label="EcoPin home" className={styles.footerLogo}>
-              <Image src={isDark ? '/Full Logo Dark.png' : '/Full Logo Light.png'} alt="EcoPin" width="120" height="34" />
-            </Link>
-            <div className={styles.footerCopy}>
-              <p className={styles.footerTagline}>Small actions. A cleaner Pasig.</p>
-              <p className={styles.footerDisclaimer}>
-                EcoPin connects residents with city operations to quickly report and resolve environmental concerns across Pasig City.
-              </p>
-              <div className={styles.footerCredits}>
-                <p className={styles.photoCredit}>
-                  Photography courtesy of{' '}
-                  <a href="https://www.facebook.com/share/p/19hk6BA5W8/" target="_blank" rel="noopener noreferrer">Pasig Tayo</a>{' '}
-                  (<a href="https://www.facebook.com/jonah.talagtag.77" target="_blank" rel="noopener noreferrer">Jonah Talagtag</a>)
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Column 2: Navigation & Official Office Info */}
-          <div className={styles.footerColNav}>
-            <div className={styles.footerNavGroup}>
-              <h3 className={styles.footerColTitle}>Navigation</h3>
-              <nav aria-label="Footer navigation" className={styles.footerLinks}>
-                <Link href="/explore">Live Map</Link>
-                <Link href="/explore?view=gallery">Reports Gallery</Link>
-                <a href="#how-it-works">Citizen Guide</a>
-                <a href="#mobile-app">Android App</a>
-                <Link href="/delete-account">Delete account</Link>
-              </nav>
-            </div>
-
-            <div className={styles.footerOfficeGroup}>
-              <h3 className={styles.footerColTitle}>Office & Inquiries</h3>
-              <p className={styles.officeName}>{cms.contact_office_name || 'Solid Waste Management Office'}</p>
-              {cms.contact_support_email && (
-                <p className={styles.officeDetail}>
-                  <span>Support: </span>
-                  <a href={`mailto:${cms.contact_support_email}`}>{cms.contact_support_email}</a>
-                </p>
-              )}
-              {cms.contact_phone && (
-                <p className={styles.officeDetail}>
-                  <span>Hotline: </span>
-                  <a href={`tel:${cms.contact_phone}`}>{cms.contact_phone}</a>
-                </p>
-              )}
-              {cms.contact_operating_hours && (
-                <p className={styles.officeDetail}>
-                  <span>Hours: </span>
-                  {cms.contact_operating_hours}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Column 3: Integrated Contact Form */}
-          <div className={styles.footerColForm}>
-            <div className={styles.contactFormCard}>
-              <div className={styles.contactFormHeader}>
-                <h3 className={styles.contactFormTitle}>Send us a message</h3>
-                <p className={styles.contactFormSubtitle}>Directly message support or city operations</p>
-              </div>
-
-              {emailError && (
-                <div className={styles.formErrorAlert} role="alert">
-                  {emailError}
-                </div>
-              )}
-              {emailSuccess && (
-                <div className={styles.formSuccessAlert} role="status">
-                  {emailSuccess}
-                </div>
-              )}
-
-              <form onSubmit={handleEmailSubmit} className={styles.footerForm}>
-                <div className={styles.formRowTwo}>
-                  <div className={styles.formFieldCompact}>
-                    <label htmlFor="contact-name" className={styles.formLabelCompact}>Name</label>
-                    <input
-                      id="contact-name"
-                      name="name"
-                      type="text"
-                      value={emailForm.name}
-                      onChange={handleEmailChange}
-                      className={styles.formInputCompact}
-                      placeholder="Your name"
-                      required
-                    />
-                  </div>
-                  <div className={styles.formFieldCompact}>
-                    <label htmlFor="contact-email" className={styles.formLabelCompact}>Email</label>
-                    <input
-                      id="contact-email"
-                      name="email"
-                      type="email"
-                      value={emailForm.email}
-                      onChange={handleEmailChange}
-                      className={styles.formInputCompact}
-                      placeholder="name@email.com"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className={styles.formFieldCompact}>
-                  <label htmlFor="contact-subject" className={styles.formLabelCompact}>Subject</label>
-                  <input
-                    id="contact-subject"
-                    name="subject"
-                    type="text"
-                    value={emailForm.subject}
-                    onChange={handleEmailChange}
-                    className={styles.formInputCompact}
-                    placeholder="What is this about?"
-                    required
-                  />
-                </div>
-
-                <div className={styles.formFieldCompact}>
-                  <label htmlFor="contact-message" className={styles.formLabelCompact}>Message</label>
-                  <textarea
-                    id="contact-message"
-                    name="message"
-                    value={emailForm.message}
-                    onChange={handleEmailChange}
-                    className={styles.formTextareaCompact}
-                    placeholder="How can we help?"
-                    rows={3}
-                    required
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className={styles.footerSubmitBtn}
-                  disabled={emailSending}
-                >
-                  {emailSending ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin" />
-                      <span>Sending...</span>
-                    </>
-                  ) : emailSent ? (
-                    <>
-                      <Check size={16} />
-                      <span>Message Sent!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Send size={15} />
-                      <span>Send Message</span>
-                    </>
-                  )}
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-
-        <div className={styles.footerBottomBar}>
-          <span>EcoPin · City Government of Pasig</span>
-          <span>Small actions. A cleaner Pasig.</span>
-        </div>
-      </footer>
+      <PublicFooter isDark={isDark} settings={cms} />
     </div>
   )
 }

@@ -22,6 +22,7 @@ export default function SecureImage({
   imgClassName = '',
   showSkeleton = true,
   spinnerSize = 'auto',
+  loadingLabel = '',
   fallback = null,
   as: Component = 'span',
   style,
@@ -184,7 +185,7 @@ export default function SecureImage({
     isLoaded ? 'opacity-100' : 'opacity-0'
   ].filter(Boolean).join(' ')
 
-  const isLoading = (!isLoaded && !hasError) || !effectiveSrc
+  const isLoading = !hasError && (!isLoaded || !effectiveSrc)
 
   return (
     <Component
@@ -195,16 +196,19 @@ export default function SecureImage({
       {/* Skeleton Shimmer & Smooth Spinner (WT-91) */}
       {isLoading && (
         <span
-          className="absolute inset-0 z-10 flex items-center justify-center bg-surface-elevated/90 animate-pulse overflow-hidden select-none pointer-events-none rounded-[inherit]"
-          aria-hidden="true"
+          className="absolute inset-0 z-10 flex flex-col gap-2 items-center justify-center bg-surface-elevated/90 animate-pulse overflow-hidden select-none pointer-events-none rounded-[inherit]"
+          role={loadingLabel ? 'status' : undefined}
+          aria-label={loadingLabel || undefined}
+          aria-hidden={loadingLabel ? undefined : true}
         >
           {/* Shimmer sweep */}
           <span className="absolute inset-0 -translate-x-full animate-shimmer shimmer-gradient pointer-events-none" />
 
           {/* Smooth centered spinner badge */}
           <span className="relative z-10 p-1.5 rounded-full bg-surface/80 dark:bg-surface-elevated/80 backdrop-blur-xs border border-border/40 shadow-xs flex items-center justify-center">
-            <Loader2 className={`${spinnerClass} text-primary animate-spin`} />
+            <Loader2 className={`${spinnerClass} text-primary animate-spin`} aria-hidden="true" />
           </span>
+          {loadingLabel && <span className="relative z-10 text-sm text-text-muted">{loadingLabel}</span>}
         </span>
       )}
 

@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import PageHeader from '@/components/layout/PageHeader'
+import { DEFAULT_PUBLIC_CMS as DEFAULT_CMS } from '@/lib/public-cms.mjs'
 import PageTabs from '@/components/ui/PageTabs'
 import { AdminGuard } from '@/components/auth/RequireRole'
 import Notification from '@/components/ui/Notification'
@@ -20,50 +21,7 @@ import {
   Loader2
 } from 'lucide-react'
 
-const DEFAULT_CMS = {
-  // Contact & Office Information
-  contact_support_email: 'ecopinmail@gmail.com',
-  contact_office_email: 'swmo@pasigcity.gov.ph',
-  contact_phone: '09173726888',
-  contact_office_name: 'Pasig Solid Waste Management Office (SWMO)',
-  contact_office_address: 'Pasig City Hall Complex, Caruncho Ave, Pasig, Metro Manila',
-  contact_operating_hours: 'Monday – Friday: 8:00 AM – 5:00 PM',
-  contact_facebook_url: 'https://www.facebook.com/PasigPIO',
-  contact_facebook_label: 'Pasig City Public Information Office',
 
-  // Media & Community Showcase
-  lead_story_title: 'From reports to response.',
-  lead_story_subtitle: 'Meet the field crews of Pasig’s Solid Waste Management Office (SWMO), working on the ground to collect waste and clear neighborhood streets.',
-  lead_photo_url: '/images/community/street-cleanup.jpg',
-  lead_photo_caption: 'Pasig Solid Waste Management Office',
-  lead_photo_tagline: 'On the ground. Getting it done.',
-  lead_photo_credit_name: 'Pasig Tayo (Jonah Talagtag)',
-  lead_photo_credit_url: 'https://www.facebook.com/share/p/19hk6BA5W8/',
-
-  gallery_photo_1_url: '/images/community/neighborhood-team.jpg',
-  gallery_photo_1_caption: 'SWMO crews collecting waste.',
-
-  gallery_photo_2_url: '/images/community/working-together.jpg',
-  gallery_photo_2_caption: 'Working together to clear bulky debris.',
-
-  // Public Announcement / Advisory Banner
-  announcement_enabled: false,
-  announcement_title: 'Notice to Residents',
-  announcement_message: 'Regular waste collection schedules may be adjusted during inclement weather. Check your barangay advisories for real-time updates.',
-  announcement_severity: 'info',
-  announcement_link_url: '',
-  announcement_link_text: 'Read advisory',
-
-  // App Distribution & Downloads
-  app_download_url: '/ecopin-app-release.apk',
-  app_version_name: 'v1.0.0',
-  app_release_notes: 'EcoPin official Android release for verified Pasig residents.',
-  app_playstore_url: '',
-
-  // Public System Notice
-  maintenance_mode: false,
-  maintenance_notice: 'The reporting service is currently undergoing scheduled maintenance. Please check back shortly.'
-}
 
 const SETTINGS_TABS = [
   { id: 'contact', label: 'Contact & office', icon: PhoneCall },
@@ -80,19 +38,20 @@ function SystemSettingsContent() {
     password_require_lowercase: true,
     password_require_numbers: true,
     password_require_special_chars: true,
-    session_timeout_minutes: 60,
     daily_report_quota: 10,
     report_video_max_seconds: 10
   })
   const [cms, setCms] = useState(DEFAULT_CMS)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [saving, setSaving] = useState(false)
   const [notification, setNotification] = useState(null)
 
   const loadSettings = useCallback(async () => {
     try {
       setLoading(true)
-      const data = await getSystemSettings()
+      setLoadError(false)
+      const data = await getSystemSettings({ throwOnError: true })
       setSettings(prev => ({
         ...prev,
         password_min_length: data.password_min_length ?? 8,
@@ -108,6 +67,7 @@ function SystemSettingsContent() {
         setCms(prev => ({ ...prev, ...data.cms }))
       }
     } catch (err) {
+      setLoadError(true)
       reportDiagnostic('error', 'settings', 'Failed to load settings:', err)
       setNotification({ message: 'Failed to load system settings', type: 'error' })
     } finally {
@@ -122,7 +82,7 @@ function SystemSettingsContent() {
   }, [loadSettings])
 
   const handleSave = async () => {
-    if (saving || uploadingField) return
+    if (saving || uploadingField || loadError) return
     const videoMaximum = Number(settings.report_video_max_seconds)
     if (!Number.isInteger(videoMaximum) || videoMaximum < 5 || videoMaximum > 10) {
       setNotification({ message: 'Maximum video duration must be a whole number from 5 to 10 seconds', type: 'error' })
@@ -155,6 +115,7 @@ function SystemSettingsContent() {
   }
 
   const handleFileUpload = async (e, fieldKey) => {
+    if (uploadingField) return
     const file = e.target.files?.[0]
     if (!file) return
 
@@ -164,7 +125,7 @@ function SystemSettingsContent() {
       if (res?.url) {
         handleCmsChange(fieldKey, res.url)
         setNotification({
-          message: `Successfully uploaded and linked ${file.name}`,
+          message: `Uploaded ${file.name}. Save changes to publish it.`,
           type: 'success'
         })
       }
@@ -244,7 +205,7 @@ function SystemSettingsContent() {
           <button
             type="button"
             onClick={handleSave}
-            disabled={saving || Boolean(uploadingField)}
+            disabled={saving || Boolean(uploadingField) || loadError}
             className="btn-primary flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? <Loader2 size={18} className="animate-spin" aria-hidden="true" /> : <Save size={18} aria-hidden="true" />}
@@ -262,7 +223,8 @@ function SystemSettingsContent() {
       )}
 
       <div className="shrink-0 flex-shrink-0">
-        <PageTabs label="System settings" tabs={SETTINGS_TABS} value={activeTab} onChange={setActiveTab} />
+        {loadError && <div role="alert" className="workspace-panel"><p>Settings could not load. Reload before saving.</p><button type="button" className="btn-secondary mt-3" onClick={loadSettings}>Reload settings</button></div>}
+      <PageTabs label="System settings" tabs={SETTINGS_TABS} value={activeTab} onChange={setActiveTab} />
       </div>
 
       <div
@@ -288,11 +250,12 @@ function SystemSettingsContent() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">
+                <label htmlFor="cms-contact_support_email" className="block text-sm font-medium text-text-primary mb-2">
                   Primary EcoPin Support Email
                 </label>
                 <input
-                  type="email"
+                    id="cms-contact_support_email"
+                    type="email"
                   value={cms.contact_support_email}
                   onChange={(e) => handleCmsChange('contact_support_email', e.target.value)}
                   className="w-full p-3 border border-border rounded-lg bg-surface-elevated text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
@@ -302,11 +265,12 @@ function SystemSettingsContent() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">
+                <label htmlFor="cms-contact_office_email" className="block text-sm font-medium text-text-primary mb-2">
                   Solid Waste Management Office (SWMO) Email
                 </label>
                 <input
-                  type="email"
+                    id="cms-contact_office_email"
+                    type="email"
                   value={cms.contact_office_email}
                   onChange={(e) => handleCmsChange('contact_office_email', e.target.value)}
                   className="w-full p-3 border border-border rounded-lg bg-surface-elevated text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
@@ -316,11 +280,12 @@ function SystemSettingsContent() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">
+                <label htmlFor="cms-contact_phone" className="block text-sm font-medium text-text-primary mb-2">
                   Office Hotline / Phone Number
                 </label>
                 <input
-                  type="text"
+                    id="cms-contact_phone"
+                    type="text"
                   value={cms.contact_phone}
                   onChange={(e) => handleCmsChange('contact_phone', e.target.value)}
                   className="w-full p-3 border border-border rounded-lg bg-surface-elevated text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
@@ -330,11 +295,12 @@ function SystemSettingsContent() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">
+                <label htmlFor="cms-contact_operating_hours" className="block text-sm font-medium text-text-primary mb-2">
                   Office Operating Hours
                 </label>
                 <input
-                  type="text"
+                    id="cms-contact_operating_hours"
+                    type="text"
                   value={cms.contact_operating_hours}
                   onChange={(e) => handleCmsChange('contact_operating_hours', e.target.value)}
                   className="w-full p-3 border border-border rounded-lg bg-surface-elevated text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
@@ -344,18 +310,20 @@ function SystemSettingsContent() {
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-text-primary mb-2">
+                <label htmlFor="cms-contact_office_name" className="block text-sm font-medium text-text-primary mb-2">
                   Office Name & Physical Address
                 </label>
                 <input
-                  type="text"
+                    id="cms-contact_office_name"
+                    type="text"
                   value={cms.contact_office_name}
                   onChange={(e) => handleCmsChange('contact_office_name', e.target.value)}
                   className="w-full p-3 mb-3 border border-border rounded-lg bg-surface-elevated text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="Pasig Solid Waste Management Office (SWMO)"
                 />
                 <textarea
-                  rows={2}
+                    id="cms-contact_office_address"
+                    rows={2}
                   value={cms.contact_office_address}
                   onChange={(e) => handleCmsChange('contact_office_address', e.target.value)}
                   className="w-full p-3 border border-border rounded-lg bg-surface-elevated text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
@@ -364,11 +332,12 @@ function SystemSettingsContent() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">
+                <label htmlFor="cms-contact_facebook_url" className="block text-sm font-medium text-text-primary mb-2">
                   Official Facebook / Social URL
                 </label>
                 <input
-                  type="url"
+                    id="cms-contact_facebook_url"
+                    type="url"
                   value={cms.contact_facebook_url}
                   onChange={(e) => handleCmsChange('contact_facebook_url', e.target.value)}
                   className="w-full p-3 border border-border rounded-lg bg-surface-elevated text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
@@ -377,16 +346,25 @@ function SystemSettingsContent() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-primary mb-2">
+                <label htmlFor="cms-contact_facebook_label" className="block text-sm font-medium text-text-primary mb-2">
                   Social Page Display Label
                 </label>
                 <input
-                  type="text"
+                    id="cms-contact_facebook_label"
+                    type="text"
                   value={cms.contact_facebook_label}
                   onChange={(e) => handleCmsChange('contact_facebook_label', e.target.value)}
                   className="w-full p-3 border border-border rounded-lg bg-surface-elevated text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="Pasig City Public Information Office"
                 />
+              </div>
+              <div>
+                <label htmlFor="cms-swmo-facebook-url" className="block text-sm font-medium text-text-primary mb-2">SWMO Facebook page URL</label>
+                <input id="cms-swmo-facebook-url" type="url" value={cms.contact_swmo_facebook_url || ''}
+                  onChange={event => handleCmsChange('contact_swmo_facebook_url', event.target.value)}
+                  className="w-full p-3 border border-border rounded-lg bg-surface-elevated text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="https://www.facebook.com/profile.php?id=61583154152189" />
+                <p className="mt-2 text-sm text-text-muted">Shown in the public footer. Use an HTTPS Facebook URL, or leave blank to hide the link.</p>
               </div>
             </div>
           </section>
@@ -417,10 +395,11 @@ function SystemSettingsContent() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1">
+                  <label htmlFor="cms-lead_story_title" className="block text-sm font-medium text-text-primary mb-1">
                     Section Heading
                   </label>
                   <input
+                    id="cms-lead_story_title"
                     type="text"
                     value={cms.lead_story_title}
                     onChange={(e) => handleCmsChange('lead_story_title', e.target.value)}
@@ -429,10 +408,11 @@ function SystemSettingsContent() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1">
+                  <label htmlFor="cms-lead_photo_tagline" className="block text-sm font-medium text-text-primary mb-1">
                     Photo Tagline
                   </label>
                   <input
+                    id="cms-lead_photo_tagline"
                     type="text"
                     value={cms.lead_photo_tagline}
                     onChange={(e) => handleCmsChange('lead_photo_tagline', e.target.value)}
@@ -441,10 +421,11 @@ function SystemSettingsContent() {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-text-primary mb-1">
+                  <label htmlFor="cms-lead_story_subtitle" className="block text-sm font-medium text-text-primary mb-1">
                     Lead Photo Description / Subtitle
                   </label>
                   <textarea
+                    id="cms-lead_story_subtitle"
                     rows={2}
                     value={cms.lead_story_subtitle}
                     onChange={(e) => handleCmsChange('lead_story_subtitle', e.target.value)}
@@ -453,12 +434,13 @@ function SystemSettingsContent() {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-text-primary mb-1">
+                  <label htmlFor="cms-lead_photo_url" className="block text-sm font-medium text-text-primary mb-1">
                     Lead Photo URL
                   </label>
                   <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
                     <input
-                      type="text"
+                    id="cms-lead_photo_url"
+                    type="text"
                       value={cms.lead_photo_url}
                       onChange={(e) => handleCmsChange('lead_photo_url', e.target.value)}
                       className="flex-1 p-2.5 border border-border rounded-lg bg-surface text-text-primary"
@@ -480,7 +462,7 @@ function SystemSettingsContent() {
                         type="file"
                         accept="image/*"
                         className="sr-only"
-                        disabled={uploadingField === 'lead_photo_url'}
+                        disabled={Boolean(uploadingField)}
                         onChange={(e) => handleFileUpload(e, 'lead_photo_url')}
                       />
                     </label>
@@ -497,10 +479,11 @@ function SystemSettingsContent() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1">
+                  <label htmlFor="cms-lead_photo_caption" className="block text-sm font-medium text-text-primary mb-1">
                     Photo Caption
                   </label>
                   <input
+                    id="cms-lead_photo_caption"
                     type="text"
                     value={cms.lead_photo_caption}
                     onChange={(e) => handleCmsChange('lead_photo_caption', e.target.value)}
@@ -509,10 +492,11 @@ function SystemSettingsContent() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1">
+                  <label htmlFor="cms-lead_photo_credit_name" className="block text-sm font-medium text-text-primary mb-1">
                     Photo Credit Name
                   </label>
                   <input
+                    id="cms-lead_photo_credit_name"
                     type="text"
                     value={cms.lead_photo_credit_name}
                     onChange={(e) => handleCmsChange('lead_photo_credit_name', e.target.value)}
@@ -521,10 +505,11 @@ function SystemSettingsContent() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1">
+                  <label htmlFor="cms-lead_photo_credit_url" className="block text-sm font-medium text-text-primary mb-1">
                     Photo Credit Link URL
                   </label>
                   <input
+                    id="cms-lead_photo_credit_url"
                     type="url"
                     value={cms.lead_photo_credit_url}
                     onChange={(e) => handleCmsChange('lead_photo_credit_url', e.target.value)}
@@ -544,10 +529,11 @@ function SystemSettingsContent() {
                 <div className="p-3 border border-border rounded-lg bg-surface space-y-3">
                   <h4 className="text-sm font-semibold text-text-primary">Gallery Photo 1</h4>
                   <div>
-                    <label className="block text-xs font-medium text-text-muted mb-1">Image URL</label>
+                    <label htmlFor="cms-gallery_photo_1_url" className="block text-xs font-medium text-text-muted mb-1">Image URL</label>
                     <div className="flex gap-2 items-center">
                       <input
-                        type="text"
+                    id="cms-gallery_photo_1_url"
+                    type="text"
                         value={cms.gallery_photo_1_url}
                         onChange={(e) => handleCmsChange('gallery_photo_1_url', e.target.value)}
                         className="flex-1 p-2 text-sm border border-border rounded bg-surface-elevated text-text-primary"
@@ -563,7 +549,7 @@ function SystemSettingsContent() {
                           type="file"
                           accept="image/*"
                           className="sr-only"
-                          disabled={uploadingField === 'gallery_photo_1_url'}
+                          disabled={Boolean(uploadingField)}
                           onChange={(e) => handleFileUpload(e, 'gallery_photo_1_url')}
                         />
                       </label>
@@ -579,9 +565,10 @@ function SystemSettingsContent() {
                     </div>
                   )}
                   <div>
-                    <label className="block text-xs font-medium text-text-muted mb-1">Caption</label>
+                    <label htmlFor="cms-gallery_photo_1_caption" className="block text-xs font-medium text-text-muted mb-1">Caption</label>
                     <input
-                      type="text"
+                    id="cms-gallery_photo_1_caption"
+                    type="text"
                       value={cms.gallery_photo_1_caption}
                       onChange={(e) => handleCmsChange('gallery_photo_1_caption', e.target.value)}
                       className="w-full p-2 text-sm border border-border rounded bg-surface-elevated text-text-primary"
@@ -593,10 +580,11 @@ function SystemSettingsContent() {
                 <div className="p-3 border border-border rounded-lg bg-surface space-y-3">
                   <h4 className="text-sm font-semibold text-text-primary">Gallery Photo 2</h4>
                   <div>
-                    <label className="block text-xs font-medium text-text-muted mb-1">Image URL</label>
+                    <label htmlFor="cms-gallery_photo_2_url" className="block text-xs font-medium text-text-muted mb-1">Image URL</label>
                     <div className="flex gap-2 items-center">
                       <input
-                        type="text"
+                    id="cms-gallery_photo_2_url"
+                    type="text"
                         value={cms.gallery_photo_2_url}
                         onChange={(e) => handleCmsChange('gallery_photo_2_url', e.target.value)}
                         className="flex-1 p-2 text-sm border border-border rounded bg-surface-elevated text-text-primary"
@@ -612,7 +600,7 @@ function SystemSettingsContent() {
                           type="file"
                           accept="image/*"
                           className="sr-only"
-                          disabled={uploadingField === 'gallery_photo_2_url'}
+                          disabled={Boolean(uploadingField)}
                           onChange={(e) => handleFileUpload(e, 'gallery_photo_2_url')}
                         />
                       </label>
@@ -628,9 +616,10 @@ function SystemSettingsContent() {
                     </div>
                   )}
                   <div>
-                    <label className="block text-xs font-medium text-text-muted mb-1">Caption</label>
+                    <label htmlFor="cms-gallery_photo_2_caption" className="block text-xs font-medium text-text-muted mb-1">Caption</label>
                     <input
-                      type="text"
+                    id="cms-gallery_photo_2_caption"
+                    type="text"
                       value={cms.gallery_photo_2_caption}
                       onChange={(e) => handleCmsChange('gallery_photo_2_caption', e.target.value)}
                       className="w-full p-2 text-sm border border-border rounded bg-surface-elevated text-text-primary"
@@ -671,7 +660,7 @@ function SystemSettingsContent() {
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={cms.announcement_enabled}
+                    aria-label="Public advisory banner" checked={cms.announcement_enabled}
                     onChange={(e) => handleCmsChange('announcement_enabled', e.target.checked)}
                     className="sr-only peer"
                   />
@@ -683,11 +672,12 @@ function SystemSettingsContent() {
                 <div className="pt-2 space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-text-primary mb-1">
+                      <label htmlFor="cms-announcement_title" className="block text-sm font-medium text-text-primary mb-1">
                         Banner Title
                       </label>
                       <input
-                        type="text"
+                    id="cms-announcement_title"
+                    type="text"
                         value={cms.announcement_title}
                         onChange={(e) => handleCmsChange('announcement_title', e.target.value)}
                         className="w-full p-2.5 border border-border rounded-lg bg-surface text-text-primary"
@@ -711,11 +701,12 @@ function SystemSettingsContent() {
                     </div>
 
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-text-primary mb-1">
+                      <label htmlFor="cms-announcement_message" className="block text-sm font-medium text-text-primary mb-1">
                         Advisory Message
                       </label>
                       <textarea
-                        rows={2}
+                    id="cms-announcement_message"
+                    rows={2}
                         value={cms.announcement_message}
                         onChange={(e) => handleCmsChange('announcement_message', e.target.value)}
                         className="w-full p-2.5 border border-border rounded-lg bg-surface text-text-primary"
@@ -724,11 +715,12 @@ function SystemSettingsContent() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-text-primary mb-1">
+                      <label htmlFor="cms-announcement_link_url" className="block text-sm font-medium text-text-primary mb-1">
                         Link URL (Optional)
                       </label>
                       <input
-                        type="url"
+                    id="cms-announcement_link_url"
+                    type="url"
                         value={cms.announcement_link_url}
                         onChange={(e) => handleCmsChange('announcement_link_url', e.target.value)}
                         className="w-full p-2.5 border border-border rounded-lg bg-surface text-text-primary"
@@ -737,11 +729,12 @@ function SystemSettingsContent() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-text-primary mb-1">
+                      <label htmlFor="cms-announcement_link_text" className="block text-sm font-medium text-text-primary mb-1">
                         Link Button Text
                       </label>
                       <input
-                        type="text"
+                    id="cms-announcement_link_text"
+                    type="text"
                         value={cms.announcement_link_text}
                         onChange={(e) => handleCmsChange('announcement_link_text', e.target.value)}
                         className="w-full p-2.5 border border-border rounded-lg bg-surface text-text-primary"
@@ -770,12 +763,13 @@ function SystemSettingsContent() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1">
+                  <label htmlFor="cms-app_download_url" className="block text-sm font-medium text-text-primary mb-1">
                     Direct APK Download Link / URL
                   </label>
                   <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
                     <input
-                      type="text"
+                    id="cms-app_download_url"
+                    type="text"
                       value={cms.app_download_url}
                       onChange={(e) => handleCmsChange('app_download_url', e.target.value)}
                       className="flex-1 p-2.5 border border-border rounded-lg bg-surface text-text-primary"
@@ -797,19 +791,20 @@ function SystemSettingsContent() {
                         type="file"
                         accept=".apk,application/vnd.android.package-archive"
                         className="sr-only"
-                        disabled={uploadingField === 'app_download_url'}
+                        disabled={Boolean(uploadingField)}
                         onChange={(e) => handleFileUpload(e, 'app_download_url')}
                       />
                     </label>
                   </div>
-                  <p className="text-xs text-text-muted mt-1">Direct APK download package for Android devices.</p>
+                  <p className="text-xs text-text-muted mt-1">Upload an APK up to 100 MB directly to storage, then Save changes to publish it. Your storage project&apos;s file-size limit also applies.</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1">
+                  <label htmlFor="cms-app_version_name" className="block text-sm font-medium text-text-primary mb-1">
                     Latest App Version
                   </label>
                   <input
+                    id="cms-app_version_name"
                     type="text"
                     value={cms.app_version_name}
                     onChange={(e) => handleCmsChange('app_version_name', e.target.value)}
@@ -819,10 +814,11 @@ function SystemSettingsContent() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1">
+                  <label htmlFor="cms-app_playstore_url" className="block text-sm font-medium text-text-primary mb-1">
                     Google Play Store URL (Optional)
                   </label>
                   <input
+                    id="cms-app_playstore_url"
                     type="url"
                     value={cms.app_playstore_url}
                     onChange={(e) => handleCmsChange('app_playstore_url', e.target.value)}
@@ -832,10 +828,11 @@ function SystemSettingsContent() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1">
+                  <label htmlFor="cms-app_release_notes" className="block text-sm font-medium text-text-primary mb-1">
                     App Release Notes Summary
                   </label>
                   <input
+                    id="cms-app_release_notes"
                     type="text"
                     value={cms.app_release_notes}
                     onChange={(e) => handleCmsChange('app_release_notes', e.target.value)}
@@ -852,12 +849,12 @@ function SystemSettingsContent() {
                   <h3 className="text-md font-semibold text-text-primary flex items-center gap-2">
                     <AlertTriangle size={18} className="text-amber-500" /> Maintenance Mode
                   </h3>
-                  <p className="text-xs text-text-muted">Display a scheduled maintenance downtime notice to citizens attempting to create reports.</p>
+                  <p className="text-xs text-text-muted">Pause public web pages with this notice. Staff sign-in and dashboards stay available.</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={cms.maintenance_mode}
+                    aria-label="Maintenance mode" checked={cms.maintenance_mode}
                     onChange={(e) => handleCmsChange('maintenance_mode', e.target.checked)}
                     className="sr-only peer"
                   />
@@ -867,8 +864,9 @@ function SystemSettingsContent() {
 
               {cms.maintenance_mode && (
                 <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1">Maintenance Notice Message</label>
+                  <label htmlFor="cms-maintenance_notice" className="block text-sm font-medium text-text-primary mb-1">Maintenance Notice Message</label>
                   <textarea
+                    id="cms-maintenance_notice"
                     rows={2}
                     value={cms.maintenance_notice}
                     onChange={(e) => handleCmsChange('maintenance_notice', e.target.value)}

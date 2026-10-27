@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import Image from 'next/image'
-import { Pause, Play, ShieldCheck } from 'lucide-react'
+import { Pause, Play, ShieldCheck, Loader2 } from 'lucide-react'
 import styles from './Auth.module.css'
 
 const photos = [
@@ -18,6 +18,7 @@ export default function AuthPhotos() {
   const reduced = useSyncExternalStore(subscribeMotion, () => matchMedia('(prefers-reduced-motion: reduce)').matches, () => false)
   const [paused, setPaused] = useState(null)
   const [active, setActive] = useState(0)
+  const [loaded, setLoaded] = useState({})
   const playing = desktop && (paused === null ? !reduced : !paused)
   useEffect(() => {
     if (!playing) return
@@ -26,7 +27,18 @@ export default function AuthPhotos() {
   }, [playing])
   if (!desktop) return null
   return <figure className={styles.photoCycle} aria-label="SWMO field crews at work">
-    {photos.map((photo, index) => <Image key={photo.src} src={photo.src} alt={index === active ? photo.alt : ''} aria-hidden={index !== active} fill sizes="50vw" className={index === active ? styles.photoActive : styles.photoInactive} />)}
+    {!loaded[active] && (
+      <span
+        className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 backdrop-blur-xs select-none pointer-events-none"
+        role="status"
+        aria-label="Loading photo..."
+      >
+        <span className="p-2.5 rounded-full bg-black/60 border border-white/20 shadow-lg flex items-center justify-center">
+          <Loader2 className="w-6 h-6 text-white animate-spin" aria-hidden="true" />
+        </span>
+      </span>
+    )}
+    {photos.map((photo, index) => <Image key={photo.src} src={photo.src} alt={index === active ? photo.alt : ''} aria-hidden={index !== active} fill sizes="50vw" className={index === active ? styles.photoActive : styles.photoInactive} onLoad={() => setLoaded(prev => ({ ...prev, [index]: true }))} />)}
     <figcaption>
       <div className={styles.captionHeader}>
         <ShieldCheck size={18} />

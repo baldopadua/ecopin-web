@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, MapPin, X, ImageOff, Play, Video } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, MapPin, X, ImageOff, Play, Video, Loader2 } from 'lucide-react'
 import SecureImage from '@/components/ui/SecureImage'
 import { isVideoResource, getVideoPosterUrl } from '@/lib/helpers/mediaHelpers'
 import {
@@ -323,7 +323,12 @@ export default function PhotoViewer({
         <div className={styles.body}>
           <div className={styles.photos}>
             <div className={styles.imageStage}>
-              {hasNoPhotos ? (
+              {loading ? (
+                <div className={styles.noPhotoPlaceholder} role="status" aria-label="Loading photo...">
+                  <Loader2 size={44} className="animate-spin text-[var(--landing-blue)]" aria-hidden="true" />
+                  <span>Loading photos…</span>
+                </div>
+              ) : hasNoPhotos ? (
                 <div className={styles.noPhotoPlaceholder}>
                   <ImageOff size={48} />
                   <span>No photos available for this report</span>
@@ -339,7 +344,9 @@ export default function PhotoViewer({
                   key={activePhoto?.url}
                   src={activePhoto?.url}
                   alt={`${activePhoto?.label}: ${currentReport?.title || 'Environmental concern'}`}
-                  className={styles.image}
+                  loadingLabel="Loading photo..."
+                  className={`${styles.image} w-full h-full object-contain`}
+                  wrapperClassName="w-full h-full flex items-center justify-center"
                 />
               )}
               {reportList.length > 1 && (
@@ -386,7 +393,7 @@ export default function PhotoViewer({
                     {photo.isVideo ? (
                       <div className="relative w-full h-full flex items-center justify-center bg-black">
                         {photo.poster || getVideoPosterUrl(photo.url) ? (
-                          <SecureImage src={photo.poster || getVideoPosterUrl(photo.url)} alt="" />
+                          <SecureImage src={photo.poster || getVideoPosterUrl(photo.url)} alt="" loadingLabel="Loading thumbnail..." className="w-full h-full object-cover" />
                         ) : (
                           <video src={`${photo.url}#t=0.001`} preload="metadata" muted playsInline className="w-full h-full object-cover pointer-events-none" />
                         )}
@@ -395,7 +402,7 @@ export default function PhotoViewer({
                         </span>
                       </div>
                     ) : (
-                      <SecureImage src={photo.url} alt="" />
+                      <SecureImage src={photo.url} alt="" loadingLabel="Loading thumbnail..." className="w-full h-full object-cover" />
                     )}
                   </button>
                 ))}

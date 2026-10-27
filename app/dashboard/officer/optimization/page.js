@@ -16,7 +16,7 @@ import OptimizationSettings, { normalizeCapacitySettings } from '@/components/op
 import TemplateSelector from '@/components/ui/TemplateSelector'
 import DisassembleModal from '@/components/optimization/DisassembleModal'
 import { useTask } from '@/components/context/TaskContext'
-import { Sun, CloudRain, CloudLightning, Circle, Globe, Map, Check, CheckCircle2, XCircle, Ruler, Timer, RotateCcw, Loader2, History, AlertCircle, Info, Eye } from 'lucide-react'
+import { Sun, CloudRain, CloudLightning, Circle, Globe, Map, Check, CheckCircle2, XCircle, X, Ruler, Timer, RotateCcw, RefreshCw, Loader2, History, AlertCircle, Info, Eye, Lock } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { formatStatusLabel } from '@/lib/helpers/statusHelpers'
 import styles from './optimization.module.css'
@@ -29,7 +29,8 @@ import {
   formatDuration, 
   formatDate,
   CrewRouteCard, 
-  RouteMapView 
+  RouteMapView,
+  TaskTimeWorkloadGraph
 } from '@/components/optimization/RouteComponents'
 import {
   generatePlan,
@@ -98,7 +99,7 @@ function formatOperationalReason(reason) {
 
 export default function OptimizationPage() {
   const router = useRouter()
-  const { isOptimizing, optimizationProgress, draftPlan, setDraftPlan, startOptimization, commitOptimization } = useTask()
+  const { isOptimizing, optimizationProgress, draftPlan, setDraftPlan, startOptimization, cancelOptimization, commitOptimization } = useTask()
   const [liveWeather, setLiveWeather] = useState('normal')
   const [trafficCondition, setTrafficCondition] = useState('low')
   const [proposalLoading, setProposalLoading] = useState(false)
@@ -110,6 +111,8 @@ export default function OptimizationPage() {
   const [notification, setNotification] = useState(null)
   const [standardCount, setStandardCount] = useState(0)
   const [outlierCount, setOutlierCount] = useState(0)
+  const [clustersLoading, setClustersLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState('standard')
   const [activeTab, setActiveTab] = useState('dispatch')
   const [currentPage, setCurrentPage] = useState(1)
@@ -129,16 +132,32 @@ export default function OptimizationPage() {
 
 
   const loadPendingClusters = useCallback(async () => {
+    setClustersLoading(true)
     try {
-      const stdData = await fetchWorkQueue({ limit: 100, target_outliers_only: false })
-      const stdQueue = Array.isArray(stdData) ? stdData : (stdData.queue || [])
-      setStandardCount(stdQueue.length)
+      const [stdResult, swpResult] = await Promise.allSettled([
+        fetchWorkQueue({ limit: 100, target_outliers_only: false }),
+        fetchWorkQueue({ limit: 100, target_outliers_only: true })
+      ])
 
-      const swpData = await fetchWorkQueue({ limit: 100, target_outliers_only: true })
-      const swpQueue = Array.isArray(swpData) ? swpData : (swpData.queue || [])
-      setOutlierCount(swpQueue.length)
+      if (stdResult.status === 'fulfilled') {
+        const stdData = stdResult.value
+        const stdQueue = Array.isArray(stdData) ? stdData : (stdData?.queue || [])
+        setStandardCount(stdQueue.length)
+      } else {
+        reportDiagnostic('error', 'dispatch', 'Failed to load pending clusters (standard)', stdResult.reason)
+      }
+
+      if (swpResult.status === 'fulfilled') {
+        const swpData = swpResult.value
+        const swpQueue = Array.isArray(swpData) ? swpData : (swpData?.queue || [])
+        setOutlierCount(swpQueue.length)
+      } else {
+        reportDiagnostic('error', 'dispatch', 'Failed to load pending clusters (sweeper)', swpResult.reason)
+      }
     } catch (err) {
       reportDiagnostic('error', 'dispatch', 'Failed to load pending clusters', err)
+    } finally {
+      setClustersLoading(false)
     }
   }, [])
 
@@ -200,6 +219,20 @@ export default function OptimizationPage() {
       setRunsLoading(false)
     }
   }, [])
+
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true)
+    try {
+      await Promise.allSettled([
+        loadPendingClusters(),
+        loadPreviousRuns(),
+        loadIncompleteTasks(),
+        fetchLiveWeather()
+      ])
+    } finally {
+      setIsRefreshing(false)
+    }
+  }, [loadPendingClusters, loadPreviousRuns, loadIncompleteTasks, fetchLiveWeather])
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -390,12 +423,29 @@ export default function OptimizationPage() {
           { label: 'Officer', href: '/dashboard/officer' },
           { label: 'Optimization' }
         ]}
-      />
+      >
+        <button
+          type="button"
+          onClick={handleRefresh}
+          disabled={isRefreshing || clustersLoading || isOptimizing}
+          className={styles.refreshButton}
+          aria-label="Refresh optimization data"
+        >
+          <RefreshCw size={14} className={isRefreshing || clustersLoading ? 'animate-spin' : ''} aria-hidden="true" />
+          <span>{isRefreshing || clustersLoading ? 'Refreshing...' : 'Refresh'}</span>
+        </button>
+      </PageHeader>
 
-      <PageTabs label="Optimization views" value={activeTab} onChange={setActiveTab} tabs={[
-        { id: 'dispatch', label: 'Dispatch settings', icon: Globe },
-        { id: 'previous', label: `Previous runs${previousRuns.length ? ` (${previousRuns.length})` : ''}`, icon: History },
-      ]} />
+      <PageTabs
+        label="Optimization views"
+        value={activeTab}
+        onChange={setActiveTab}
+        disabled={isOptimizing}
+        tabs={[
+          { id: 'dispatch', label: 'Dispatch settings', icon: Globe },
+          { id: 'previous', label: `Previous runs${previousRuns.length ? ` (${previousRuns.length})` : ''}`, icon: History },
+        ]}
+      />
 
       {pendingProposal && (
         <div className={`${styles.banner} ${styles.bannerWarning}`}>
@@ -411,7 +461,8 @@ export default function OptimizationPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => handleViewRun(pendingProposal.id)}
-              className="px-3 py-1.5 bg-warning text-black font-semibold normal-case text-xs hover:bg-warning/80 transition-colors rounded-full"
+              disabled={isOptimizing}
+              className="px-3 py-1.5 bg-warning text-black font-semibold normal-case text-xs hover:bg-warning/80 transition-colors rounded-full disabled:opacity-50 disabled:pointer-events-none"
             >
               Review and dispatch
             </button>
@@ -527,93 +578,145 @@ export default function OptimizationPage() {
                 </div>
               </div>
 
-              <p className="text-sm text-text-secondary mb-4">
-                Plans automatically fit the crew capacity left after existing assignments. Extra work stays in the backlog.
-              </p>
-              {incompleteTasks?.hasPriorIncomplete && (
-                <details className="mb-4 rounded-xl border border-border bg-surface-elevated p-4" aria-label="Unfinished assignments">
-                  <summary className="cursor-pointer text-sm font-medium text-text-primary">
-                    {incompleteTasks.count} unfinished task{incompleteTasks.count !== 1 ? 's' : ''} from prior runs
-                  </summary>
-                  <p className="text-sm text-text-secondary mt-2 mb-3">
-                    These tasks stay assigned and already count toward crew capacity. New plans use the remaining slots, time and vehicle load without duplicating them.
-                  </p>
-                  <ul className="m-0 pl-5 space-y-2 text-sm text-text-secondary">
-                    {incompleteTasks.tasks.slice(0, 6).map(task => (
-                      <li key={task.id}>
-                        <span className="font-medium text-text-primary">{task.title}</span>
-                        {' · '}{formatStatusLabel(task.status)}{task.crew_name && ` · ${task.crew_name}`}
-                      </li>
-                    ))}
-                  </ul>
-                  {incompleteTasks.tasks.length > 6 && <p className="text-sm text-text-muted mt-2 mb-0">+{incompleteTasks.tasks.length - 6} more assignments</p>}
-                </details>
+              {isOptimizing && (
+                <div className="mb-4 flex items-center gap-2 px-3 py-2 bg-primary/10 border border-primary/20 rounded-lg text-xs text-text-secondary">
+                  <Lock size={14} className="text-primary flex-shrink-0" aria-hidden="true" />
+                  <span>Dispatch options and settings are locked while optimization is in progress.</span>
+                </div>
               )}
 
-              {/* 1. Target dispatch focus */}
-              <div className="mb-4">
-                <TemplateSelector
-                  selectedTemplate={selectedTemplate}
-                  onTemplateChange={setSelectedTemplate}
-                  outlierCount={outlierCount}
-                  standardCount={standardCount}
-                />
-              </div>
+              <fieldset
+                disabled={isOptimizing}
+                className={`border-0 p-0 m-0 ${isOptimizing ? 'opacity-60 pointer-events-none select-none transition-opacity duration-200' : 'transition-opacity duration-200'}`}
+              >
+                <p className="text-sm text-text-secondary mb-4">
+                  Plans automatically fit the crew capacity left after existing assignments. Extra work stays in the backlog.
+                </p>
+                {incompleteTasks?.hasPriorIncomplete && (
+                  <details className="mb-4 rounded-xl border border-border bg-surface-elevated p-4" aria-label="Unfinished assignments">
+                    <summary className="cursor-pointer text-sm font-medium text-text-primary">
+                      {incompleteTasks.count} unfinished task{incompleteTasks.count !== 1 ? 's' : ''} from prior runs
+                    </summary>
+                    <p className="text-sm text-text-secondary mt-2 mb-3">
+                      These tasks stay assigned and already count toward crew capacity. New plans use the remaining slots, time and vehicle load without duplicating them.
+                    </p>
+                    <ul className="m-0 pl-5 space-y-2 text-sm text-text-secondary">
+                      {incompleteTasks.tasks.slice(0, 6).map(task => (
+                        <li key={task.id}>
+                          <span className="font-medium text-text-primary">{task.title}</span>
+                          {' · '}{formatStatusLabel(task.status)}{task.crew_name && ` · ${task.crew_name}`}
+                        </li>
+                      ))}
+                    </ul>
+                    {incompleteTasks.tasks.length > 6 && <p className="text-sm text-text-muted mt-2 mb-0">+{incompleteTasks.tasks.length - 6} more assignments</p>}
+                  </details>
+                )}
 
-              {/* 2. Fleet Travel Mode & Collapsible Advanced Settings */}
-              <div className="mb-4">
-                <OptimizationSettings
-                  settings={settings}
-                  onChange={setSettings}
-                  templates={templates}
-                  options={options}
-                  onSaveTemplate={handleSaveTemplate}
-                  onDeleteTemplate={handleDeleteTemplate}
-                  disabled={isOptimizing}
-                />
-              </div>
+                {/* 1. Target dispatch focus */}
+                <div className="mb-4">
+                  <TemplateSelector
+                    selectedTemplate={selectedTemplate}
+                    onTemplateChange={setSelectedTemplate}
+                    outlierCount={outlierCount}
+                    standardCount={standardCount}
+                    loading={clustersLoading}
+                    disabled={isOptimizing}
+                  />
+                </div>
+
+                {/* 2. Fleet Travel Mode & Collapsible Advanced Settings */}
+                <div className="mb-4">
+                  <OptimizationSettings
+                    settings={settings}
+                    onChange={setSettings}
+                    templates={templates}
+                    options={options}
+                    onSaveTemplate={handleSaveTemplate}
+                    onDeleteTemplate={handleDeleteTemplate}
+                    disabled={isOptimizing}
+                  />
+                </div>
+              </fieldset>
 
               {/* 3. Action Bar: Generate optimization */}
               <div className={styles.generateBar}>
                 <div className="flex items-center gap-3">
                   <button
                     onClick={handleGenerate}
-                    disabled={isOptimizing}
+                    disabled={isOptimizing || clustersLoading}
                     className={styles.generateButton}
+                    title={clustersLoading ? "Waiting for clusters and reports to load..." : undefined}
                   >
                     {isOptimizing ? (
                       <span className="flex items-center gap-2">
                         <Loader2 size={16} className="animate-spin" aria-hidden="true" />
-                        Calculating Routes...
+                        <span>Calculating Routes ({optimizationProgress.percent || 0}%)...</span>
                       </span>
                     ) : (
                       <>
-                        <CheckCircle2 className="w-4 h-4" />
+                        {clustersLoading ? (
+                          <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+                        ) : (
+                          <CheckCircle2 className="w-4 h-4" />
+                        )}
                         Generate Route Proposal
                       </>
                     )}
                   </button>
 
+                  {isOptimizing && (
+                    <button
+                      type="button"
+                      onClick={cancelOptimization}
+                      className={styles.cancelButton}
+                      title="Cancel route proposal generation"
+                      aria-label="Cancel route proposal generation"
+                    >
+                      <X size={15} aria-hidden="true" />
+                      <span>Cancel generation</span>
+                    </button>
+                  )}
+
                   {!isOptimizing && (
-                    <span className="text-xs font-sans text-text-muted">
-                      <span className="font-semibold text-text-primary">
-                        {selectedTemplate === 'sweeper' ? outlierCount : selectedTemplate === 'mixed' ? `${standardCount + outlierCount}` : standardCount}
-                      </span>{' '}
-                      {selectedTemplate === 'sweeper' ? 'reports' : selectedTemplate === 'mixed' ? 'clusters & reports' : 'clusters'} available for dispatch
-                    </span>
+                    clustersLoading ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-sans text-text-muted">
+                        <Loader2 size={13} className="animate-spin text-primary" aria-hidden="true" />
+                        <span>Loading available clusters & reports...</span>
+                      </span>
+                    ) : (
+                      <span className="text-xs font-sans text-text-muted">
+                        <span className="font-semibold text-text-primary">
+                          {selectedTemplate === 'sweeper' ? outlierCount : selectedTemplate === 'mixed' ? `${standardCount + outlierCount}` : standardCount}
+                        </span>{' '}
+                        {selectedTemplate === 'sweeper' ? 'reports' : selectedTemplate === 'mixed' ? 'clusters & reports' : 'clusters'} available for dispatch
+                      </span>
+                    )
                   )}
                 </div>
               </div>
 
               {isOptimizing && (
                 <div className="mt-3 pt-3 border-t border-border">
-                  <div className="flex justify-between text-xs font-semibold text-text-primary mb-1 font-sans normal-case tracking-normal">
-                    <span>{optimizationProgress.message || 'Solving...'}</span>
-                    <span>{optimizationProgress.percent || 0}%</span>
+                  <div className="flex justify-between items-center text-xs font-semibold text-text-primary mb-1.5 font-sans normal-case tracking-normal">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-primary animate-pulse" aria-hidden="true" />
+                      <span>{optimizationProgress.message || 'Solving...'}</span>
+                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="tabular-nums font-mono text-primary font-bold">{optimizationProgress.percent || 0}%</span>
+                      <button
+                        type="button"
+                        onClick={cancelOptimization}
+                        className="text-xs text-error hover:underline font-medium transition-colors cursor-pointer bg-transparent border-0 p-0"
+                        aria-label="Cancel optimization"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                   <div className="w-full bg-surface h-2 border border-border rounded-full overflow-hidden">
                     <div 
-                      className="bg-primary h-full transition-all duration-300 rounded-full" 
+                      className="bg-primary h-full transition-all duration-300 rounded-full animate-pulse" 
                       style={{ width: `${optimizationProgress.percent || 0}%` }}
                     />
                   </div>
@@ -786,38 +889,9 @@ export default function OptimizationPage() {
                   </div>
                 )}
 
-                {/* Task-Time Histogram */}
+                {/* Task-Time Workload Graph */}
                 {currentProposalRoutes.length > 0 && (
-                  <div className="mb-4">
-                    <h4 className="font-semibold text-text-primary mb-2 flex items-center gap-2 text-sm">
-                      <Timer className="w-4 h-4" /> Task-Time Histogram
-                      <span className="text-xs font-sans text-text-muted">(Est. workload distribution)</span>
-                    </h4>
-                    <div className="bg-surface-elevated border border-border p-3 h-40 flex items-end gap-2 rounded-xl">
-                      {currentProposalRoutes.map((r, i) => {
-                        const getDur = (route) => route.total_duration_min || (route.task_count * 25) || (route.waypoints?.length * 15) || 0;
-                        const maxDur = Math.max(...currentProposalRoutes.map(route => getDur(route) || 1));
-                        const dur = getDur(r);
-                        const heightPct = Math.max(8, (dur / maxDur) * 100);
-                        const color = CREW_COLORS[i % CREW_COLORS.length];
-                        return (
-                          <div key={r.id || r.crewId || r.vehicle_id || `histogram-${i}`} className="flex-1 flex flex-col items-center gap-1.5 group pt-4">
-                            <div className="w-full bg-black/10 dark:bg-surface/5 relative h-full flex items-end rounded-t-sm">
-                              <div 
-                                className="w-full transition-all duration-500 hover:brightness-110 relative rounded-t-sm"
-                                style={{ height: `${heightPct}%`, backgroundColor: color }}
-                              >
-                                 <div className="absolute -top-7 left-1/2 transform -translate-x-1/2 bg-surface text-text-primary border border-border text-xs px-1.5 py-0.5 rounded whitespace-nowrap font-sans shadow-sm">
-                                   {formatDuration(dur)}
-                                 </div>
-                              </div>
-                            </div>
-                            <span className="text-xs font-sans text-text-muted truncate max-w-full px-1">{r.field_crews?.name || `Crew ${i+1}`}</span>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
+                  <TaskTimeWorkloadGraph routes={currentProposalRoutes} title="Task-time workload distribution" />
                 )}
 
                 {/* Route map */}

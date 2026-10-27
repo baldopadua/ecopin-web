@@ -434,6 +434,13 @@ Specialized map views in the authenticated staff portals (Officer & Field Crew: 
 
 Cluster markers use the same pointed silhouette, with a 54px circular count face, an offset backing circle, and a Layers badge. SLA-breached groups retain a red border and a TriangleAlert badge. Full selection uses a blue ring; partial selection uses a dashed ring. The marker title announces the eligible report count, selected count, and overdue state. See [ClusterMarker.js](components/map/ClusterMarker.js). Group selection, popup actions, and sweeper dimming remain unchanged.
 
+3. **Route & Optimization Waypoint Pins (`RouteLayer.js`, `routePinIcon.js`)**:
+   - **Waypoint Stops**: Replaces legacy unanchored 40px flat dots with a pointed 36×46px teardrop vector SVG silhouette (`iconAnchor: [18, 45]`, `popupAnchor: [0, -46]`). The bottom needle tip points with mathematical accuracy directly at each stop coordinate where the route path arrives, preventing line obscuration across zoom levels.
+   - **Crew Color Fidelity**: The outer teardrop shell and inner accent ring dynamically reflect the assigned crew's color (`color` from `CREW_COLORS`), preserving immediate visual identification across multi-crew route maps. A 2.5px white perimeter stroke ensures contrast over all street and satellite map tiles.
+   - **Sequence Number Legibility**: Inside a crisp white center disc (`r=10.5`), the stop sequence number (`seq`) renders in bold dark slate (`#0f172a`), maintaining 100% legibility across light, dark, and bright crew colors.
+   - **Depot Markers**: SWMO Headquarters depot waypoints use a 38×48px pointed teardrop silhouette (`iconAnchor: [19, 47]`, `popupAnchor: [0, -48]`) in official SWMO blue (`#0052CC`) with a crisp vector facility icon, replacing legacy OS emojis.
+   - **Path Preservation**: Polylines, OSRM road-routing coordinates, caching, distance/duration metrics, and map bounds auto-fitting remain completely intact.
+
 ## 10. SWMO photo story
 
 Source: [LandingPage.js](components/landing/LandingPage.js) and the community styles in [LandingPage.module.css](components/landing/LandingPage.module.css).
@@ -630,6 +637,8 @@ Use reviewed-report wording accurately. An empty view is not evidence that a nei
 | [LandingPage.js](components/landing/LandingPage.js) | Section composition, copy, actions, editorial assets |
 | [LandingPage.module.css](components/landing/LandingPage.module.css) | Landing tokens, geometry, surfaces, responsive rules, interaction styling |
 | [LandingNavigation.js](components/landing/LandingNavigation.js) | Shared destinations, header/rail transition, menu and account presentation |
+| [PublicFooter.js](components/landing/PublicFooter.js) | Shared public footer on home, downloads, account deletion, Explore, and public report details; CMS office details and SWMO Facebook URL |
+| [FooterContactForm.js](components/landing/FooterContactForm.js) | Shared footer contact form, validation, submission, and success/error feedback |
 | [usePublicTheme.js](components/landing/usePublicTheme.js) | Existing public theme observation and toggle |
 | [usePublicAccount.js](components/landing/usePublicAccount.js) | Reactive session/account identity |
 | [useLandingMotion.js](components/landing/useLandingMotion.js) | Lenis lifecycle and one-time reveals |
@@ -846,6 +855,8 @@ Every page uses the same heading hierarchy and dimensions; do not shrink a headi
 
 The sticky header preserves its initial top gutter while the workspace scrolls: 24px, or 16px below 768px, measured from the workspace scrollport. Its shared background extension covers that gutter so scrolling content cannot show above the breadcrumb. Keep this inside `PageHeader.module.css`; do not add padding that increases header height or reduces fitted-page capacity.
 
+On fitted desktop workspaces (at least 1024px wide and 700px high), the header stays in normal relative flow because only the inner panels scroll. The shell removes its sticky top offset in this case, keeping the initial 24px page gutter and the 20px gap to the first content row. Flow pages and smaller layouts retain the shared sticky behavior.
+
 ### Tabs and panel semantics
 
 All workspace tab strips use `PageTabs`. The track has a tinted elevated surface, 1px border, 16px radius, 4px inset, and 8px gap. A selected tab has a surface fill, 1px border, 12px radius, and blue text; each tab has a 44px minimum height. On narrow screens the strip scrolls horizontally without shrinking or wrapping tab labels.
@@ -855,6 +866,8 @@ Keep tab focus outlines inset within the rounded button; the generic shell focus
 Use the shared tab keyboard behavior: Left/Right Arrow moves between tabs, Home selects the first, End selects the last, and focus follows selection. Keep the tablist named. Each tab's `aria-controls` points to a matching `tabpanel`; each panel names its tab with `aria-labelledby`. Only the active panel is exposed. Preserve focus and panel state when changing tabs.
 
 ### Workspace navigation loading
+
+Programmatic navigation, including tutorial Replay, must dismiss loading when the destination mounts even if the loading flag changes immediately after the pathname. The tutorial waits until navigation loading ends before opening its own modal; the two overlays must not compete for focus or leave the page blocked.
 
 `NavigationLoadingScreen` is a full-viewport native modal dialog, including the sidebar and mobile navigation, rather than an overlay positioned inside the page. While opening another workspace route, keep the background inert and lock document, body, and workspace scrolling; restore their previous overflow values when loading ends or the component unmounts. Escape must not dismiss a still-loading state. Retain the navigation provider's existing completion and safety-timeout behavior; query-only filters and pagination must not start a full-screen transition.
 
@@ -959,3 +972,22 @@ Route publication failures take precedence over an empty task array in officer f
 Mixed generation automatically bounds nearby-cluster grouping by the remaining crew time and vehicle load. Nearby clusters that cannot fit together remain separate candidates; smaller feasible work can fill a remaining task slot. Reserve optional pickup time from the minutes left after unfinished assignments, rather than from the original full shift. Full crews do not block other eligible crews with room. Preserve configured shift, task, route, physical-load and qualification limits, and retain unselected work in the backlog; remaining task slots alone do not establish that a particular task is feasible.
 
 The unfinished-task count belongs inside Dispatch settings as a compact, keyboard-operable disclosure with task/status/crew details. Explain that these tasks remain assigned and already consume capacity. Do not offer an automatic carryover switch or restrict new generation to already-claimed clusters. The separate explicit requeue/disassembly workflows retain their existing confirmation and authority. Show a no-remaining-capacity failure only when all otherwise eligible crews have exhausted task slots or time; unavailable configuration, unknown load and service failures retain their own explanations.
+
+
+### Officer onboarding and Profile preferences
+
+The officer walkthrough has six steps: review hotzones, check crew readiness, generate routes, review the proposal, confirm dispatch, and monitor crews. Each names the relevant workspace, offers a short actionable checklist, and explains an important boundary. Distinguish draft generation from route publication, and explain that unfinished assignments consume remaining capacity. This is an explanatory walkthrough on the Command Center, not an automated cross-page dispatch operation. Highlight a relevant visible control when available; center the card when its target is unavailable, including hidden mobile navigation. Keep the card within the viewport with internal scrolling in short windows. Show actual step progress, Back/Next, Skip/Finish, Escape dismissal and a Profile link. Preserve modal keyboard focus and completion/dismissal persistence.
+
+Profile → Onboarding separates automatic display and Replay into two divided rows, with 14px helper text, 44px controls and a proper labeled switch. Align controls beside the explanation on wide screens; stack the Replay action at narrow widths. Preferences save immediately through the existing account-scoped browser storage. Use Profile's shared notification toast for successful saves; use a warning toast when persistence fails and explain that the choice lasts for the current visit. Do not claim these preferences sync across devices. Replay enables the tutorial and opens step one after navigation loading finishes.
+
+### Officer manual-review severity
+
+On the web report detail page, Approve Report opens a labeled severity dialog. Require an explicit whole-number score from 0 through 100, selected with a draggable, keyboard-operable slider or its paired exact-number field. Show the score and matching Minimal/Low/Moderate/High/Critical level live, with the established 0–19/20–39/40–59/60–79/80–100 thresholds. The slider's initial position is not an assigned default: keep approval disabled until a score is chosen. Save approval and severity together through Approve and save severity. Keep the selection and a useful error after a failed save; block duplicate submissions and acknowledge only a confirmed server record. Cancellation must not write and must restore focus.
+
+Display the saved severity in Report Details. Already-approved reports with no score expose Set severity to officers and administrators, including closed/resolved records whose other actions are unavailable. A score of zero is valid and must not be treated as missing. Preserve existing automatic severity when no replacement is supplied. Scope this interaction to the web dashboard; do not change native mobile screens or field-crew permissions.
+
+Show citizen photo-review explanations in a named Manual review request section between Description and Evidence Media on the officer/admin web report detail page. Preserve photo numbering, newlines and long text, and render submissions as plain text. Do not label empty or unrelated processing notes as citizen requests. Retain the explanation after approval; rejection appends a labeled officer reason without erasing the citizen's request. Keep this display out of the native officer app and field-crew presentation.
+
+## Response deadline visibility - 27 October 2026
+
+The public landing-map popup, Explore map/list/gallery/detail panel and public report page expose response-deadline indicators without sign-in. Keep deadlines separate from response status and severity. Use neutral Response deadline, amber Response deadline approaching in the final 20% of the real SLA window, and red Response overdue at/beyond the deadline, with text and icons in both themes. Do not call reports expired or hide them when overdue. Details show the exact local target time and explain that response time does not guarantee cleanup completion. Preserve approval/consent filtering and approximate locations. The implementation, migration order and verification limits are documented in `docs/response-deadlines.md`.

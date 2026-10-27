@@ -19,7 +19,8 @@ import {
   formatDistance, 
   formatDuration, 
   CrewRouteCard, 
-  RouteMapView 
+  RouteMapView,
+  TaskTimeWorkloadGraph 
 } from '@/components/optimization/RouteComponents'
 import { Sun, Circle, Map, CheckCircle2, XCircle, RotateCcw } from 'lucide-react'
 import { reportDiagnostic } from '../../../../../lib/diagnostics.mjs';
@@ -245,34 +246,9 @@ export default function OptimizationRunPage() {
           </div>
         )}
 
-        {/* Task-Time Histogram */}
+        {/* Task-Time Workload Graph */}
         {routes.length > 0 && (
-          <div className="mb-6">
-            <h2 className="font-semibold text-text-primary mb-3">Task time workload</h2>
-            <div className="flex items-end gap-2 h-40 bg-surface-elevated border border-border p-4">
-              {routes.map((r, i) => {
-                const dur = r.total_duration_min || (r.task_count * 25) || 1
-                return (
-                  <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-2 group relative">
-                    <span className="text-xs font-sans text-text-primary font-semibold">
-                      {formatDuration(dur)}
-                    </span>
-                    <div 
-                      className="w-full transition-all duration-300 relative"
-                      style={{ 
-                        height: `${Math.max(15, (dur / maxDur) * 100)}%`,
-                        backgroundColor: CREW_COLORS[i % CREW_COLORS.length] 
-                      }}
-                    >
-                    </div>
-                    <span className="text-xs font-sans text-text-muted mt-1 truncate w-full text-center">
-                      {r.field_crews?.name?.split(' ')[0] || `C${i+1}`}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
+          <TaskTimeWorkloadGraph routes={routes} title="Task time workload distribution" />
         )}
 
         {/* Evidence Gallery */}

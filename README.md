@@ -4,16 +4,18 @@ EcoPin is an AI-powered environmental response and cleanup monitoring platform.
 
 ## Officer dispatch tutorial (WT-96)
 
-On the first visit to `/dashboard/officer`, officers see a three-step tour: review
-Critical Hotzones, generate a route proposal in Optimization, then confirm dispatch
-and monitor Active Targets. The walkthrough highlights the relevant dashboard areas;
+On the first visit to `/dashboard/officer`, officers see a six-step tour: review
+hotzones, check crew readiness, generate routes, review the proposal, confirm dispatch,
+and monitor crews. Each step names the relevant workspace and provides a short checklist.
+The walkthrough highlights the relevant dashboard areas where visible;
 it never generates proposals or dispatches crews. Back, Next, Skip, Finish, and Escape
 are supported, with keyboard focus kept inside the tutorial.
 
 Open **Profile & account → Onboarding** to toggle automatic onboarding or replay
 the tutorial. Completion, dismissal, and the toggle persist per officer in this
 browser. Replay enables the tour and starts at step one. If browser storage is
-blocked, preferences last for the current visit.
+blocked, preferences last for the current visit. Profile uses the shared notification
+toast for successful preference saves and a warning when storage is unavailable.
 
 ## Role-Based Access Control (RBAC) System
 

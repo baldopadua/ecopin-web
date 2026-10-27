@@ -167,10 +167,10 @@ function UserManagementContent() {
       return
     }
 
-    if (password) {
-      const passwordValidation = validatePassword(password)
+    {
+      const passwordValidation = validatePassword(password || '12345678Aa@')
       if (!passwordValidation.allMet) {
-        setNotification({ message: 'Password does not meet all requirements', type: 'error' })
+        setNotification({ message: password ? 'Password does not meet all requirements' : 'The default password does not meet the saved policy. Enter a custom temporary password.', type: 'error' })
         return
       }
     }

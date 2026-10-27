@@ -1,7 +1,9 @@
 import React from 'react';
-import { Layers, Sparkles, Shuffle } from 'lucide-react';
+import { Layers, Sparkles, Shuffle, Loader2 } from 'lucide-react';
 
-export default function TemplateSelector({ selectedTemplate, onTemplateChange, outlierCount, standardCount }) {
+export default function TemplateSelector({ selectedTemplate, onTemplateChange, outlierCount = 0, standardCount = 0, loading = false, isLoading = false, disabled = false }) {
+  const isBusy = loading || isLoading;
+  const isDisabled = disabled || isBusy;
   const options = [
     {
       id: 'standard',
@@ -40,8 +42,14 @@ export default function TemplateSelector({ selectedTemplate, onTemplateChange, o
               key={id}
               type="button"
               aria-pressed={isSelected}
-              onClick={() => onTemplateChange(id)}
-              className={`p-4 text-left border transition-all duration-150 flex flex-col justify-between relative cursor-pointer
+              disabled={isDisabled}
+              onClick={() => {
+                if (!isDisabled) {
+                  onTemplateChange(id);
+                }
+              }}
+              className={`p-4 text-left border transition-all duration-150 flex flex-col justify-between relative
+                ${isDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer'}
                 ${isSelected
                   ? 'bg-primary/5 border-primary shadow-sm'
                   : 'bg-surface border-border hover:border-primary/60'
@@ -62,7 +70,14 @@ export default function TemplateSelector({ selectedTemplate, onTemplateChange, o
                 </div>
               </div>
               <div className="pt-2 border-t border-border/50 flex items-center justify-between text-xs font-sans font-semibold text-text-primary">
-                <span>{countLabel}</span>
+                {isBusy ? (
+                  <span className="inline-flex items-center gap-1.5 text-text-muted font-normal">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" aria-hidden="true" />
+                    <span>Loading...</span>
+                  </span>
+                ) : (
+                  <span>{countLabel}</span>
+                )}
                 <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-primary' : 'bg-border'}`} />
               </div>
             </button>

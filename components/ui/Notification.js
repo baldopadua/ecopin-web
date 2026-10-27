@@ -17,7 +17,7 @@ export default function Notification({ message, type = 'info', duration = 6000, 
   return <div className={`${styles.toast} ${styles[tone]}`} role={type === 'error' ? 'alert' : 'status'} aria-atomic="true"
     onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
     onFocusCapture={() => setPaused(true)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setPaused(false) }}>
-    <span className={styles.icon}><Icon size={20} aria-hidden="true" className={isProgress ? styles.spinner : undefined} /></span>
+    <span className={styles.icon}><Icon size={20} aria-hidden="true" className={isProgress ? `animate-spin ${styles.spinner}` : undefined} /></span>
     <div className={styles.content}>
       <p className={styles.title}>{title}</p>
       <p className={styles.message}>{message}</p>
