@@ -42,7 +42,7 @@ Notifications/following are a later slice.
 2. Deploy the backend public field selection and website, then release the
    mobile application. New clients request these columns explicitly.
 3. Verify signed-out public reports and real crew assignments on the deployed
-   environment. No live migration or deployment was performed during local work.
+   environment. The owner applied the migration manually in Supabase SQL Editor; the public projection was then verified with anonymous API access.
 
 ## Local validation
 
@@ -61,3 +61,11 @@ Notifications/following are a later slice.
 
 The migration follows PostgreSQL's [view replacement rules](https://www.postgresql.org/docs/current/sql-createview.html).
 Public queries retain explicit fields through Supabase's [select API](https://supabase.com/docs/reference/javascript/select).
+
+## Production release - 27 October 2026
+
+Backend `fec45fe94a1bc9f91f50221a3304701255e74d2e` deployed through its normal GitHub/AWS pipeline; health and anonymous report detail both return HTTP 200 with deadline and address fields. Website feature commit `62243cbbee9bf8588ce5b61895475c3c557f8ab1` passed its Vercel production deployment. Signed-out Explore and public report details were checked on https://ecopin-web.vercel.app with no browser errors.
+
+Android 0.1.0 build 4 was built from source `25a6ade571a307072de826292ae0d591ebbeb8f4`. Its package ID and signing certificate match the previous downloadable APK. The public JSON manifest and SHA-256 file identify the downloadable artifact. Existing installations must install the new APK to receive the native indicators. Device installation/TalkBack acceptance remains pending.
+
+The backend release also patches the compatible body-parser dependency to 2.4.0 to clear the pre-existing high-severity audit failure. Backend regression: 200 tests passed; web regression: 141 tests passed; production web build passed; affected mobile checks: 24 passed. Four unrelated dashboard preview tests still look for an obsolete route label.
