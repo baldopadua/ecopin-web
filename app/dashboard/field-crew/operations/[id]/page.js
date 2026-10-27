@@ -7,6 +7,7 @@ import { fetchCleanupTaskById, uploadCleanupPhoto, markCleanupTaskComplete, upda
 import PageHeader from '@/components/layout/PageHeader'
 import DataTable from '@/components/ui/DataTable'
 import StatusBadge from '@/components/ui/StatusBadge'
+import ResponseDeadline from '@/components/ui/ResponseDeadline'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
 import Notification from '@/components/ui/Notification'
 import useConfirmation from '@/components/ui/useConfirmation'
@@ -760,6 +761,7 @@ export default function FieldCrewCleanupTaskDetailPage() {
                     { key: 'issue_type', label: 'Issue type' },
                     { key: 'description', label: 'Description', render: value => <span className="line-clamp-2 max-w-xs text-text-secondary">{value || 'N/A'}</span> },
                     { key: 'status', label: 'Status', render: value => <StatusBadge status={value} type="report" /> },
+                    { key: 'deadline_at', label: 'Response deadline', render: (_, report) => <ResponseDeadline report={report} /> },
                     { key: 'stage', label: 'Lifecycle stage', render: value => value ? <StatusBadge status={value} type="lifecycle" /> : 'N/A' },
                     { key: 'validation_status', label: 'Review status', render: value => <StatusBadge status={value} type="validation" /> },
                     { key: 'actions', label: 'Actions', render: (_, report) => (<div className="flex items-center gap-2">

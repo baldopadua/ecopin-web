@@ -7,6 +7,7 @@ import { FieldCrewGuard } from '@/components/auth/RequireRole'
 import { useUser } from '@/components/auth/UserContext'
 import PageHeader from '@/components/layout/PageHeader'
 import StatusBadge from '@/components/ui/StatusBadge'
+import ResponseDeadline from '@/components/ui/ResponseDeadline'
 import Notification from '@/components/ui/Notification'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
 import dynamic from 'next/dynamic'
@@ -326,6 +327,7 @@ export default function ReportDetailPage() {
                 </div>
                 <div className="flex flex-col items-end gap-2">
                   <StatusBadge status={report.status} type="report" />
+                  <ResponseDeadline report={report} details />
                   {report.stage && <StatusBadge status={report.stage} type="lifecycle" />}
                 </div>
               </div>
