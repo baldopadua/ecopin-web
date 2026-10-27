@@ -12,6 +12,7 @@
   font-family: var(--font-outfit), sans-serif;
 }
 :global(.dark) .page { --landing-bg: #121212; --landing-soft: #1c1c1c; --landing-text: #f5f5f5; --landing-muted: #b0b0b0; --landing-blue: #82b6ff; --landing-green: #83cba0; --landing-green-bg: #1a2920; --landing-border: #333; }
+.footerFacebook { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; }
 .page * { box-sizing: border-box; }
 .page a, .page button, .page select { -webkit-tap-highlight-color: transparent; }
 .page a:focus-visible, .page button:focus-visible, .page select:focus-visible { outline: 3px solid var(--landing-blue); outline-offset: 4px; }
@@ -210,12 +211,12 @@
 .formRowTwo { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .formFieldCompact { display: flex; flex-direction: column; gap: 6px; }
 .formLabelCompact { font-size: 12px; font-weight: 600; color: var(--landing-text); }
-.formInputCompact, .formTextareaCompact { padding: 10px 14px; border: 1px solid var(--landing-border); border-radius: 10px; font-size: 13px; color: var(--landing-text); background: var(--landing-bg); font-family: inherit; transition: all 0.15s ease; }
+.formInputCompact, .formTextareaCompact { min-height: 44px; padding: 10px 14px; border: 1px solid var(--landing-border); border-radius: 10px; font-size: 13px; color: var(--landing-text); background: var(--landing-bg); font-family: inherit; transition: all 0.15s ease; }
 .formInputCompact:focus, .formTextareaCompact:focus { outline: none; border-color: var(--landing-blue); box-shadow: 0 0 0 3px color-mix(in srgb, var(--landing-blue) 20%, transparent); }
 .formInputCompact::placeholder, .formTextareaCompact::placeholder { color: var(--landing-muted); }
 .formTextareaCompact { resize: vertical; min-height: 80px; line-height: 1.5; }
 
-.footerSubmitBtn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px; min-height: 44px; border: none; border-radius: 10px; background: var(--landing-blue); color: white; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s ease; width: 100%; }
+.footerSubmitBtn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px; min-height: 44px; border: none; border-radius: 10px; background: #0052cc; color: white; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s ease; width: 100%; }
 .footerSubmitBtn:hover:not(:disabled) { background: #0047b3; transform: translateY(-1px); }
 .footerSubmitBtn:active:not(:disabled) { transform: translateY(0); }
 .footerSubmitBtn:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -418,3 +419,4 @@
 .announcementLink:hover {
   opacity: 0.85;
 }
+.maintenancePage { min-height: 100svh; display: grid; place-items: center; padding: 24px; }

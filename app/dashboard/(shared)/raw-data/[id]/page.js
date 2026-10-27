@@ -7,6 +7,8 @@ import { useNavigationLoading } from '@/components/context/NavigationLoadingCont
 import {
   fetchReportById,
   fetchReportEvidence,
+  fetchAgencyResponses,
+  logAgencyResponse,
   updateReportStatus,
   updatePropertyOwnerConsent,
   lguResolveReport,
@@ -18,6 +20,9 @@ import Notification from '@/components/ui/Notification'
 import useConfirmation from '@/components/ui/useConfirmation'
 import StatusBadge from '@/components/ui/StatusBadge'
 import ReportApprovalDialog from '@/components/reports/ReportApprovalDialog'
+import ReportRejectionDialog from '@/components/reports/ReportRejectionDialog'
+import OfficerReportLifecycle from '@/components/reports/OfficerReportLifecycle'
+import styles from './ReportDetails.module.css'
 import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
 import { useUser } from '@/components/auth/UserContext'
 import {
@@ -145,6 +150,7 @@ export default function ReportDetailPage() {
   const reportId = params?.id || report?.id
   const router = useRouter()
   const user = useUser()
+  const isStaff = ['officer', 'admin'].includes(user?.role)
   const { isLoading: isNavigating } = useNavigationLoading()
   const [report, setReport] = useState(null)
   const [evidence, setEvidence] = useState([])
@@ -156,7 +162,6 @@ export default function ReportDetailPage() {
   const [updatingStatus, setUpdatingStatus] = useState(false)
   const [uploadingBefore, setUploadingBefore] = useState(false)
   const [uploadingAfter, setUploadingAfter] = useState(false)
-  const [showNoteInput, setShowNoteInput] = useState(false)
   const [noteText, setNoteText] = useState('')
   const [addingNote, setAddingNote] = useState(false)
   const [updatingConsent, setUpdatingConsent] = useState(false)
@@ -167,9 +172,27 @@ export default function ReportDetailPage() {
   const [resolvingReport, setResolvingReport] = useState(false)
   const [validatingReport, setValidatingReport] = useState(null)
   const [showApproval, setShowApproval] = useState(false)
+  const [showRejection, setShowRejection] = useState(false)
   const [activityLogPage, setActivityLogPage] = useState(1)
   const activityLogPerPage = 10
   const [copiedField, setCopiedField] = useState(null)
+
+  const handleAddNote = async (event) => {
+    event.preventDefault()
+    if (addingNote || !noteText.trim()) return
+    setAddingNote(true)
+    try {
+      const result = await logAgencyResponse(reportId, { action: noteText.trim() })
+      setAgencyResponses(previous => [result.response, ...previous])
+      setActivityLogPage(1)
+      setNoteText('')
+      setNotification({ message: 'Note added successfully', type: 'success' })
+    } catch (error) {
+      setNotification({ message: error.message || 'Failed to add note. Please try again.', type: 'error' })
+    } finally {
+      setAddingNote(false)
+    }
+  }
 
   const handleCopy = (text, fieldName) => {
     if (!text) return
@@ -236,13 +259,14 @@ export default function ReportDetailPage() {
       setLoading(true)
     }
     try {
-      const [reportData, evidenceData, tasksData] = await Promise.all([
+      const [reportData, evidenceData, tasksData, responses] = await Promise.all([
         fetchReportById(id),
         fetchReportEvidence(id),
         fetchCleanupTasks().catch((err) => {
           reportDiagnostic('warn', 'tasks', 'Failed to fetch tasks for report detail:', err)
           return []
-        })
+        }),
+        fetchAgencyResponses(id)
       ])
       if (reportData) {
         // Access Control: Field crew cannot view incomplete raw reports
@@ -274,7 +298,8 @@ export default function ReportDetailPage() {
         setExistingTask(matchedTask)
         setReport(reportData)
         setEvidence(evidenceData)
-        setAgencyResponses([])
+        setAgencyResponses(responses)
+        setActivityLogPage(1)
       } else {
         setError('Report not found')
       }
@@ -315,26 +340,36 @@ export default function ReportDetailPage() {
         })
       }
     })
-    if (report?.before_photo_url && !list.some(item => item.url === report.before_photo_url)) {
-      const isVideo = isVideoResource(report.before_photo_url)
-      list.push({
-        url: report.before_photo_url,
-        label: isVideo ? 'Before Cleanup Video' : 'Before Cleanup Photo',
-        isVideo,
-        resource_type: isVideo ? 'video' : 'image',
-        poster: isVideo ? getVideoPosterUrl(report.before_photo_url) : null
-      })
-    }
-    if (report?.after_photo_url && !list.some(item => item.url === report.after_photo_url)) {
-      const isVideo = isVideoResource(report.after_photo_url)
-      list.push({
-        url: report.after_photo_url,
-        label: isVideo ? 'After Cleanup Video' : 'After Cleanup Photo',
-        isVideo,
-        resource_type: isVideo ? 'video' : 'image',
-        poster: isVideo ? getVideoPosterUrl(report.after_photo_url) : null
-      })
-    }
+    const beforeUrls = Array.isArray(report?.before_photos) && report.before_photos.length > 0
+      ? report.before_photos.map(p => p?.url).filter(Boolean)
+      : (report?.before_photo_url ? [report.before_photo_url] : [])
+    beforeUrls.forEach((url, idx) => {
+      if (!list.some(item => item.url === url)) {
+        const isVideo = isVideoResource(url)
+        list.push({
+          url,
+          label: isVideo ? `Before Cleanup Video #${idx + 1}` : `Before Cleanup Photo #${idx + 1}`,
+          isVideo,
+          resource_type: isVideo ? 'video' : 'image',
+          poster: isVideo ? getVideoPosterUrl(url) : null
+        })
+      }
+    })
+    const afterUrls = Array.isArray(report?.after_photos) && report.after_photos.length > 0
+      ? report.after_photos.map(p => p?.url).filter(Boolean)
+      : (report?.after_photo_url ? [report.after_photo_url] : [])
+    afterUrls.forEach((url, idx) => {
+      if (!list.some(item => item.url === url)) {
+        const isVideo = isVideoResource(url)
+        list.push({
+          url,
+          label: isVideo ? `After Cleanup Video #${idx + 1}` : `After Cleanup Photo #${idx + 1}`,
+          isVideo,
+          resource_type: isVideo ? 'video' : 'image',
+          poster: isVideo ? getVideoPosterUrl(url) : null
+        })
+      }
+    })
     return list
   }, [report, evidence])
 
@@ -531,18 +566,10 @@ export default function ReportDetailPage() {
     }
   }
 
-  const handleRejectReport = async () => {
-    setValidatingReport(reportId)
-    try {
-      await updateReportValidation(reportId, 'rejected')
-      setReport({ ...report, validation_status: 'rejected' })
-      setNotification({ message: 'Report rejected successfully', type: 'success' })
-    } catch (error) {
-      reportDiagnostic('error', 'media', 'Failed to reject report:', error)
-      setNotification({ message: 'Failed to reject report. Please try again.', type: 'error' })
-    } finally {
-      setValidatingReport(null)
-    }
+  const handleReportRejected = (updatedReport, reason) => {
+    setReport(previous => ({ ...previous, ...updatedReport, validation_status: 'rejected' }))
+    setShowRejection(false)
+    setNotification({ message: 'Report rejected and citizen notified of reason', type: 'success' })
   }
 
   const handleReportApproved = updatedReport => {
@@ -675,9 +702,9 @@ export default function ReportDetailPage() {
 
   if (loading && !report && !isNavigating) {
     return (
-      <div className="workspace-page workspace-page--flow">
+      <div className={`workspace-page workspace-page--flow ${isStaff ? styles.staffPage : ''}`} aria-busy="true">
         <PageHeader
-          title="Report Details"
+          title={isStaff ? 'Report details' : 'Report Details'}
           subtitle="Loading report information..."
           breadcrumbs={[
             { label: 'Dashboard', href: '/dashboard' },
@@ -685,8 +712,8 @@ export default function ReportDetailPage() {
             { label: 'Details' }
           ]}
         />
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <div className="lg:col-span-3 space-y-6">
+        <div className={isStaff ? styles.content : 'grid grid-cols-1 lg:grid-cols-4 gap-6'}>
+          <div className={isStaff ? styles.mainColumn : 'lg:col-span-3 space-y-6'}>
             <SkeletonCard />
             <div className="card animate-pulse">
               <SkeletonLine className="h-7 w-2/3 mb-3" />
@@ -704,7 +731,7 @@ export default function ReportDetailPage() {
               </div>
             </div>
           </div>
-          <div className="space-y-6">
+          <div className={isStaff ? styles.sidebar : 'space-y-6'}>
             <div className="card animate-pulse">
               <SkeletonLine className="h-5 w-1/3 mb-4" />
               <div className="space-y-3">
@@ -729,9 +756,9 @@ export default function ReportDetailPage() {
 
   if (error || !report) {
     return (
-      <div className="workspace-page workspace-page--flow">
+      <div className={`workspace-page workspace-page--flow ${isStaff ? styles.staffPage : ''}`}>
         <PageHeader
-          title="Report Details"
+          title={isStaff ? 'Report details' : 'Report Details'}
           subtitle="Error loading report"
           breadcrumbs={[
             { label: 'Dashboard', href: '/dashboard' },
@@ -761,9 +788,9 @@ export default function ReportDetailPage() {
   })
 
   return (
-    <div className="workspace-page workspace-page--flow">
+    <div className={`workspace-page workspace-page--flow ${isStaff ? styles.staffPage : ''}`}>
       <PageHeader
-        title="Report Details"
+        title={isStaff ? 'Report details' : 'Report Details'}
         subtitle="View detailed report information"
         breadcrumbs={[
           {
@@ -791,11 +818,11 @@ export default function ReportDetailPage() {
         </button>
       </PageHeader>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-4">
+          <div className={`grid grid-cols-1 lg:grid-cols-4 gap-6 mt-4 ${isStaff ? styles.content : ''}`}>
             {/* Main Content */}
-            <div className="lg:col-span-3 space-y-6">
+            <div className={isStaff ? styles.mainColumn : 'lg:col-span-3 space-y-6'}>
               {/* Lifecycle Timeline - Read-only display */}
-              <div className="card border border-border border-primary">
+              {isStaff ? <OfficerReportLifecycle report={report} slaInfo={slaInfo} /> : <div className="card border border-border border-primary">
                 <div className="text-center mb-6">
                   <h2 className="text-2xl font-bold text-text-primary mb-1">Operational Lifecycle</h2>
                   <p className="text-xs text-text-muted mb-4">Track progress from citizen submission through field resolution</p>
@@ -899,13 +926,15 @@ export default function ReportDetailPage() {
                 </div>
               </div>
 
+              }
+
               {/* Report Information */}
               <div className="card">
-                <h2 className="text-xl font-semibold text-text-primary mb-2">{report.title}</h2>
+                <h2 className={`text-xl font-semibold text-text-primary mb-2 ${isStaff ? styles.reportTitle : ''}`}>{report.title}</h2>
                 <p className="text-sm text-text-secondary mb-6">Issue: {report.issue_type?.replaceAll('_', ' ') || 'General'}</p>
 
-                <h2 className="text-lg font-semibold text-text-primary mb-3">Description</h2>
-                <p className="text-text-primary leading-relaxed mb-6">
+                <h3 className="text-lg font-semibold text-text-primary mb-3">Description</h3>
+                <p className={`text-text-primary leading-relaxed mb-6 ${isStaff ? styles.description : ''}`}>
                   {report.description || 'No description provided.'}
                 </p>
 
@@ -929,21 +958,21 @@ export default function ReportDetailPage() {
                 )}
 
               <div className="card">
-                <h2 className="text-xl font-bold text-text-primary mb-4">Evidence Media</h2>
+                <h2 className="text-xl font-bold text-text-primary mb-4">{isStaff ? 'Evidence media' : 'Evidence Media'}</h2>
                 {(loading || isRefreshing) ? (
                   <div className="h-48 bg-surface-elevated rounded-lg flex flex-col items-center justify-center border border-dashed border-border gap-2">
                     <Loader2 className="w-8 h-8 text-[var(--primary)] animate-spin" aria-hidden="true" />
                     <p className="text-sm text-text-muted">Loading evidence media...</p>
                   </div>
                 ) : evidence.length === 0 ? (
-                  <div className="h-48 bg-surface-elevated rounded-lg flex items-center justify-center border border-dashed border-border">
+                  <div className={`h-48 bg-surface-elevated rounded-lg flex items-center justify-center border border-dashed border-border ${isStaff ? styles.emptyMedia : ''}`}>
                     <div className="text-center">
                       <ImageIcon size={48} className="text-text-muted mx-auto mb-2" aria-hidden="true" />
                       <p className="text-text-muted">No evidence media available</p>
                     </div>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className={isStaff ? styles.evidenceGrid : 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4'}>
                     {evidence.map((img, index) => {
                       const isVideo = img.resource_type === 'video' || isVideoResource(img.url, img.resource_type)
                       return (
@@ -955,12 +984,14 @@ export default function ReportDetailPage() {
                               onExpand={openLightboxAtUrl}
                             />
                           ) : (
+                            <button type="button" className={isStaff ? styles.photoButton : 'w-full'} aria-label={`Open evidence photo ${index + 1}`} onClick={() => openLightboxAtUrl(img.url)}>
                             <SecureImage
                               src={img.url}
                               alt={`Evidence ${index + 1}`}
+                              loadingLabel="Loading evidence photo..."
                               className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                              onClick={() => openLightboxAtUrl(img.url)}
                             />
+                            </button>
                           )}
                         </div>
                       )
@@ -969,12 +1000,12 @@ export default function ReportDetailPage() {
                 )}
 
                 {/* Before & After Photos */}
-                {report.status !== 'closed' && report.status !== 'resolved' && report.validation_status !== 'rejected' && !(report.on_private_property && report.property_owner_consent_status === 'denied') && (
+                {report.validation_status !== 'rejected' && !(report.on_private_property && report.property_owner_consent_status === 'denied') && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                   {/* Before Photo */}
                   <div className="p-4 border border-border rounded-lg">
                     <div className="flex justify-between items-center mb-3">
-                      <h3 className="font-semibold">Before Photo</h3>
+                      <h3 className="font-semibold">{isStaff ? 'Before photos' : 'Before Photos'}</h3>
                       {user?.role === 'field_crew' && report.before_photo_url && (
                         <button
                           onClick={() => handlePhotoDelete('before')}
@@ -984,21 +1015,30 @@ export default function ReportDetailPage() {
                         </button>
                       )}
                     </div>
-                    {report.before_photo_url ? (
-                      isVideoResource(report.before_photo_url) ? (
-                        <VideoEvidenceCard
-                          url={report.before_photo_url}
-                          name="Before Cleanup Video"
-                          onExpand={openLightboxAtUrl}
-                        />
-                      ) : (
-                        <SecureImage
-                          src={report.before_photo_url}
-                          alt="Before"
-                          className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                          onClick={() => openLightboxAtUrl(report.before_photo_url)}
-                        />
-                      )
+                    {(Array.isArray(report.before_photos) && report.before_photos.length > 0) || report.before_photo_url ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {(Array.isArray(report.before_photos) && report.before_photos.length > 0
+                          ? report.before_photos.map(p => p?.url).filter(Boolean)
+                          : [report.before_photo_url]
+                        ).map((url, idx) => (
+                          isVideoResource(url) ? (
+                            <VideoEvidenceCard
+                              key={`before-${idx}`}
+                              url={url}
+                              name={`Before Cleanup Video #${idx + 1}`}
+                              onExpand={openLightboxAtUrl}
+                            />
+                          ) : (
+                            <button key={`before-${idx}`} type="button" className={isStaff ? styles.photoButton : 'w-full'} aria-label={`Open before photo ${idx + 1}`} onClick={() => openLightboxAtUrl(url)}>
+                            <SecureImage
+                              src={url}
+                              alt={`Before ${idx + 1}`}
+                              className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                            />
+                            </button>
+                          )
+                        ))}
+                      </div>
                     ) : user?.role === 'field_crew' ? (
                       <div
                         className={`border border-border border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${uploadingBefore ? 'border-border bg-surface' : 'border-border hover:border-accent-green hover:bg-accent-green/5'
@@ -1045,7 +1085,7 @@ export default function ReportDetailPage() {
                   {/* After Photo */}
                   <div className="p-4 border border-border rounded-lg">
                     <div className="flex justify-between items-center mb-3">
-                      <h3 className="font-semibold">After Photo</h3>
+                      <h3 className="font-semibold">{isStaff ? 'After photos' : 'After Photos'}</h3>
                       {user?.role === 'field_crew' && report.after_photo_url && (
                         <button
                           onClick={() => handlePhotoDelete('after')}
@@ -1055,21 +1095,30 @@ export default function ReportDetailPage() {
                         </button>
                       )}
                     </div>
-                    {report.after_photo_url ? (
-                      isVideoResource(report.after_photo_url) ? (
-                        <VideoEvidenceCard
-                          url={report.after_photo_url}
-                          name="After Cleanup Video"
-                          onExpand={openLightboxAtUrl}
-                        />
-                      ) : (
-                        <SecureImage
-                          src={report.after_photo_url}
-                          alt="After"
-                          className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                          onClick={() => openLightboxAtUrl(report.after_photo_url)}
-                        />
-                      )
+                    {(Array.isArray(report.after_photos) && report.after_photos.length > 0) || report.after_photo_url ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {(Array.isArray(report.after_photos) && report.after_photos.length > 0
+                          ? report.after_photos.map(p => p?.url).filter(Boolean)
+                          : [report.after_photo_url]
+                        ).map((url, idx) => (
+                          isVideoResource(url) ? (
+                            <VideoEvidenceCard
+                              key={`after-${idx}`}
+                              url={url}
+                              name={`After Cleanup Video #${idx + 1}`}
+                              onExpand={openLightboxAtUrl}
+                            />
+                          ) : (
+                            <button key={`after-${idx}`} type="button" className={isStaff ? styles.photoButton : 'w-full'} aria-label={`Open after photo ${idx + 1}`} onClick={() => openLightboxAtUrl(url)}>
+                            <SecureImage
+                              src={url}
+                              alt={`After ${idx + 1}`}
+                              className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                            />
+                            </button>
+                          )
+                        ))}
+                      </div>
                     ) : user?.role === 'field_crew' ? (
                       <div
                         className={`border border-border border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${uploadingAfter ? 'border-border bg-surface' : 'border-border hover:border-primary hover:bg-primary/5'
@@ -1116,23 +1165,59 @@ export default function ReportDetailPage() {
                 )}
               </div>
 
-              {/* Audit Log - Moved to main content */}
-              <div className="card">
-                <h2 className="text-xl font-bold text-text-primary mb-4">Activity Log</h2>
-                <div className="bg-surface-elevated p-4 rounded-lg border border-border">
-                  <p className="text-text-muted text-sm">
-                    Activity log is now managed through cleanup tasks.
-                  </p>
-                </div>
-              </div>
+              <section className="card" aria-labelledby="activity-log-title">
+                <h2 id="activity-log-title" className="text-xl font-bold text-text-primary mb-4">{isStaff ? 'Activity log' : 'Activity Log'}</h2>
+                {['officer', 'admin'].includes(user?.role) && (
+                  <form onSubmit={handleAddNote} className="space-y-3 mb-6">
+                    <label htmlFor="activity-note" className="block text-sm font-medium text-text-primary">Activity note</label>
+                    <p className="text-sm text-text-muted">Notes are visible to officers and assigned field crew in the app.</p>
+                    <textarea
+                      id="activity-note"
+                      value={noteText}
+                      onChange={event => setNoteText(event.target.value)}
+                      maxLength={5000}
+                      rows={3}
+                      disabled={addingNote}
+                      className={`input w-full rounded-lg border border-border bg-surface p-3 text-text-primary ${isStaff ? styles.noteInput : ''}`}
+                      placeholder="Enter an operational note..."
+                    />
+                    <button type="submit" className="btn-primary min-h-11" disabled={addingNote || !noteText.trim()}>
+                      {addingNote ? 'Saving note...' : 'Add note'}
+                    </button>
+                  </form>
+                )}
+                {agencyResponses.length === 0 ? (
+                  <p className="text-text-muted text-sm">No activity logged yet.</p>
+                ) : (
+                  <ul className="divide-y divide-border" aria-label="Report activity">
+                    {agencyResponses.slice((activityLogPage - 1) * activityLogPerPage, activityLogPage * activityLogPerPage).map(entry => (
+                      <li key={entry.id} className={`py-3 space-y-1 ${isStaff ? styles.activityEntry : ''}`}>
+                        <p className="text-xs text-text-muted">
+                          {entry.user_id === user?.id ? 'You' : `User ${String(entry.user_id || '').slice(0, 8)}`}
+                          {' · '}{String(entry.action_type || 'activity').replaceAll('_', ' ')}
+                          {' · '}{new Date(entry.created_at).toLocaleString()}
+                        </p>
+                        <p className="text-sm text-text-primary whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{entry.action_details}</p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {agencyResponses.length > activityLogPerPage && (
+                  <nav className="flex items-center justify-between mt-4" aria-label="Activity log pages">
+                    <button type="button" className="btn-secondary min-h-11" disabled={activityLogPage === 1} onClick={() => setActivityLogPage(page => page - 1)}>Previous</button>
+                    <span className="text-sm text-text-muted">Page {activityLogPage} of {Math.ceil(agencyResponses.length / activityLogPerPage)}</span>
+                    <button type="button" className="btn-secondary min-h-11" disabled={activityLogPage * activityLogPerPage >= agencyResponses.length} onClick={() => setActivityLogPage(page => page + 1)}>Next</button>
+                  </nav>
+                )}
+              </section>
             </div>
 
             {/* Sidebar - Simplified */}
-            <div className="space-y-6 self-start">
+            <div className={isStaff ? styles.sidebar : 'space-y-6 self-start'}>
               {/* Report Metadata */}
               <div className="card">
-                <h2 className="text-lg font-bold text-text-primary mb-4">Report Details</h2>
-                <div className="space-y-3">
+                <h2 className="text-lg font-bold text-text-primary mb-4">{isStaff ? 'Report information' : 'Report Details'}</h2>
+                <div className={`space-y-3 ${isStaff ? styles.metadata : ''}`}>
                   <div>
                     <p className="text-xs text-text-muted">Severity score</p>
                     <p className="text-text-primary font-medium text-sm">{report.severity_score == null ? 'Not assigned' : `${report.severity_score} / 100${report.severity_level ? ` · ${report.severity_level}` : ''}`}</p>
@@ -1146,7 +1231,7 @@ export default function ReportDetailPage() {
                   </div>
                   {/* Street Address */}
                   <div>
-                    <p className="text-xs text-text-muted">Street Address</p>
+                    <p className="text-xs text-text-muted">{isStaff ? 'Street address' : 'Street Address'}</p>
                     <div className="flex items-center justify-between gap-2 mt-0.5">
                       <p className="text-text-primary font-medium text-sm leading-snug break-words">
                         {effectiveAddress}
@@ -1155,7 +1240,7 @@ export default function ReportDetailPage() {
                         <button
                           type="button"
                           onClick={() => handleCopy(effectiveAddress, 'address')}
-                          className="p-1.5 rounded-lg border border-border hover:bg-surface-elevated text-text-muted hover:text-text-primary transition-colors flex-shrink-0"
+                          className={`p-1.5 rounded-lg border border-border hover:bg-surface-elevated text-text-muted hover:text-text-primary transition-colors flex-shrink-0 ${isStaff ? styles.copyButton : ''}`}
                           title="Copy street address"
                           aria-label="Copy street address"
                         >
@@ -1178,7 +1263,7 @@ export default function ReportDetailPage() {
                         <button
                           type="button"
                           onClick={() => handleCopy(`${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`, 'coords')}
-                          className="p-1.5 rounded-lg border border-border hover:bg-surface-elevated text-text-muted hover:text-text-primary transition-colors flex-shrink-0"
+                          className={`p-1.5 rounded-lg border border-border hover:bg-surface-elevated text-text-muted hover:text-text-primary transition-colors flex-shrink-0 ${isStaff ? styles.copyButton : ''}`}
                           title="Copy coordinates"
                           aria-label="Copy coordinates"
                         >
@@ -1215,19 +1300,19 @@ export default function ReportDetailPage() {
                     <p className="text-text-primary font-medium text-sm">{dateStr}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-text-muted">Last Updated</p>
+                    <p className="text-xs text-text-muted">{isStaff ? 'Last updated' : 'Last Updated'}</p>
                     <p className="text-text-primary font-medium text-sm">
-                      {new Date(report.updated_at).toLocaleString('en-US', {
+                      {report.updated_at && !Number.isNaN(Date.parse(report.updated_at)) ? new Date(report.updated_at).toLocaleString('en-US', {
                         month: 'long',
                         day: 'numeric',
                         year: 'numeric',
                         hour: '2-digit',
                         minute: '2-digit'
-                      })}
+                      }) : 'Not available'}
                     </p>
                   </div>
                   <div className="pt-3 border-t border-border">
-                    <p className="text-xs text-text-muted mb-2">Reporter Information</p>
+                    <p className="text-xs text-text-muted mb-2">{isStaff ? 'Reporter information' : 'Reporter Information'}</p>
                     <div className="space-y-2">
                       <div>
                         <p className="text-xs text-text-muted">Name</p>
@@ -1255,14 +1340,15 @@ export default function ReportDetailPage() {
               {/* Property Owner Consent */}
               {report.on_private_property && report.status !== 'closed' && report.status !== 'resolved' && report.validation_status !== 'rejected' && report.property_owner_consent_status !== 'denied' && (
                 <div className="card">
-                  <div className="flex items-start justify-between mb-4">
-                    <h2 className="text-lg font-bold text-text-primary">Property Owner Consent</h2>
+                  <div className={`flex items-start justify-between mb-4 ${isStaff ? styles.consentHeading : ''}`}>
+                    <h2 className="text-lg font-bold text-text-primary">{isStaff ? 'Property owner consent' : 'Property Owner Consent'}</h2>
                     <StatusBadge status={report.property_owner_consent_status} type="consent" size="medium" />
                   </div>
                   <div className="space-y-3">
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className={isStaff ? styles.consentControls : 'grid grid-cols-3 gap-2'}>
                       <button
                         onClick={() => handlePropertyOwnerConsent('pending')}
+                        aria-pressed={report.property_owner_consent_status === 'pending'}
                         disabled={updatingConsent}
                         className={`text-sm py-2 rounded-lg border transition-all ${report.property_owner_consent_status === 'pending'
                           ? 'bg-warning/10 text-warning border-warning/30 font-semibold'
@@ -1273,9 +1359,10 @@ export default function ReportDetailPage() {
                       </button>
                       <button
                         onClick={() => handlePropertyOwnerConsent('obtained')}
+                        aria-pressed={report.property_owner_consent_status === 'obtained'}
                         disabled={updatingConsent}
                         className={`text-sm py-2 rounded-lg border transition-all ${report.property_owner_consent_status === 'obtained'
-                          ? 'bg-success text-white border-success font-semibold'
+                          ? (isStaff ? 'bg-success/10 text-success border-success/30 font-semibold' : 'bg-success text-white border-success font-semibold')
                           : 'btn-secondary'
                           }`}
                       >
@@ -1283,6 +1370,7 @@ export default function ReportDetailPage() {
                       </button>
                       <button
                         onClick={() => handlePropertyOwnerConsent('denied')}
+                        aria-pressed={report.property_owner_consent_status === 'denied'}
                         disabled={updatingConsent}
                         className={`text-sm py-2 rounded-lg border transition-all ${report.property_owner_consent_status === 'denied'
                           ? 'bg-error/10 text-error border-error/30 font-semibold'
@@ -1299,7 +1387,7 @@ export default function ReportDetailPage() {
               {/* Client Satisfaction */}
               {report.status === 'closed' && (
                 <div className="card">
-                  <h2 className="text-lg font-bold text-text-primary mb-4">Client Satisfaction</h2>
+                  <h2 className="text-lg font-bold text-text-primary mb-4">{isStaff ? 'Client satisfaction' : 'Client Satisfaction'}</h2>
                   {report.satisfaction_rating ? (
                     <div className="flex items-center gap-4">
                       <span className="text-5xl">{getSatisfactionEmoji(report.satisfaction_rating)}</span>
@@ -1329,7 +1417,7 @@ export default function ReportDetailPage() {
                       onClick={() => router.push(`/dashboard/officer/operations/${existingTask.id}`)}
                       className="btn-primary w-full"
                     >
-                      View Dispatched Task
+                      {isStaff ? 'View dispatched task' : 'View Dispatched Task'}
                     </button>
                   ) : (
                     <button
@@ -1337,7 +1425,7 @@ export default function ReportDetailPage() {
                       disabled={report.validation_status === 'manual_review' || report.validation_status === 'Manual_Review'}
                       className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Dispatch Field Crew
+                      {isStaff ? 'Dispatch field crew' : 'Dispatch Field Crew'}
                     </button>
                   )}
 
@@ -1347,7 +1435,7 @@ export default function ReportDetailPage() {
                       <button
                         onClick={() => setShowApproval(true)}
                         disabled={validatingReport === reportId}
-                        className="w-full min-h-[44px] px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-medium rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="btn-primary w-full flex items-center justify-center gap-2"
                       >
                         {validatingReport === reportId ? (
                           <>
@@ -1357,26 +1445,18 @@ export default function ReportDetailPage() {
                         ) : (
                           <>
                             <CheckCircle2 size={18} />
-                            <span>Approve Report</span>
+                            <span>Approve report</span>
                           </>
                         )}
                       </button>
                       <button
-                        onClick={handleRejectReport}
+                        type="button"
+                        onClick={() => setShowRejection(true)}
                         disabled={validatingReport === reportId}
-                        className="w-full min-h-[44px] px-4 py-2.5 bg-error/5 hover:bg-error/15 active:bg-error/25 text-error border border-error/30 font-medium rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className={`btn-secondary w-full flex items-center justify-center gap-2 ${styles.dangerButton}`}
                       >
-                        {validatingReport === reportId ? (
-                          <>
-                            <Loader2 size={16} className="animate-spin" />
-                            <span>Rejecting report...</span>
-                          </>
-                        ) : (
-                          <>
-                            <XCircle size={18} />
-                            <span>Reject Report</span>
-                          </>
-                        )}
+                        <XCircle size={18} />
+                        <span>Reject report</span>
                       </button>
                     </div>
                   )}
@@ -1388,7 +1468,7 @@ export default function ReportDetailPage() {
                     }}
                     className="btn-secondary w-full"
                   >
-                    View on Map
+                    {isStaff ? 'View on map' : 'View on Map'}
                   </button>
                   </div>
                 </div>
@@ -1407,6 +1487,7 @@ export default function ReportDetailPage() {
 
       {confirmation}
       {showApproval && <ReportApprovalDialog report={report} onClose={() => setShowApproval(false)} onApproved={handleReportApproved} />}
+      {showRejection && <ReportRejectionDialog report={report} onClose={() => setShowRejection(false)} onRejected={handleReportRejected} />}
       {notification && (
         <Notification
           message={notification.message}

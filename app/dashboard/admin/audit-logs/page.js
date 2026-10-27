@@ -12,6 +12,7 @@ import { AdminGuard } from '@/components/auth/RequireRole'
 import ExportButton from '@/components/ui/ExportButton'
 import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
 import { ShieldCheck, Lock, Archive, CheckCircle2 } from 'lucide-react';
+import Dialog from '@/components/ui/Dialog'
 import styles from './AuditLogs.module.css'
 
 function formatEventDetails(data) {
@@ -20,13 +21,18 @@ function formatEventDetails(data) {
   if (keys.length === 0) return '—'
   
   return keys
-    .slice(0, 3)
     .map(k => {
       const val = data[k]
       const displayVal = typeof val === 'object' && val !== null ? JSON.stringify(val) : String(val)
       return `${k.replace(/_/g, ' ')}: ${displayVal}`
     })
     .join(' | ')
+}
+
+function formatDetailValue(val) {
+  if (val === null || val === undefined) return '—'
+  if (typeof val === 'object') return JSON.stringify(val, null, 2)
+  return String(val)
 }
 
 function AuditLogsContent() {
@@ -44,6 +50,7 @@ function AuditLogsContent() {
   const [archiveStatus, setArchiveStatus] = useState(null)
   const [archiving, setArchiving] = useState(false)
   const [archiveResult, setArchiveResult] = useState(null)
+  const [selectedLog, setSelectedLog] = useState(null)
   const { containerRef, pageSize: itemsPerPage } = useTablePageSize({ resetKey: JSON.stringify(filters) })
 
   const loadArchiveStatus = async () => {
@@ -212,11 +219,25 @@ function AuditLogsContent() {
       key: 'event_data', 
       label: 'Details', 
       width: '28%',
-      render: (value) => (
-        <span className="text-sm text-text-secondary break-words" title={JSON.stringify(value, null, 2)}>
-          {formatEventDetails(value)}
-        </span>
-      )
+      render: (value, row) => {
+        const summary = formatEventDetails(value)
+        if (summary === '—') {
+          return <span className={styles.detailsEmpty}>—</span>
+        }
+        const targetLabel = row.entity_type ? toTitleCase(row.entity_type) : 'General'
+        const actionLabel = row.event_type ? toTitleCase(row.event_type) : 'Audit event'
+        return (
+          <button
+            type="button"
+            className={styles.detailsTrigger}
+            onClick={() => setSelectedLog(row)}
+            aria-label={`View full details for ${actionLabel} on ${targetLabel}`}
+            title={summary}
+          >
+            <span className={styles.detailsPreview}>{summary}</span>
+          </button>
+        )
+      }
     }
   ]
 
@@ -389,6 +410,68 @@ function AuditLogsContent() {
           </div>
         )}
       </div>
+
+      <Dialog
+        open={selectedLog !== null}
+        onClose={() => setSelectedLog(null)}
+        labelledBy="audit-log-detail-title"
+      >
+        {selectedLog && (
+          <section className={styles.detailDialog}>
+            <header className={styles.detailHeader}>
+              <div>
+                <h2 id="audit-log-detail-title">Audit event details</h2>
+                <p>{formatDate(selectedLog.created_at)}</p>
+              </div>
+              <button
+                type="button"
+                className={styles.detailCloseBtn}
+                onClick={() => setSelectedLog(null)}
+                autoFocus
+              >
+                Close
+              </button>
+            </header>
+            <div className={styles.detailBody}>
+              <dl className={styles.detailMeta}>
+                <div>
+                  <dt>Actor</dt>
+                  <dd>{selectedLog.user_name || selectedLog.user_id || 'System'}</dd>
+                </div>
+                <div>
+                  <dt>Action</dt>
+                  <dd><StatusBadge status={selectedLog.event_type} type="auditAction" /></dd>
+                </div>
+                <div>
+                  <dt>Target</dt>
+                  <dd>
+                    <span>{selectedLog.entity_type ? toTitleCase(selectedLog.entity_type) : 'General'}</span>
+                    {selectedLog.entity_id && (
+                      <code className={styles.detailCodeInline}>{selectedLog.entity_id}</code>
+                    )}
+                  </dd>
+                </div>
+              </dl>
+
+              <div className={styles.detailEntries}>
+                <h3>Recorded fields</h3>
+                {selectedLog.event_data && typeof selectedLog.event_data === 'object' && Object.keys(selectedLog.event_data).length > 0 ? (
+                  <dl className={styles.detailKeyValueList}>
+                    {Object.entries(selectedLog.event_data).map(([key, val]) => (
+                      <div key={key} className={styles.detailKeyValueItem}>
+                        <dt>{key.replace(/_/g, ' ')}</dt>
+                        <dd>{formatDetailValue(val)}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                ) : (
+                  <p className={styles.detailsEmpty}>No event details recorded.</p>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
+      </Dialog>
     </div>
   )
 }

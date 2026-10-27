@@ -14,6 +14,7 @@ import {
   Database
 } from 'lucide-react'
 import LandingNavigation from '@/components/landing/LandingNavigation'
+import PublicFooter from '@/components/landing/PublicFooter'
 import usePublicTheme from '@/components/landing/usePublicTheme'
 import publicStyles from '@/components/landing/LandingPage.module.css'
 import motion from '@/components/ui/PublicMotion.module.css'
@@ -207,18 +208,11 @@ export default function DeleteAccountPage() {
               </div>
             </div>
 
-            <footer className={styles.footer}>
-              <Link href="/">
-                <ArrowLeft size={16} /> Back to EcoPin Home
-              </Link>
-              <span>EcoPin · Pasig Solid Waste Management Platform</span>
-              <Link href="/explore">
-                Explore Public Reports <ArrowRight size={16} />
-              </Link>
-            </footer>
+
           </>
         )}
       </main>
+      <PublicFooter isDark={isDark} />
     </div>
   )
 }

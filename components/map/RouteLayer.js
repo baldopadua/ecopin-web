@@ -3,6 +3,9 @@ import React, { useMemo, useEffect, useState } from 'react'
 import { Polyline, Marker, Popup, CircleMarker, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { reportDiagnostic } from '../../lib/diagnostics.mjs';
+import { createWaypointIcon, createDepotIcon } from './routePinIcon.js'
+
+export { createWaypointIcon, createDepotIcon }
 
 /**
  * RouteLayer — Renders route polylines and numbered waypoint markers
@@ -30,63 +33,8 @@ function formatDuration(minutes) {
   return h > 0 ? `${h}h ${m}m` : `${m}m`
 }
 
-function createDepotIcon() {
-  return L.divIcon({
-    className: 'custom-marker',
-    html: `<div style="
-      background-color: #0052CC;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      border: 3px solid white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-    ">🏢</div>`,
-    iconSize: [40, 40],
-    iconAnchor: [20, 20],
-  })
-}
 
-function createWaypointIcon(sequenceNumber, color) {
-  return L.divIcon({
-    className: 'custom-marker',
-    html: `<div style="
-      position: relative;
-      background-color: ${color};
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      border: 3px solid white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    ">
-      <img src="/pin-icon.svg" alt="pin" style="width: 20px; height: 20px;" />
-      <span style="
-        position: absolute;
-        top: -4px;
-        right: -4px;
-        background: #111827;
-        color: white;
-        border-radius: 50%;
-        width: 18px;
-        height: 18px;
-        font-size: 10px;
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 2px solid white;
-      ">${sequenceNumber}</span>
-    </div>`,
-    iconSize: [40, 40],
-    iconAnchor: [20, 20],
-  })
-}
+
 
 const OSRM_PROFILE_MAP = {
   DRIVING: 'driving',
@@ -271,8 +219,8 @@ export default function RouteLayer({ routes = [], travelMode = 'DRIVING' }) {
         })
       }
 
-      const depotWaypoints = waypoints.filter(wp => wp.waypoint_type === 'depot_start')
-      const taskWaypoints = waypoints.filter(wp => wp.waypoint_type === 'task')
+      const depotWaypoints = waypoints.filter(wp => wp.waypoint_type === 'depot_start' || wp.waypoint_type === 'depot_end')
+      const taskWaypoints = waypoints.filter(wp => wp.waypoint_type !== 'depot_start' && wp.waypoint_type !== 'depot_end')
 
       return (
         <React.Fragment key={routeKey}>
@@ -292,17 +240,21 @@ export default function RouteLayer({ routes = [], travelMode = 'DRIVING' }) {
           {/* Depot Markers */}
           {depotWaypoints.map((wp, wpIdx) => {
             if (!wp.latitude || !wp.longitude) return null
+            const isEnd = wp.waypoint_type === 'depot_end'
             return (
               <Marker
                 key={`depot-${routeIdx}-${wpIdx}`}
                 position={[parseFloat(wp.latitude), parseFloat(wp.longitude)]}
-                icon={createDepotIcon()}
+                icon={createDepotIcon(isEnd)}
               >
                 <Popup>
                   <div className="p-1 min-w-[180px]">
-                    <div className="text-xs font-semibold text-blue-600 mb-1 tracking-wider uppercase">SWMO DEPOT</div>
+                    <div className="text-xs font-semibold text-blue-600 mb-1 tracking-wider uppercase flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full inline-block bg-[#0052CC]"></span>
+                      SWMO DEPOT
+                    </div>
                     <strong className="block text-sm text-gray-800 mb-2">
-                      {wp.waypoint_type === 'depot_start' ? 'Route Start' : 'Route End'}
+                      {isEnd ? 'Route End' : 'Route Start'}
                     </strong>
                     <div className="text-sm space-y-1 text-text-secondary">
                       <div><span className="text-text-muted">Lat:</span> <span className="font-medium text-gray-800">{parseFloat(wp.latitude).toFixed(6)}</span></div>
@@ -326,7 +278,10 @@ export default function RouteLayer({ routes = [], travelMode = 'DRIVING' }) {
               >
                 <Popup>
                   <div className="p-1 min-w-[200px]">
-                    <div className="text-xs font-semibold text-blue-600 mb-1 tracking-wider uppercase">STOP #{seq}</div>
+                    <div className="text-xs font-semibold mb-1 tracking-wider uppercase flex items-center gap-1.5" style={{ color }}>
+                      <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: color }}></span>
+                      STOP #{seq}
+                    </div>
                     <strong className="block text-sm text-gray-800 mb-2">
                       {route.crewName || `Crew ${routeIdx + 1}`}
                     </strong>
@@ -335,6 +290,23 @@ export default function RouteLayer({ routes = [], travelMode = 'DRIVING' }) {
                         <span className="text-text-muted">Task ID:</span> <span className="font-medium text-gray-800">#{wp.cleanup_task_id.slice(0, 8)}</span>
                       </div>
                     )}
+                    {wp.cleanup_tasks?.task_type ? (
+                      <div className="text-xs mb-2">
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold border ${
+                          wp.cleanup_tasks.task_type === 'Scouting' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                          wp.cleanup_tasks.task_type === 'Cleanup' ? 'bg-green-50 text-green-700 border-green-200' :
+                          'bg-purple-50 text-purple-700 border-purple-200'
+                        }`}>
+                          {wp.cleanup_tasks.task_type}
+                        </span>
+                      </div>
+                    ) : wp.waypoint_type === 'bundled_report' ? (
+                      <div className="text-xs mb-2">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold border bg-purple-50 text-purple-700 border-purple-200">
+                          Bundled Satellite
+                        </span>
+                      </div>
+                    ) : null}
                     <div className="text-sm space-y-1 text-text-secondary">
                       {wp.distance_from_previous_meters && (
                         <div><span className="text-text-muted">Dist:</span> <span className="font-medium text-gray-800">{formatDistance(wp.distance_from_previous_meters)}</span></div>

@@ -8,7 +8,6 @@ import { createPinIcon } from '@/components/landing/pinIcon'
 import { 
   fetchBatchReportEvidence, 
   getCachedEvidence, 
-  hasCachedEvidence,
   fetchBatchReportPublishers,
   getCachedPublisher
 } from '@/lib/api/reports'
@@ -141,6 +140,14 @@ const getReportImage = (report, evidenceMap = {}) => {
   if (report?.after_photo_url) return report.after_photo_url
   // Return null instead of misleading category fallback
   return null
+}
+
+const isReportImageLoading = (report, evidenceMap = {}) => {
+  if (!report?.id) return false
+  if (report.before_photo_url || report.after_photo_url) return false
+  const cached = getCachedEvidence(report.id)
+  if (cached !== null) return false
+  return evidenceMap[report.id] === undefined
 }
 
 // Environmental Severity Metric formatter: properly formats 0-100 scale vs legacy 1-5 scale
@@ -1018,19 +1025,20 @@ export default function PublicMap({ theme = 'light' }) {
   }, [allReports, reports, galleryStatusFilter, galleryCategoryFilter, gallerySeverityFilter, deferredGallerySearch, gallerySearchIndex, gallerySortBy])
 
   const evidenceReports = activeNavTab === 'gallery' ? galleryReports : sortedReports
-  // Fetch only the first visible page of exact public photos, in one request.
+  // Hydrate cached photos too; every displayed report needs a local cache entry.
   useEffect(() => {
-    const photoIds = evidenceReports.slice(0, 24)
-      .filter(report => !hasCachedEvidence(report.id) && evidenceCache[report.id] === undefined)
+    const photoIds = evidenceReports
+      .filter(report => report.location_precision === 'exact' && evidenceCache[report.id] === undefined)
+      .slice(0, 24)
       .map(report => report.id)
     if (!photoIds.length) return
     const controller = new AbortController()
-    fetchBatchReportEvidence(photoIds, controller.signal).then(photos => {
+    fetchBatchReportEvidence(photoIds, controller.signal, { throwOnError: true }).then(photos => {
       if (controller.signal.aborted) return
       setEvidenceCache(previous => ({ ...previous, ...Object.fromEntries(photoIds.map(id => [id, photos[id] || []])) }))
     }).catch(() => {})
     return () => controller.abort()
-  }, [evidenceReports])
+  }, [evidenceReports, evidenceCache])
 
   // Batch fetch publisher names and consent for visible public reports
   useEffect(() => {
@@ -1581,6 +1589,16 @@ export default function PublicMap({ theme = 'light' }) {
             className="relative w-full aspect-[16/10] rounded-2xl overflow-hidden bg-gray-100 dark:bg-[#222] border border-gray-200/80 dark:border-[#2A2A2A] shadow-sm cursor-pointer group select-none"
           >
             {(() => {
+              if (isReportImageLoading(detailedReport, evidenceCache)) {
+                return (
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 dark:bg-[#222] gap-2.5" role="status" aria-label="Loading photo...">
+                    <div className="p-2.5 rounded-full bg-white/80 dark:bg-black/60 shadow-xs border border-gray-200/50 dark:border-white/10 flex items-center justify-center">
+                      <Loader2 className="w-7 h-7 text-[#0052cc] animate-spin" aria-hidden="true" />
+                    </div>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Loading photo…</span>
+                  </div>
+                )
+              }
               const heroImg = getReportImage(detailedReport, evidenceCache)
               return heroImg === null ? (
                 <div className="w-full h-full flex flex-col items-center justify-center bg-gray-200 dark:bg-[#333]">
@@ -1591,6 +1609,7 @@ export default function PublicMap({ theme = 'light' }) {
                 <SecureImage
                   src={heroImg}
                   alt={detailedReport.title}
+                  loadingLabel="Loading photo..."
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
                 />
               )
@@ -1793,7 +1812,7 @@ export default function PublicMap({ theme = 'light' }) {
                     }}
                     className="relative aspect-video rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-[#333] shadow-xs cursor-pointer group"
                   >
-                    <SecureImage src={img.url} alt="Evidence" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    <SecureImage src={img.url} alt="Evidence" loadingLabel="Loading photo..." className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
                       <Maximize2 className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md" />
                     </div>
@@ -1803,6 +1822,13 @@ export default function PublicMap({ theme = 'light' }) {
             ) : (
               <div className="p-3 bg-gray-50 dark:bg-[#242424] rounded-2xl border border-gray-100 dark:border-[#2A2A2A] flex items-center gap-3">
                 {(() => {
+                  if (isReportImageLoading(detailedReport, evidenceCache)) {
+                    return (
+                      <div className="w-16 h-12 rounded-xl bg-gray-100 dark:bg-[#222] flex items-center justify-center flex-shrink-0 border border-gray-200 dark:border-[#333]" role="status" aria-label="Loading photo...">
+                        <Loader2 className="w-4 h-4 text-[#0052cc] animate-spin" aria-hidden="true" />
+                      </div>
+                    )
+                  }
                   const previewImg = getReportImage(detailedReport, evidenceCache)
                   return previewImg === null ? (
                     <div className="w-16 h-12 rounded-xl bg-gray-200 dark:bg-[#333] flex items-center justify-center flex-shrink-0 border border-gray-200 dark:border-[#333]">
@@ -1812,6 +1838,7 @@ export default function PublicMap({ theme = 'light' }) {
                     <SecureImage
                       src={previewImg}
                       alt="Category preview"
+                      loadingLabel="Loading photo..."
                       className="w-16 h-12 rounded-xl object-cover flex-shrink-0 border border-gray-200 dark:border-[#333]"
                     />
                   )
@@ -1837,7 +1864,7 @@ export default function PublicMap({ theme = 'light' }) {
                       Before
                     </span>
                     <div className="aspect-video rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-[#333] shadow-xs">
-                      <SecureImage src={detailedReport.before_photo_url} alt="Before" className="w-full h-full object-cover" />
+                      <SecureImage src={detailedReport.before_photo_url} alt="Before" loadingLabel="Loading photo..." className="w-full h-full object-cover" />
                     </div>
                   </div>
                 )}
@@ -1847,7 +1874,7 @@ export default function PublicMap({ theme = 'light' }) {
                       After Resolution
                     </span>
                     <div className="aspect-video rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-[#333] shadow-xs">
-                      <SecureImage src={detailedReport.after_photo_url} alt="After" className="w-full h-full object-cover" />
+                      <SecureImage src={detailedReport.after_photo_url} alt="After" loadingLabel="Loading photo..." className="w-full h-full object-cover" />
                     </div>
                   </div>
                 )}
@@ -2546,7 +2573,11 @@ export default function PublicMap({ theme = 'light' }) {
                               className="relative w-28 h-20 sm:w-32 sm:h-24 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 flex-shrink-0"
                               title={formatReportAddress(report)}
                             >
-                              {thumbImg === null ? (
+                              {isReportImageLoading(report, evidenceCache) ? (
+                                <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800" role="status" aria-label="Loading photo...">
+                                  <Loader2 className="w-5 h-5 text-[#0052cc] animate-spin" aria-hidden="true" />
+                                </div>
+                              ) : thumbImg === null ? (
                                 <div className="w-full h-full flex flex-col items-center justify-center bg-gray-200 dark:bg-[#333]">
                                   <ImageOff className="w-5 h-5 text-gray-400" />
                                   <span className="text-[10px] text-gray-400 mt-1">No photo</span>
@@ -2555,6 +2586,7 @@ export default function PublicMap({ theme = 'light' }) {
                                 <SecureImage
                                   src={thumbImg}
                                   alt={report.title}
+                                  loadingLabel="Loading photo..."
                                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                 />
                               )}
@@ -2699,7 +2731,14 @@ export default function PublicMap({ theme = 'light' }) {
                       >
                         {/* Photo Container */}
                         <button type="button" aria-label={`View photos for ${report.title || "Environmental concern"}`} title={formatReportAddress(report)} onClick={() => setPhotoSelection({ report, index: 0 })} className={`w-full relative ${galleryViewMode === 'showcase' ? 'aspect-[16/9]' : 'aspect-[16/10]'} bg-gray-100 dark:bg-gray-800 overflow-hidden`}>
-                          {imgUrl === null ? (
+                          {isReportImageLoading(report, evidenceCache) ? (
+                            <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-800 gap-2" role="status" aria-label="Loading photo...">
+                              <div className="p-2 rounded-full bg-white/80 dark:bg-black/60 shadow-xs border border-gray-200/50 dark:border-white/10 flex items-center justify-center">
+                                <Loader2 className="w-6 h-6 text-[#0052cc] animate-spin" aria-hidden="true" />
+                              </div>
+                              <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Loading photo…</span>
+                            </div>
+                          ) : imgUrl === null ? (
                             <div className="w-full h-full flex flex-col items-center justify-center bg-gray-200 dark:bg-[#333]">
                               <ImageOff className="w-8 h-8 text-gray-400" />
                               <span className="text-xs text-gray-400 mt-2">No photo available</span>
@@ -2710,6 +2749,7 @@ export default function PublicMap({ theme = 'light' }) {
                               alt={report.title}
                               loading="lazy"
                               decoding="async"
+                              loadingLabel="Loading photo..."
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             />
                           )}

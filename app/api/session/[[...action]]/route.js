@@ -17,11 +17,11 @@ async function getSession(req, action) {
   const session = await readWebSession(req);
   if (!session) return webFailure(401);
   if (action === 'password-policy') {
-    const response = await authorityFetch('/api/admin/settings', {}, req.signal);
+    const response = await authorityFetch('/api/auth/password-requirements', {}, req.signal);
     if (!response.ok) return webFailure(503);
     const settings = await authorityJson(response, req.signal, 32768);
     const policy = {};
-    if (Number.isInteger(settings.password_min_length) && settings.password_min_length >= 8 && settings.password_min_length <= 128) policy.password_min_length = settings.password_min_length;
+    if (Number.isInteger(settings.password_min_length) && settings.password_min_length >= 6 && settings.password_min_length <= 32) policy.password_min_length = settings.password_min_length;
     for (const key of ['password_require_uppercase', 'password_require_lowercase', 'password_require_numbers', 'password_require_special_chars']) if (typeof settings[key] === 'boolean') policy[key] = settings[key];
     return webJson(policy);
   }

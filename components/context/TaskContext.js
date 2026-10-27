@@ -1,6 +1,6 @@
 'use client'
-import React, { createContext, useContext, useState, useCallback } from 'react'
-import { generatePlan, getPlanJob, getDispatchPlan, commitPlan, disassemblePlan } from '@/lib/api/optimization'
+import React, { createContext, useContext, useState, useCallback, useRef } from 'react'
+import { generatePlan, getPlanJob, getDispatchPlan, commitPlan, disassemblePlan, cancelPlanJob } from '@/lib/api/optimization'
 import { useRouter } from 'next/navigation'
 import Notification from '@/components/ui/Notification'
 import { reportDiagnostic } from '../../lib/diagnostics.mjs';
@@ -19,24 +19,76 @@ export function TaskProvider({ children }) {
   const [globalNotification, setGlobalNotification] = useState(null)
   const [draftPlan, setDraftPlan] = useState(null)
   const [planningJob, setPlanningJob] = useState(null)
+  const cancelRequestedRef = useRef(false)
+  const abortControllerRef = useRef(null)
+  const currentJobIdRef = useRef(null)
+
+  const cancelOptimization = useCallback(async () => {
+    cancelRequestedRef.current = true
+    const activeJobId = currentJobIdRef.current || planningJob?.jobId
+
+    if (abortControllerRef.current) {
+      try {
+        abortControllerRef.current.abort()
+      } catch (_) {}
+    }
+
+    setIsOptimizing(false)
+    setPlanningJob(null)
+    setOptimizationProgress({ percent: 0, message: '' })
+    setGlobalNotification({
+      message: 'Plan generation cancelled. Dispatch settings unlocked.',
+      type: 'info'
+    })
+
+    if (activeJobId) {
+      try {
+        await cancelPlanJob(activeJobId)
+      } catch (err) {
+        reportDiagnostic('warn', 'dispatch', 'Notice: Could not notify backend of cancellation', err)
+      }
+    }
+  }, [planningJob?.jobId])
 
   const startOptimization = useCallback(async (settings = {}, onSuccess, onError) => {
     if (isOptimizing) return
+    cancelRequestedRef.current = false
+    abortControllerRef.current = new AbortController()
+    currentJobIdRef.current = null
+    const signal = abortControllerRef.current.signal
+
     setIsOptimizing(true)
     setGlobalNotification(null)
 
     try {
-      const queued = await generatePlan(settings)
+      const queued = await generatePlan(settings, { signal })
+      if (cancelRequestedRef.current) {
+        if (queued?.jobId) {
+          void cancelPlanJob(queued.jobId).catch(() => {})
+        }
+        return
+      }
       if (!queued.jobId) throw new Error('Planning service returned no job ID')
+      currentJobIdRef.current = queued.jobId
       setPlanningJob({ jobId: queued.jobId, status: queued.status || 'queued' })
       setOptimizationProgress({ percent: 20, message: 'Planning job queued' })
+
+      const startTime = Date.now()
+      let pollCount = 0
       let job = queued
       let pollRateLimitAttempts = 0
       while (job.status !== 'completed' && job.status !== 'failed') {
+        if (cancelRequestedRef.current) return
+        if (Date.now() - startTime > 90000) {
+          throw new Error('Planning job timed out. Please check if the optimization worker is running and try again.')
+        }
         await new Promise(resolve => setTimeout(resolve, 2000))
+        if (cancelRequestedRef.current) return
+        pollCount++
         try {
-          job = await getPlanJob(queued.jobId)
+          job = await getPlanJob(queued.jobId, { signal })
         } catch (pollErr) {
+          if (cancelRequestedRef.current) return
           if ((pollErr.status === 429 || pollErr.isRateLimited) && pollRateLimitAttempts < 2) {
             pollRateLimitAttempts++
             setOptimizationProgress({
@@ -44,18 +96,57 @@ export function TaskProvider({ children }) {
               message: 'Server busy, waiting a moment before checking job status...'
             })
             await new Promise(resolve => setTimeout(resolve, 5000))
+            if (cancelRequestedRef.current) return
             continue
           }
           throw pollErr
         }
+        if (cancelRequestedRef.current) return
         setPlanningJob(job)
-        setOptimizationProgress(job.status === 'running'
-          ? { percent: 65, message: 'Solver is building routes' }
-          : { percent: 20, message: 'Planning job queued' })
+
+        if (job.status === 'running') {
+          const elapsedSec = Math.max(1, Math.round((Date.now() - startTime) / 1000))
+          let stepMessage = 'Solver is building routes'
+          let stepPercent = 65
+
+          if (pollCount === 1) {
+            stepMessage = 'Analyzing clusters and fleet availability...'
+            stepPercent = 40
+          } else if (pollCount === 2) {
+            stepMessage = 'Calculating travel matrix and traffic buffers...'
+            stepPercent = 55
+          } else if (pollCount === 3) {
+            stepMessage = 'Assigning candidate routes to field crews...'
+            stepPercent = 68
+          } else if (pollCount === 4) {
+            stepMessage = 'Solving Vehicle Routing Problem (VRP)...'
+            stepPercent = 78
+          } else if (pollCount === 5) {
+            stepMessage = 'Balancing crew shift capacity and load limits...'
+            stepPercent = 85
+          } else if (pollCount === 6) {
+            stepMessage = 'Optimizing stop sequences and turnaround times...'
+            stepPercent = 89
+          } else {
+            stepPercent = Math.min(95, 90 + Math.floor((pollCount - 7) / 2))
+            stepMessage = `Refining route solution (${elapsedSec}s elapsed)...`
+          }
+
+          setOptimizationProgress({ percent: stepPercent, message: stepMessage })
+        } else if (job.status === 'queued') {
+          const elapsedSec = Math.max(1, Math.round((Date.now() - startTime) / 1000))
+          setOptimizationProgress({
+            percent: 20,
+            message: pollCount > 1 ? `Waiting in solver queue (${elapsedSec}s elapsed)...` : 'Planning job queued'
+          })
+        }
       }
+      if (cancelRequestedRef.current) return
       if (job.status === 'failed') throw new Error(`Planning failed: ${job.errorCode || 'unknown error'}`)
       if (!job.planId) throw new Error('Completed job has no draft plan')
-      const result = await getDispatchPlan(job.planId)
+      setOptimizationProgress({ percent: 96, message: 'Loading draft route plan...' })
+      const result = await getDispatchPlan(job.planId, { signal })
+      if (cancelRequestedRef.current) return
       const selectedCount = result.items.filter(item => item.is_selected && item.item_type !== 'bundled_report').length
       const unselectedItems = result.items.filter(item => !item.is_selected && item.item_type !== 'bundled_report')
       const outsideBufferCount = new Set((result.rejectedBundles || [])
@@ -91,11 +182,16 @@ export function TaskProvider({ children }) {
       if (onSuccess) onSuccess({ ...result, plan: generatedDraft,
         selectedCount, omittedLoggedCount: generatedDraft.omittedCount, capacityFiltering })
     } catch (error) {
+      if (cancelRequestedRef.current || error?.name === 'AbortError') {
+        return
+      }
       reportDiagnostic('error', 'ui', 'Optimization error:', error)
       setGlobalNotification({ message: error.message || 'Failed to generate optimization', type: 'error' })
       if (onError) onError(error)
     } finally {
-      setIsOptimizing(false)
+      if (!cancelRequestedRef.current) {
+        setIsOptimizing(false)
+      }
     }
   }, [isOptimizing])
 
@@ -105,6 +201,7 @@ export function TaskProvider({ children }) {
     setIsOptimizing(true)
     setGlobalNotification(null)
 
+    const commitStartTime = Date.now()
     const loadingSteps = [
       { percent: 30, message: 'Assigning tasks to field crews...' },
       { percent: 50, message: 'Calculating routes...' },
@@ -115,6 +212,13 @@ export function TaskProvider({ children }) {
     const progressInterval = setInterval(() => {
       if (stepIndex < loadingSteps.length) {
         setOptimizationProgress(loadingSteps[stepIndex])
+        stepIndex++
+      } else {
+        const elapsedSec = Math.max(1, Math.round((Date.now() - commitStartTime) / 1000))
+        setOptimizationProgress({
+          percent: Math.min(96, 90 + Math.floor((stepIndex - loadingSteps.length) / 2)),
+          message: `Finalizing optimization run (${elapsedSec}s elapsed)...`
+        })
         stepIndex++
       }
     }, 2000)
@@ -194,7 +298,7 @@ export function TaskProvider({ children }) {
   }, [isOptimizing])
 
   return (
-    <TaskContext.Provider value={{ isOptimizing, optimizationProgress, planningJob, draftPlan, setDraftPlan, startOptimization, commitOptimization, disassembleOptimization }}>
+    <TaskContext.Provider value={{ isOptimizing, optimizationProgress, planningJob, draftPlan, setDraftPlan, startOptimization, cancelOptimization, commitOptimization, disassembleOptimization }}>
       {children}
 
       {/* Global Notification Toast */}
@@ -214,6 +318,9 @@ export function TaskProvider({ children }) {
           message={optimizationProgress.message || 'Processing…'}
           progress={optimizationProgress.percent}
           duration={0}
+          actionLabel="Cancel"
+          onAction={cancelOptimization}
+          onClose={cancelOptimization}
         />
       )}
     </TaskContext.Provider>

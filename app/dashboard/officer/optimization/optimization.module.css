@@ -122,6 +122,34 @@
   transform: none;
 }
 
+.cancelButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--error, #d32f2f) 40%, transparent);
+  background: color-mix(in srgb, var(--error, #d32f2f) 8%, transparent);
+  color: var(--error, #d32f2f);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cancelButton:hover {
+  background: color-mix(in srgb, var(--error, #d32f2f) 16%, transparent);
+  border-color: var(--error, #d32f2f);
+  transform: translateY(-1px);
+}
+
+.cancelButton:active {
+  transform: translateY(0);
+}
+
 /* Table Card for Previous Runs */
 .tableCard {
   flex: 1;
@@ -239,6 +267,42 @@
   background: rgba(239, 68, 68, 0.1) !important;
   border-color: var(--error, #ef4444) !important;
   color: var(--error, #ef4444) !important;
+}
+
+
+.refreshButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 6px 16px;
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.refreshButton:hover:not(:disabled) {
+  background: var(--surface-elevated);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.refreshButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.refreshButton:focus-visible {
+  outline: 3px solid var(--workspace-link, #0052cc);
+  outline-offset: 2px;
 }
 
 .viewButton:focus-visible,

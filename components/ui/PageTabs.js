@@ -2,8 +2,9 @@
 
 import styles from './PageTabs.module.css'
 
-export default function PageTabs({ label, tabs, value, onChange }) {
+export default function PageTabs({ label, tabs, value, onChange, disabled = false }) {
   const selectWithKeyboard = (event, index) => {
+    if (disabled) return
     let next
     if (event.key === 'ArrowRight') next = (index + 1) % tabs.length
     if (event.key === 'ArrowLeft') next = (index - 1 + tabs.length) % tabs.length
@@ -16,11 +17,12 @@ export default function PageTabs({ label, tabs, value, onChange }) {
   }
 
   return (
-    <div className={styles.tabs} role="tablist" aria-label={label}>
+    <div className={styles.tabs} role="tablist" aria-label={label} aria-disabled={disabled || undefined}>
       {tabs.map(({ id, label: text, icon: Icon }, index) => (
         <button key={id} type="button" role="tab" id={`${id}-tab`} aria-controls={`${id}-panel`}
           aria-selected={value === id} tabIndex={value === id ? 0 : -1}
-          className={styles.tab} onClick={() => onChange(id)}
+          disabled={disabled}
+          className={styles.tab} onClick={() => { if (!disabled) onChange(id) }}
           onKeyDown={event => selectWithKeyboard(event, index)}>
           {Icon && <Icon size={18} aria-hidden="true" />}
           {text}

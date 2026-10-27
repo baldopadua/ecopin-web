@@ -8,6 +8,10 @@
 .downloadCard p { font-size: 13px !important; margin: 12px 0 24px !important; }
 .downloadCard a { width: 100%; gap: 8px; font-size: 14px; }
 .downloadStatus { display: block; font-size: 12px; line-height: 1.7; color: var(--landing-muted); margin-top: 16px; }
+.release { display: grid; gap: 12px; padding: 32px 0 48px; border-top: 1px solid var(--landing-border); }
+.release h2 { margin: 0; font-size: 20px; font-weight: 500; }
+.release p { margin: 0; color: var(--landing-muted); font-size: 14px; line-height: 1.75; overflow-wrap: anywhere; }
+.release a { justify-self: start; }
 .guide { padding: 64px 0; border-top: 1px solid var(--landing-border); }
 .guide ol { display: grid; grid-template-columns: repeat(3, 1fr); list-style: none; padding: 0; margin: 40px 0 0; gap: 40px; }
 .guide li { padding-top: 24px; border-top: 1px solid var(--landing-border); }

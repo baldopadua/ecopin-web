@@ -154,7 +154,7 @@ Under no circumstances may bearer tokens, password hashes, cookies, raw SQL quer
 
 #### Automated DR Verification & Infrastructure Dashboard
 1. **Admin Infrastructure UI:**
-   - Navigable at `/dashboard/admin/infrastructure` for `admin` and `sysadmin` roles.
+   - Temporarily hidden for the October 24, 2026 defense: removed from navigation, and `/dashboard/admin/infrastructure` redirects to `/dashboard/admin`. Restore only after provider data and operational claims are verified; the capabilities below remain deferred.
    - Live KPI monitoring for Database RPO ($\le 5\text{ min}$ SLA), Storage RPO ($\le 15\text{ min}$ SLA), System RTO ($\le 2\text{ hr}$ SLA), and 30-day continuous physical WAL backup status.
    - Interactive Cross-Region Replication parity verifier for `report-evidence`, `cleanup-task-photos`, and `report-cleanup`.
    - On-demand 6-stage recovery drill simulation with cryptographic SHA-256 signoff certificate.

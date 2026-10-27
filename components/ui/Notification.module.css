@@ -45,8 +45,23 @@
 .progress progress { width: 100%; min-width: 0; height: 8px; border: 0; border-radius: 999px; overflow: hidden;
   background: var(--feedback-soft); accent-color: #0052cc; }
 .progress progress::-webkit-progress-bar { background: var(--feedback-soft); border-radius: 999px; }
-.progress progress::-webkit-progress-value { background: #0052cc; border-radius: 999px; }
+.progress progress::-webkit-progress-value { background: #0052cc; border-radius: 999px; transition: width 0.3s ease; }
 .progress progress::-moz-progress-bar { background: #0052cc; border-radius: 999px; }
-.spinner { animation: spin 1s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+.spinner {
+  display: inline-block;
+  transform-origin: center;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}

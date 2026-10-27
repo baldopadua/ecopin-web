@@ -1,0 +1,33 @@
+.staffPage .content { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 20px; margin-top: 0; }
+.staffPage .mainColumn, .staffPage .sidebar { min-width: 0; display: grid; gap: 20px; }
+.staffPage .mainColumn > *, .staffPage .sidebar > * { min-width: 0; margin-top: 0; }
+.staffPage :global(.card) h2 { font-size: 18px; line-height: 1.4; font-weight: 500; }
+.staffPage :global(.card) h3 { font-size: 14px; line-height: 1.5; font-weight: 600; }
+.staffPage :global(.card) .reportTitle { font-size: 20px; margin-bottom: 8px; }
+.staffPage .description { margin-bottom: 0; font-size: 14px; line-height: 1.7; white-space: pre-wrap; }
+.staffPage :global(.card) { overflow-wrap: anywhere; }
+.staffPage .metadata > div { padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.staffPage .metadata > div:last-child { border-bottom: 0; padding-bottom: 0; }
+.staffPage .copyButton { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; border-radius: 12px; }
+.staffPage .evidenceGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 16px; }
+.staffPage .photoButton { display: block; width: 100%; min-width: 0; text-align: left; }
+.staffPage .photoButton:focus-visible { outline-offset: -4px; }
+.staffPage .noteInput { display: block; min-height: 112px; resize: vertical; font: inherit; line-height: 1.6; }
+.staffPage .noteInput:focus-visible { outline: 3px solid var(--workspace-link); outline-offset: 3px; }
+.staffPage .consentControls { display: flex; flex-wrap: wrap; gap: 8px; }
+.staffPage .consentControls button { flex: 1 1 auto; min-height: 44px; border-radius: 999px; padding: 8px 12px; font: inherit; font-weight: 500; white-space: nowrap; }
+.staffPage .consentHeading { flex-wrap: wrap; gap: 12px; }
+.staffPage .activityEntry { display: grid; gap: 8px; padding: 16px 0; }
+.staffPage .activityEntry p { margin: 0; }
+.staffPage .emptyMedia { height: auto; min-height: 160px; padding: 24px 16px; border-radius: 12px; }
+.staffPage .dangerButton { color: var(--error); border-color: color-mix(in srgb, var(--error) 30%, var(--border)); background: color-mix(in srgb, var(--error) 5%, var(--surface)); }
+.staffPage .dangerButton:hover:not(:disabled) { background: color-mix(in srgb, var(--error) 12%, var(--surface)); }
+@media (min-width: 768px) and (max-width: 1199px) {
+  .staffPage .sidebar { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+}
+@media (min-width: 1200px) {
+  .staffPage .content { grid-template-columns: minmax(0, 1fr) 320px; }
+}
+@media (max-width: 600px) {
+  .staffPage .evidenceGrid { grid-template-columns: minmax(0, 1fr); }
+}

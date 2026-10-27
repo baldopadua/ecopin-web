@@ -18,11 +18,13 @@ import {
   User
 } from 'lucide-react'
 import LandingNavigation from '@/components/landing/LandingNavigation'
+import PublicFooter from '@/components/landing/PublicFooter'
 import usePublicTheme from '@/components/landing/usePublicTheme'
 import publicStyles from '@/components/landing/LandingPage.module.css'
 import StatusBadge from '@/components/ui/StatusBadge'
 import ResponseDeadline from '@/components/ui/ResponseDeadline'
 import PublicLoadingState from '@/components/ui/PublicLoadingState'
+import SecureImage from '@/components/ui/SecureImage'
 
 export default function PublicReportPage() {
   const { id } = useParams()
@@ -72,7 +74,14 @@ export default function PublicReportPage() {
     setTimeout(() => setCopied(false), 2500)
   }
 
+  const allPhotos = [
+    ...(report?.before_photo_url ? [{ url: report.before_photo_url, label: 'Before photo' }] : []),
+    ...(report?.after_photo_url ? [{ url: report.after_photo_url, label: 'After resolution photo' }] : []),
+    ...evidence.map((ev, i) => ({ url: ev.url || ev.file_url, label: ev.name || ('Evidence photo ' + (i + 1)) })).filter(p => p.url && p.url !== report?.before_photo_url && p.url !== report?.after_photo_url)
+  ]
   const primaryPhoto = report?.before_photo_url || evidence[0]?.url || evidence[0]?.file_url
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0)
+  const currentPhoto = allPhotos[selectedPhotoIndex]?.url || primaryPhoto
 
   return (
     <div className={publicStyles.page} style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -188,14 +197,42 @@ export default function PublicReportPage() {
             </div>
 
             {/* Photo Section */}
-            {primaryPhoto && (
-              <div style={{ position: 'relative', width: '100%', maxHeight: '480px', overflow: 'hidden', background: '#0a0f14' }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img 
-                  src={primaryPhoto} 
+            {currentPhoto && (
+              <div style={{ position: 'relative', width: '100%', maxHeight: '480px', minHeight: '260px', overflow: 'hidden', background: '#0a0f14', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <SecureImage 
+                  key={currentPhoto}
+                  src={currentPhoto} 
                   alt={report.title} 
-                  style={{ width: '100%', height: 'auto', maxHeight: '480px', objectFit: 'contain', display: 'block', margin: '0 auto' }} 
+                  loadingLabel="Loading report photo..."
+                  className="w-full h-auto max-h-[480px] object-contain block mx-auto"
+                  wrapperClassName="w-full min-h-[260px] flex items-center justify-center"
                 />
+                {allPhotos.length > 1 && (
+                  <div style={{ display: 'flex', gap: '8px', padding: '12px', background: 'rgba(0,0,0,0.6)', width: '100%', overflowX: 'auto', justifyContent: 'center' }}>
+                    {allPhotos.map((p, idx) => (
+                      <button
+                        key={p.url + '-' + idx}
+                        type="button"
+                        onClick={() => setSelectedPhotoIndex(idx)}
+                        style={{
+                          width: '56px',
+                          height: '44px',
+                          borderRadius: '8px',
+                          overflow: 'hidden',
+                          border: selectedPhotoIndex === idx ? '2px solid #60a5fa' : '2px solid transparent',
+                          cursor: 'pointer',
+                          padding: 0,
+                          background: '#1a1a1a',
+                          flexShrink: 0,
+                          opacity: selectedPhotoIndex === idx ? 1 : 0.7
+                        }}
+                        aria-label={'View ' + p.label}
+                      >
+                        <SecureImage src={p.url} alt="" loadingLabel="Loading thumbnail..." className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -232,6 +269,23 @@ export default function PublicReportPage() {
                 <p style={{ fontSize: '15px', lineHeight: 1.6, color: 'var(--text-secondary, #475569)', margin: '0 0 20px' }}>
                   {report.description}
                 </p>
+              )}
+
+              {report.validation_status === 'rejected' && (
+                <div style={{
+                  padding: '16px',
+                  borderRadius: '12px',
+                  background: 'rgba(239, 68, 68, 0.08)',
+                  border: '1px solid rgba(239, 68, 68, 0.25)',
+                  marginBottom: '20px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#b91c1c', fontWeight: 700, fontSize: '14px', marginBottom: '6px' }}>
+                    <AlertCircle size={18} /> Report Rejected
+                  </div>
+                  <p style={{ margin: 0, fontSize: '13px', color: '#991b1b', lineHeight: 1.5 }}>
+                    {report.rejection_reason || 'This report was rejected during validation.'}
+                  </p>
+                </div>
               )}
 
               {/* Meta details grid */}
@@ -342,6 +396,7 @@ export default function PublicReportPage() {
           </div>
         )}
       </main>
+      <PublicFooter isDark={isDark} />
     </div>
   )
 }

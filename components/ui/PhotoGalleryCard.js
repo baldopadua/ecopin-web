@@ -8,22 +8,38 @@ export default function PhotoGalleryCard({ task, reports }) {
 
   const getPhotosByType = (type) => {
     const photos = []
+    const seen = new Set()
+    const addPhoto = (url, label) => {
+      if (!url || seen.has(url)) return
+      seen.add(url)
+      photos.push({ url, label })
+    }
     if (type === 'before' && task.before_photo_url) {
-      photos.push({ url: task.before_photo_url, label: 'Task Before' })
+      addPhoto(task.before_photo_url, 'Task Before')
     }
     if (type === 'after' && task.after_photo_url) {
-      photos.push({ url: task.after_photo_url, label: 'Task After' })
+      addPhoto(task.after_photo_url, 'Task After')
     }
     reports.forEach(report => {
-      if (type === 'before' && report.before_photo_url) {
-        photos.push({ url: report.before_photo_url, label: `Report ${report.id} Before` })
+      const title = report.title || `Report ${report.id}`
+      if (type === 'before') {
+        const list = Array.isArray(report.before_photos) && report.before_photos.length > 0
+          ? report.before_photos.map(p => p?.url).filter(Boolean)
+          : (report.before_photo_url ? [report.before_photo_url] : [])
+        list.forEach((url, i) => addPhoto(url, list.length > 1 ? `${title} (${i + 1})` : title))
       }
-      if (type === 'after' && report.after_photo_url) {
-        photos.push({ url: report.after_photo_url, label: `Report ${report.id} After` })
+      if (type === 'after') {
+        const list = Array.isArray(report.after_photos) && report.after_photos.length > 0
+          ? report.after_photos.map(p => p?.url).filter(Boolean)
+          : (report.after_photo_url ? [report.after_photo_url] : [])
+        list.forEach((url, i) => addPhoto(url, list.length > 1 ? `${title} (${i + 1})` : title))
       }
     })
     return photos
   }
+
+  const beforePhotos = getPhotosByType('before')
+  const afterPhotos = getPhotosByType('after')
 
   const handleNextPhoto = () => {
     if (!lightboxImage) return
@@ -45,26 +61,20 @@ export default function PhotoGalleryCard({ task, reports }) {
       
       {/* Before Photos Section */}
       <div className="mb-6">
-        <h3 className="font-medium mb-3 text-text-muted">Before Photos</h3>
+        <h3 className="font-medium mb-3 text-text-muted">Before Photos ({beforePhotos.length})</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {task.before_photo_url && (
-            <div className="relative cursor-pointer" onClick={() => setLightboxImage({ url: task.before_photo_url, type: 'before', index: 0 })}>
-              <SecureImage src={task.before_photo_url} alt="Before cleanup" className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity border border-border" />
-              <span className="absolute bottom-2 left-2 z-20 bg-black/70 text-white text-xs px-2 py-1 rounded">Task Before</span>
-            </div>
-          )}
-          {reports.filter(r => r.before_photo_url).map((report, idx) => (
+          {beforePhotos.map((photo, idx) => (
             <div 
-              key={`${report.id}-before`} 
+              key={`before-${idx}-${photo.url}`} 
               className="relative cursor-pointer"
-              onClick={() => setLightboxImage({ url: report.before_photo_url, type: 'before', index: (task.before_photo_url ? 1 : 0) + idx })}
+              onClick={() => setLightboxImage({ url: photo.url, type: 'before', index: idx })}
             >
-              <SecureImage src={report.before_photo_url} alt={`Report ${report.title} Before`} className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity border border-border" />
-              <span className="absolute bottom-2 left-2 z-20 bg-black/70 text-white text-xs px-2 py-1 rounded truncate max-w-[90%]">{report.title}</span>
+              <SecureImage src={photo.url} alt={photo.label} className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity border border-border" />
+              <span className="absolute bottom-2 left-2 z-20 bg-black/70 text-white text-xs px-2 py-1 rounded truncate max-w-[90%]">{photo.label}</span>
             </div>
           ))}
         </div>
-        {(!task.before_photo_url && !reports.some(r => r.before_photo_url)) && (
+        {beforePhotos.length === 0 && (
           <div className="flex flex-col items-center justify-center p-8 bg-surface-elevated rounded-lg border border-dashed border-border">
             <p className="text-text-muted text-sm">No before photos uploaded yet</p>
           </div>
@@ -73,26 +83,20 @@ export default function PhotoGalleryCard({ task, reports }) {
 
       {/* After Photos Section */}
       <div>
-        <h3 className="font-medium mb-3 text-text-muted">After Photos</h3>
+        <h3 className="font-medium mb-3 text-text-muted">After Photos ({afterPhotos.length})</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {task.after_photo_url && (
-            <div className="relative cursor-pointer" onClick={() => setLightboxImage({ url: task.after_photo_url, type: 'after', index: 0 })}>
-              <SecureImage src={task.after_photo_url} alt="After cleanup" className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity border border-border" />
-              <span className="absolute bottom-2 left-2 z-20 bg-black/70 text-white text-xs px-2 py-1 rounded">Task After</span>
-            </div>
-          )}
-          {reports.filter(r => r.after_photo_url).map((report, idx) => (
+          {afterPhotos.map((photo, idx) => (
             <div 
-              key={`${report.id}-after`} 
+              key={`after-${idx}-${photo.url}`} 
               className="relative cursor-pointer"
-              onClick={() => setLightboxImage({ url: report.after_photo_url, type: 'after', index: (task.after_photo_url ? 1 : 0) + idx })}
+              onClick={() => setLightboxImage({ url: photo.url, type: 'after', index: idx })}
             >
-              <SecureImage src={report.after_photo_url} alt={`Report ${report.title} After`} className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity border border-border" />
-              <span className="absolute bottom-2 left-2 z-20 bg-black/70 text-white text-xs px-2 py-1 rounded truncate max-w-[90%]">{report.title}</span>
+              <SecureImage src={photo.url} alt={photo.label} className="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity border border-border" />
+              <span className="absolute bottom-2 left-2 z-20 bg-black/70 text-white text-xs px-2 py-1 rounded truncate max-w-[90%]">{photo.label}</span>
             </div>
           ))}
         </div>
-        {(!task.after_photo_url && !reports.some(r => r.after_photo_url)) && (
+        {afterPhotos.length === 0 && (
           <div className="flex flex-col items-center justify-center p-8 bg-surface-elevated rounded-lg border border-dashed border-border">
             <p className="text-text-muted text-sm">No after photos uploaded yet</p>
           </div>

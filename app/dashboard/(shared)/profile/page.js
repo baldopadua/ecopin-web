@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { clearSessionMetadata, readSessionKey } from '@/lib/auth-token.mjs'
 import { logout } from '@/lib/api/auth'
-import { getSystemSettings } from '@/lib/api'
+import { getPasswordRequirements } from '@/lib/api'
 import { useUser } from '@/components/auth/UserContext'
 import PageHeader from '@/components/layout/PageHeader'
 import StatusBadge from '@/components/ui/StatusBadge'
@@ -137,7 +137,7 @@ export default function ProfilePage() {
           headers: {
           },
         }),
-        getSystemSettings().catch(() => null)
+        getPasswordRequirements().catch(() => null)
       ])
 
       if (!response.ok) {
