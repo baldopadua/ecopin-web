@@ -7,6 +7,7 @@ import CommandCenterPanel from '@/components/ui/CommandCenterPanel'
 import styles from '@/components/ui/CommandCenter.module.css'
 import PageHeader from '@/components/layout/PageHeader'
 import StatusBadge from '@/components/ui/StatusBadge'
+import UrgencyQueue from '@/components/reports/UrgencyQueue'
 import OfficerDispatchTour from '@/components/onboarding/OfficerDispatchTour'
 import { useUser } from '@/components/auth/UserContext'
 import { OfficerGuard } from '@/components/auth/RequireRole'
@@ -135,6 +136,7 @@ export default function OfficerHomepage() {
             <strong>{loading ? '—' : value}</strong><small>{note}</small>
           </Link>)}
         </div>
+        <UrgencyQueue compact />
         <div className={styles.panels}>
           <CommandCenterPanel title="Active Targets" items={activeTasks} loading={loading}
             empty="No in-progress cleanup tasks" href="/dashboard/officer/operations?status=in_progress">

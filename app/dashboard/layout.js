@@ -7,6 +7,7 @@ import { UserProvider } from '@/components/auth/UserContext'
 import { SessionProvider, useSession } from '@/components/auth/SessionProvider'
 import { TaskProvider } from '@/components/context/TaskContext'
 import DashboardQueryProvider from '@/components/context/DashboardQueryProvider'
+import UrgencyAlert from '@/components/reports/UrgencyAlert'
 import styles from '@/components/layout/DashboardShell.module.css'
 import { reportDiagnostic } from '../../lib/diagnostics.mjs';
 
@@ -112,6 +113,7 @@ function DashboardContent({ children }) {
             <a href="#workspace-content" className={styles.skip}>Skip to workspace</a>
                         <Sidebar />
             <main id="workspace-content" tabIndex={-1} className={styles.main}>
+              <UrgencyAlert />
               {children}
             </main>
           </div>

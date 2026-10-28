@@ -991,3 +991,11 @@ Show citizen photo-review explanations in a named Manual review request section 
 ## Response deadline visibility - 27 October 2026
 
 The public landing-map popup, Explore map/list/gallery/detail panel and public report page expose response-deadline indicators without sign-in. Keep deadlines separate from response status and severity. Use neutral Response deadline, amber Response deadline approaching in the final 20% of the real SLA window, and red Response overdue at/beyond the deadline, with text and icons in both themes. Do not call reports expired or hide them when overdue. Details show the exact local target time and explain that response time does not guarantee cleanup completion. Preserve approval/consent filtering and approximate locations. The implementation, migration order and verification limits are documented in `docs/response-deadlines.md`.
+
+### PDT-03 urgency verification (28 October 2026)
+
+Officer/admin dashboards expose a durable pending-urgency alert and a dedicated verification queue. Approval requires a reason and existing report validation, private-property consent and safety clearance. Declining urgency does not penalize citizen trust. Keep failed reasons and retry IDs, and reject stale decisions rather than overwriting another officer's review.
+
+An approved request can prepare a focused dispatch plan immediately without a maturation wait. Show this as plan preparation; assignment still requires review/commit and available qualified crews. New report details or a changed urgency approval require re-verification/regeneration. Refresh visible queue data every five seconds; durable database notifications are immediate, while the UI does not promise push delivery. Preserve keyboard access, 44px controls, narrow-screen wrapping and both themes.
+
+29 October 2026 PDT-03 review: Invalidated approvals return to Pending with “Needs re-verification”. A conflict preserves the verification reason when the officer closes, refreshes and reopens the current request. Polling must never silently change the decision targeted by an open review. Disable self-review and approval before lifecycle activation.
