@@ -1,5 +1,6 @@
 "use client";
 import {useEffect,useState} from 'react';
+import {useRouter} from 'next/navigation';
 import Button from '@/components/ui/Button';
 import DataTable from '@/components/ui/DataTable';
 import MunicipalDecisionCards from '@/components/analytics/MunicipalDecisionCards';
@@ -17,6 +18,8 @@ function Bars({rows,label}) {
  </li>)}</ol>;
 }
 export default function BarangayAnalytics(){
+ const router=useRouter();
+ const [executiveMonth,setExecutiveMonth]=useState('');
  const [range,setRange]=useState(initialBarangayRange),[draft,setDraft]=useState(initialBarangayRange);
  const [loaded,setLoaded]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState(null);
  const [reload,setReload]=useState(0),[validation,setValidation]=useState(''),[selected,setSelected]=useState('all');
@@ -47,6 +50,8 @@ export default function BarangayAnalytics(){
   document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);setExportNotice('CSV download started. Check your browser downloads.');
   }catch {setExportNotice('The CSV could not download. Please try again.');}
  }
+ const availableMonths=loaded?.total.monthly.map(m=>m.month)||[];
+ const reportMonth=availableMonths.includes(executiveMonth)?executiveMonth:availableMonths.filter(m=>m<initialBarangayRange().end).at(-1)||loaded?.end_month||'';
  const total=loaded?.total;
  const focus=loaded&&(selected==='all'?total:loaded.groups.find(g=>g.key===selected))||total;
  const rows=loaded?sortBarangays(loaded.groups.filter(g=>g.name.toLowerCase().includes(search.trim().toLowerCase())),sort):[];
@@ -55,6 +60,8 @@ export default function BarangayAnalytics(){
   <header className={styles.sectionHeader}>
    <div><h2>Barangay operations</h2><p className={styles.muted}>Compare submissions, open work and resolution times across Pasig.</p></div>
    <Button variant="secondary" onClick={download} disabled={!canExport}>Download CSV</Button>
+   <label>Executive report month<select aria-label="Executive report month" value={reportMonth} disabled={!canExport} onChange={e=>setExecutiveMonth(e.target.value)}>{availableMonths.map(month=><option key={month} value={month}>{month}{month===initialBarangayRange().end?' (month to date)':''}</option>)}</select></label>
+   <Button variant="secondary" disabled={!canExport||!reportMonth} onClick={()=>router.push(`/dashboard/officer/metrics/barangay-print/${reportMonth}`)}>Print executive summary</Button>
   </header>
   <form onSubmit={apply} className={styles.filters} aria-label="Analytics months" noValidate>
    <label>From month<input type="month" min="2000-01" max={initialBarangayRange().end} value={draft.start} onChange={e=>setDraft({...draft,start:e.target.value})} /></label>

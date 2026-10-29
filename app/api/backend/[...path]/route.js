@@ -37,7 +37,7 @@ async function handle(req) {
     if (response.status === 204) return new Response(null, { status: 204, headers: { 'Cache-Control': 'no-store' } });
     const type = response.headers.get('content-type')?.split(';')[0].trim().toLowerCase();
     if (type === 'application/json' || type?.endsWith('+json')) return webJson(scrubResponse(await authorityJson(response, req.signal)), response.status);
-    const image = pathname === '/api/media/storage' && ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'].includes(type);
+    const image = (pathname === '/api/media/storage' || /^\/api\/reports\/[A-Za-z0-9_-]+\/cleanup-proof\/(?:original\/(?:before|after)|public\/[A-Za-z0-9_-]+\/(?:before|after))$/.test(pathname)) && ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'].includes(type);
     const exported = pathname === '/api/sweeper/analytics/export' && ['text/csv', 'application/pdf', 'application/octet-stream', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'].includes(type);
     if (!image && !exported) return webFailure(502);
     const bytes = await readBoundedBytes(response.body, 10 * 1024 * 1024, AbortSignal.any([AbortSignal.timeout(10000), req.signal]));

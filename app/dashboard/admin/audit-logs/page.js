@@ -14,6 +14,7 @@ import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
 import { ShieldCheck, Lock, Archive, CheckCircle2 } from 'lucide-react';
 import Dialog from '@/components/ui/Dialog'
 import styles from './AuditLogs.module.css'
+import Link from 'next/link'
 
 function formatEventDetails(data) {
   if (!data || typeof data !== 'object') return '—'
@@ -257,6 +258,7 @@ function AuditLogsContent() {
           { label: 'Audit logs' }
         ]}
       >
+        <Link href="/dashboard/admin/audit-logs/operations" className="btn-secondary">Operational events</Link>
         <ExportButton 
           data={logs.map(l => ({
             Timestamp: l.created_at,

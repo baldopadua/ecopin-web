@@ -99,6 +99,7 @@ export default function SweeperAnalyticsPage() {
         <Button variant="secondary" onClick={download} disabled={!loaded || loading || !!error || changed || isExporting}>
           {isExporting ? 'Preparing CSV…' : 'Download CSV'}
         </Button>
+        <Link href={`/dashboard/operations-summary?${new URLSearchParams({from:range.start,through:range.end})}`} className="btn-secondary" aria-disabled={changed} onClick={e=>{if(changed)e.preventDefault()}}>Print operations summary</Link>
       </PageHeader>
 
       <form className={styles.filters} onSubmit={apply} noValidate aria-label="Analytics period">

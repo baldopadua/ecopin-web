@@ -2,7 +2,8 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { fetchWorkQueue, getOptimizationRuns } from '@/lib/api'
-import { useDashboardReports, useDashboardTasks, useDashboardClusters } from '@/components/context/DashboardQueryProvider'
+import { useDashboardReports, useDashboardTasks, useDashboardClusters, useDashboardReportLifecycle } from '@/components/context/DashboardQueryProvider'
+import ReportLifecycleSummary from '@/components/reports/ReportLifecycleSummary'
 import CommandCenterPanel from '@/components/ui/CommandCenterPanel'
 import styles from '@/components/ui/CommandCenter.module.css'
 import PageHeader from '@/components/layout/PageHeader'
@@ -19,6 +20,7 @@ export default function OfficerHomepage() {
   const [queueLoading, setQueueLoading] = useState(true)
   const taskQuery = useDashboardTasks()
   const reportQuery = useDashboardReports()
+  const lifecycleQuery = useDashboardReportLifecycle()
   const clusterQuery = useDashboardClusters()
   const rawTasks = taskQuery.data
   const tasks = Array.isArray(rawTasks) ? rawTasks
@@ -137,6 +139,7 @@ export default function OfficerHomepage() {
           </Link>)}
         </div>
         <UrgencyQueue compact />
+        <ReportLifecycleSummary reports={lifecycleQuery.data} compact loading={lifecycleQuery.isPending} error={lifecycleQuery.isError} onRetry={()=>lifecycleQuery.refetch()} />
         <div className={styles.panels}>
           <CommandCenterPanel title="Active Targets" items={activeTasks} loading={loading}
             empty="No in-progress cleanup tasks" href="/dashboard/officer/operations?status=in_progress">

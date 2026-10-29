@@ -1,0 +1,43 @@
+.preview { min-width: 0; }
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-bottom: 1.5rem; }
+.controls p, .controls form { flex-basis: 100%; font-size: .875rem; }
+.controls form { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; }
+.controls label { display: flex; flex-direction: column; gap: .5rem; }
+.controls input { min-height: 44px; border: 1px solid var(--border); background: var(--surface); border-radius: 8px; padding: .5rem; color: var(--text-primary); }
+.sheet { box-sizing: border-box; width: 100%; max-width: 210mm; margin: auto; padding: 12mm; color: #18212b; background: white; border: 1px solid #ccd1d7; font: 10pt/1.5 Arial, sans-serif; overflow-wrap: anywhere; }
+.masthead { border-bottom: 2px solid #253447; padding-bottom: 4mm; }
+.masthead p { margin: 1mm 0; font-size: 9pt; }
+.sheet h1 { font-size: 22pt; line-height: 1.15; margin: 2mm 0 4mm; }
+.sheet h2 { font-size: 13pt; margin: 6mm 0 3mm; padding-bottom: 1.5mm; border-bottom: 1px solid #ccd1d7; break-after: avoid; }
+.sheet h3 { font-size: 10pt; font-weight: bold; margin: 4mm 0 2mm; break-after: avoid; }
+.sheet p { margin: 0 0 3mm; }
+.metrics { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); border-block: 1px solid #ccd1d7; padding: 3mm 0; margin: 4mm 0; gap: 3mm; break-inside: avoid; }
+.metrics dt { font-size: 8pt; }
+.metrics dd { margin: 0; font-size: 19pt; font-weight: bold; }
+.priorities { padding-left: 5mm; }
+.note { font-size: 8.5pt; color: #485361; }
+.sheet table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 8pt; margin: 4mm 0; }
+.sheet caption { text-align: left; font-weight: bold; font-size: 10pt; padding: 2mm 0; break-after: avoid; }
+.sheet th, .sheet td { border: 1px solid #ccd1d7; text-align: left; vertical-align: top; padding: 2mm; overflow-wrap: anywhere; }
+.sheet thead { display: table-header-group; break-after: avoid; }
+.sheet tbody tr:first-child { break-before: avoid; }
+.sharedChecks { font-size: 8.5pt; }
+.sharedChecks ul { padding-left: 4mm; }
+.sheet thead th { background: #edf0f3; font-weight: bold; }
+.sheet tbody th { font-weight: normal; }
+.sheet tr { break-inside: avoid; }
+.sheet th:first-child { width: 24%; }
+.sheet table ul { margin: 0; padding-left: 3mm; }
+.sheet td p { margin: 2mm 0 0; }
+.sheet small { display: block; font-size: 7.5pt; }
+@media(max-width: 600px) {
+ .sheet { padding: 4mm; }
+ .metrics { grid-template-columns: 1fr 1fr; }
+ .sheet th, .sheet td { padding: 1mm; font-size: 7pt; }
+}
+@media print {
+ .sheet { width: auto; max-width: none; padding: 0; margin: 0; border: 0; }
+ .sheet th, .sheet td { padding: 2mm; font-size: 8pt; }
+ .metrics { grid-template-columns: repeat(4,minmax(0,1fr)); }
+ .appendix, .decisions { break-before: page; }
+}
