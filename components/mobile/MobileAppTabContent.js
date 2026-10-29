@@ -1,6 +1,7 @@
 'use client'
 import React, { useState, useRef } from 'react'
 import Link from 'next/link'
+import { officialContacts } from '@/lib/official-contacts.mjs'
 import { 
   Download, 
   MapPin, 
@@ -445,7 +446,7 @@ export default function MobileAppTabContent({ onNavigateToMap }) {
             <span>Solid Waste Management Office</span>
           </div>
           <div>
-            <span>swmo@pasigcity.gov.ph &bull; 09173726888</span>
+            <Link href="/contact">Official SWMO contacts · {officialContacts.swmoPhone} local {officialContacts.extension}</Link>
           </div>
         </div>
       </footer>

@@ -41,3 +41,7 @@ The connected database has been verified with 122 catalog areas and forecasts fo
 ## Verification
 
 The Python model, HTTP and pagination tests cover exact dates, nonnegative intervals, cumulative horizon consistency, zero-filled history and a 30-zone inference benchmark. Backend tests cover persistence round trips, same-horizon caching, expiry, input validation, authorization and route aliases. Frontend unit and browser checks cover stable boundaries, color updates, trend selection, actual reports, empty/error states, keyboard focus, safe text rendering, saved snapshots and responsive pagination from 320px to desktop widths. The dashboard production build and scoped lint checks also run.
+
+## Historical DBSCAN integration (PDT-19)
+
+Spatial Scan now links to a separate observed-history workspace with 7/30/90-day DBSCAN concentrations, recurrence evidence and independent forward barangay trends. See [the contract and deployment notes](historical-hotspot-patterns.md). Historical footprints are not future forecast polygons.

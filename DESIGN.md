@@ -999,3 +999,27 @@ Officer/admin dashboards expose a durable pending-urgency alert and a dedicated 
 An approved request can prepare a focused dispatch plan immediately without a maturation wait. Show this as plan preparation; assignment still requires review/commit and available qualified crews. New report details or a changed urgency approval require re-verification/regeneration. Refresh visible queue data every five seconds; durable database notifications are immediate, while the UI does not promise push delivery. Preserve keyboard access, 44px controls, narrow-screen wrapping and both themes.
 
 29 October 2026 PDT-03 review: Invalidated approvals return to Pending with “Needs re-verification”. A conflict preserves the verification reason when the officer closes, refreshes and reopens the current request. Polling must never silently change the decision targeted by an open review. Disable self-review and approval before lifecycle activation.
+
+### PDT-05 official contact channel (29 October 2026)
+
+Public `/contact`, footer/staff/Report Details links provide sourced SWMO office coordination for barangay leaders and event organizers without a report or trust gate. Keep the office trunkline, extension instructions, official mailbox and separate city emergency hotline visible. Dial/email actions open the device handler and do not promise a dispatch. Verified contacts supersede arbitrary CMS hotline values; admin settings show their source. Evidence and rollout limits: `../docs/official-contact-channel.md`.
+
+
+### PDT-16: barangay operational analytics
+
+Officer/admin navigation exposes `/analytics/barangay` in the existing staff shell. Show applied Manila calendar months, creation-cohort report counts and verification denominators, current all-time backlog age bands, resolution-event duration summaries and sample counts. All 30 official barangays stay visible; unassigned/border/outside-baseline records remain a separate visible bucket. San Miguel is included and Ortigas Center remains a district. Keep data coverage counts visible with expandable explanations. Use written chart values, responsive surfaces and a keyboard-accessible table scroll region. Date drafts require Apply; stale refresh data is labeled and cannot export. CSV includes all areas and metric scope. Explain automated verification and missing timestamps; never infer waste tonnage, population-adjusted incidence, historic backlog or causal performance. Implementation/deployment/verification: `../ecopin_backend_node/docs/barangay-analytics.md`.
+
+
+### PDT-17: explainable resource and scheduling proposals
+
+Barangay analytics replaces highest-count prompts with versioned rule cards for collection/crew planning, verification sessions and resolution blockers. Show observed figures, complete-month comparison dates, monthly location coverage, exact triggers and missing facts alongside the proposed action. Keep prerequisites and policy explanations in keyboard-accessible disclosures. Growth and aged-backlog triggers merge into one resource proposal per barangay. Add area/type filtering and explicit Show all; CSV includes every match rather than the visible subset. Pause cards for unapplied dates, refresh/errors, mismatched ranges or expired/invalid snapshots. Never extrapolate partial months, divide by zero/small baselines, invent named-crew availability/current collection frequency, or imply a proposal has changed a schedule. Officer links open dispatch review; admin links open resource settings. Source rules, thresholds, verification and rollout limits: `docs/municipal-decisions.md`.
+
+
+### PDT-19: historical density and barangay outlooks
+
+Spatial Scan links to `/dashboard/spatial-scan/patterns` for officer/admin users. Separate observed rolling 7/30/90-day DBSCAN from future +7/+30/+90-day count projections. Keep recurrence evidence in three non-overlapping 30-day bins, member-based multi-barangay links, unclustered counts and location exclusions visible. Use the existing accessible trend chart/table and uncertainty explanations. A corridor is an inspection candidate, not an identified road or predicted polygon. Clear evidence on failed refresh; provide retry, keyboard map/card access, both themes and 320px wrapping. The private aggregate-only API and deployment requirements are documented in `docs/historical-hotspot-patterns.md`.
+
+
+### PDT-20: report identity override
+
+Keep account-wide name consent, with the report-level identity override taking precedence for public and all staff roles. A report name renders only for explicit non-hiding and explicit account consent; do not display reporter UUIDs. Database/API controls must also protect list/detail, publisher, activity/filter/count, offline/replay/photo/error and exported/cached output. A missing privacy state must not render personal identity. Contract, test evidence, review reconciliation and staging status: `../ecopin_backend_node/docs/report-identity-privacy.md`.

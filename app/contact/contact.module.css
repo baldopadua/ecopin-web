@@ -1,0 +1,15 @@
+.main { max-width: 840px; margin: 0 auto; padding: 120px 24px 56px; color: var(--landing-text); }
+.main h1 { font-size: clamp(28px, 5vw, 44px); line-height: 1.15; margin: 12px 0 20px; }
+.main h2 { font-size: 22px; margin: 0 0 12px; }
+.main p, .main li { line-height: 1.65; overflow-wrap: anywhere; }
+.main a:not([class]) { color: var(--landing-blue); text-underline-offset: 3px; }
+.card { border: 1px solid var(--landing-border); border-radius: 20px; padding: 24px; margin: 24px 0; background: var(--landing-bg); }
+.number { font-size: 24px; font-weight: 600; }
+.number span { display: inline-block; font-size: 18px; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.main .actions a, .card > a { min-height: 44px; padding: 12px 20px; }
+.main ul { padding-left: 22px; }
+.main footer { font-size: 13px; }
+@media (max-width: 480px) { .main { padding: 100px 16px 40px; } .card { padding: 20px; } .actions a { width: 100%; justify-content: center; } }
+
+.secondary { display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--landing-border); border-radius: 999px; color: var(--landing-blue); }

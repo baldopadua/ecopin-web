@@ -808,6 +808,7 @@ export default function ReportDetailPage() {
           { label: 'Details' }
         ]}
       >
+        <a href="/contact" className="btn-secondary">Official contacts</a>
         <button
           onClick={() => loadReportData(true)}
           disabled={loading || isRefreshing}
@@ -1317,17 +1318,8 @@ export default function ReportDetailPage() {
                       <div>
                         <p className="text-xs text-text-muted">Name</p>
                         <p className="text-text-primary font-medium text-sm">
-                          {report.profiles?.data_consent === true
+                          {report.hide_identity === false && report.profiles?.data_consent === true
                             ? (report.profiles?.full_name || report.user_full_name || 'Anonymous')
-                            : 'Information not disclosed'
-                          }
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-text-muted">User ID</p>
-                        <p className="text-text-primary font-medium text-sm">
-                          {report.profiles?.data_consent === true
-                            ? (report.user_id || 'N/A')
                             : 'Information not disclosed'
                           }
                         </p>

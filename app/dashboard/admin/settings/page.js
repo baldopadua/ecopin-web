@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import PageHeader from '@/components/layout/PageHeader'
 import { DEFAULT_PUBLIC_CMS as DEFAULT_CMS } from '@/lib/public-cms.mjs'
+import { officialContacts } from '@/lib/official-contacts.mjs'
 import PageTabs from '@/components/ui/PageTabs'
 import { AdminGuard } from '@/components/auth/RequireRole'
 import Notification from '@/components/ui/Notification'
@@ -280,18 +281,10 @@ function SystemSettingsContent() {
               </div>
 
               <div>
-                <label htmlFor="cms-contact_phone" className="block text-sm font-medium text-text-primary mb-2">
-                  Office Hotline / Phone Number
-                </label>
-                <input
-                    id="cms-contact_phone"
-                    type="text"
-                  value={cms.contact_phone}
-                  onChange={(e) => handleCmsChange('contact_phone', e.target.value)}
-                  className="w-full p-3 border border-border rounded-lg bg-surface-elevated text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
-                  placeholder="09173726888"
-                />
-                <p className="text-xs text-text-muted mt-1">Clickable call link on mobile browsers for urgent citizen concerns.</p>
+                <p className="block text-sm font-medium text-text-primary mb-2">Official cleanup coordination</p>
+                <p className="text-sm text-text-secondary">{officialContacts.swmoPhone} local {officialContacts.extension} · Pasig SWMO</p>
+                <a href="/contact" className="text-sm underline">View official contacts and directory source</a>
+                <p className="text-xs text-text-muted mt-1">Official coordination uses the published city office contacts.</p>
               </div>
 
               <div>
