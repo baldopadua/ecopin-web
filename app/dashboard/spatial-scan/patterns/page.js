@@ -25,7 +25,7 @@ function PatternsContent() {
   return <div className={`workspace-page workspace-page--flow ${styles.page}`}>
     <PageHeader title="Historical hotspots" subtitle="Find recurring concentrations. Compare them with barangay forecasts before planning inspections."
       breadcrumbs={[{label:'Officer',href:'/dashboard/officer'},{label:'Spatial scan',href:'/dashboard/spatial-scan'},{label:'Historical hotspots'}]}>
-      <div className={styles.actions}><Link href="/dashboard/spatial-scan">Forward hotspot map</Link><Link href="/analytics/barangay">Barangay analytics</Link><button type="button" disabled={!data&&!error} onClick={refresh}>Refresh analysis</button></div>
+      <div className={styles.actions}><Link href="/dashboard/spatial-scan">Forward hotspot map</Link><Link href="/dashboard/officer/metrics?tab=barangay">Barangay analytics</Link><button type="button" disabled={!data&&!error} onClick={refresh}>Refresh analysis</button></div>
     </PageHeader>
     {!data&&!error&&<p role="status">Analyzing historical clusters and barangay trends…</p>}
     {error&&<div role="alert" className={styles.panel}><h2>Analysis unavailable</h2><p>{error}</p><button type="button" onClick={refresh}>Try again</button></div>}

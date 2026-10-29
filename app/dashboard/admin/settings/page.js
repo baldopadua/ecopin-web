@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import PageHeader from '@/components/layout/PageHeader'
 import { DEFAULT_PUBLIC_CMS as DEFAULT_CMS } from '@/lib/public-cms.mjs'
-import { officialContacts } from '@/lib/official-contacts.mjs'
+import OfficialContactFields from '@/components/settings/OfficialContactFields'
 import PageTabs from '@/components/ui/PageTabs'
 import { AdminGuard } from '@/components/auth/RequireRole'
 import Notification from '@/components/ui/Notification'
@@ -280,12 +280,7 @@ function SystemSettingsContent() {
                 <p className="text-xs text-text-muted mt-1">Official city government office mailbox for waste management.</p>
               </div>
 
-              <div>
-                <p className="block text-sm font-medium text-text-primary mb-2">Official cleanup coordination</p>
-                <p className="text-sm text-text-secondary">{officialContacts.swmoPhone} local {officialContacts.extension} · Pasig SWMO</p>
-                <a href="/contact" className="text-sm underline">View official contacts and directory source</a>
-                <p className="text-xs text-text-muted mt-1">Official coordination uses the published city office contacts.</p>
-              </div>
+              <OfficialContactFields cms={cms} onChange={handleCmsChange} />
 
               <div>
                 <label htmlFor="cms-contact_operating_hours" className="block text-sm font-medium text-text-primary mb-2">

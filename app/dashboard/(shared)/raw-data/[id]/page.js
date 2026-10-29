@@ -938,6 +938,11 @@ export default function ReportDetailPage() {
                 <p className={`text-text-primary leading-relaxed mb-6 ${isStaff ? styles.description : ''}`}>
                   {report.description || 'No description provided.'}
                 </p>
+                {typeof report.citizen_landmark === 'string' && report.citizen_landmark.trim() && <section aria-label="Citizen-provided landmark">
+                  <h3 className="text-lg font-semibold text-text-primary mb-3">Citizen-provided landmark</h3>
+                  <p className="text-text-primary whitespace-pre-wrap break-words">{report.citizen_landmark}</p>
+                  <p className="text-sm text-text-secondary mt-2">Extra directions only. Map coordinates and GIS boundaries remain authoritative.</p>
+                </section>}
 
               </div>
 

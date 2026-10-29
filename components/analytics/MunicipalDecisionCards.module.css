@@ -1,6 +1,22 @@
-.section {min-width:0;display:flex;flex-direction:column;gap:16px}.header {display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:start}.header h2 {font-size:20px;font-weight:500}.header p,.scope {font-size:14px;line-height:1.65;color:var(--text-secondary)}.header p {margin-top:8px;max-width:75ch}.version {font-size:12px;color:var(--text-secondary);padding:8px 12px;border:1px solid var(--border);border-radius:12px;white-space:normal}
-.notice,.rules {padding:16px 20px;border:1px solid var(--border);border-radius:16px;background:var(--surface-elevated);font-size:14px;line-height:1.65}.notice {border-left:4px solid var(--workspace-link)}
-.filters {display:flex;flex-wrap:wrap;align-items:end;gap:12px 20px}.filters label {flex:0 1 250px}.filters p {flex-basis:100%;font-size:14px;color:var(--text-secondary)}
-.grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.card {min-width:0;border:1px solid var(--border);border-radius:16px;padding:20px;background:var(--surface-elevated);display:flex;flex-direction:column;gap:12px}.card .eyebrow {font-size:12px;font-weight:500;color:var(--workspace-link)}.card h3 {font-size:18px;font-weight:500;line-height:1.4}.proposal {font-size:15px;line-height:1.7}.evidence {border-top:1px solid var(--border);padding-top:12px}.evidence h4 {font-size:14px;font-weight:500}.card ul,.rules ul {list-style:disc;padding-left:20px;font-size:14px;line-height:1.7}.card li,.rules li {margin-top:6px}.card details p,.rules p {margin-top:8px;font-size:14px;line-height:1.7;color:var(--text-secondary)}.card summary,.rules summary {min-height:44px;padding:10px 0;font-size:14px;cursor:pointer}.card details {border-top:1px solid var(--border)}
-.link {align-self:start;display:inline-flex;align-items:center;min-height:44px;color:var(--workspace-link);text-decoration:underline;text-underline-offset:4px;margin-top:auto;font-size:14px}.section :is(a,summary):focus-visible {outline:2px solid var(--workspace-link);outline-offset:3px;border-radius:4px}
-@media(max-width:900px){.grid {grid-template-columns:1fr}}@media(max-width:680px){.filters label {flex-basis:100%;width:100%}.card,.notice,.rules {padding:16px}.header {flex-direction:column}}
+.section {min-width:0;display:flex;flex-direction:column;gap:20px;padding:20px;border:1px solid var(--border);border-radius:16px;background:var(--surface)}
+.header h2 {font-size:20px;font-weight:500}
+.header p,.scope {font-size:14px;line-height:1.65;color:var(--text-secondary)}
+.header p {margin-top:8px;max-width:75ch}
+.notice {font-size:14px;line-height:1.65;color:var(--text-secondary)}
+.filters {display:flex;flex-wrap:wrap;align-items:end;gap:12px 20px}
+.filters label {flex:0 1 250px}
+.filters p {flex-basis:100%;font-size:14px;color:var(--text-secondary)}
+.grid {display:flex;flex-direction:column}
+.card {min-width:0;border-top:1px solid var(--border);padding:20px 0;display:flex;flex-direction:column;gap:12px}
+.card .eyebrow {font-size:12px;font-weight:500;color:var(--text-secondary)}
+.card h3 {font-size:18px;font-weight:500;line-height:1.4}
+.proposal {font-size:15px;line-height:1.7;max-width:85ch}
+.evidence h4 {font-size:14px;font-weight:500}
+.card ul,.rules ul {list-style:disc;padding-left:20px;font-size:14px;line-height:1.7}
+.card li,.rules li {margin-top:8px}
+.card details p,.rules p {margin-top:8px;font-size:14px;line-height:1.7;color:var(--text-secondary)}
+.card summary,.rules summary {min-height:44px;padding:12px 0;font-size:14px;cursor:pointer}
+.rules {border-top:1px solid var(--border);padding-top:8px}
+.link {align-self:start;display:inline-flex;align-items:center;min-height:44px;color:var(--workspace-link);text-decoration:underline;text-underline-offset:4px;font-size:14px}
+.section :is(a,summary):focus-visible {outline:2px solid var(--workspace-link);outline-offset:3px;border-radius:4px}
+@media(max-width:680px){.section {padding:16px}.filters label {flex-basis:100%;width:100%}}

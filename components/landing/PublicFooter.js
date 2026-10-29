@@ -6,7 +6,7 @@ import { ExternalLink } from 'lucide-react'
 import { usePublicCms } from '@/components/public/PublicSiteProvider'
 import { safeCmsUrl } from '@/lib/public-cms.mjs'
 import FooterContactForm from './FooterContactForm'
-import { officialContacts } from '@/lib/official-contacts.mjs'
+import { getOfficialContacts } from '@/lib/official-contacts.mjs'
 import styles from './LandingPage.module.css'
 
 
@@ -21,6 +21,7 @@ function safeFacebookUrl(value) {
 export default function PublicFooter({ isDark = false, settings }) {
   const { cms: publicCms } = usePublicCms()
   const cms = settings || publicCms
+  const officialContacts = getOfficialContacts(cms)
   const facebookUrl = safeFacebookUrl(cms.contact_swmo_facebook_url)
   return (
       <footer id="contact" className={`${styles.page} ${styles.footer}`}>
@@ -78,7 +79,7 @@ export default function PublicFooter({ isDark = false, settings }) {
               )}
               <p className={styles.officeDetail}>
                 <span>SWMO trunkline: </span>
-                <a href={officialContacts.swmoTel}>{officialContacts.swmoPhone}</a> local {officialContacts.extension}
+                <a href={officialContacts.swmoTel}>{officialContacts.swmoPhone}</a>{officialContacts.extension&&` local ${officialContacts.extension}`}
               </p>
               {cms.contact_operating_hours && (
                 <p className={styles.officeDetail}>

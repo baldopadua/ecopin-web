@@ -24,10 +24,9 @@ export default function MunicipalDecisionCards({data,paused=false}){
  }
  return <section className={styles.section} aria-label="Municipal decision proposals">
   <div className={styles.header}><div><h2>Decision proposals</h2>
-   <p>Transparent planning rules for SWMO review. Confirm capacity and approve changes in the existing planning workflow.</p></div><span className={styles.version}>Rule policy {result.ruleVersion} · Draft heuristics</span></div>
+   <p>Suggested next steps from the figures above. Review capacity before changing a schedule.</p></div></div>
   {!ready?<p className={styles.notice} role="status">{paused?'Decision proposals are paused while months are unapplied, analytics is refreshing, or a request has failed. Apply months and refresh to use current evidence.':result.notices.join(' ')}</p>:<>
-   <p className={styles.scope}>Snapshot: {new Date(data.generated_at).toLocaleString('en-PH',{timeZone:'Asia/Manila',dateStyle:'medium',timeStyle:'short'})} (Asia/Manila).
-    {result.comparison&&` Growth comparison: ${result.comparison.previous} → ${result.comparison.current}, both complete months.`}</p>
+   {result.comparison&&<p className={styles.scope}>Comparing {result.comparison.previous} with {result.comparison.current}, both complete months.</p>}
    {result.notices.map(notice=><p className={styles.notice} key={notice}>{notice}</p>)}
    <div className={styles.filters}>
     <label>Decision area<select aria-label="Decision area" value={area} onChange={e=>{setArea(e.target.value);setExpanded(false);}}><option value="all">All official barangays</option>{areas.map(g=><option key={g.psgc_code} value={g.psgc_code}>{g.name}</option>)}</select></label>
@@ -49,6 +48,7 @@ export default function MunicipalDecisionCards({data,paused=false}){
    {cards.length>6&&<Button type="button" variant="secondary" onClick={()=>setExpanded(value=>!value)}>{expanded?'Show first 6 proposals':`Show all ${cards.length} proposals`}</Button>}
   </>}
   <details className={styles.rules}><summary>Rule policy and limitations</summary>
+   <p>Policy {result.ruleVersion}. These proposals use draft planning rules.</p>
    <ul><li>Collection growth: at least {DECISION_RULES.growthPercent}% growth; baseline ≥{DECISION_RULES.minimumPreviousReports}, current ≥{DECISION_RULES.minimumCurrentReports}, current backlog ≥{DECISION_RULES.minimumBacklog}, and ≥80% location coverage in each comparison month.</li>
     <li>Aged backlog: at least {DECISION_RULES.agedBacklog} open cases aged 7+ days. Current backlog covers all months, including assigned cases.</li>
     <li>Verification: at least {DECISION_RULES.pendingReview} pending submissions in the selected creation cohort, with fewer than {DECISION_RULES.processedPercent}% approved or rejected. Automated decisions are included.</li>
