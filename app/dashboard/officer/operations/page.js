@@ -108,7 +108,7 @@ export default function CleanupTasksPage() {
   }
 
   return (
-      <div className={`workspace-page ${styles.page}`}>
+    <div className={`workspace-page ${styles.page}`}>
       <PageHeader
         title="Operations"
         subtitle="Manage and track cleanup tasks"
@@ -155,73 +155,75 @@ export default function CleanupTasksPage() {
         sticky={false}
       />
 
-      {/* Tasks List */}
-      <div className={`workspace-fill ${styles.tableWorkspace}`}>
-        <div ref={containerRef} className={styles.tableViewport}>
-        <DataTable
-          columns={[
-            { key: 'title', label: 'Title', width: '22%' },
-            {
-              key: 'description',
-              label: 'Description',
-              width: '26%',
-              render: (value) => (
-                <span className="text-sm text-text-secondary line-clamp-2 max-w-xs">{value || '—'}</span>
-              )
-            },
-            {
-              key: 'assigned_field_crew_id',
-              label: 'Assigned crew',
-              width: '20%',
-              render: (value, task) => {
-                const ids = value ? [value] : (task.assigned_crew_ids || [])
-                const names = [...new Set(ids.map(id => crewNames.get(id)).filter(Boolean))]
-                return (
-                  <span className={`text-sm font-medium whitespace-normal ${names.length ? 'text-accent-green' : 'text-text-muted'}`}>
-                    {names.length ? names.join(', ') : ids.length ? 'Crew name unavailable' : 'Unassigned'}
-                  </span>
-                )
-              }
-            },
-            {
-              key: 'created_at',
-              label: 'Created',
-              width: '14%',
-              render: (value) => (
-                <span className="text-sm text-text-muted">{formatDate(value)}</span>
-              )
-            },
-            {
-              key: 'status',
-              label: 'Status',
-              width: '18%',
-              render: (value) => (
-                <StatusBadge status={value} type="task" />
-              )
-            }
-          ]}
-          data={paginatedTasks}
-          loading={loading}
-          emptyMessage="No cleanup tasks match your filters."
-          onRowClick={handleRowClick}
-          rowActionLabel={(task) => `Open ${task.title || 'task'} details`}
-          className={styles.tableContainer}
-          caption="Cleanup tasks"
-        />
-        </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <Pagination
-            currentPage={safeCurrentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-            itemsPerPage={itemsPerPage}
-            totalItems={filteredTasks.length}
-            className={styles.pagination}
-          />
-        )}
-      </div>
+          {/* Tasks List */}
+          <div className={`workspace-fill ${styles.tableWorkspace}`}>
+            <div ref={containerRef} className={styles.tableViewport}>
+              <DataTable
+                columns={[
+                  { key: 'title', label: 'Title', width: '22%' },
+                  {
+                    key: 'description',
+                    label: 'Description',
+                    width: '26%',
+                    render: (value) => (
+                      <span className="text-sm text-text-secondary line-clamp-2 max-w-xs">{value || '—'}</span>
+                    )
+                  },
+                  {
+                    key: 'assigned_field_crew_id',
+                    label: 'Assigned crew',
+                    width: '20%',
+                    render: (value, task) => {
+                      const ids = value ? [value] : (task.assigned_crew_ids || [])
+                      const names = [...new Set(ids.map(id => crewNames.get(id)).filter(Boolean))]
+                      return (
+                        <span className={`text-sm font-medium whitespace-normal ${names.length ? 'text-accent-green' : 'text-text-muted'}`}>
+                          {names.length ? names.join(', ') : ids.length ? 'Crew name unavailable' : 'Unassigned'}
+                        </span>
+                      )
+                    }
+                  },
+                  {
+                    key: 'created_at',
+                    label: 'Created',
+                    width: '14%',
+                    render: (value) => (
+                      <span className="text-sm text-text-muted">{formatDate(value)}</span>
+                    )
+                  },
+                  {
+                    key: 'status',
+                    label: 'Status',
+                    width: '18%',
+                    render: (value) => (
+                      <StatusBadge status={value} type="task" />
+                    )
+                  }
+                ]}
+                data={paginatedTasks}
+                loading={loading}
+                emptyMessage="No cleanup tasks match your filters."
+                onRowClick={handleRowClick}
+                rowActionLabel={(task) => `Open ${task.title || 'task'} details`}
+                className={styles.tableContainer}
+                caption="Cleanup tasks"
+              />
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <Pagination
+                currentPage={safeCurrentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+                itemsPerPage={itemsPerPage}
+                totalItems={filteredTasks.length}
+                className={styles.pagination}
+              />
+            )}
+          </div>
     </div>
   )
 }
+

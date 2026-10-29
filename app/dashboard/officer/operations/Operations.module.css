@@ -47,10 +47,9 @@
   background: var(--surface);
 }
 
-.tableViewport { flex: 1; min-height: 0; overflow: auto; border-radius: 14px; }
-
 .pagination {
   margin-top: 0 !important;
   flex-shrink: 0;
   padding: 2px 0;
 }
+

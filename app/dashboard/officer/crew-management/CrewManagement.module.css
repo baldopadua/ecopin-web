@@ -82,7 +82,305 @@
   .viewToggle { width: 100%; justify-content: stretch; }
   .toggleButton { flex: 1; }
   .crewTasksHeader { padding: 16px; }
-  .tasksList { padding: 12px 16px 16px; }
   .taskRow { flex-direction: column; align-items: flex-start; }
   .taskMeta { width: 100%; justify-content: space-between; margin-top: 8px; }
 }
+
+.perfCardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+  margin-bottom: 24px;
+}
+
+.perfStatCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.perfStatCard:hover {
+  border-color: color-mix(in srgb, var(--workspace-link) 30%, var(--border));
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.statHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.statValue {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 9999;
+}
+
+.modalDialog {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 860px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.4);
+  transform: translateZ(0);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 28px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.modalCloseBtn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.modalCloseBtn:hover {
+  background: var(--surface-elevated);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+.modalBody {
+  padding: 22px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
+}
+
+.modalFooter {
+  padding: 14px 28px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+}
+
+.modalTaskListContainer {
+  min-height: 270px;
+  display: flex;
+  flex-direction: column;
+}
+
+.modalTaskItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-elevated);
+  text-decoration: none;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.modalTaskItem:hover {
+  border-color: var(--workspace-link);
+}
+
+.modalMetricsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 4px;
+}
+
+.modalMetricCard {
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.modalMetricCard:hover {
+  border-color: color-mix(in srgb, var(--workspace-link) 25%, var(--border));
+}
+
+.modalMetricLabel {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modalMetricValue {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.tableToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tableFilters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.selectInput {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: var(--surface);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238A9180' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 32px 6px 12px;
+  height: 36px;
+  line-height: 22px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  outline: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.selectInput:focus {
+  border-color: var(--workspace-link);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--workspace-link) 15%, transparent);
+}
+
+.modalToolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 16px;
+}
+
+@media (min-width: 640px) {
+  .modalToolbar {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+}
+
+.modalSearchWrapper {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.modalFilters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.modalSelectInput {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: var(--surface);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238A9180' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 32px 6px 12px;
+  height: 36px;
+  line-height: 22px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  outline: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.modalSelectInput:focus {
+  border-color: var(--workspace-link);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--workspace-link) 15%, transparent);
+}
+
+.viewActionLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--workspace-link);
+  transition: gap 0.15s ease;
+}
+
+.viewActionLink:hover {
+  gap: 6px;
+}
+
+
