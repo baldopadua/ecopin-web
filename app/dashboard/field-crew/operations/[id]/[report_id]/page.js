@@ -2,7 +2,7 @@
 import SecureImage from '@/components/ui/SecureImage'
 import React, { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Map as MapIcon, Upload, Trash2, Camera, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Map as MapIcon, Upload, Trash2, Camera, CheckCircle, Navigation, ExternalLink } from 'lucide-react'
 import { FieldCrewGuard } from '@/components/auth/RequireRole'
 import { useUser } from '@/components/auth/UserContext'
 import PageHeader from '@/components/layout/PageHeader'
@@ -79,6 +79,7 @@ export default function ReportDetailPage() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const fileInputRef = useRef(null)
   const [uploadType, setUploadType] = useState('before') // 'before' | 'after'
+  const [showNavModal, setShowNavModal] = useState(false)
 
   useEffect(() => {
     let isMounted = true
@@ -549,17 +550,81 @@ export default function ReportDetailPage() {
             <div className="flex flex-col gap-3">
               <button
                 onClick={() => router.push(`/dashboard/field-crew/operations/${task.id}`)}
-                className="w-full py-3 bg-transparent border border-border border-[#1A1A1A]  font-bold flex items-center justify-center gap-2 hover:bg-[#1A1A1A] hover:text-white dark:hover:bg-surface dark:hover:text-text-primary transition-colors"
+                className="w-full py-3 bg-transparent border border-border border-[#1A1A1A] font-bold flex items-center justify-center gap-2 hover:bg-[#1A1A1A] hover:text-white dark:hover:bg-surface dark:hover:text-text-primary transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" /> Back to Cluster
               </button>
               <button
                 onClick={() => router.push(`/dashboard/field-crew/my-route?lat=${loc.latitude}&lng=${loc.longitude}&id=${report.id}`)}
-                className="w-full py-3 bg-[#1A1A1A] dark:bg-surface text-white dark:text-text-primary font-bold border border-border border-[#1A1A1A]  shadow-[4px_4px_0px_0px_#ccff00] flex items-center justify-center gap-2 hover:translate-x-[2px] hover:translate-y-[2px] transition-transform"
+                className="w-full py-3 bg-[#1A1A1A] dark:bg-surface text-white dark:text-text-primary font-bold border border-border border-[#1A1A1A] shadow-[4px_4px_0px_0px_#ccff00] flex items-center justify-center gap-2 hover:translate-x-[2px] hover:translate-y-[2px] transition-transform"
               >
                 <MapIcon className="w-4 h-4" /> View on Map
               </button>
+              {loc.latitude && loc.longitude && (
+                <button
+                  type="button"
+                  onClick={() => setShowNavModal(true)}
+                  className="w-full py-3 bg-[#ccff00] text-black font-mono font-bold uppercase tracking-wider border border-[#1A1A1A] shadow-[4px_4px_0px_0px_#1A1A1A] flex items-center justify-center gap-2 hover:translate-x-[2px] hover:translate-y-[2px] transition-transform"
+                >
+                  <Navigation className="w-4 h-4" /> Open in Navigation
+                </button>
+              )}
             </div>
+
+            {/* External Navigation Modal */}
+            {showNavModal && loc.latitude && loc.longitude && (
+              <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                <div className="bg-surface border border-border p-6 rounded-xl max-w-sm w-full space-y-4 shadow-xl">
+                  <div className="flex items-center justify-between border-b border-border pb-3">
+                    <h3 className="font-bold text-base flex items-center gap-2 text-text-primary">
+                      <Navigation className="w-4 h-4 text-primary" />
+                      Open in Navigation
+                    </h3>
+                    <button
+                      onClick={() => setShowNavModal(false)}
+                      className="text-text-muted hover:text-text-primary text-sm font-mono px-2 py-1"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <p className="text-xs text-text-secondary">
+                    Choose an external navigation app to navigate to coordinates ({loc.latitude.toFixed(5)}, {loc.longitude.toFixed(5)}):
+                  </p>
+                  <div className="grid grid-cols-1 gap-3 pt-2">
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${loc.latitude},${loc.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setShowNavModal(false)}
+                      className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-surface-elevated text-text-primary font-medium text-sm transition-colors"
+                    >
+                      <span className="flex items-center gap-2">
+                        🗺️ Google Maps
+                      </span>
+                      <ExternalLink className="w-4 h-4 text-text-muted" />
+                    </a>
+                    <a
+                      href={`https://waze.com/ul?ll=${loc.latitude},${loc.longitude}&navigate=yes`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setShowNavModal(false)}
+                      className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-surface-elevated text-text-primary font-medium text-sm transition-colors"
+                    >
+                      <span className="flex items-center gap-2">
+                        🚗 Waze
+                      </span>
+                      <ExternalLink className="w-4 h-4 text-text-muted" />
+                    </a>
+                  </div>
+                  <button
+                    onClick={() => setShowNavModal(false)}
+                    className="w-full mt-2 py-2 text-xs font-mono text-text-muted hover:text-text-primary text-center"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Cleanup Task Context */}
             <div className="bg-surface p-5 border border-border border-[#1A1A1A]  shadow-sm">

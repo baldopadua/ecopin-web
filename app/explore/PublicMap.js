@@ -2354,6 +2354,7 @@ export default function PublicMap({ theme = 'light' }) {
               <MapContainer
                 center={PASIG_CENTER}
                 zoom={DEFAULT_ZOOM}
+                maxZoom={21}
                 zoomControl={false}
                 preferCanvas={true}
                 style={{ height: '100%', width: '100%', background: isDark ? '#121212' : '#f3f4f6' }}
@@ -2363,6 +2364,8 @@ export default function PublicMap({ theme = 'light' }) {
                 <TileLayer key={isDark ? "dark" : "light"}
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   attribution='&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
+                  maxZoom={21}
+                  maxNativeZoom={19}
                   className={isDark ? styles.darkTiles : styles.lightTiles}
                 />
 

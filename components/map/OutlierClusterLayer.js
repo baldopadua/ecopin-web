@@ -1,5 +1,6 @@
 import React from 'react';
-import { Popup } from 'react-leaflet';
+import { useMap, Popup } from 'react-leaflet';
+import L from 'leaflet';
 import ClusterMarker from './ClusterMarker';
 import wkx from 'wkx';
 import { Buffer } from 'buffer';
@@ -47,6 +48,7 @@ import { reportDiagnostic } from '../../lib/diagnostics.mjs';
 
 export default function OutlierClusterLayer({ clusters, selectedTemplate, onClusterClick, selectionMode, onClusterSelect, clusterReportsMap, selectedReports = [] }) {
   const router = useRouter();
+  const map = useMap();
   const selectedIds = new Set(selectedReports.map(String));
 
   if (!clusters || clusters.length === 0) return null;
@@ -68,6 +70,39 @@ export default function OutlierClusterLayer({ clusters, selectedTemplate, onClus
         const members = clusterReportsMap?.[cluster.id] || [];
         const selectedCount = members.filter(report => selectedIds.has(String(report.id))).length;
 
+        const handleZoomAndExpand = (e) => {
+          if (e && e.originalEvent) {
+            e.originalEvent.stopPropagation();
+          }
+          if (map) {
+            map.closePopup();
+            const targetZoom = Math.max(map.getZoom() + 3, 17);
+            if (members.length > 0) {
+              const points = members
+                .map(m => {
+                  const lat = m.parsedLat != null ? m.parsedLat : m.latitude;
+                  const lng = m.parsedLng != null ? m.parsedLng : m.longitude;
+                  if (lat && lng) return [Number(lat), Number(lng)];
+                  return parseGeometry(m.location);
+                })
+                .filter(Boolean);
+              if (points.length > 1) {
+                const lBounds = L.latLngBounds(points);
+                // If points are at the exact same coordinate, fitBounds will not zoom properly; use flyTo instead
+                if (lBounds.getNorthEast().equals(lBounds.getSouthWest())) {
+                  map.flyTo(center, targetZoom, { duration: 0.6 });
+                } else {
+                  map.fitBounds(lBounds, { padding: [50, 50], maxZoom: 17, animate: true });
+                }
+              } else {
+                map.flyTo(center, targetZoom, { duration: 0.6 });
+              }
+            } else {
+              map.flyTo(center, targetZoom, { duration: 0.6 });
+            }
+          }
+        };
+
         return (
           <ClusterMarker
             key={cluster.id}
@@ -79,20 +114,20 @@ export default function OutlierClusterLayer({ clusters, selectedTemplate, onClus
             opacity={opacity}
             eventHandlers={{
               click: (e) => {
-                e.originalEvent.stopPropagation();
                 if (onClusterClick) onClusterClick(cluster.id);
-              }
+              },
+              dblclick: handleZoomAndExpand
             }}
           >
             <Popup>
-              <div className="p-2 min-w-[200px]">
+              <div className="p-2 min-w-[210px]">
                 <div className={`text-xs font-semibold mb-1 tracking-wider uppercase ${hasSlaBreach ? 'text-red-600' : 'text-blue-600'}`}>
                   {hasSlaBreach ? 'CLUSTER WITH BREACHED REPORT' : 'STANDARD CLUSTER'} #{cluster.id}
                 </div>
-                <strong className="block text-sm text-gray-800 mb-2">
+                <strong className="block text-sm text-gray-800 mb-1">
                   {normalizeString(cluster.issue_type)}
                 </strong>
-                <div className="text-sm space-y-1 text-gray-600">
+                <div className="text-xs space-y-1 text-gray-600 mb-3">
                   <div><span className="text-gray-500">Reports:</span> <span className="font-medium text-gray-800">{cluster.report_count}</span></div>
                   <div>
                     <span className="text-gray-500">Severity:</span>{' '}
@@ -100,37 +135,45 @@ export default function OutlierClusterLayer({ clusters, selectedTemplate, onClus
                       {cluster.severity?.toUpperCase()}
                     </span>
                   </div>
-                  {hasSlaBreach && (
-                    <div className="mt-2 p-1.5 bg-red-50 border border-red-200 rounded text-xs">
-                      <span className="text-red-600 font-bold">SLA Breach Duration:</span> {cluster.breach_duration || cluster.breach_duration_hours || '> 48'} hours
-                    </div>
+                </div>
+
+                <div className="space-y-1.5 pt-1 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleZoomAndExpand(e);
+                    }}
+                    className="w-full bg-[#0052cc] text-white text-xs font-semibold py-1.5 px-2 rounded hover:bg-[#0747a6] transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+                  >
+                    <span>🔍 Zoom & Expand Pins</span>
+                  </button>
+
+                  {selectionMode && onClusterSelect ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (members.length > 0) {
+                          onClusterSelect(members.map(r => r.id));
+                        }
+                      }}
+                      className="w-full bg-gray-100 text-gray-800 text-xs font-medium py-1.5 px-2 rounded hover:bg-gray-200 transition-colors"
+                    >
+                      Select All Reports
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/dashboard/officer/hotzone-intel/${cluster.id}`);
+                      }}
+                      className="w-full border border-gray-300 text-gray-700 text-xs font-medium py-1.5 px-2 rounded hover:bg-gray-50 transition-colors"
+                    >
+                      View Cluster Details →
+                    </button>
                   )}
-                  <div className="mt-3">
-                    {selectionMode && onClusterSelect ? (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          const memberReports = clusterReportsMap && clusterReportsMap[cluster.id] ? clusterReportsMap[cluster.id] : []
-                          if (memberReports && memberReports.length > 0) {
-                            onClusterSelect(memberReports.map(r => r.id))
-                          }
-                        }}
-                        className="w-full bg-blue-600 text-white font-medium text-sm py-2 rounded shadow-sm hover:bg-blue-700 transition-colors"
-                      >
-                        Add All Reports
-                      </button>
-                    ) : (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          router.push(`/dashboard/officer/hotzone-intel/${cluster.id}`)
-                        }}
-                        className="w-full bg-blue-600 text-white font-medium text-sm py-2 rounded shadow-sm hover:bg-blue-700 transition-colors"
-                      >
-                        View All Reports
-                      </button>
-                    )}
-                  </div>
                 </div>
               </div>
             </Popup>

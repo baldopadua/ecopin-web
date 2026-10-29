@@ -33,6 +33,7 @@ const normalizeString = (str) => {
 
 const PLP_CENTER = [14.561433, 121.075636]
 const DEFAULT_ZOOM = 15
+const CLUSTER_EXPAND_ZOOM = 15
 
 // area bounds
 const PASIG_BOUNDS = [
@@ -103,12 +104,20 @@ function MapViewportTracker({ setZoom, setMapBounds }) {
   const timeoutId = useRef(null)
 
   const map = useMapEvents({
-    'moveend zoomend': () => {
+    zoom: () => {
+      setZoom(map.getZoom())
+    },
+    zoomend: () => {
+      setZoom(map.getZoom())
+      if (timeoutId.current) clearTimeout(timeoutId.current)
+      setMapBounds(map.getBounds())
+    },
+    moveend: () => {
       if (timeoutId.current) clearTimeout(timeoutId.current)
       timeoutId.current = setTimeout(() => {
         setZoom(map.getZoom())
         setMapBounds(map.getBounds())
-      }, 300) // Debounce viewport updates to prevent aggressive re-renders
+      }, 150)
     }
   })
 
@@ -485,7 +494,9 @@ export default function EcoPinMap({ reports: externalReports, centerLat, centerL
       }
 
       if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
-        const key = report.cluster_id ? `cluster_${report.cluster_id}` : `coord_${lat.toFixed(4)},${lng.toFixed(4)}`
+        // Group strictly by identical coordinates (5 decimal places ~= 1.1 meters)
+        // so reports with distinct coordinates stay in their actual geographic positions
+        const key = `coord_${lat.toFixed(5)},${lng.toFixed(5)}`
         if (!coordsMap[key]) coordsMap[key] = []
         coordsMap[key].push(report.id)
       }
@@ -540,7 +551,7 @@ export default function EcoPinMap({ reports: externalReports, centerLat, centerL
 
   const visiblePhotoReports = useMemo(() => !photoPins || !showPins || !mapBounds ? [] : processedReportsInfo.parsedReports.filter(report =>
     Number.isFinite(report.parsedLat) && Number.isFinite(report.parsedLng) && mapBounds.contains([report.parsedLat, report.parsedLng]) &&
-    !(report.cluster_id && renderedClusterIds.has(report.cluster_id) && !hideClusters && showClusters && zoom <= 15)
+    !(report.cluster_id && renderedClusterIds.has(report.cluster_id) && !hideClusters && showClusters && zoom <= CLUSTER_EXPAND_ZOOM)
   ), [photoPins, showPins, mapBounds, processedReportsInfo, renderedClusterIds, hideClusters, showClusters, zoom])
   const pinPhotos = useMapPhotoEvidence(visiblePhotoReports, photoPins)
 
@@ -635,6 +646,7 @@ export default function EcoPinMap({ reports: externalReports, centerLat, centerL
           key={centerLat && centerLng ? `map-${centerLat}-${centerLng}` : 'ecopin-map'}
           center={centerLat && centerLng ? [centerLat, centerLng] : PLP_CENTER}
           zoom={centerLat && centerLng ? 17 : DEFAULT_ZOOM}
+          maxZoom={21}
           trackResize={false}
           // maxBounds={externalMaxBounds}
           // minZoom={externalMinZoom}
@@ -657,6 +669,8 @@ export default function EcoPinMap({ reports: externalReports, centerLat, centerL
           <TileLayer
             url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
             attribution='&copy; <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
+            maxZoom={21}
+            maxNativeZoom={19}
             className={isDark ? 'dark-mode-tiles' : ''}
           />
           <HeatmapLayer heatPoints={heatPoints} showHeatmap={showHeatmap} />
@@ -706,7 +720,7 @@ export default function EcoPinMap({ reports: externalReports, centerLat, centerL
           )}
 
           {/* Cluster Markers (shown when zoomed out) */}
-          {!hideClusters && showClusters && zoom <= 15 && (
+          {!hideClusters && showClusters && zoom <= CLUSTER_EXPAND_ZOOM && (
             <OutlierClusterLayer
               clusters={filteredClusters}
               selectedTemplate={selectedTemplate}
@@ -726,7 +740,7 @@ export default function EcoPinMap({ reports: externalReports, centerLat, centerL
           )}
 
           {/* Cluster Polygons (shown when zoomed in - connects actual report pins) */}
-          {!hideClusters && showClusters && zoom > 15 && filteredClusters.map((cluster) => {
+          {!hideClusters && showClusters && zoom > CLUSTER_EXPAND_ZOOM && filteredClusters.map((cluster) => {
             const memberReports = filteredClusterReports[cluster.id]
             if (!memberReports || memberReports.length < 2) return null
 
@@ -800,7 +814,7 @@ export default function EcoPinMap({ reports: externalReports, centerLat, centerL
             // Hide individual pins that belong to clusters when zoomed out AND clusters are enabled
             // Show them when zoomed in OR when clusters are disabled
             // Only hide them if the cluster marker is ACTUALLY being rendered
-            if (report.cluster_id && renderedClusterIds.has(report.cluster_id) && !hideClusters && showClusters && zoom <= 15) {
+            if (report.cluster_id && renderedClusterIds.has(report.cluster_id) && !hideClusters && showClusters && zoom <= CLUSTER_EXPAND_ZOOM) {
               return null
             }
 
@@ -814,11 +828,11 @@ export default function EcoPinMap({ reports: externalReports, centerLat, centerL
               // Client-side DOM Culling: skip if outside viewport
               // if (mapBounds && !mapBounds.contains([latitude, longitude])) return null
 
-              // Spiderfy overlapping pins
-              const key = report.cluster_id ? `cluster_${report.cluster_id}` : `coord_${latitude.toFixed(4)},${longitude.toFixed(4)}`
+              // Spiderfy only truly overlapping/identical pins
+              const key = `coord_${latitude.toFixed(5)},${longitude.toFixed(5)}`
               const overlappingIds = processedReportsInfo.coordsMap[key]
 
-              if (overlappingIds && overlappingIds.length > 1 && (zoom > 15 || !showClusters)) {
+              if (overlappingIds && overlappingIds.length > 1 && (zoom > CLUSTER_EXPAND_ZOOM || !showClusters)) {
                 const index = overlappingIds.indexOf(report.id)
                 const total = overlappingIds.length
 
