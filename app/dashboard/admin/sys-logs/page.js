@@ -18,7 +18,9 @@ function SystemLogsContent() {
   const [error, setError] = useState(null)
   const [filters, setFilters] = useState({ search: '', action_type: '', start_date: '', end_date: '' })
   const [currentPage, setCurrentPage] = useState(1)
-  const { containerRef, pageSize: itemsPerPage } = useTablePageSize({ resetKey: JSON.stringify(filters) })
+  const [customPageSize, setCustomPageSize] = useState(10)
+  const { containerRef } = useTablePageSize({ resetKey: JSON.stringify(filters) })
+  const itemsPerPage = customPageSize
 
   const loadLogs = useCallback(async () => {
     try {
@@ -213,15 +215,18 @@ function SystemLogsContent() {
         </div>
 
         {/* Pagination */}
-        {totalPages > 1 && (
-          <Pagination
-            currentPage={safeCurrentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-            itemsPerPage={itemsPerPage}
-            totalItems={filteredLogs.length}
-          />
-        )}
+        <Pagination
+          currentPage={safeCurrentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+          itemsPerPage={itemsPerPage}
+          totalItems={filteredLogs.length}
+          pageSizeOptions={[10, 25, 50]}
+          onPageSizeChange={(newSize) => {
+            setCustomPageSize(newSize)
+            setCurrentPage(1)
+          }}
+        />
       </div>
   )
 }

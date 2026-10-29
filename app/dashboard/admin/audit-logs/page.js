@@ -47,11 +47,13 @@ function AuditLogsContent() {
     end_date: '' 
   })
   const [currentPage, setCurrentPage] = useState(1)
+  const [customPageSize, setCustomPageSize] = useState(10)
   const [archiveStatus, setArchiveStatus] = useState(null)
   const [archiving, setArchiving] = useState(false)
   const [archiveResult, setArchiveResult] = useState(null)
   const [selectedLog, setSelectedLog] = useState(null)
-  const { containerRef, pageSize: itemsPerPage } = useTablePageSize({ resetKey: JSON.stringify(filters) })
+  const { containerRef } = useTablePageSize({ resetKey: JSON.stringify(filters) })
+  const itemsPerPage = customPageSize
 
   const loadArchiveStatus = async () => {
     try {
@@ -398,17 +400,20 @@ function AuditLogsContent() {
         </div>
 
         {/* Pagination */}
-        {totalPages > 1 && (
-          <div className={styles.pagination}>
-            <Pagination
-              currentPage={safeCurrentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-              itemsPerPage={itemsPerPage}
-              totalItems={logs.length}
-            />
-          </div>
-        )}
+        <div className={styles.pagination}>
+          <Pagination
+            currentPage={safeCurrentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+            itemsPerPage={itemsPerPage}
+            totalItems={logs.length}
+            pageSizeOptions={[10, 25, 50]}
+            onPageSizeChange={(newSize) => {
+              setCustomPageSize(newSize)
+              setCurrentPage(1)
+            }}
+          />
+        </div>
       </div>
 
       <Dialog

@@ -26,7 +26,9 @@ function UserManagementContent() {
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
-  const { containerRef, pageSize: itemsPerPage } = useTablePageSize({ resetKey: JSON.stringify(filters) })
+  const [customPageSize, setCustomPageSize] = useState(10)
+  const { containerRef } = useTablePageSize({ resetKey: JSON.stringify(filters) })
+  const itemsPerPage = customPageSize
   const [activeTab, setActiveTab] = useState('users')
   const [updatingRole, setUpdatingRole] = useState(null)
   const [deletingUser, setDeletingUser] = useState(null)
@@ -769,16 +771,19 @@ function UserManagementContent() {
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <Pagination
-          currentPage={safeCurrentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-          itemsPerPage={itemsPerPage}
-          totalItems={filteredUsers.length}
-          className=""
-        />
-      )}
+      <Pagination
+        currentPage={safeCurrentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+        itemsPerPage={itemsPerPage}
+        totalItems={filteredUsers.length}
+        pageSizeOptions={[10, 25, 50]}
+        onPageSizeChange={(newSize) => {
+          setCustomPageSize(newSize)
+          setCurrentPage(1)
+        }}
+        className=""
+      />
       </section>
       )}
     </div>

@@ -10,6 +10,8 @@ export default function Pagination({
   itemsPerPage = 8,
   totalItems = 0,
   showItemsInfo = true,
+  pageSizeOptions = null,
+  onPageSizeChange = null,
   className = ''
 }) {
   const getVisiblePages = () => {
@@ -57,59 +59,83 @@ export default function Pagination({
     return Math.min(currentPage * itemsPerPage, totalItems)
   }
 
-  if (totalPages <= 1) return null
+  if (totalPages <= 1 && (!pageSizeOptions || totalItems === 0)) return null
 
   return (
     <nav aria-label="Results pages" className={`flex flex-wrap items-center justify-between gap-4 ${className}`}>
-      {/* Items Info */}
-      {showItemsInfo && totalItems > 0 && (
-        <div role="status" className="text-sm text-text-secondary">
-          Showing {getStartIndex()}–{getEndIndex()} of {totalItems}
-        </div>
-      )}
+      {/* Items Info & Page Size */}
+      <div className="flex flex-wrap items-center gap-4">
+        {showItemsInfo && totalItems > 0 && (
+          <div role="status" className="text-sm text-text-secondary">
+            Showing {getStartIndex()}–{getEndIndex()} of {totalItems}
+          </div>
+        )}
+
+        {Array.isArray(pageSizeOptions) && pageSizeOptions.length > 0 && onPageSizeChange && (
+          <div className="flex items-center gap-2 text-xs text-text-secondary">
+            <label htmlFor="rows-per-page-select" className="font-medium whitespace-nowrap">
+              Rows per page:
+            </label>
+            <select
+              id="rows-per-page-select"
+              value={itemsPerPage}
+              onChange={(e) => onPageSizeChange(Number(e.target.value))}
+              className="bg-surface border border-border rounded-lg px-2 py-1 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+            >
+              {pageSizeOptions.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
 
       {/* Page Navigation */}
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-          aria-label="Previous page"
-          className="btn-secondary min-w-11 disabled:opacity-50"
-        >
-          Prev
-        </button>
+      {totalPages > 1 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            aria-label="Previous page"
+            className="btn-secondary min-w-11 disabled:opacity-50"
+          >
+            Prev
+          </button>
 
-        {getVisiblePages().map((page, index) => (
-          page === '...' ? (
-            <span key={`ellipsis-${index}`} className="px-3 py-1 text-text-muted">
-              ...
-            </span>
-          ) : (
-            <button
-              key={page}
-              aria-label={`Page ${page}`}
-              aria-current={currentPage === page ? 'page' : undefined}
-              onClick={() => handlePageChange(page)}
-              className={`min-h-11 min-w-11 rounded-xl border border-border transition-colors ${
-                currentPage === page
-                  ? 'bg-primary text-white border-primary'
-                  : 'hover:bg-surface-elevated'
-              }`}
-            >
-              {page}
-            </button>
-          )
-        ))}
+          {getVisiblePages().map((page, index) => (
+            page === '...' ? (
+              <span key={`ellipsis-${index}`} className="px-3 py-1 text-text-muted">
+                ...
+              </span>
+            ) : (
+              <button
+                key={page}
+                aria-label={`Page ${page}`}
+                aria-current={currentPage === page ? 'page' : undefined}
+                onClick={() => handlePageChange(page)}
+                className={`min-h-11 min-w-11 rounded-xl border border-border transition-colors ${
+                  currentPage === page
+                    ? 'bg-primary text-white border-primary'
+                    : 'hover:bg-surface-elevated'
+                }`}
+              >
+                {page}
+              </button>
+            )
+          ))}
 
-        <button
-          onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
-          aria-label="Next page"
-          className="btn-secondary min-w-11 disabled:opacity-50"
-        >
-          Next
-        </button>
-      </div>
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            aria-label="Next page"
+            className="btn-secondary min-w-11 disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      )}
     </nav>
   )
 }
