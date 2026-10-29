@@ -61,7 +61,6 @@ const fieldCrewNavigation = [
 
 const adminNavigation = [
     { name: 'Dashboard', href: '/dashboard/admin', icon: LayoutDashboard },
-    { name: 'Urgent verification', href: '/dashboard/officer/urgent-verification', icon: ShieldCheck },
     { name: 'Users', href: '/dashboard/admin/users', icon: Users },
     { name: 'System', href: '/dashboard/admin/settings', icon: Settings },
     { name: 'Optimization', href: '/dashboard/admin/optimization-settings', icon: SlidersHorizontal },

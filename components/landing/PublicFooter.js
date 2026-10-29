@@ -6,6 +6,7 @@ import { ExternalLink } from 'lucide-react'
 import { usePublicCms } from '@/components/public/PublicSiteProvider'
 import { safeCmsUrl } from '@/lib/public-cms.mjs'
 import FooterContactForm from './FooterContactForm'
+import { getOfficialContacts } from '@/lib/official-contacts.mjs'
 import styles from './LandingPage.module.css'
 
 
@@ -20,6 +21,7 @@ function safeFacebookUrl(value) {
 export default function PublicFooter({ isDark = false, settings }) {
   const { cms: publicCms } = usePublicCms()
   const cms = settings || publicCms
+  const officialContacts = getOfficialContacts(cms)
   const facebookUrl = safeFacebookUrl(cms.contact_swmo_facebook_url)
   return (
       <footer id="contact" className={`${styles.page} ${styles.footer}`}>
@@ -53,6 +55,7 @@ export default function PublicFooter({ isDark = false, settings }) {
                 <Link href="/explore?view=gallery">Reports Gallery</Link>
                 <Link href="/#how-it-works">Citizen Guide</Link>
                 <Link href="/downloads">Android App</Link>
+                <Link href="/contact">Official cleanup contacts</Link>
                 <Link href="/delete-account">Delete account</Link>
               </nav>
             </div>
@@ -74,12 +77,10 @@ export default function PublicFooter({ isDark = false, settings }) {
                   <a href={`mailto:${cms.contact_support_email}`}>{cms.contact_support_email}</a>
                 </p>
               )}
-              {cms.contact_phone && (
-                <p className={styles.officeDetail}>
-                  <span>Hotline: </span>
-                  <a href={`tel:${cms.contact_phone}`}>{cms.contact_phone}</a>
-                </p>
-              )}
+              <p className={styles.officeDetail}>
+                <span>SWMO trunkline: </span>
+                <a href={officialContacts.swmoTel}>{officialContacts.swmoPhone}</a>{officialContacts.extension&&` local ${officialContacts.extension}`}
+              </p>
               {cms.contact_operating_hours && (
                 <p className={styles.officeDetail}>
                   <span>Hours: </span>

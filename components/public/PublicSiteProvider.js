@@ -12,7 +12,9 @@ const PublicCmsContext = createContext({ cms: DEFAULT_PUBLIC_CMS })
 export const usePublicCms = () => useContext(PublicCmsContext)
 
 export default function PublicSiteProvider({ children }) {
-  const publicPage = isPublicSitePath(usePathname())
+  const pathname = usePathname()
+  const publicPage = isPublicSitePath(pathname)
+  const contactsPage = pathname === '/contact'
   const [cms, setCms] = useState(DEFAULT_PUBLIC_CMS)
   const [loading, setLoading] = useState(true)
   useEffect(() => {
@@ -31,8 +33,8 @@ export default function PublicSiteProvider({ children }) {
   }, [publicPage])
 
   let content = children
-  if (publicPage && loading) content = <PublicLoadingState label="Loading public site…" fullScreen />
-  else if (publicPage && cms.maintenance_mode === true) content = (
+  if (publicPage && loading && !contactsPage) content = <PublicLoadingState label="Loading public site…" fullScreen />
+  else if (publicPage && !contactsPage && cms.maintenance_mode === true) content = (
     <main className={`${styles.page} ${styles.maintenancePage}`}>
       <section className="max-w-xl text-center space-y-6" aria-labelledby="maintenance-title">
         <h1 id="maintenance-title" className="text-3xl font-medium">EcoPin is under maintenance</h1>

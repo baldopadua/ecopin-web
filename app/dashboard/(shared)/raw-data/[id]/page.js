@@ -808,6 +808,7 @@ export default function ReportDetailPage() {
           { label: 'Details' }
         ]}
       >
+        <a href="/contact" className="btn-secondary">Official contacts</a>
         <button
           onClick={() => loadReportData(true)}
           disabled={loading || isRefreshing}
@@ -937,6 +938,11 @@ export default function ReportDetailPage() {
                 <p className={`text-text-primary leading-relaxed mb-6 ${isStaff ? styles.description : ''}`}>
                   {report.description || 'No description provided.'}
                 </p>
+                {typeof report.citizen_landmark === 'string' && report.citizen_landmark.trim() && <section aria-label="Citizen-provided landmark">
+                  <h3 className="text-lg font-semibold text-text-primary mb-3">Citizen-provided landmark</h3>
+                  <p className="text-text-primary whitespace-pre-wrap break-words">{report.citizen_landmark}</p>
+                  <p className="text-sm text-text-secondary mt-2">Extra directions only. Map coordinates and GIS boundaries remain authoritative.</p>
+                </section>}
 
               </div>
 
@@ -1317,17 +1323,8 @@ export default function ReportDetailPage() {
                       <div>
                         <p className="text-xs text-text-muted">Name</p>
                         <p className="text-text-primary font-medium text-sm">
-                          {report.profiles?.data_consent === true
+                          {report.hide_identity === false && report.profiles?.data_consent === true
                             ? (report.profiles?.full_name || report.user_full_name || 'Anonymous')
-                            : 'Information not disclosed'
-                          }
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-text-muted">User ID</p>
-                        <p className="text-text-primary font-medium text-sm">
-                          {report.profiles?.data_consent === true
-                            ? (report.user_id || 'N/A')
                             : 'Information not disclosed'
                           }
                         </p>

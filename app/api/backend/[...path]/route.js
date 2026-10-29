@@ -32,7 +32,7 @@ async function handle(req) {
       : await authorityFetch(pathname + url.search, { method: req.method, headers, ...(body ? { body } : {}) }, req.signal);
     if (!response.ok) {
       void response.body?.cancel().catch(() => {});
-      return webFailure([400, 401, 403, 404, 409, 413, 415, 429].includes(response.status) ? response.status : 502);
+      return webFailure([400, 401, 403, 404, 409, 413, 415, 429, 503].includes(response.status) ? response.status : 502);
     }
     if (response.status === 204) return new Response(null, { status: 204, headers: { 'Cache-Control': 'no-store' } });
     const type = response.headers.get('content-type')?.split(';')[0].trim().toLowerCase();

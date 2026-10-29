@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import PageHeader from '@/components/layout/PageHeader';
 import styles from '@/components/ui/SpatialScan.module.css';
 import { getCurrentPredictions, fetchPredictions, getAvailablePredictionDates, getTodayReportLocations } from '../../../lib/api/hotspot';
@@ -184,6 +185,7 @@ function TacticalScanContent() {
     <PageHeader title="Hotspot forecast" className={styles.pageHeader} subtitle="See where report activity may build up. Plan your next inspection."
       breadcrumbs={[{ label: 'Officer', href: '/dashboard/officer' }, { label: 'Spatial scan' }]}>
       <div className={styles.headingActions}>
+        <Link href="/dashboard/spatial-scan/patterns">Historical hotspots</Link>
         <span className={styles.issued}>{observed ? 'Today · Manila time' : currentData?.prediction_date ? `${activeTab === 'historical' ? 'Snapshot from' : 'Issued'} ${forecastDate(currentData.prediction_date)}` : (loading && !hasMapData) ? 'Loading forecast…' : selectedDate ? `Snapshot from ${forecastDate(selectedDate)}` : 'Forecast unavailable'}</span>
         {activeTab === 'historical' ? (
           <button type="button" aria-label="Return to latest forecast" onClick={() => { setActiveTab('current'); setFocusedItem(null); }}>

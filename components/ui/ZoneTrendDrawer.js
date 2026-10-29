@@ -6,7 +6,7 @@ import { buildTrendSeries, forecastDate } from '../../lib/forecast-data.mjs';
 import styles from './SpatialScan.module.css';
 import DataTable from './DataTable';
 
-function ZoneForecastChart({ zone }) {
+export function ZoneForecastChart({ zone }) {
   const [selected, setSelected] = useState(null);
   const [showRange, setShowRange] = useState(true);
   const { actual, projected } = buildTrendSeries(zone);
