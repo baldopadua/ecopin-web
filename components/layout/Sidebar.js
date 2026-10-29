@@ -40,6 +40,7 @@ const citizenNavigation = [
 
 const officerNavigation = [
     { name: 'Command Center', href: '/dashboard/officer', icon: LayoutDashboard },
+    { name: 'Urgent verification', href: '/dashboard/officer/urgent-verification', icon: ShieldCheck },
     { name: 'Map Grid', href: '/dashboard/officer/map-grid', icon: Map },
     { name: 'Hotzone Intel', href: '/dashboard/officer/hotzone-intel', icon: Target },
     { name: 'Operations', href: '/dashboard/officer/operations', icon: ClipboardCheck },
@@ -60,6 +61,7 @@ const fieldCrewNavigation = [
 
 const adminNavigation = [
     { name: 'Dashboard', href: '/dashboard/admin', icon: LayoutDashboard },
+    { name: 'Urgent verification', href: '/dashboard/officer/urgent-verification', icon: ShieldCheck },
     { name: 'Users', href: '/dashboard/admin/users', icon: Users },
     { name: 'System', href: '/dashboard/admin/settings', icon: Settings },
     { name: 'Optimization', href: '/dashboard/admin/optimization-settings', icon: SlidersHorizontal },
