@@ -15,6 +15,9 @@ const nextConfig = {
   reactStrictMode: false,
   reactCompiler: false,
   compiler: { removeConsole: { exclude: ['error', 'warn'] } },
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'date-fns', 'chart.js', 'recharts'],
+  },
   images: {
     remotePatterns: [
       {

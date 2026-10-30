@@ -61,7 +61,7 @@ function DashboardContent({ children }) {
   if (!authReady || !user || redirectTo) return (
     <div className={styles.shell} aria-busy="true" aria-label="Loading workspace">
       <div className={styles.mobileBar} aria-hidden="true"><div className="h-7 w-28 rounded-lg bg-border/50 animate-pulse" /></div>
-            <aside className={`${styles.sidebar} ${styles.desktopSidebar} animate-pulse`}>
+      <aside className={`${styles.sidebar} ${styles.desktopSidebar} animate-pulse`}>
         <div className="p-6 border-b border-border">
           <div className="h-6 w-24 rounded bg-border/50" />
         </div>
@@ -80,15 +80,15 @@ function DashboardContent({ children }) {
             <div className="h-8 w-48 rounded bg-border/50 mb-2" />
             <div className="h-4 w-64 rounded bg-border/50" />
           </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="card animate-pulse">
-              <div className="h-3 w-20 rounded bg-border/50 mb-3" />
-              <div className="h-8 w-12 rounded bg-border/50 mb-2" />
-              <div className="h-3 w-16 rounded bg-border/50" />
-            </div>
-          ))}
-        </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="card animate-pulse">
+                <div className="h-3 w-20 rounded bg-border/50 mb-3" />
+                <div className="h-8 w-12 rounded bg-border/50 mb-2" />
+                <div className="h-3 w-16 rounded bg-border/50" />
+              </div>
+            ))}
+          </div>
           <div className="card animate-pulse">
             <div className="h-6 w-32 rounded bg-border/50 mb-4" />
             {Array.from({ length: 5 }).map((_, i) => (
