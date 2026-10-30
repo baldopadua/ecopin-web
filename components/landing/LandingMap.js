@@ -1,13 +1,11 @@
 'use client'
 
-import { Fragment, useEffect, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { MapContainer, Polyline, TileLayer, useMap, useMapEvents } from 'react-leaflet'
+import { CircleMarker, MapContainer, Polyline, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet'
 import { ArrowUpRight, LocateFixed, MapPin, RefreshCw } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { fetchPublicReportPage } from '@/lib/api/public-report-page.mjs'
-import { fetchBatchReportEvidence } from '@/lib/api/reports'
-import PhotoReportMarker from './PhotoReportMarker'
 import PublicReportPopup from './PublicReportPopup'
 import PublicSelect from '@/components/ui/PublicSelect'
 import { layoutPublicPins } from './public-pin-layout.mjs'
@@ -22,14 +20,24 @@ const LOCATIONS = {
 }
 const TYPES = { all: 'All concerns', waste: 'Waste', flooding: 'Flooding', pollution: 'Pollution', infrastructure: 'Infrastructure', illegal_logging: 'Illegal logging', others: 'Other concerns' }
 
+// Wide enough to cover every barangay; the landing loads all reviewed pins once
+// instead of refetching per viewport, so panning never waits on the network.
+const PASIG_BOUNDS = { south: 14.5, north: 14.65, west: 121.02, east: 121.15 }
+
 function ReportLayer({ location, issueType, retry, onState, isDark }) {
   const [reports, setReports] = useState([])
-  const [revision, setRevision] = useState(0)
-  const [evidence, setEvidence] = useState({})
-  const evidenceCache = useRef({})
+  const reportsRef = useRef(reports)
   const [zoom, setZoom] = useState(14)
   const [selectedId, setSelectedId] = useState(null)
-  const map = useMapEvents({ moveend: () => setRevision(value => value + 1), zoomend: event => setZoom(event.target.getZoom()) })
+  const map = useMapEvents({
+    moveend: () => onState(state => state.loading || state.error ? state : { ...state, count: countInView(reportsRef.current) }),
+    zoomend: event => setZoom(event.target.getZoom()),
+  })
+  // The status line still describes "this view", counted locally from the loaded set.
+  const countInView = useCallback(list => {
+    const bounds = map.getBounds()
+    return list.filter(report => bounds.contains([report.latitude, report.longitude])).length
+  }, [map])
 
   useEffect(() => {
     const target = LOCATIONS[location]
@@ -39,44 +47,36 @@ function ReportLayer({ location, issueType, retry, onState, isDark }) {
   useEffect(() => {
     const controller = new AbortController()
     onState({ loading: true, error: false, count: 0 })
-    const timer = setTimeout(async () => {
-      const bounds = map.getBounds()
-      try {
-        const page = await fetchPublicReportPage(supabase, {
-          bounds: { south: bounds.getSouth(), north: bounds.getNorth(), west: bounds.getWest(), east: bounds.getEast() },
-          issueType, limit: 100, signal: controller.signal,
-        })
-        if (controller.signal.aborted) return
-        const visible = page.reports.filter(report => {
-          const val = (report.validation_status || '').toLowerCase().trim()
-          if (val === 'manual_review' || val === 'pending' || val === 'rejected') return false
-          return ['approved', 'validated', 'verified'].includes(val) || (report.stage || '').toLowerCase().trim() === 'verified'
-        }).filter(report => Number.isFinite(report.latitude) && Number.isFinite(report.longitude))
-        setReports(visible)
-        onState({ loading: false, error: false, count: visible.length, hasMore: page.hasMore })
-        const photoIds = visible.filter(report => report.location_precision === 'exact' && evidenceCache.current[report.id] === undefined).map(report => report.id)
-        if (photoIds.length) {
-          const photos = await fetchBatchReportEvidence(photoIds, controller.signal)
-          if (!controller.signal.aborted) {
-            const received = Object.fromEntries(photoIds.map(id => [id, photos[id] || []]))
-            evidenceCache.current = { ...evidenceCache.current, ...received }
-            setEvidence(evidenceCache.current)
-          }
-        }
-      } catch {
-        if (controller.signal.aborted) return
-        setReports([])
-        onState({ loading: false, error: true, count: 0 })
-      }
-    }, 250)
-    return () => { clearTimeout(timer); controller.abort() }
-  }, [map, revision, issueType, retry, onState])
+    fetchPublicReportPage(supabase, { bounds: PASIG_BOUNDS, issueType, limit: 500, signal: controller.signal }).then(page => {
+      if (controller.signal.aborted) return
+      const visible = page.reports.filter(report => {
+        const val = (report.validation_status || '').toLowerCase().trim()
+        if (val === 'manual_review' || val === 'pending' || val === 'rejected') return false
+        return ['approved', 'validated', 'verified'].includes(val) || (report.stage || '').toLowerCase().trim() === 'verified'
+      }).filter(report => Number.isFinite(report.latitude) && Number.isFinite(report.longitude))
+      reportsRef.current = visible
+      setReports(visible)
+      onState({ loading: false, error: false, count: countInView(visible), hasMore: page.hasMore })
+    }).catch(() => {
+      if (controller.signal.aborted) return
+      reportsRef.current = []
+      setReports([])
+      onState({ loading: false, error: true, count: 0 })
+    })
+    return () => controller.abort()
+  }, [map, issueType, retry, onState, countInView])
 
-  return layoutPublicPins(reports, zoom).map(pin => {
+  const pins = useMemo(() => layoutPublicPins(reports, zoom), [reports, zoom])
+  const selected = pins.find(pin => !pin.isCluster && pin.report.id === selectedId)
+  const blue = isDark ? '#82b6ff' : '#0052CC'
+  const edge = isDark ? '#121212' : '#FFFFFF'
+
+  return <>
+    {pins.map(pin => {
       const { report } = pin
-      const photo = evidence[report.id]?.find(item => item.resource_type === 'image' || !item.resource_type)?.url
+      const isSelected = pin === selected
       const select = () => {
-        setSelectedId(report.id)
+        setSelectedId(pin.isCluster ? null : report.id)
         const nextZoom = pin.isCluster ? 15 : zoom
         const target = map.project(pin.position, nextZoom)
         // Keep the compact popup in the usable map area below the hero copy.
@@ -85,12 +85,14 @@ function ReportLayer({ location, issueType, retry, onState, isDark }) {
         else map.panTo(center, { animate: true, duration: .45 })
       }
       return <Fragment key={pin.key}>
-        {pin.separated && <Polyline positions={[pin.original, pin.position]} color="#0052CC" weight={1.5} opacity={.6} dashArray="3 3" />}
-        <PhotoReportMarker report={report} position={pin.position} image={photo} selected={selectedId === report.id} isCluster={pin.isCluster} isDark={isDark} onSelect={select}>
-          <PublicReportPopup report={report} />
-        </PhotoReportMarker>
+        {pin.separated && <Polyline positions={[pin.original, pin.position]} color={blue} weight={1} opacity={.5} dashArray="2 3" interactive={false} />}
+        <CircleMarker center={pin.position} radius={isSelected ? 7 : pin.isCluster ? 6 : 4.5} pathOptions={{ color: isSelected || pin.isCluster ? blue : edge, weight: isSelected ? 3 : pin.isCluster ? 2.5 : 1.5, fillColor: pin.isCluster ? edge : blue, fillOpacity: 1 }} eventHandlers={{ click: select }} bubblingMouseEvents={false} />
       </Fragment>
-    })
+    })}
+    {selected && <Popup position={selected.position} offset={[0, -6]} closeButton autoPan={false} eventHandlers={{ remove: () => setSelectedId(null) }}>
+      <PublicReportPopup report={selected.report} compact />
+    </Popup>}
+  </>
 }
 
 function MapControls({ onReset }) {
@@ -115,7 +117,7 @@ export default function LandingMap({ isDark }) {
       <PublicSelect id="preview-concern" label="Concern type" value={issueType} onChange={setIssueType} options={Object.entries(TYPES).map(([value, label]) => ({ value, label }))} className={styles.toolbarSelect} />
       <Link href="/explore" aria-label="Open the full public map"><ArrowUpRight size={22} /></Link>
     </div>
-    <MapContainer center={LOCATIONS.pasig.center} zoom={14} scrollWheelZoom={false} zoomControl={false} className={styles.leafletMap}>
+    <MapContainer center={LOCATIONS.pasig.center} zoom={14} preferCanvas scrollWheelZoom={false} zoomControl={false} className={styles.leafletMap}>
       <TileLayer key={isDark ? 'dark' : 'light'} url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" className={isDark ? styles.darkTiles : styles.lightTiles} attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' />
       <ReportLayer location={location} issueType={issueType} retry={retry} onState={setState} isDark={isDark} />
       <MapControls onReset={() => setLocation('pasig')} />

@@ -1110,7 +1110,7 @@ export default function OptimizationPage() {
                               <Eye size={14} className="shrink-0" aria-hidden="true" />
                               <span>View</span>
                             </button>
-                            {run.status !== 'discarded' && (
+                            {run.status !== 'discarded' && !run.has_finished_work && (
                               <button 
                                 type="button" 
                                 className={styles.disassembleButton} 

@@ -2,7 +2,6 @@
 
 import dynamic from 'next/dynamic'
 import LandingNavigation from '@/components/landing/LandingNavigation'
-import PublicFooter from '@/components/landing/PublicFooter'
 import usePublicTheme from '@/components/landing/usePublicTheme'
 import publicStyles from '@/components/landing/LandingPage.module.css'
 import styles from './Explore.module.css'
@@ -21,5 +20,5 @@ export default function ExplorePage() {
     <main id="explore-content" className={styles.content}>
       <PublicMap theme={isDark ? 'dark' : 'light'} />
     </main>
-  </div><PublicFooter isDark={isDark} /></>
+  </div></>
 }

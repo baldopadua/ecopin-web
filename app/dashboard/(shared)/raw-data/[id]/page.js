@@ -822,7 +822,7 @@ export default function ReportDetailPage() {
         ]}
       >
         {isStaff&&<Link href={`/dashboard/raw-data/${encodeURIComponent(reportId)}/print`} className="btn-secondary">Print case record</Link>}
-        <a href="/contact" className="btn-secondary">Official contacts</a>
+        {!isStaff&&<a href="/contact" className="btn-secondary">Official contacts</a>}
         <button
           onClick={() => loadReportData(true)}
           disabled={loading || isRefreshing}

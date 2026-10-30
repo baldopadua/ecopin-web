@@ -6,8 +6,17 @@ import styles from './LandingPage.module.css'
 
 const types = { waste: 'Waste', flooding: 'Flooding', pollution: 'Pollution', infrastructure: 'Infrastructure', illegal_logging: 'Illegal logging', others: 'Other concerns' }
 
-export default function PublicReportPopup({ report, onOpen }) {
+export default function PublicReportPopup({ report, onOpen, compact }) {
   const address = formatReportAddress(report)
+  const status = (report.status || 'Under review').replaceAll('_', ' ')
+
+  // Landing dots get a tiny summary; the full map keeps the detailed popup.
+  if (compact) return <div className={styles.reportPopupCompact}>
+    <span>{types[report.issue_type] || 'Environmental concern'} · {status}</span>
+    <strong>{report.title || 'Reported environmental concern'}</strong>
+    {address && <small title={address}>{address}</small>}
+    <Link className={styles.popupAction} href={`/explore?report=${encodeURIComponent(report.id)}`}>View on full map <ArrowUpRight size={13} /></Link>
+  </div>
 
   return <div className={styles.reportPopup}>
     <span>{types[report.issue_type] || 'Environmental concern'}</span>

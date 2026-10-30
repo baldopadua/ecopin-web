@@ -129,14 +129,15 @@ export function NavigationLoadingProvider({ children }) {
 
       const href = anchor.getAttribute('href')
       const target = anchor.getAttribute('target')
-      if (!href || href.startsWith('#') || (target && target !== '_self') || anchor.hasAttribute('download')) return
+      if (!href || href.startsWith('#') || (target && target !== '_self') || anchor.hasAttribute('download') || anchor.hasAttribute('data-no-nav-loading')) return
 
       try {
         const url = new URL(href, window.location.href)
         if (url.origin === window.location.origin && !/\.[a-z0-9]+$/i.test(url.pathname)) {
           const currentUrl = new URL(window.location.href)
           // Strictly navigate between different pathnames to prevent reload flashes on table pagination
-          if (url.pathname !== currentUrl.pathname) {
+          // API/export links never change the route, so they must not raise the overlay.
+          if (url.pathname !== currentUrl.pathname && !url.pathname.startsWith('/api/')) {
             startLoading(url.pathname)
           }
         }

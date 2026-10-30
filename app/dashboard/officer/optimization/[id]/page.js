@@ -281,13 +281,13 @@ export default function OptimizationRunPage() {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-              <button
+              {!run.has_finished_work && <button
                 type="button"
                 onClick={() => setIsDisassembleModalOpen(true)}
                 className="px-4 py-2.5 bg-transparent border border-error text-error font-semibold normal-case tracking-normal text-xs hover:bg-error/10 transition-colors flex items-center gap-1.5 cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5" /> Disassemble plan
-              </button>
+              </button>}
               <button
                 onClick={() => router.push('/dashboard/officer/operations')}
                 className="px-5 py-2.5 bg-primary text-white font-semibold normal-case tracking-normal text-xs border border-primary hover:bg-action-hover transition-all shadow-sm cursor-pointer"

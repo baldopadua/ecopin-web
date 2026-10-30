@@ -18,7 +18,7 @@ This is a target contract, not a claim that every route already meets it or that
 6. [Hero composition and full viewport map](#6-hero-composition-and-full-viewport-map)
 7. [Navigation and account identity](#7-navigation-and-account-identity)
 8. [Live map controls, data, and states](#8-live-map-controls-data-and-states)
-9. [Photo pins, clustering, and compact popups](#9-photo-pins-clustering-and-compact-popups)
+9. [Dot pins, clustering, and compact popups](#9-dot-pins-clustering-and-compact-popups)
 10. [SWMO photo story](#10-swmo-photo-story)
 11. [App showcase, guide, and supporting sections](#11-app-showcase-guide-and-supporting-sections)
 12. [Scrolling, animation, and interaction](#12-scrolling-animation-and-interaction)
@@ -157,7 +157,7 @@ Use the existing Outfit family through `next/font/google` and `--font-outfit`, w
 | Text actions | 15px, weight 500; underline on hover with 4px offset |
 | Toolbar labels / values | 11px / 14px; select values 13px on mobile |
 | Captions, notes, footer | Generally 12–13px; never substitute these sizes for main explanatory text |
-| Popup title | 17px, line height 1.25 |
+| Popup title | 14px on landing dots, 17px on the full map; line height 1.25 |
 
 Keep one H1. Use H2 for sections and H3 for feature/step titles. Preserve semantic heading order rather than choosing headings for their size. The hero's desktop line break is deliberate; auxiliary desktop breaks are removed at very narrow widths.
 
@@ -300,7 +300,7 @@ Source: [LandingMap.js](components/landing/LandingMap.js) and [public-report-pag
 
 Use Leaflet/React Leaflet for the real map. The component loads dynamically on the client with `ssr: false` and a map loading placeholder.
 
-- Allow dragging, keyboard map navigation, photo-pin selection, and dedicated zoom buttons.
+- Allow dragging, keyboard map navigation, dot selection, and dedicated zoom buttons.
 - Disable scroll-wheel map zoom so wheel scrolling continues through the page.
 - Provide a reset control named “Return map to Pasig City.”
 - Provide labeled PublicSelect controls for Neighborhood and Concern type.
@@ -325,15 +325,17 @@ Concern choices are All concerns, Waste, Flooding, Pollution, Infrastructure, Il
 
 ### Public data contract
 
-Fetch from the existing `public_reports` projection through `fetchPublicReportPage`, bounded to the viewport. The landing requests a limit of 100; the helper fetches one additional row to determine `hasMore`.
+Fetch from the existing `public_reports` projection through `fetchPublicReportPage`, bounded to a fixed box covering all of Pasig (`PASIG_BOUNDS`), with the helper's maximum limit of 500; the helper fetches one additional row to determine `hasMore`. All reviewed pins load at once, so panning and zooming never wait on the network.
 
-Refresh after map movement, issue filtering, or retry. Debounce requests by 250ms and abort stale work. Preserve deterministic ordering by descending `created_at`, then descending `id`.
+Refetch only after issue filtering or retry, aborting stale work. Map movement recounts the loaded reports inside the current view locally. Preserve deterministic ordering by descending `created_at`, then descending `id`.
+
+Measured on 490 reviewed reports (dev build): rendering every dot peaks at a 25ms main-thread stall, zoom re-layout at 45ms, and drag panning at 20ms; none reach the 50ms long-task threshold. If the reviewed set outgrows the 500 limit or stalls exceed 50ms, return to viewport-bounded fetching.
 
 Only display rows with finite coordinates and a normalized validation status of approved, validated, or verified, or a normalized stage of verified. Retain public location precision instead of using private coordinates to make a pin appear more exact.
 
 The status count describes retained reviewed reports in this view. A “+” indicates additional rows in the bounded public query, not a verified city-wide total or an exact count of all remaining reviewed reports.
 
-Fetch report evidence in batches only for uncached reports whose public location precision is exact. Cache results by report ID, including empty results. Do not issue a separate evidence request for every marker on each render.
+The landing map shows no report imagery, so it requests no evidence.
 
 ### State design
 
@@ -344,44 +346,24 @@ Fetch report evidence in batches only for uncached reports whose public location
 | Available reports | Correct singular/plural reviewed count, qualified “in this view” |
 | Empty | “No reviewed reports in this view. Try another area.” |
 | Unavailable | “Reports couldn’t load.” and a named “Try again” action |
-| Evidence absent | Category imagery, with “Photo: category illustration” in the popup |
 
 Use `role="status"` for report feedback. Do not fill empty/error states with invented incidents. Category imagery is a visual fallback, not report evidence.
 
-## 9. Photo pins, clustering, and compact popups
+## 9. Dot pins, clustering, and compact popups
 
-Source: [PhotoReportMarker.js](components/landing/PhotoReportMarker.js), [pinIcon.js](components/landing/pinIcon.js), and [public-pin-layout.mjs](components/landing/public-pin-layout.mjs). The visual and grouping rules mirror the preserved [PublicMap](app/explore/PublicMap.js).
+Source: [LandingMap.js](components/landing/LandingMap.js), [PublicReportPopup.js](components/landing/PublicReportPopup.js), and [public-pin-layout.mjs](components/landing/public-pin-layout.mjs). Grouping mirrors the preserved [PublicMap](app/explore/PublicMap.js); the full map keeps its photo pins.
 
-### Photo marker construction
+### Dot construction
 
-Markers use cached Leaflet `divIcon` HTML with a circular crop, pointed base, border, shadow, and optional status pip. Public report imagery takes priority over the same category photographs used by the full map.
+The landing hero draws reports as small Leaflet `CircleMarker` dots on one shared canvas (`preferCanvas`), so hundreds of reports cost a single DOM element. There are no photos, icons, or status pips on the dots; status is written in the popup.
 
-| State | Circle | Pointer height / width | Border |
+| State | Radius | Fill | Stroke |
 | --- | --- | --- | --- |
-| Normal | 42px | 7px / 10px | 3px white |
-| Overview cluster | 46px | 7px / 10px | 3px civic blue |
-| Selected | 50px | 8px / 12px | 3.5px civic blue, with selection glow |
+| Normal | 4.5px | Civic blue | 1.5px page background (white / `#121212`) |
+| Overview cluster | 6px | Page background | 2.5px civic blue (a ring) |
+| Selected | 7px | Civic blue | 3px civic blue |
 
-Anchor at `[size / 2, size + pointerHeight]`. Popup anchor is `[0, -(size + pointerHeight) - 4]`. Images use `object-fit: cover`, circular clipping, lazy loading, and empty image alt text; the marker supplies the report title.
-
-Cluster pins use the blue ring rather than a numeric badge. Selected pins grow slightly and receive a stronger blue glow. Normal pins retain enough white edge and shadow to stand out over the map.
-
-| Status | Pip color |
-| --- | --- |
-| Urgent | `#ef4444` |
-| Resolved | `#10b981` |
-| In progress | `#3b82f6` |
-| Unresolved / submitted / pending | `#f59e0b` |
-
-Pips are 9px, or 11px when selected, with a 2px white border. Other statuses have no pip. Always include written status in the popup; color alone is insufficient.
-
-### Safe, stable icons
-
-The cache key includes image URL, selection, theme, status, and cluster state. Cache HTML-backed icon definitions rather than sharing a single live DOM node or mounting React portals inside Leaflet icons.
-
-An image must resolve to HTTP(S), pass the existing private-media check, and not contain a quotation mark or `<` before entering raw marker HTML. Private storage references fail closed to category imagery. Report titles and descriptions remain React-rendered text.
-
-Keep stable report keys. A later evidence photo must update the icon without remounting the marker collection, losing selection, or leaving duplicate/blank markers.
+Civic blue is `#0052CC` in light theme and `#82b6ff` in dark theme. Keep stable report keys so selection survives refetches.
 
 ### Grouping and separation algorithm
 
@@ -392,7 +374,7 @@ This preview uses explicit report groups and coincident coordinates, not a gener
 3. At zoom 14 or below, render one cluster for groups containing two or more reports. Use the mean coordinate and the first stable member as the representative.
 4. Above zoom 14, display each member separately. For a group, the radius is `0.00035 * 2 ** (16 - zoom)`.
 5. Place each report at an angle `2 * Math.PI * index / memberCount`, offsetting latitude with sine and longitude with cosine.
-6. Connect displaced markers to their original coordinates using blue dashed lines: weight 1.5, opacity 0.6, dash pattern `3 3`.
+6. Connect displaced dots to their original coordinates using non-interactive blue dashed lines: weight 1, opacity 0.5, dash pattern `2 3`.
 
 The separation radius is a geographic display offset, not a pixel distance. Never mutate report coordinates or persist the displaced positions as incident locations. Unrelated single reports stay at their original positions. Invalid coordinates are excluded.
 
@@ -400,11 +382,11 @@ The separation radius is a geographic display offset, not a pixel distance. Neve
 
 Clicking an overview cluster zooms to 15 so its members separate. Clicking a single pin pans with a 450ms animation. Project/unproject calculations offset the center by `max(0, mapHeight / 2 - 80)` to keep the compact popup below the hero copy.
 
-Selected markers receive `zIndexOffset: 1000`. The selected marker opens its popup after a short 50ms delay only if it is not already open; the timer is cleaned up. Popup `autoPan` is disabled to prevent a competing pan from fighting the deliberate centering.
+A single shared popup opens at the selected dot (offset 6px above it); closing it clears the selection. Clicking a cluster selects nothing and only zooms. Popup `autoPan` is disabled to prevent a competing pan from fighting the deliberate centering.
 
-Keep the popup minimal: 220px content width, concern label, title, short description, written status, fallback-image disclosure where needed, and a full-map link. Description overflow is limited to 100px and scrolls within the popup. The link has a minimum 44px target.
+Keep the popup tiny: 180px content width, 10px × 14px content margin, one line with concern label and written status, the title at 14px, a single-line truncated address, and a “View on full map” link with a 44px target. No description, photo, or deadline; those live on the full map.
 
-Do not turn the popup into a large photo card, duplicate the full detail panel, or add technical metadata unrelated to a citizen's next step. Popups follow the page theme: background and text use the landing tokens, and dark-theme links use `#82b6ff` rather than the darker filled-button blue.
+Popups follow the page theme: background and text use the landing tokens, and dark-theme links use `#82b6ff` rather than the darker filled-button blue.
 
 ### Dashboard and specialized detail view map pins (WT-84)
 
@@ -644,9 +626,8 @@ Use reviewed-report wording accurately. An empty view is not evidence that a nei
 | [usePublicTheme.js](components/landing/usePublicTheme.js) | Existing public theme observation and toggle |
 | [usePublicAccount.js](components/landing/usePublicAccount.js) | Reactive session/account identity |
 | [useLandingMotion.js](components/landing/useLandingMotion.js) | Lenis lifecycle and one-time reveals |
-| [LandingMap.js](components/landing/LandingMap.js) | Public preview, filters, data states, evidence, selection |
-| [PhotoReportMarker.js](components/landing/PhotoReportMarker.js) | Marker instance, icon update, compact popup lifecycle |
-| [pinIcon.js](components/landing/pinIcon.js) | Safe photo HTML, cached icons, size, anchors, status and selection |
+| [LandingMap.js](components/landing/LandingMap.js) | Public preview, filters, data states, one-shot Pasig fetch, canvas dots, shared compact popup |
+| [pinIcon.js](components/landing/pinIcon.js) | Explore photo pins: safe HTML, cached icons, anchors, status and selection |
 | [public-pin-layout.mjs](components/landing/public-pin-layout.mjs) | Pure grouping and geographic separation |
 | [public-report-page.mjs](lib/api/public-report-page.mjs) | Shared bounded public query |
 | [PublicMap.js](app/explore/PublicMap.js) | Preserved full map/gallery experience |
@@ -759,7 +740,7 @@ Saved reports, bookmark controls, export reports, and web submission actions are
 
 ### Map and popups
 
-Explore uses the landing's cached photo-pin renderer and batch-evidence endpoint. Maintain secure public media handling, stable report IDs, grouping, and existing viewport filters. Dark mode changes the actual tile layer: its theme key remounts the Leaflet layer so the appropriate CSS class takes effect. Dark tiles are grayscale/inverted with brightness .8 and contrast .9; light tiles have grayscale .3 and contrast .9. Preserve attribution and readable map controls.
+Explore uses the cached photo-pin renderer (`pinIcon.js`) and batch-evidence endpoint. Maintain secure public media handling, stable report IDs, grouping, and existing viewport filters. Dark mode changes the actual tile layer: its theme key remounts the Leaflet layer so the appropriate CSS class takes effect. Dark tiles are grayscale/inverted with brightness .8 and contrast .9; light tiles have grayscale .3 and contrast .9. Preserve attribution and readable map controls.
 
 Landing and Explore render the same PublicReportPopup: category, 17px Outfit title, description, written status, illustration disclosure where applicable, and a single View report action. Keep the compact 220px content width, theme surface, 8px content gaps, and 44px action. No bookmarks or conflicting popup font/shape overrides. Explore opens the report detail panel; landing links to its canonical public report URL.
 

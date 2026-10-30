@@ -565,9 +565,9 @@ function UserManagementContent() {
               <button
                 type="button"
                 onClick={() => setNewUser({ email: '', password: '', full_name: '', role: 'citizen' })}
-                className="btn-secondary text-xs py-1.5 px-3 min-h-0 flex items-center gap-1.5"
+                className="btn-secondary flex items-center gap-2"
               >
-                <RotateCcw size={13} />
+                <RotateCcw size={16} />
                 Clear Form
               </button>
             </div>
@@ -575,7 +575,7 @@ function UserManagementContent() {
             {/* Basic Info (Full Name + Email) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label htmlFor="create-user-name" className="block text-xs font-semibold text-text-primary mb-1.5">
+                <label htmlFor="create-user-name" className="block text-sm font-semibold text-text-primary mb-1.5">
                   Full Name <span className="text-error">*</span>
                 </label>
                 <input
@@ -584,14 +584,14 @@ function UserManagementContent() {
                   required
                   value={newUser.full_name}
                   onChange={(e) => setNewUser(prev => ({ ...prev, full_name: e.target.value }))}
-                  className="input w-full text-sm"
+                  className="input w-full"
                   placeholder="e.g. Maria Santos"
                 />
-                <p className="text-[11px] text-text-muted mt-1">Official display name for records and dispatch rosters.</p>
+                <p className="text-xs text-text-muted mt-1">Official display name for records and dispatch rosters.</p>
               </div>
 
               <div>
-                <label htmlFor="create-user-email" className="block text-xs font-semibold text-text-primary mb-1.5">
+                <label htmlFor="create-user-email" className="block text-sm font-semibold text-text-primary mb-1.5">
                   Email Address <span className="text-error">*</span>
                 </label>
                 <input
@@ -600,16 +600,16 @@ function UserManagementContent() {
                   required
                   value={newUser.email}
                   onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
-                  className="input w-full text-sm"
+                  className="input w-full"
                   placeholder="e.g. maria.santos@pasigcity.gov.ph"
                 />
-                <p className="text-[11px] text-text-muted mt-1">Direct login identifier for authentication and notifications.</p>
+                <p className="text-xs text-text-muted mt-1">Direct login identifier for authentication and notifications.</p>
               </div>
             </div>
 
             {/* Role Selection with Cards */}
             <div>
-              <label className="block text-xs font-semibold text-text-primary mb-2">
+              <label className="block text-sm font-semibold text-text-primary mb-2">
                 Account Role & Access Level <span className="text-error">*</span>
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -652,14 +652,14 @@ function UserManagementContent() {
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1.5">
-                        <span className="font-semibold text-text-primary text-xs">{roleOption.label}</span>
+                        <span className="font-semibold text-text-primary text-sm">{roleOption.label}</span>
                         {isSelected ? (
                           <CheckCircle2 size={16} className="text-primary" />
                         ) : (
                           <span className={`w-2 h-2 rounded-full ${roleOption.badge}`} />
                         )}
                       </div>
-                      <p className="text-[11px] text-text-secondary leading-snug">{roleOption.desc}</p>
+                      <p className="text-xs text-text-secondary leading-snug">{roleOption.desc}</p>
                     </button>
                   )
                 })}
@@ -670,11 +670,11 @@ function UserManagementContent() {
             <div className="rounded-xl border border-border bg-surface-elevated/30 p-4 space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-xs font-semibold text-text-primary flex items-center gap-1.5">
+                  <h3 className="text-sm font-semibold text-text-primary flex items-center gap-1.5">
                     <KeyRound size={15} className="text-primary" />
                     Temporary Password Provisioning
                   </h3>
-                  <p className="text-[11px] text-text-secondary mt-0.5">
+                  <p className="text-xs text-text-secondary mt-0.5">
                     Leave blank to assign system default: <code className="bg-surface px-1.5 py-0.5 rounded border border-border font-mono text-text-primary">12345678Aa@</code>
                   </p>
                 </div>
@@ -685,7 +685,7 @@ function UserManagementContent() {
                     type={showCreatePassword ? 'text' : 'password'}
                     value={newUser.password}
                     onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
-                    className="input pr-9 w-full text-xs"
+                    className="input pr-10 w-full"
                     placeholder="Optional custom temporary password"
                   />
                   <button
@@ -695,9 +695,9 @@ function UserManagementContent() {
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors flex items-center justify-center p-1"
                   >
                     {showCreatePassword ? (
-                      <EyeOff size={16} aria-hidden="true" />
+                      <EyeOff size={20} aria-hidden="true" />
                     ) : (
-                      <Eye size={16} aria-hidden="true" />
+                      <Eye size={20} aria-hidden="true" />
                     )}
                   </button>
                 </div>
@@ -705,7 +705,7 @@ function UserManagementContent() {
 
               {newUser.password ? (
                 <div className="bg-surface p-2.5 rounded-lg border border-border">
-                  <ul className="text-[11px] grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                  <ul className="text-xs grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                     {validatePassword(newUser.password).requirements.map((req, i) => (
                       <li key={i} className={`flex items-center gap-1.5 ${req.met ? 'text-success font-medium' : 'text-text-muted'}`}>
                         <span>{req.met ? '✓' : '•'}</span>
@@ -716,7 +716,7 @@ function UserManagementContent() {
                 </div>
               ) : null}
 
-              <div className="flex items-center gap-2 text-[11px] text-amber-600 dark:text-amber-400 bg-amber-500/10 px-3 py-2 rounded-lg">
+              <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-500/10 px-3 py-2 rounded-lg">
                 <Shield size={14} className="shrink-0" />
                 <span>Temporary passwords require an immediate mandatory reset by the user upon their first authentication.</span>
               </div>
@@ -724,11 +724,11 @@ function UserManagementContent() {
 
             {/* Action Bar */}
             <div className="pt-3 flex items-center justify-between border-t border-border">
-              <span className="text-[11px] text-text-muted">Account provisioning events are permanently logged in audit trails.</span>
+              <span className="text-xs text-text-muted">Account provisioning events are permanently logged in audit trails.</span>
               <button
                 type="submit"
                 disabled={creatingUser}
-                className="btn-primary py-2 px-6 font-medium flex items-center gap-2 text-xs min-h-[40px] shadow-sm"
+                className="btn-primary flex items-center gap-2"
               >
                 <UserPlus size={16} />
                 Continue to Review

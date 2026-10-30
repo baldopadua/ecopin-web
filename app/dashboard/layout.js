@@ -9,6 +9,7 @@ import { TaskProvider } from '@/components/context/TaskContext'
 import DashboardQueryProvider from '@/components/context/DashboardQueryProvider'
 import UrgencyAlert from '@/components/reports/UrgencyAlert'
 import styles from '@/components/layout/DashboardShell.module.css'
+import { useNavigationLoading } from '@/components/context/NavigationLoadingContext'
 import { reportDiagnostic } from '../../lib/diagnostics.mjs';
 
 export default function DashboardLayout({ children }) {
@@ -25,6 +26,7 @@ function DashboardContent({ children }) {
   const { showSessionExpiredModal } = useSession()
   const router = useRouter()
   const pathname = usePathname()
+  const { stopLoading } = useNavigationLoading()
   const user = session?.state === 'full' ? session.user : null
   const role = user?.role || 'citizen'
   const redirectTo = !authReady || showSessionExpiredModal ? null
@@ -55,8 +57,12 @@ function DashboardContent({ children }) {
   useEffect(() => {
     if (!authReady) return
     if (session && (!user || role === 'citizen' || role === 'field_crew')) clearSessionMetadata()
-    if (redirectTo) router.push(redirectTo)
-  }, [authReady, redirectTo, role, router, session, user])
+    // replace keeps the gated URL out of history so Back does not bounce forward again.
+    if (redirectTo) router.replace(redirectTo)
+    // The sidebar overlay only clears on a pathname change; a redirect back to the page the
+    // user was already on never produces one, so release it once routing has settled.
+    else stopLoading()
+  }, [authReady, redirectTo, role, router, session, user, stopLoading])
 
   if (!authReady || !user || redirectTo) return (
     <div className={styles.shell} aria-busy="true" aria-label="Loading workspace">

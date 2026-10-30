@@ -118,6 +118,12 @@
 .reportPopup .popupLocation { display: flex; align-items: flex-start; gap: 5px; font-size: 11.5px; font-weight: 500; color: var(--landing-muted, #64748b); line-height: 1.35; word-break: break-word; }
 .reportPopup .popupLocation svg { flex-shrink: 0; margin-top: 2px; color: var(--landing-blue); }
 .reportPopup .popupAction { display: flex; align-items: center; gap: 8px; min-height: 44px; color: var(--landing-blue); font-family: inherit; font-size: 14px; padding: 0; background: transparent; text-align: left; }
+.mapPreview :global(.leaflet-popup-content):has(.reportPopupCompact) { margin: 10px 14px; }
+.reportPopupCompact { display: flex; flex-direction: column; gap: 4px; width: 180px; color: var(--landing-text); font-family: var(--font-outfit), sans-serif; }
+.reportPopupCompact > span { color: var(--landing-blue); font-size: 11px; text-transform: capitalize; }
+.reportPopupCompact strong { font-size: 14px; line-height: 1.25; }
+.reportPopupCompact small { color: var(--landing-muted); font-size: 11px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reportPopupCompact .popupAction { display: flex; align-items: center; gap: 6px; min-height: 44px; margin-bottom: -10px; color: var(--landing-blue); font-size: 12.5px; }
 .promiseStrip { display: flex; align-items: center; justify-content: space-between; gap: 24px; max-width: 1184px; margin: auto; padding: 32px 0; border-bottom: 1px solid var(--landing-border); }
 .promiseStrip > div { display: flex; align-items: center; gap: 16px; }
 .promiseStrip svg { color: var(--landing-green); width: 24px; }
