@@ -1,23 +1,23 @@
 'use client'
 import { useQuery } from '@tanstack/react-query'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import { AdminGuard } from '@/components/auth/RequireRole'
-import { getSystemLogs } from '@/lib/api'
+import { getAuditLogs } from '@/lib/api/admin'
 import { useDashboardSystemStats } from '@/components/context/DashboardQueryProvider'
 import { DASHBOARD_QUERY_KEY } from '@/lib/dashboard-query-client.mjs'
 import StatsCard from '@/components/ui/StatsCard'
 import ReportLifecycleSummary from '@/components/reports/ReportLifecycleSummary'
 import DataTable from '@/components/ui/DataTable'
-import StatusBadge from '@/components/ui/StatusBadge'
 import { Users, Settings, FileText } from 'lucide-react'
 
 function AdminHomepageContent() {
   const router = useRouter()
   const statsQuery = useDashboardSystemStats()
-  const logsQuery = useQuery({queryKey:[...DASHBOARD_QUERY_KEY,'recent-system-logs'],queryFn:()=>getSystemLogs({limit:4})})
+  const logsQuery = useQuery({queryKey:[...DASHBOARD_QUERY_KEY,'recent-audit-feed'],queryFn:()=>getAuditLogs({limit:5})})
   const stats = statsQuery.data
-  const recentLogs = logsQuery.data?.logs || []
+  const recentLogs = logsQuery.data?.logs || logsQuery.data?.data || []
   const loading = statsQuery.isPending
   const error = statsQuery.isError && !stats ? 'Failed to load system statistics' : null
   const loadStats = () => statsQuery.refetch()
@@ -31,40 +31,25 @@ function AdminHomepageContent() {
     {
       key: 'created_at',
       label: 'Date',
-      width: '15%',
+      width: '25%',
       render: (value) => (
         <span className="text-sm text-text-muted">{formatDate(value)}</span>
       )
     },
     {
-      key: 'profiles',
-      label: 'User',
-      width: '20%',
-      render: (value) => (
-        <div>
-          <p className="font-medium text-text-primary text-sm">
-            {value?.full_name || 'Unknown'}
-          </p>
-          <p className="text-xs text-text-muted">
-            {value?.email || 'N/A'}
-          </p>
-        </div>
+      key: 'user_name',
+      label: 'Actor',
+      width: '25%',
+      render: (value, row) => (
+        <span className="font-medium text-text-primary text-sm">{value || row.user_id || 'System'}</span>
       )
     },
     {
-      key: 'action_type',
-      label: 'Action',
-      width: '15%',
-      render: (value) => (
-        <StatusBadge status={value} type="auditAction" />
-      )
-    },
-    {
-      key: 'action_details',
-      label: 'Details',
+      key: 'event_type',
+      label: 'Event',
       width: '50%',
-      render: (value) => (
-        <span className="text-sm text-text-secondary">{value}</span>
+      render: (value, row) => (
+        <span className="text-sm text-text-secondary">{[value, row.entity_type].filter(Boolean).join(' · ').replace(/_/g, ' ') || 'Audit event'}</span>
       )
     }
   ]
@@ -76,7 +61,6 @@ function AdminHomepageContent() {
           title="Admin Dashboard"
           subtitle="Loading..."
           breadcrumbs={[
-            { label: 'Dashboard', href: '/dashboard' },
             { label: 'Admin' }
           ]}
         />
@@ -110,7 +94,6 @@ function AdminHomepageContent() {
           title="Admin Dashboard"
           subtitle="Error"
           breadcrumbs={[
-            { label: 'Dashboard', href: '/dashboard' },
             { label: 'Admin' }
           ]}
         />
@@ -128,7 +111,6 @@ function AdminHomepageContent() {
         title="Admin Dashboard"
         subtitle="Manage users, settings, and view system logs"
         breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
           { label: 'Admin' }
         ]}
       />
@@ -205,22 +187,25 @@ function AdminHomepageContent() {
         </button>
 
         <button
-          onClick={() => router.push('/dashboard/admin/sys-logs')}
+          onClick={() => router.push('/dashboard/admin/audit-logs')}
           className="card hover:border-accent-green transition-colors cursor-pointer text-left"
         >
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-full bg-accent-green/10 flex items-center justify-center">
               <FileText size={20} className="text-accent-green" aria-hidden="true" />
             </div>
-            <h3 className="text-lg font-semibold text-text-primary">System Logs</h3>
+            <h3 className="text-lg font-semibold text-text-primary">Audit Logs</h3>
           </div>
-          <p className="text-sm text-text-secondary">View system activity and actions</p>
+          <p className="text-sm text-text-secondary">Review audit trail and system events</p>
         </button>
       </div>
 
       {/* Recent System Logs */}
       <div className="workspace-fill">
-        <h2 className="text-xl font-bold text-text-primary uppercase tracking-tight">Recent System Logs</h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-xl font-bold text-text-primary uppercase tracking-tight">Recent audit activity</h2>
+          <Link href="/dashboard/admin/audit-logs" className="text-sm text-workspace-link">View all</Link>
+        </div>
         <div className="workspace-scroll">
           <DataTable columns={tableColumns} data={recentLogs} emptyMessage="No recent activity" />
         </div>

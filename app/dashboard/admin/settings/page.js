@@ -1,5 +1,8 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { Suspense, useEffect, useState, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
+import SweeperSettingsPanel from './SweeperSettingsPanel'
+import FleetSettingsPanel from './FleetSettingsPanel'
 import PageHeader from '@/components/layout/PageHeader'
 import { DEFAULT_PUBLIC_CMS as DEFAULT_CMS } from '@/lib/public-cms.mjs'
 import OfficialContactFields from '@/components/settings/OfficialContactFields'
@@ -19,7 +22,9 @@ import {
   AlertTriangle, 
   Info, 
   Upload,
-  Loader2
+  Loader2,
+  Truck,
+  SlidersHorizontal
 } from 'lucide-react'
 
 
@@ -28,11 +33,15 @@ const SETTINGS_TABS = [
   { id: 'contact', label: 'Contact & office', icon: PhoneCall },
   { id: 'media', label: 'Media & gallery', icon: ImageIcon },
   { id: 'announcements', label: 'Advisories & app', icon: Megaphone },
-  { id: 'security', label: 'Security & quotas', icon: ShieldCheck }
+  { id: 'security', label: 'Security & quotas', icon: ShieldCheck },
+  { id: 'sweeper', label: 'Sweeper SLA', icon: Truck },
+  { id: 'fleet', label: 'Depot & fleet', icon: SlidersHorizontal }
 ]
+const OWN_SAVE_TABS = ['sweeper', 'fleet']
 
 function SystemSettingsContent() {
-  const [activeTab, setActiveTab] = useState('contact')
+  const requestedTab = useSearchParams().get('tab')
+  const [activeTab, setActiveTab] = useState(SETTINGS_TABS.some(tab => tab.id === requestedTab) ? requestedTab : 'contact')
   const [settings, setSettings] = useState({
     password_min_length: 8,
     password_require_uppercase: true,
@@ -163,7 +172,6 @@ function SystemSettingsContent() {
             title="System & CMS Settings"
             subtitle="Loading configuration..."
             breadcrumbs={[
-              { label: 'Dashboard', href: '/dashboard' },
               { label: 'Admin', href: '/dashboard/admin' },
               { label: 'Settings' }
             ]}
@@ -196,14 +204,13 @@ function SystemSettingsContent() {
       <div className="shrink-0 flex-shrink-0">
         <PageHeader
           title="System & CMS Settings"
-          subtitle="Manage content and policies. Save changes applies updates from every tab."
+          subtitle="Manage content, policies, sweeper deadlines and depot or fleet setup. Sweeper and fleet tabs save on their own."
           breadcrumbs={[
-            { label: 'Dashboard', href: '/dashboard' },
             { label: 'Admin', href: '/dashboard/admin' },
             { label: 'Settings' }
           ]}
         >
-          <button
+          {!OWN_SAVE_TABS.includes(activeTab) && <button
             type="button"
             onClick={handleSave}
             disabled={saving || Boolean(uploadingField) || loadError}
@@ -211,7 +218,7 @@ function SystemSettingsContent() {
           >
             {saving ? <Loader2 size={18} className="animate-spin" aria-hidden="true" /> : <Save size={18} aria-hidden="true" />}
             <span>{saving ? 'Saving changes...' : 'Save changes'}</span>
-          </button>
+          </button>}
         </PageHeader>
       </div>
 
@@ -232,6 +239,16 @@ function SystemSettingsContent() {
         className="workspace-fill flex-1 min-h-0 overflow-hidden flex flex-col"
         style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}
       >
+        {activeTab === 'sweeper' && (
+          <div role="tabpanel" id="sweeper-panel" aria-labelledby="sweeper-tab" className="flex-1 min-h-0 overflow-y-auto">
+            <SweeperSettingsPanel />
+          </div>
+        )}
+        {activeTab === 'fleet' && (
+          <div role="tabpanel" id="fleet-panel" aria-labelledby="fleet-tab" className="flex-1 min-h-0 overflow-y-auto">
+            <FleetSettingsPanel />
+          </div>
+        )}
         {/* Tab 1: Contact & Office Info */}
         {activeTab === 'contact' && (
           <section
@@ -1013,7 +1030,9 @@ function SystemSettingsContent() {
 export default function SystemSettings() {
   return (
     <AdminGuard>
-      <SystemSettingsContent />
+      <Suspense fallback={null}>
+        <SystemSettingsContent />
+      </Suspense>
     </AdminGuard>
   )
 }

@@ -15,9 +15,7 @@ import {
     Map,
     Target,
     ClipboardCheck,
-    Wrench,
     Database,
-    Terminal,
     Scan,
     Users,
     Settings,
@@ -26,8 +24,6 @@ import {
     Route,
     FileText,
     BarChart3,
-    SlidersHorizontal,
-    Truck,
     ShieldCheck,
     LifeBuoy,
     Loader2,
@@ -53,23 +49,12 @@ const officerNavigation = [
     { name: 'Spatial Scan', href: '/dashboard/spatial-scan', icon: Scan },
 ]
 
-const fieldCrewNavigation = [
-    { name: 'My Route', href: '/dashboard/field-crew/my-route', icon: Route },
-    { name: 'Command Center', href: '/dashboard/field-crew', icon: LayoutDashboard },
-    { name: 'Map Grid', href: '/dashboard/map-grid', icon: Map },
-    { name: 'Operations', href: '/dashboard/field-crew/tasks', icon: Wrench },
-    { name: 'Raw Data', href: '/dashboard/field-crew/raw-data', icon: Database },
-]
-
 const adminNavigation = [
     { name: 'Dashboard', href: '/dashboard/admin', icon: LayoutDashboard },
     { name: 'Users', href: '/dashboard/admin/users', icon: Users },
     { name: 'Support tickets', href: '/dashboard/support-tickets', icon: LifeBuoy },
-    { name: 'System', href: '/dashboard/admin/settings', icon: Settings },
-    { name: 'Optimization', href: '/dashboard/admin/optimization-settings', icon: SlidersHorizontal },
-    { name: 'Sweeper Settings', href: '/dashboard/admin/sweeper-settings', icon: Truck },
+    { name: 'Settings', href: '/dashboard/admin/settings', icon: Settings },
     { name: 'Audit Logs', href: '/dashboard/admin/audit-logs', icon: ShieldCheck },
-    { name: 'System Logs', href: '/dashboard/admin/sys-logs', icon: Terminal },
 ]
 
 export default function Sidebar() {
@@ -83,7 +68,7 @@ export default function Sidebar() {
     const { startLoading } = useNavigationLoading()
     const navigation = user?.role === 'admin' ? adminNavigation
         : user?.role === 'officer' ? officerNavigation
-        : user?.role === 'field_crew' ? fieldCrewNavigation : citizenNavigation
+        : citizenNavigation
 
     const closeDrawer = () => drawer.current?.close()
     const openDrawer = () => { drawer.current?.showModal(); setDrawerOpen(true) }
@@ -115,7 +100,7 @@ export default function Sidebar() {
         </div>
         <nav aria-label="Workspace" className={styles.navigation}>
             {navigation.map(item => {
-                const root = ['/dashboard/field-crew', '/dashboard/admin', '/dashboard/officer', '/dashboard'].includes(item.href)
+                const root = ['/dashboard/admin', '/dashboard/officer', '/dashboard'].includes(item.href)
                 const active = root ? pathname === item.href : pathname.startsWith(`${item.href}/`) || pathname === item.href
                 const isOpt = item.name === 'Optimization' && isOptimizing
                 const Icon = isOpt ? Loader2 : item.icon

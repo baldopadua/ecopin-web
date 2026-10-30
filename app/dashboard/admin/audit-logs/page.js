@@ -1,5 +1,8 @@
 'use client'
-import { useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import PageTabs from '@/components/ui/PageTabs'
+import SystemEventsPanel from './SystemEventsPanel'
 import PageHeader from '@/components/layout/PageHeader'
 import { getAuditLogs, getAuditArchiveStatus, executeAuditArchive } from '@/lib/api/admin'
 import FilterBar from '@/components/ui/FilterBar'
@@ -36,7 +39,7 @@ function formatDetailValue(val) {
   return String(val)
 }
 
-function AuditLogsContent() {
+function AuditLogsContent({ tabs }) {
   const [allLogs, setAllLogs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -271,6 +274,7 @@ function AuditLogsContent() {
           filename="audit_logs.csv" 
         />
       </PageHeader>
+      {tabs}
 
       {error && (
         <div className={styles.errorBanner} role="alert">
@@ -482,10 +486,38 @@ function AuditLogsContent() {
     </div>
   )
 }
+const AUDIT_TABS = [{ id: 'audit', label: 'Audit trail' }, { id: 'system', label: 'System events' }]
+
+function AuditLogsTabs() {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const tab = searchParams.get('tab') === 'system' ? 'system' : 'audit'
+  const selectTab = id => router.replace(id === 'system' ? `${pathname}?tab=system` : pathname)
+  const tabs = <PageTabs label="Log views" tabs={AUDIT_TABS} value={tab} onChange={selectTab} />
+  if (tab === 'system') {
+    return <div className="workspace-page">
+      <PageHeader
+        title="Audit logs"
+        subtitle="Operational audit trail and system activity."
+        breadcrumbs={[
+          { label: 'Admin', href: '/dashboard/admin' },
+          { label: 'Audit logs' }
+        ]}
+      />
+      {tabs}
+      <SystemEventsPanel />
+    </div>
+  }
+  return <AuditLogsContent tabs={tabs} />
+}
+
 export default function AuditLogs() {
   return (
     <AdminGuard>
-      <AuditLogsContent />
+      <Suspense fallback={null}>
+        <AuditLogsTabs />
+      </Suspense>
     </AdminGuard>
   )
 }

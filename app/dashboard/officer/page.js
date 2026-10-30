@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { fetchWorkQueue, getOptimizationRuns } from '@/lib/api'
+import { getCrewsWithMembers } from '@/lib/api/optimization'
 import { useDashboardReports, useDashboardTasks, useDashboardClusters, useDashboardReportLifecycle } from '@/components/context/DashboardQueryProvider'
 import ReportLifecycleSummary from '@/components/reports/ReportLifecycleSummary'
 import CommandCenterPanel from '@/components/ui/CommandCenterPanel'
@@ -34,6 +35,8 @@ export default function OfficerHomepage() {
   const loading = queueLoading || taskQuery.isPending || reportQuery.isPending || clusterQuery.isPending
   const dataError = taskQuery.isError || reportQuery.isError || clusterQuery.isError
   const [workQueue, setWorkQueue] = useState([])
+  const [needsDispatch, setNeedsDispatch] = useState(true)
+  const [crews, setCrews] = useState([])
   const [latestRun, setLatestRun] = useState(null)
   
 
@@ -43,13 +46,16 @@ export default function OfficerHomepage() {
       try {
         const [
           queueData,
-          runsData
+          runsData,
+          crewData
         ] = await Promise.all([
           fetchWorkQueue().catch(() => []),
-          getOptimizationRuns().catch(() => [])
+          getOptimizationRuns().catch(() => []),
+          getCrewsWithMembers().catch(() => [])
         ])
 
         setWorkQueue(queueData || [])
+        setCrews(Array.isArray(crewData) ? crewData : [])
         
         const approvedRuns = (runsData || []).filter(r => r.status === 'approved')
         if (approvedRuns.length > 0) {
@@ -77,6 +83,11 @@ export default function OfficerHomepage() {
     return status === 'pending'
   })
   
+  // Squad utilization: assigned task load against total per-shift crew capacity
+  const crewLoad = crews.reduce((sum, c) => sum + (c.active_task_count ?? c.assigned_tasks_count ?? 0), 0)
+  const crewCapacity = crews.reduce((sum, c) => sum + (c.max_tasks_per_shift || 10), 0)
+  const utilization = crewCapacity ? Math.round((crewLoad / crewCapacity) * 100) : null
+
   // Calculate SLA risk: reports unresolved/actionable for more than 48 hours or flagged overdue
   const now = new Date()
   const terminalStatuses = ['resolved', 'closed', 'completed', 'rejected']
@@ -134,7 +145,7 @@ export default function OfficerHomepage() {
         </div>}
         <div className={styles.metrics} aria-label="Operational overview">
           {[
-            { title: 'Active Field Units', value: activeTasks.length, note: 'Cleanup tasks in progress', href: '/dashboard/officer/operations?status=in_progress', icon: Users },
+            { title: 'Squad Utilization', value: utilization == null ? 'N/A' : `${utilization}%`, note: utilization == null ? 'No squads available' : `${crewLoad} of ${crewCapacity} task slots in use`, href: '/dashboard/officer/crew-management', icon: Users },
             { title: 'Unresolved Reports', value: unresolvedReports.length, note: 'Reports awaiting action', href: '/dashboard/officer/reports?status=unresolved', icon: Search },
             { title: 'SLA Risk', value: slaRiskTasks.length, note: 'Reports older than 48 hours', href: '/dashboard/officer/reports?status=overdue', icon: AlertTriangle },
             { title: 'Manual Review', value: manualReviewTasks.length, note: 'Reports awaiting review', href: '/dashboard/officer/reports?filter=manual_review', icon: AlertTriangle },
@@ -160,21 +171,24 @@ export default function OfficerHomepage() {
               </Link>
             }}
           </CommandCenterPanel>
-          <CommandCenterPanel title="Action Queue" items={workQueue} loading={loading}
-            empty="Queue is empty" href="/dashboard/officer/optimization">
-            {item => <Link href={`/dashboard/officer/operations/create?preselect=${item.id}`} className={styles.item}>
-              <span className={styles.itemTitle}><strong>{item.title || `Cluster ${item.id.slice(0, 8)}`}</strong><span className={styles.priority}>Pending</span></span>
-              <span className={styles.meta}><span>Priority score</span><strong>{(item.priority_score || 0).toFixed(1)}/100</strong></span>
-              <span className={styles.meta}><span>{item.report_count || item.report_ids?.length || 0} reports · {Math.round(item.radius_meters || 50)}m</span><span className={styles.action}>Dispatch <ChevronRight size={14} aria-hidden="true" /></span></span>
-            </Link>}
-          </CommandCenterPanel>
-          <CommandCenterPanel title="Critical Hotzones" items={criticalClusters} loading={loading}
-            empty="No hotzones detected" href="/dashboard/officer/hotzone-intel">
-            {(cluster, index) => <Link href={`/dashboard/officer/hotzone-intel/${cluster.id}`} className={styles.item}>
-              <span className={styles.itemTitle}><strong>{cluster.label || `Cluster ${cluster.id.slice(0, 6)}`}</strong><span className={styles.count}>#{index + 1}</span></span>
-              <span className={styles.meta}><span className={styles.priority}>{getPriorityLabel(cluster)} priority</span><strong>Score {Math.round(cluster.priority_score || 0)}</strong></span>
-              <span className={styles.meta}><span>{cluster.report_count || cluster.report_ids?.length || 0} reports</span><span>Radius {Math.round(cluster.radius_meters || 50)}m</span></span>
-            </Link>}
+          <CommandCenterPanel title="Priority Hotzones" items={needsDispatch ? workQueue : criticalClusters} loading={loading}
+            empty={needsDispatch ? 'Queue is empty' : 'No hotzones detected'}
+            href={needsDispatch ? '/dashboard/officer/optimization' : '/dashboard/officer/hotzone-intel'}
+            toolbar={<div className={styles.chips} role="group" aria-label="Hotzone filter">
+              <button type="button" className={styles.chip} aria-pressed={needsDispatch} onClick={() => setNeedsDispatch(true)}>Needs Dispatch</button>
+              <button type="button" className={styles.chip} aria-pressed={!needsDispatch} onClick={() => setNeedsDispatch(false)}>All Hotzones</button>
+            </div>}>
+            {(cluster, index) => needsDispatch
+              ? <Link href={`/dashboard/officer/operations/create?preselect=${cluster.id}`} className={styles.item}>
+                <span className={styles.itemTitle}><strong>{cluster.title || `Cluster ${cluster.id.slice(0, 8)}`}</strong><span className={styles.priority}>Pending</span></span>
+                <span className={styles.meta}><span>Priority score</span><strong>{(cluster.priority_score || 0).toFixed(1)}/100</strong></span>
+                <span className={styles.meta}><span>{cluster.report_count || cluster.report_ids?.length || 0} reports · {Math.round(cluster.radius_meters || 50)}m</span><span className={styles.action}>Dispatch <ChevronRight size={14} aria-hidden="true" /></span></span>
+              </Link>
+              : <Link href={`/dashboard/officer/hotzone-intel/${cluster.id}`} className={styles.item}>
+                <span className={styles.itemTitle}><strong>{cluster.label || `Cluster ${cluster.id.slice(0, 6)}`}</strong><span className={styles.count}>#{index + 1}</span></span>
+                <span className={styles.meta}><span className={styles.priority}>{getPriorityLabel(cluster)} priority</span><strong>Score {Math.round(cluster.priority_score || 0)}</strong></span>
+                <span className={styles.meta}><span>{cluster.report_count || cluster.report_ids?.length || 0} reports</span><span>Radius {Math.round(cluster.radius_meters || 50)}m</span></span>
+              </Link>}
           </CommandCenterPanel>
         </div>
         <OfficerDispatchTour key={user?.id} />

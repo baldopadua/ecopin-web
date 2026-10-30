@@ -12,9 +12,7 @@ import {
   fetchReportEvidence,
   fetchAgencyResponses,
   logAgencyResponse,
-  updateReportStatus,
   updatePropertyOwnerConsent,
-  lguResolveReport,
   updateReportValidation,
   fetchCleanupTasks
 } from '@/lib/api'
@@ -161,20 +159,15 @@ export default function ReportDetailPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState(null)
   const [lightboxIndex, setLightboxIndex] = useState(null)
-  const [showStatusDropdown, setShowStatusDropdown] = useState(false)
-  const [updatingStatus, setUpdatingStatus] = useState(false)
   const [uploadingBefore, setUploadingBefore] = useState(false)
   const [uploadingAfter, setUploadingAfter] = useState(false)
   const [noteText, setNoteText] = useState('')
-  const [cleanupNotesDraft, setCleanupNotesDraft] = useState({reportId:null,value:''})
-  const cleanupNotes = cleanupNotesDraft.reportId===reportId ? cleanupNotesDraft.value : ''
   const [addingNote, setAddingNote] = useState(false)
   const [updatingConsent, setUpdatingConsent] = useState(false)
   const [notification, setNotification] = useState(null)
   const statusDropdownRef = useRef(null)
   const [existingTask, setExistingTask] = useState(null)
   const [agencyResponses, setAgencyResponses] = useState([])
-  const [resolvingReport, setResolvingReport] = useState(false)
   const [validatingReport, setValidatingReport] = useState(null)
   const [showApproval, setShowApproval] = useState(false)
   const [showRejection, setShowRejection] = useState(false)
@@ -548,33 +541,6 @@ export default function ReportDetailPage() {
     }
   }
 
-  const handleStatusUpdate = async (newStatus) => {
-    if (['resolved','waiting_for_feedback'].includes(newStatus) && !cleanupNotes.trim()) {
-      setNotification({message:'Enter cleanup action notes below before resolving this report.',type:'warning'})
-      return
-    }
-    // Check if trying to mark as resolved without photos
-    if (newStatus === 'resolved' && (!report.before_photo_url || !report.after_photo_url)) {
-      setNotification({ message: 'Please upload both before and after photos before marking the report as resolved.', type: 'warning' })
-      return
-    }
-
-    setUpdatingStatus(true)
-    try {
-      await updateReportStatus(reportId, newStatus, cleanupNotes.trim())
-      // Refresh report data
-      const updatedReport = await fetchReportById(reportId)
-      setReport(updatedReport)
-      setShowStatusDropdown(false)
-      setNotification({ message: 'Status updated successfully', type: 'success' })
-    } catch (error) {
-      reportDiagnostic('error', 'media', 'Failed to update status:', error)
-      setNotification({ message: 'Failed to update status. Please try again.', type: 'error' })
-    } finally {
-      setUpdatingStatus(false)
-    }
-  }
-
   const handleReportRejected = (updatedReport, reason) => {
     setReport(previous => ({ ...previous, ...updatedReport, validation_status: 'rejected' }))
     setShowRejection(false)
@@ -585,30 +551,6 @@ export default function ReportDetailPage() {
     setReport(previous => ({ ...previous, ...updatedReport }))
     setShowApproval(false)
     setNotification({ message: 'Report approval and severity saved successfully', type: 'success' })
-  }
-
-  const handleResolveReport = async () => {
-    if (!cleanupNotes.trim()) {
-      setNotification({message:'Enter cleanup action notes below before resolving this report.',type:'warning'})
-      return
-    }
-    // Check if trying to resolve without photos
-    if (!report.before_photo_url || !report.after_photo_url) {
-      setNotification({ message: 'Please upload both before and after photos before resolving the report.', type: 'warning' })
-      return
-    }
-
-    setResolvingReport(true)
-    try {
-      const updatedReport = await lguResolveReport(reportId, cleanupNotes.trim())
-      setReport(updatedReport)
-      setNotification({ message: 'Report resolved successfully. Waiting for reporter feedback.', type: 'success' })
-    } catch (error) {
-      reportDiagnostic('error', 'media', 'Failed to resolve report:', error)
-      setNotification({ message: 'Failed to resolve report. Please try again.', type: 'error' })
-    } finally {
-      setResolvingReport(false)
-    }
   }
 
   const handlePhotoUpload = async (photoType, file) => {
@@ -960,11 +902,6 @@ export default function ReportDetailPage() {
 
               </div>
 
-              {isStaff && <section className="card space-y-3">
-                <label className="block font-medium" htmlFor="cleanup-action-notes">Cleanup action notes</label>
-                <textarea id="cleanup-action-notes" rows={3} maxLength={2000} className="w-full rounded-lg border border-border bg-surface p-3 text-text-primary" value={cleanupNotes} onChange={e=>setCleanupNotesDraft({reportId,value:e.target.value})} />
-                <p className="text-sm text-text-secondary">Required when resolving a physical cleanup. These staff notes stay private; public proof has its own reviewed summary.</p>
-              </section>}
               {isStaff && <CleanupProofReview key={report.id} reportId={report.id} />}
               {isStaff && <details className="card"><summary className="cursor-pointer min-h-11 py-3 font-medium">Recorded operational events</summary><OperationalTimeline key={report.id} reportId={report.id} /></details>}
               {/* Evidence Photos & Videos */}

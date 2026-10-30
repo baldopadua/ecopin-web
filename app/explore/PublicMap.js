@@ -68,7 +68,6 @@ import {
   Sparkles,
   Download,
   Camera,
-  Eye,
   RotateCcw,
   Maximize2,
   LayoutGrid,
@@ -2490,20 +2489,20 @@ export default function PublicMap({ theme = 'light' }) {
                 })}
               </MapContainer>
 
-              <div className="absolute bottom-4 left-4 z-[400] pointer-events-none">
-                <div className="bg-white/95 dark:bg-[#1C1C1C]/95 px-3.5 py-1.5 rounded-full border border-gray-200/90 dark:border-[#333] shadow-sm text-xs text-gray-600 dark:text-gray-300 font-medium">
-                  {loading ? (
-                    <span className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-[#0052CC] animate-pulse"></span>
-                      Loading reports in this area...
-                    </span>
-                  ) : loadError ? (
-                    <span className="text-red-600 dark:text-red-400 font-semibold">Reports load issue. Refreshing...</span>
-                  ) : (
-                    <span>{filteredReports.length} reports in visible area</span>
-                  )}
+              {(loading || loadError) && (
+                <div className="absolute bottom-4 left-4 z-[400] pointer-events-none">
+                  <div className="bg-white/95 dark:bg-[#1C1C1C]/95 px-3.5 py-1.5 rounded-full border border-gray-200/90 dark:border-[#333] shadow-sm text-xs text-gray-600 dark:text-gray-300 font-medium">
+                    {loading ? (
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-[#0052CC] animate-pulse"></span>
+                        Loading reports in this area...
+                      </span>
+                    ) : (
+                      <span className="text-red-600 dark:text-red-400 font-semibold">Reports load issue. Refreshing...</span>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* RIGHT: RESULTS PANEL & GOOGLE MAPS STYLE DETAILS SIDEBAR */}
@@ -2863,17 +2862,6 @@ export default function PublicMap({ theme = 'light' }) {
 
                             {/* Action Buttons */}
                             <div className="flex items-center gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setPhotoSelection({ report: galleryReports[idx], index: 0 })
-                                  
-                                }}
-                                className="flex-1 py-1.5 px-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-[#242424] hover:bg-gray-100 dark:hover:bg-[#2C2C2C] border border-gray-200 dark:border-[#333] rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                              >
-                                <Eye className="w-3.5 h-3.5 text-gray-500" />
-                                <span>Photos</span>
-                              </button>
                               <button
                                 type="button"
                                 onClick={() => handleJumpToMap(report)}

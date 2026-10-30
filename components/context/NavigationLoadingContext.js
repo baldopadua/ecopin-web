@@ -43,15 +43,10 @@ export function getRouteTitle(urlPath) {
     '/dashboard/officer/reports': 'Reports Archive',
     '/dashboard/officer/metrics': 'System Metrics',
     '/dashboard/spatial-scan': 'Spatial Scan',
-    '/dashboard/field-crew': 'Field Operations',
-    '/dashboard/field-crew/tasks': 'Operations',
-    '/dashboard/field-crew/my-route': 'My Route',
-    '/dashboard/field-crew/raw-data': 'Raw Data',
     '/dashboard/map-grid': 'Map Grid',
     '/dashboard/admin': 'Admin Console',
     '/dashboard/admin/users': 'User Management',
     '/dashboard/admin/settings': 'System Settings',
-    '/dashboard/admin/infrastructure': 'Infrastructure Health',
     '/dashboard/admin/optimization-settings': 'Optimization Parameters',
     '/dashboard/admin/sweeper-settings': 'Sweeper Configurations',
     '/dashboard/admin/audit-logs': 'Audit Logs',
@@ -62,7 +57,6 @@ export function getRouteTitle(urlPath) {
 
   if (routeMap[path]) return routeMap[path]
   if (path.startsWith('/reports/')) return 'Report Details'
-  if (path.startsWith('/dashboard/field-crew/operations/')) return 'Operation Details'
   if (path.startsWith('/dashboard/officer/operations/')) return 'Operation Details'
   if (path.startsWith('/dashboard/officer/hotzone-intel/')) return 'Hotzone Analysis'
   if (path.startsWith('/dashboard/officer/optimization/')) return 'Optimization Run'

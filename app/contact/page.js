@@ -23,7 +23,6 @@ export default function OfficialContactPage() {
         <p>Call the office trunkline{contacts.extension?`, then ask the operator for SWMO, local ${contacts.extension}`:''}. The call button dials the trunkline only.</p>
         <div className={styles.actions}><a className={publicStyles.primaryButton} href={contacts.swmoTel}>Call SWMO trunkline</a>
           {contacts.email&&<a className={styles.secondary} href={`mailto:${contacts.email}?subject=Barangay%20cleanup%20coordination`}>Email SWMO</a>}</div>
-        {contacts.email&&<p><a href={`mailto:${contacts.email}`}>{contacts.email}</a></p>}
         <p>You can call without an EcoPin report or trust score. SWMO confirms crew availability, response and schedule; opening a call or email does not submit a report or dispatch a crew.</p>
       </section>
       <section className={styles.card} aria-labelledby="prepare-heading"><h2 id="prepare-heading">Have these details ready</h2>

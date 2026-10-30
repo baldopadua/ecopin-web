@@ -119,7 +119,7 @@ function DashboardContent({ children }) {
             <a href="#workspace-content" className={styles.skip}>Skip to workspace</a>
                         <Sidebar />
             <main id="workspace-content" tabIndex={-1} className={styles.main}>
-              <UrgencyAlert />
+              {pathname !== '/dashboard/officer/urgent-verification' && <UrgencyAlert />}
               {children}
             </main>
           </div>

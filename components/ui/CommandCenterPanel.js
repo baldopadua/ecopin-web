@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import styles from './CommandCenter.module.css'
 
-export default function CommandCenterPanel({ title, items, loading, empty, href, children }) {
+export default function CommandCenterPanel({ title, items, loading, empty, href, toolbar, children }) {
   const titleId = useId()
   const listRef = useRef(null)
   const [page, setPage] = useState(0)
@@ -31,6 +31,7 @@ export default function CommandCenterPanel({ title, items, loading, empty, href,
     <header className={styles.panelHeader}>
       <h2 id={titleId}>{title}</h2><span className={styles.count}>{loading ? '—' : items.length}</span>
     </header>
+    {toolbar}
     <ul className={styles.list} ref={listRef} aria-label={`${title} preview`}>
       {loading ? <li className={styles.empty} role="status">Loading…</li>
         : !items.length ? <li className={styles.empty}>{empty}</li>

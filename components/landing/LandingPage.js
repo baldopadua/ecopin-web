@@ -109,7 +109,6 @@ export default function LandingPage() {
             <p>See what’s happening in your neighborhood.<br className={styles.desktopBreak} /> Report a concern. Help care for the city we call home.</p>
             <div className={styles.heroActions}>
               <Link href="/explore" className={styles.primaryButton}>Explore the map <ArrowRight size={18} /></Link>
-              <a href="#mobile-app" className={styles.textButton}><Smartphone size={18} /> Get the EcoPin app</a>
             </div>
           </div>
           <div className={styles.mapSection}><LandingMap isDark={isDark} /></div>
@@ -127,11 +126,10 @@ export default function LandingPage() {
             <span className={styles.sectionLabel}><Leaf size={16} /> A little care goes a long way</span>
             <h2 id="about-heading">Your neighborhood.<br />Our shared responsibility.</h2>
             <p>EcoPin connects the things you notice every day with the people who can help. Together, we can make environmental concerns easier to see, report, and follow.</p>
-            <Link href="/explore" className={styles.textButton}>See public reports <ArrowRight size={18} /></Link>
           </div>
           <div className={styles.features}>
-            <article data-reveal="100"><div className={styles.featureIcon}><MapPin /></div><h3>Know what’s nearby.</h3><p>Explore reported concerns across Pasig. Tap a pin to see the issue and its status.</p><Link href="/explore">Open map <ArrowRight size={16} /></Link></article>
-            <article data-reveal="200"><div className={`${styles.featureIcon} ${styles.greenIcon}`}><ShieldCheck /></div><h3>See the bigger picture.</h3><p>Prefer browsing reports one by one? Switch to the gallery for a closer look.</p><Link href="/explore?view=gallery">Browse gallery <ArrowRight size={16} /></Link></article>
+            <article data-reveal="100"><div className={styles.featureIcon}><MapPin /></div><h3>Know what’s nearby.</h3><p>Explore reported concerns across Pasig. Tap a pin to see the issue and its status.</p></article>
+            <article data-reveal="200"><div className={`${styles.featureIcon} ${styles.greenIcon}`}><ShieldCheck /></div><h3>See the bigger picture.</h3><p>Prefer browsing reports one by one? Switch to the gallery for a closer look.</p></article>
             <div className={styles.communityNote} data-reveal="200"><Leaf size={30} /><p>Every report is a small step toward<br /><strong>a cleaner, more caring Pasig.</strong></p><span>It starts with noticing.</span></div>
           </div>
         </section>
@@ -159,7 +157,7 @@ export default function LandingPage() {
               <figure data-reveal="200"><div className={styles.photoFrame}><LandingPhoto src={cms.gallery_photo_2_url || '/images/community/working-together.jpg'} alt="Two SWMO field crew members carrying a large piece of wood together beside a collection truck" fill sizes="(max-width: 767px) 100vw, 35vw" /></div><figcaption>{cms.gallery_photo_2_caption || 'Working together to clear bulky debris.'}</figcaption></figure>
             </div>
           </div>
-          <div className={styles.communityFoot} data-reveal><p>Notice a concern in your area? Give it a place on the map.</p><a href="#mobile-app" className={styles.textButton}>Start with the EcoPin app <ArrowRight size={18} /></a></div>
+          <div className={styles.communityFoot} data-reveal><p>Notice a concern in your area? Give it a place on the map.</p></div>
         </section>
 
         <section id="mobile-app" className={styles.mobileSection} aria-labelledby="mobile-heading">
@@ -211,7 +209,7 @@ export default function LandingPage() {
           <div className={styles.guideNote}><ShieldCheck size={20} /><p>Reports are reviewed before they appear on the public map. Please share accurate details and avoid including other people’s personal information.</p></div>
         </section>
 
-        <section className={styles.closing}><div data-reveal><Leaf size={28} /><h2>A better Pasig begins<br />with the people in it.</h2><a href="#mobile-app" className={styles.primaryButton}>Take the first step <ArrowRight size={18} /></a></div></section>
+        <section className={styles.closing}><div data-reveal><Leaf size={28} /><h2>A better Pasig begins<br />with the people in it.</h2></div></section>
       </main>
       <PublicFooter isDark={isDark} settings={cms} />
       {/* Photo attribution and delete account compliance anchors */}

@@ -303,60 +303,6 @@ function CrewCard({ crew, onAdd, onRemove, unassigned, notification, setNotifica
   )
 }
 
-function TasksView({ crews }) {
-  const crewsWithTasks = crews.filter(c => (c.active_tasks || []).length > 0)
-  const totalTasks = crews.reduce((acc, c) => acc + (c.active_tasks || []).length, 0)
-
-  return (
-    <div className={styles.tasksView}>
-      {crewsWithTasks.length === 0 ? (
-        <div className={`${styles.card} p-8 text-center`}>
-          <ClipboardCheck size={32} className="mx-auto text-text-muted mb-3" />
-          <p className="text-text-muted">No tasks currently assigned to any crew.</p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {crewsWithTasks.map(crew => (
-            <div key={crew.id} className={styles.card}>
-              <div className={styles.crewTasksHeader}>
-                <div>
-                  <h3 className="font-semibold text-text-primary text-lg">{crew.name}</h3>
-                  <p className="text-sm text-text-muted mt-1">
-                    {(crew.active_tasks || []).length} task{(crew.active_tasks || []).length > 1 ? 's' : ''} assigned
-                  </p>
-                </div>
-                <span className={`${styles.badge} ${styles.workloadBadge}`}>
-                  {(crew.active_tasks || []).length} / {crew.max_tasks_per_shift || 10}
-                </span>
-              </div>
-              <div className={styles.tasksList}>
-                {(crew.active_tasks || []).map(task => (
-                  <Link
-                    key={task.id}
-                    href={`/dashboard/officer/operations/${task.id}`}
-                    className={styles.taskRow}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className={styles.taskTitle}>{task.title || `Task #${task.id?.slice(0, 8)}`}</p>
-                      {task.location_name && (
-                        <p className="text-xs text-text-muted truncate mt-0.5">{task.location_name}</p>
-                      )}
-                    </div>
-                    <div className={styles.taskMeta}>
-                      <StatusBadge status={task.status} type="task" />
-                      <span className="text-xs text-workspace-link font-medium">Open →</span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
 function MembersView({ crews, unassigned, onAdd, onRemove, notification, setNotification }) {
   return (
     <div className="space-y-4">
@@ -486,9 +432,6 @@ function MemberTasksModal({ member, onClose }) {
             <div className={styles.modalMetricCard}>
               <span className={styles.modalMetricLabel}>
                 Citizen CSAT
-                <span className="text-sm leading-none" aria-hidden="true">
-                  {getSatisfactionInfo(member.performance?.avg_satisfaction_rating).emoji}
-                </span>
               </span>
               <span className={styles.modalMetricValue}>
                 {member.performance?.avg_satisfaction_rating != null ? (
@@ -750,9 +693,6 @@ function CrewTeamTasksModal({ crew, onClose }) {
             <div className={styles.modalMetricCard}>
               <span className={styles.modalMetricLabel}>
                 Citizen CSAT
-                <span className="text-sm leading-none" aria-hidden="true">
-                  {getSatisfactionInfo(crew.performance?.avg_satisfaction_rating).emoji}
-                </span>
               </span>
               <span className={styles.modalMetricValue}>
                 {crew.performance?.avg_satisfaction_rating != null ? (
@@ -1047,68 +987,6 @@ function PerformanceView({ performanceData, loading }) {
       }
     }
   }, [performanceData?.overall?.rating_distribution, isDark])
-
-  // Chart B: Operations Completed by Squad (Horizontal Bar)
-  const squadChartData = useMemo(() => {
-    const crews = (performanceData?.crews || []).slice(0, 6)
-    const labels = crews.map(c => c.name || 'Squad')
-    const counts = crews.map(c => c.performance?.total_completed || 0)
-    const hasData = counts.some(c => c > 0)
-
-    return {
-      hasData,
-      data: {
-        labels: labels.length ? labels : ['No Squads'],
-        datasets: [
-          {
-            label: 'Resolved Operations',
-            data: counts.length ? counts : [0],
-            backgroundColor: isDark ? '#3b82f6' : '#0052cc',
-            hoverBackgroundColor: isDark ? '#60a5fa' : '#003d99',
-            borderRadius: 6
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        indexAxis: 'y',
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: isDark ? '#0f172a' : '#ffffff',
-            titleColor: isDark ? '#f8fafc' : '#0f172a',
-            bodyColor: isDark ? '#cbd5e1' : '#334155',
-            borderColor: isDark ? '#334155' : '#e2e8f0',
-            borderWidth: 1,
-            callbacks: {
-              label: (ctx) => ` ${ctx.parsed.x || 0} tasks resolved`
-            }
-          }
-        },
-        scales: {
-          x: {
-            beginAtZero: true,
-            ticks: {
-              precision: 0,
-              color: isDark ? '#94a3b8' : '#64748b',
-              font: { size: 11 }
-            },
-            grid: {
-              color: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)'
-            }
-          },
-          y: {
-            ticks: {
-              color: isDark ? '#f1f5f9' : '#0f172a',
-              font: { size: 12, weight: '500' }
-            },
-            grid: { display: false }
-          }
-        }
-      }
-    }
-  }, [performanceData?.crews, isDark])
 
   // Chart C: Top Individual Accomplishments & Citizen Satisfaction (Dual-Axis Bar)
   const personnelChartData = useMemo(() => {
@@ -1850,9 +1728,6 @@ function PerformanceView({ performanceData, loading }) {
         <div className={styles.perfStatCard}>
           <div className={styles.statHeader}>
             <span>Citizen Satisfaction</span>
-            <span className="text-lg leading-none" aria-hidden="true">
-              {getSatisfactionInfo(performanceData?.overall?.avg_satisfaction_rating).emoji}
-            </span>
           </div>
           <div className={styles.statValue}>
             {performanceData?.overall?.avg_satisfaction_rating != null ? (
@@ -1875,7 +1750,7 @@ function PerformanceView({ performanceData, loading }) {
       </div>
 
       {/* Visual Performance Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 gap-5">
         {/* Chart A: Citizen Satisfaction Breakdown */}
         <div className="border border-border rounded-2xl bg-surface p-5 shadow-sm flex flex-col">
           <div className="mb-4">
@@ -1888,23 +1763,6 @@ function PerformanceView({ performanceData, loading }) {
             ) : (
               <div className="text-center py-10 text-text-muted text-xs">
                 No citizen reviews recorded yet to display chart
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Chart B: Operations Completed by Squad */}
-        <div className="border border-border rounded-2xl bg-surface p-5 shadow-sm flex flex-col">
-          <div className="mb-4">
-            <h3 className="text-base font-semibold text-text-primary">Operations Completed by Squad</h3>
-            <p className="text-xs text-text-muted mt-0.5">Total tasks successfully resolved across active field squads</p>
-          </div>
-          <div className="relative flex-1 min-h-[260px] flex items-center justify-center">
-            {squadChartData.hasData ? (
-              <Bar data={squadChartData.data} options={squadChartData.options} />
-            ) : (
-              <div className="text-center py-10 text-text-muted text-xs">
-                No squad operations recorded yet to display chart
               </div>
             )}
           </div>
@@ -2176,7 +2034,7 @@ function CrewManagementContent() {
   const [loading, setLoading] = useState(true)
   const [notification, setNotification] = useState(null)
   const [unassignedSearch, setUnassignedSearch] = useState('')
-  const [viewMode, setViewMode] = useState('tasks') // 'tasks' | 'members' | 'performance'
+  const [viewMode, setViewMode] = useState('members') // 'members' | 'performance'
 
 
   const loadData = useCallback(async () => {
@@ -2267,12 +2125,6 @@ function CrewManagementContent() {
       >
         <div className={styles.viewToggle}>
           <button
-            onClick={() => setViewMode('tasks')}
-            className={`${styles.toggleButton} ${viewMode === 'tasks' ? styles.toggleButtonActive : ''}`}
-          >
-            Tasks View
-          </button>
-          <button
             onClick={() => setViewMode('members')}
             className={`${styles.toggleButton} ${viewMode === 'members' ? styles.toggleButtonActive : ''}`}
           >
@@ -2355,8 +2207,6 @@ function CrewManagementContent() {
           <div className={viewMode === 'members' ? 'lg:col-span-2 min-w-0' : 'min-w-0'}>
             {viewMode === 'performance' ? (
               <PerformanceView performanceData={performanceData} loading={loading} />
-            ) : viewMode === 'tasks' ? (
-              <TasksView crews={crews} />
             ) : (
               <MembersView
                 crews={crews}

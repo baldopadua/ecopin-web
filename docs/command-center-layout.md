@@ -1,15 +1,17 @@
 # Officer Command Center
 
 The Command Center fills the dashboard viewport: a compact heading and optimization
-action, four operational metrics, then Active Targets, Action Queue, and Critical
-Hotzones. All three panels remain visible. Desktop uses three columns; below 900px
-the panels share three equal-height rows beneath a two-column metric strip.
+action, four operational metrics (Squad Utilization, Unresolved Reports, SLA Risk, Manual
+Review), then Active Targets and Priority Hotzones. Both panels remain visible.
+Priority Hotzones toggles between Needs Dispatch (the unassigned work queue) and
+All Hotzones. Desktop uses two columns; below 900px the panels share equal-height
+rows beneath a two-column metric strip.
 
 Each panel measures the space and its visible rows to choose a page size. Previous
 and Next replace scrolling; View all retains access to the dedicated full-list page.
-Targets and queue pagination cover their complete loaded lists; Critical Hotzones
-retains the three highest-priority clusters. Metric calculations and data loading
-are unchanged. Links replace mouse-only clickable containers.
+Targets and Needs Dispatch pagination cover their complete loaded lists; All Hotzones
+retains the three highest-priority clusters. Squad Utilization is assigned tasks over
+total per-shift crew capacity. Links replace mouse-only clickable containers.
 
 Short compact screens place panel navigation beside the heading and omit metric
 helper captions. Metric labels, counts, all three sections, and actions remain

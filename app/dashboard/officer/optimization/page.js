@@ -702,17 +702,7 @@ export default function OptimizationPage() {
                       <span className="w-2 h-2 rounded-full bg-primary animate-pulse" aria-hidden="true" />
                       <span>{optimizationProgress.message || 'Solving...'}</span>
                     </span>
-                    <div className="flex items-center gap-3">
-                      <span className="tabular-nums font-mono text-primary font-bold">{optimizationProgress.percent || 0}%</span>
-                      <button
-                        type="button"
-                        onClick={cancelOptimization}
-                        className="text-xs text-error hover:underline font-medium transition-colors cursor-pointer bg-transparent border-0 p-0"
-                        aria-label="Cancel optimization"
-                      >
-                        Cancel
-                      </button>
-                    </div>
+                    <span className="tabular-nums font-mono text-primary font-bold">{optimizationProgress.percent || 0}%</span>
                   </div>
                   <div className="w-full bg-surface h-2 border border-border rounded-full overflow-hidden">
                     <div 
@@ -742,24 +732,6 @@ export default function OptimizationPage() {
                         <span className="text-text-muted"> · {currentProposal.omittedCount} remaining tasks kept in Backlog queue for subsequent shift.</span>
                       )}
                     </p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      onClick={() => handleCommitPlan(currentProposal.id)}
-                      disabled={Boolean(actionLoading) || isOptimizing || !currentProposal.selectedCount}
-                      className="px-5 py-2.5 bg-primary text-white font-semibold normal-case tracking-normal text-xs border border-primary hover:bg-action-hover transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap cursor-pointer rounded-full"
-                    >
-                      {actionLoading === 'commit' || isOptimizing ? (
-                        <span className="flex items-center gap-2">
-                          <Loader2 size={14} className="animate-spin" aria-hidden="true" />
-                          Publishing Routes...
-                        </span>
-                      ) : (
-                        <>
-                          <Check className="w-4 h-4 mr-0.5" /> Confirm and dispatch crews
-                        </>
-                      )}
-                    </button>
                   </div>
                 </div>
 

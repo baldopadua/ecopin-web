@@ -24,7 +24,7 @@ export default function BarangayAnalytics(){
  const [range,setRange]=useState(initialBarangayRange),[draft,setDraft]=useState(initialBarangayRange);
  const [loaded,setLoaded]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState(null);
  const [reload,setReload]=useState(0),[validation,setValidation]=useState(''),[selected,setSelected]=useState('all');
- const [search,setSearch]=useState(''),[sort,setSort]=useState('backlog_total'),[exportNotice,setExportNotice]=useState('');
+ const [sort,setSort]=useState('backlog_total'),[exportNotice,setExportNotice]=useState('');
  useEffect(()=>{
   const controller=new AbortController();let current=true;
   async function load(){
@@ -55,7 +55,8 @@ export default function BarangayAnalytics(){
  const reportMonth=availableMonths.includes(executiveMonth)?executiveMonth:availableMonths.filter(m=>m<initialBarangayRange().end).at(-1)||loaded?.end_month||'';
  const total=loaded?.total;
  const focus=loaded&&(selected==='all'?total:loaded.groups.find(g=>g.key===selected))||total;
- const rows=loaded?sortBarangays(loaded.groups.filter(g=>g.name.toLowerCase().includes(search.trim().toLowerCase())),sort):[];
+ const rows=loaded?sortBarangays(loaded.groups,sort):[];
+ const decisionArea=focus?.psgc_code||'all';
  const trend=comparableTrend(loaded);
  const trendText=g=>{const value=trend&&trendSummary(g?.trend?.previous_count,g?.trend?.current_count);return value?<span className={styles.trendValue}>{value.label}<small>{number(value.previous)} → {number(value.current)} reports{value.smallSample?' · Small sample':''}</small></span>:'Unavailable';};
  const unassigned=loaded?.groups.find(g=>g.key==='unassigned');
@@ -95,8 +96,8 @@ export default function BarangayAnalytics(){
     <p>{number(total.missing_resolution_count)} resolved reports lack a resolution timestamp; {number(total.invalid_resolution_count)} have invalid timestamps across stored history. These are excluded from duration statistics. {number(loaded.quality.excluded_creation_timestamps)} records with missing/future creation times are excluded.</p>
    </details>
    <section className={styles.card} aria-label="Area detail">
-    <div className={styles.sectionHeader}><div><h2>Monthly demand and current workload</h2><p className={styles.muted}>Select an area to inspect its trend and backlog. All locations includes unassigned and outside-baseline reports.</p></div>
-     <label>Trend area<select value={selected} onChange={e=>setSelected(e.target.value)}><option value="all">All locations</option>{loaded.groups.map(g=><option key={g.key} value={g.key}>{g.name}</option>)}</select></label>
+    <div className={styles.sectionHeader}><div><h2>Monthly demand and current workload</h2><p className={styles.muted}>Select a barangay to inspect its trend and backlog; the comparison table and decision proposals follow your selection. All locations includes unassigned and outside-baseline reports.</p></div>
+     <label>Barangay<select value={selected} onChange={e=>setSelected(e.target.value)}><option value="all">All locations</option>{loaded.groups.map(g=><option key={g.key} value={g.key}>{g.name}</option>)}</select></label>
     </div>
     <p><strong>Equal-period demand trend · {focus.name}</strong>: {trendText(focus)}</p><p className={styles.muted}>{trendPeriodLabel(trend)}. Windows can extend before the selected months. A zero baseline shows New Activity; 0 → 0 means No activity. Small samples do not establish a sustained trend.</p>
     <div className={styles.charts}>
@@ -107,12 +108,11 @@ export default function BarangayAnalytics(){
    </section>
    <section className={styles.card} aria-label="Barangay comparison">
     <div className={styles.sectionHeader}><div><h2>Compare all barangays</h2><p className={styles.muted}>Reporting activity is not waste tonnage or population-adjusted incidence. Small samples need care.</p></div>
-     <label>Find barangay<input type="search" value={search} onChange={e=>setSearch(e.target.value)} /></label>
      <label>Sort by<select value={sort} onChange={e=>setSort(e.target.value)}><option value="backlog_total">Current backlog</option><option value="report_count">Reports submitted</option><option value="pending_count">Awaiting verification</option><option value="median_resolution_hours">Median resolution time</option></select></label>
     </div>
-    <p className={styles.muted}>{rows.length} of 31 areas shown · CSV includes all areas and monthly counts.</p>
+    <p className={styles.muted}>{rows.length} areas shown · select a row to focus it above. CSV includes all areas and monthly counts.</p>
     <DataTable className={styles.tableScroll} caption="Barangay operational comparison" data={rows} getRowKey={row=>row.key}
-     emptyMessage="No barangays match that name." columns={[
+     emptyMessage="No barangays available." onRowClick={row=>setSelected(row.key)} rowActionLabel={row=>`Focus ${row.name}`} rowClassName={row=>row.key===selected?styles.selectedRow:''} columns={[
       {key:'name',label:'Barangay',render:(_,g)=><span>{g.name}{g.psgc_code&&<small>{g.psgc_code}</small>}</span>},
       {key:'report_count',label:'Submitted',render:number},
       {key:'trend',label:'30-day trend',render:(_,g)=>trendText(g)},
@@ -124,7 +124,7 @@ export default function BarangayAnalytics(){
       {key:'resolution_count',label:'Samples',render:number},
      ]} />
    </section>
-   <MunicipalDecisionCards data={loaded} paused={loading||!!error||changed||loaded.start_month!==range.start||loaded.end_month!==range.end} />
+   <MunicipalDecisionCards data={loaded} area={decisionArea} paused={loading||!!error||changed||loaded.start_month!==range.start||loaded.end_month!==range.end} />
    <details className={styles.card}><summary>How these figures are calculated</summary><p>Submission and verification totals use reports created in the selected Manila calendar months, with their current verification state. Verification processed means approved or rejected, including automated decisions; it does not measure officer review speed. Backlog uses the current open state across all history, not a reconstructed historical snapshot.</p><p>Resolution time runs from submission to the dedicated SWMO resolution timestamp, for currently resolved/closed reports with a resolution event in the selected months. Missing, negative and future timestamps are excluded; latest edit time and citizen closure are not substitutes. No samples means unavailable, not zero-hour performance. The 90th percentile is an interpolated duration below which 90% of recorded samples fall.</p><p>Only reconciled polygon assignments enter barangay totals. San Miguel is included; Ortigas Center is a district, not an additional barangay. Unknown-location counts remain visible in citywide totals.</p></details>
   </>}
  </div>;

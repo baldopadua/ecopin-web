@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
 
-export default function MobileAppRedirect() {
-  redirect('/#mobile-app')
+export default function MobileRedirect() {
+  redirect('/mobile-app')
 }

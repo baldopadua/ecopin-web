@@ -382,6 +382,8 @@ function Analytics() {
     ['Waiting for feedback', stats.waitingForFeedback],
     ['Flagged or older than 48 hours', stats.overdue],
   ]
+  const statusRowLabels = ['Unresolved reports', 'In progress']
+  const overviewRows = summaryRows.filter(([label]) => !statusRowLabels.includes(label))
   const sourceDates = reports.filter(report => report.created_at).map(report => new Date(report.created_at)).filter(date => Number.isFinite(date.getTime()))
   const dateLabel = date => date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
   const bounds = sourceDates.reduce((result, date) => ({ start: Math.min(result.start, date.getTime()), end: Math.max(result.end, date.getTime()) }), { start: Infinity, end: -Infinity })
@@ -579,14 +581,11 @@ function Analytics() {
         {loaded && <div className={styles.section}>
             <h2>How are reports progressing?</h2>
             <p className={styles.description}>All loaded public reports · Creation dates: {coverage}. Refresh to retrieve current outcomes.</p>
-            <dl className={styles.metrics}>{summaryRows.map(([label, value]) => <div className={styles.card} key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+            <dl className={styles.metrics}>{overviewRows.map(([label, value]) => <div className={styles.card} key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
             <details className={styles.methodology}>
             <summary>Response progress & calculation notes</summary>
             <p className={styles.description}>Response timing uses recorded resolution or closure dates, with the latest update as the existing fallback. Today uses your local date. The age indicator includes source-flagged reports and unresolved reports older than 48 hours; it does not measure the configured SLA.</p>
-            {stats.total > 0 ? <div className={styles.progress}>
-              <label htmlFor="resolution-progress">{stats.resolved + stats.closed} of {stats.total} reports are resolved or closed ({stats.resolutionRate}%).</label>
-              <progress id="resolution-progress" max="100" value={stats.resolutionRate} />
-            </div> : <div className={styles.notice}><h3>No public reports to summarize</h3><p>New public reports will appear after they become available and you refresh.</p></div>}
+            {stats.total === 0 && <div className={styles.notice}><h3>No public reports to summarize</h3><p>New public reports will appear after they become available and you refresh.</p></div>}
             </details>
           </div>}
       </section>
@@ -602,10 +601,10 @@ function Analytics() {
       </section>
       <section id="trends-panel" role="tabpanel" aria-labelledby="trends-tab" aria-hidden={activeTab !== 'trends'} inert={activeTab !== 'trends'} className={`workspace-scroll ${styles.tabPanel}`}>
         {loaded ? <div className={styles.charts}>
-          <ChartPanel id="weekly-reports" title="When were reports created?" description="Report counts for the last 12 recorded creation weeks. Weeks without records are not added." unit="reports" rows={chartRows(weeklyVolumeChartData)}>
+          <ChartPanel id="weekly-reports" title="When were reports created?" description="Report counts for the last 12 recorded creation weeks. Weeks without records are not added." unit="reports" collapsible rows={chartRows(weeklyVolumeChartData)}>
             {weeklyVolumeChartData.labels.length > 0 ? <Bar ref={barChartRef} data={weeklyVolumeChartData} options={chartOptions} role="img" aria-label="When were reports created?" /> : <p className={styles.empty}>No reports with usable data for this chart.</p>}
           </ChartPanel>
-          <ChartPanel id="weekly-outcomes" title="How are those weeks progressing?" description="Current resolved-or-closed percentage grouped by creation week. This is a present-day cohort comparison, not historical daily performance." unit="%" rows={chartRows(resolutionRateChartData)}>
+          <ChartPanel id="weekly-outcomes" title="How are those weeks progressing?" description="Current resolved-or-closed percentage grouped by creation week. This is a present-day cohort comparison, not historical daily performance." unit="%" collapsible rows={chartRows(resolutionRateChartData)}>
             {resolutionRateChartData.labels.length > 0 ? <Line ref={lineChartRef} data={resolutionRateChartData} options={{ ...chartOptions, scales: { ...chartOptions.scales, y: { ...chartOptions.scales.y, max: 100 } } }} role="img" aria-label="How are those weeks progressing?" /> : <p className={styles.empty}>No reports with usable data for this chart.</p>}
           </ChartPanel>
         </div> : <p role="status">{loading ? 'Loading report trends…' : 'No report trends are available.'}</p>}
@@ -630,17 +629,20 @@ function displayLabel(value) {
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
-function ChartPanel({ id, title, description, rows, unit, children }) {
+function ChartPanel({ id, title, description, rows, unit, collapsible = false, children }) {
+  const legend = <dl className={styles.legend} aria-label={`${title}: values in ${unit}`}>
+    {rows.map(row => <div key={row.label}>
+      <dt><span className={styles.swatch} style={{ background: row.color }} aria-hidden="true" />{row.label}</dt>
+      <dd>{row.value}{unit === '%' ? '%' : ` ${row.value === 1 ? unit.replace(/s$/, '') : unit}`}</dd>
+    </div>)}
+  </dl>
   return <section className={styles.chart} aria-labelledby={`${id}-title`}>
     <h3 id={`${id}-title`}>{title}</h3>
     <p className={styles.description}>{description}</p>
     <div className={styles.stage}>{children}</div>
-    {rows.length > 0 && <dl className={styles.legend} aria-label={`${title}: values in ${unit}`}>
-      {rows.map(row => <div key={row.label}>
-        <dt><span className={styles.swatch} style={{ background: row.color }} aria-hidden="true" />{row.label}</dt>
-        <dd>{row.value}{unit === '%' ? '%' : ` ${row.value === 1 ? unit.replace(/s$/, '') : unit}`}</dd>
-      </div>)}
-    </dl>}
+    {rows.length > 0 && (collapsible
+      ? <details className={styles.methodology}><summary>Show chart values as text</summary>{legend}</details>
+      : legend)}
   </section>
 }
 

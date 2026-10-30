@@ -1,5 +1,6 @@
 'use client'
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { fetchFilteredReports, fetchAvailableCrew, fetchReportsByClusterId, fetchCleanupTasks, fetchDispatchBlocks } from '@/lib/api'
 import { createCustomCleanupTask } from '@/lib/api'
@@ -77,21 +78,10 @@ function CustomMap({ selectedReports, allowedReportIds, onReportSelect, onCluste
   )
 }
 
-const STRATEGIES = [
-  { id: 'standard', name: 'Standard Dispatch', config: { aging_factor: 1.5, max_escalation_cap: 10.0, max_detour_minutes: 5.0, max_detour_time_per_task: 15.0, max_route_distance_km: 50.0, max_route_duration_minutes: 480.0 } },
-  { id: 'thorough', name: 'Thorough Cleanup', config: { aging_factor: 1.5, max_escalation_cap: 10.0, max_detour_minutes: 10.0, max_detour_time_per_task: 30.0, max_route_distance_km: 75.0, max_route_duration_minutes: 600.0 } },
-  { id: 'backlog', name: 'Backlog Crusher', config: { aging_factor: 3.0, max_escalation_cap: 20.0, max_detour_minutes: 5.0, max_detour_time_per_task: 15.0, max_route_distance_km: 40.0, max_route_duration_minutes: 360.0 } }
-]
-
-import { autoAssignCrewsToRoutes } from '@/lib/crewAssignment.mjs'
-
 export default function CreateCleanupTaskPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [mode, setMode] = useState('manual') // 'manual' or 'auto'
   const [compactView, setCompactView] = useState('map')
-  const [autoView, setAutoView] = useState('setup')
-  const [routeIndex, setRouteIndex] = useState(0)
   
   const [reports, setReports] = useState([])
   const [selectedReports, setSelectedReports] = useState(new Set())
@@ -108,24 +98,6 @@ export default function CreateCleanupTaskPage() {
   const [selectedCrewIds, setSelectedCrewIds] = useState([])
   
   const [reportSearch, setReportSearch] = useState('')
-
-  // Auto-Generate Settings
-  const [autoSettings, setAutoSettings] = useState({
-    aging_factor: STRATEGIES[0].config.aging_factor,
-    max_escalation_cap: STRATEGIES[0].config.max_escalation_cap,
-    max_detour_minutes: STRATEGIES[0].config.max_detour_minutes,
-    max_detour_time_per_task: STRATEGIES[0].config.max_detour_time_per_task,
-    max_route_distance_km: STRATEGIES[0].config.max_route_distance_km,
-    max_route_duration_minutes: STRATEGIES[0].config.max_route_duration_minutes
-  })
-  const [generationScope, setGenerationScope] = useState('batch')
-  const [generatedTasks, setGeneratedTasks] = useState(null)
-  const [generationError, setGenerationError] = useState(null)
-  const [generating, setGenerating] = useState(false)
-  
-  const [strategy, setStrategy] = useState('standard')
-  const [showAdvanced, setShowAdvanced] = useState(false)
-  const [advancedPage, setAdvancedPage] = useState(0)
 
 
   const filteredReports = useMemo(() => {
@@ -415,140 +387,24 @@ export default function CreateCleanupTaskPage() {
     }
   }
 
-  const handlePreviewRoutes = async () => {
-    setGenerating(true)
-    setGeneratedTasks(null)
-    setRouteIndex(0)
-    setAutoView('routes')
-    setGenerationError(null)
-    
-    try {
-      if (!readSessionKey()) {
-        triggerSessionExpired()
-        throw new Error('Please sign in again to preview tasks')
-      }
-      const res = await fetch('/api/tasks/auto-generate/preview', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          config: autoSettings
-        })
-      })
-      
-      const data = await res.json()
-
-      if (res.status === 401) triggerSessionExpired()
-      if (!res.ok) {
-        throw new Error(data.error || data.message || 'Failed to generate tasks')
-      }
-
-      if (!data.tasks || data.tasks.length === 0) {
-        setGeneratedTasks([])
-        setNotification({ message: 'No eligible unresolved reports found for task generation.', type: 'info' })
-        return
-      }
-      
-      // Map tasks to add crew selection arrays and title input with workload-balanced crew assignment
-      const proposals = generationScope === 'single'
-        ? [...data.tasks].sort((a, b) => b.primary_priority - a.primary_priority).slice(0, 1)
-        : data.tasks
-      const preparedTasks = autoAssignCrewsToRoutes(proposals, availableCrew, existingTasks)
-      setRouteIndex(0)
-      setAutoView('routes')
-      
-      setGeneratedTasks(preparedTasks)
-      const assignedCount = preparedTasks.filter(t => t.assigned_crew_ids?.length > 0).length
-      setNotification({
-        message: availableCrew.length > 0
-          ? `Generated ${preparedTasks.length} cleanup task(s) and auto-assigned crews (${assignedCount}/${preparedTasks.length} assigned).`
-          : `Generated ${preparedTasks.length} proposed cleanup task(s)!`,
-        type: 'success'
-      })
-    } catch (error) {
-      reportDiagnostic('error', 'dispatch', 'Route generation failed:', error)
-      const message = error.message || 'Error generating tasks'
-      setGenerationError(message)
-      setNotification({ message, type: 'error' })
-    } finally {
-      setGenerating(false)
-    }
-  }
-
-  const handleConfirmAndDispatch = async () => {
-    if (!generatedTasks || generatedTasks.length === 0) return
-    
-    const unassigned = generatedTasks.some(t => t.assigned_crew_ids.length === 0)
-    if (unassigned) {
-       setNotification({ message: 'Please assign crew to all proposed cleanup tasks before confirming.', type: 'warning' })
-       return
-    }
-
-    setCreating(true)
-    try {
-      for (const task of generatedTasks) {
-        const pScore = task.primary_priority;
-        const priorityStr = pScore >= 15 ? 'high' : pScore >= 8 ? 'medium' : 'low';
-        
-        const combinedReportIds = getPreviewReportIds(task)
-
-        // Resolve crew team IDs to individual member profile IDs
-        const taskMemberIds = []
-        task.assigned_crew_ids.forEach(crewId => {
-          const crewTeam = availableCrew.find(c => c.id === crewId)
-          if (crewTeam?.members?.length > 0) {
-            crewTeam.members.forEach(m => taskMemberIds.push(m.id))
-          } else {
-            taskMemberIds.push(crewId)
-          }
-        })
-        const uniqueCrewMemberIds = [...new Set(taskMemberIds)]
-        
-        await createCustomCleanupTask({
-          report_ids: combinedReportIds,
-          title: task.title,
-          description: `Auto-generated cleanup task (Detour: ${(task.cumulative_detour_minutes ?? 0).toFixed(1)} mins). Includes primary ${task.primary_target_is_cluster ? 'cluster' : 'report'}.`,
-          priority: priorityStr,
-          field_crew_id: task.assigned_crew_ids[0] || null,
-          assigned_crew_ids: uniqueCrewMemberIds
-        })
-        setGeneratedTasks(previous => previous?.filter(proposal => proposal !== task) || [])
-      }
-      
-      setNotification({ message: 'Tasks dispatched successfully!', type: 'success' })
-      setTimeout(() => {
-        router.push('/dashboard/officer/operations')
-      }, 1500)
-    } catch (error) {
-      reportDiagnostic('error', 'dispatch', error)
-      if (error?.status === 409) {
-        setGeneratedTasks(null)
-        setAutoView('setup')
-      }
-      const message = error?.message || 'Error dispatching tasks'
-      setNotification({ message, type: 'error' })
-    } finally {
-      setCreating(false)
-    }
-  }
-
-  const activeRouteIndex = Math.min(routeIndex, Math.max(0, (generatedTasks?.length || 0) - 1))
-
   return (
     <OfficerGuard>
       <div className={`workspace-page ${styles.page}`}>
         <PageHeader className={styles.pageHeader}
           title="Create Cleanup Task"
-          subtitle="Select reports on the map manually or auto-generate cleanup tasks"
+          subtitle="Select reports on the map and assign a crew to create a cleanup task"
           breadcrumbs={[
             { label: 'Dashboard', href: '/dashboard' },
             { label: 'Cleanup Tasks', href: '/dashboard/officer/operations' },
             { label: 'Create Task' }
           ]}
         />
-        <PageTabs label="Task creation mode" value={mode} onChange={setMode}
-          tabs={[{ id: 'manual', label: 'Manual mode' }, { id: 'auto', label: 'Auto-generate tasks' }]} />
-        <div role="tabpanel" id={`${mode}-panel`} aria-labelledby={`${mode}-tab`} className="workspace-fill">
-        {mode === 'manual' ? <>
+        <aside className={styles.autoNotice}>
+          <p>Need routes planned automatically? Use Route Optimization to generate and dispatch crew routes.</p>
+          <Link href="/dashboard/officer/optimization" className={styles.primary}>Open Route Optimization</Link>
+        </aside>
+        <div className="workspace-fill">
+        <>
           <div className={styles.viewTabs} role="group" aria-label="Manual workspace view">
             {[['map', 'Map'], ['reports', 'Reports'], ['details', 'Task details']].map(([id, label]) =>
               <button key={id} type="button" aria-pressed={compactView === id} onClick={() => setCompactView(id)}>{label}</button>)}
@@ -628,105 +484,7 @@ export default function CreateCleanupTaskPage() {
               </button>
             </section>
           </div>
-        </> : <>
-          <div className={styles.viewTabs} role="group" aria-label="Auto workspace view">
-            <button type="button" aria-pressed={autoView === 'setup'} onClick={() => setAutoView('setup')}>Task setup</button>
-            <button type="button" aria-pressed={autoView === 'routes'} onClick={() => setAutoView('routes')}>Proposed tasks</button>
-          </div>
-          <div className={styles.autoWorkspace} data-view={autoView}>
-            <section className={`${styles.panel} ${styles.setup}`} aria-label="Auto-task setup">
-              <div className={styles.panelHeader}>
-                <h2>Auto-task setup</h2>
-                <button type="button" className={styles.secondary} aria-expanded={showAdvanced} aria-controls="route-tweaks" onClick={() => setShowAdvanced(value => !value)}>
-                  Advanced route tweaks {showAdvanced ? '−' : '+'}
-                </button>
-              </div>
-              <div className={`${styles.field} ${styles.strategyField}`}>
-                <label htmlFor="routing-strategy">Routing Strategy</label>
-                <select id="routing-strategy" className="input" value={strategy} onChange={event => {
-                  const value = event.target.value
-                  setStrategy(value)
-                  if (value !== 'custom') setAutoSettings(prev => ({ ...prev, ...STRATEGIES.find(item => item.id === value).config }))
-                }}>
-                  {STRATEGIES.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
-                  <option value="custom">Custom (Advanced)</option>
-                </select>
-              </div>
-              <div className={`${styles.field} ${styles.strategyField}`}>
-                <label htmlFor="generation-scope">Generate</label>
-                <select id="generation-scope" className="input" value={generationScope} disabled={generating || creating}
-                  onChange={event => { setGenerationScope(event.target.value); setGeneratedTasks(null); setGenerationError(null); setRouteIndex(0) }}>
-                  <option value="single">Single highest-priority task</option>
-                  <option value="batch">Tasks for eligible backlog</option>
-                </select>
-              </div>
-              {showAdvanced && <div id="route-tweaks" className={styles.advanced} data-page={advancedPage}>
-                {[
-                  ['aging_factor', 'Aging Factor (per day)', '0.1'],
-                  ['max_escalation_cap', 'Max Escalation Cap (points)', '1.0'],
-                  ['max_detour_minutes', 'Max extra driving per stop (mins)', '0.5'],
-                  ['max_detour_time_per_task', 'Total allowed detour time (mins)', '1.0'],
-                  ['max_route_distance_km', 'Max Route Distance Limit (km)', '5.0'],
-                  ['max_route_duration_minutes', 'Shift cap (mins)', '15.0'],
-                ].map(([key, label, step], index) => <div key={key} className={styles.tweakField} data-tweak-page={Math.floor(index / 2)}>
-                  <Input label={label} type="number" step={step} value={autoSettings[key]}
-                    onChange={event => { setStrategy('custom'); setAutoSettings(prev => ({ ...prev, [key]: parseFloat(event.target.value) })) }} />
-                </div>)}
-              </div>}
-              {showAdvanced && <nav className={`${styles.pager} ${styles.advancedPager}`} aria-label="Advanced settings pages">
-                <button type="button" disabled={advancedPage === 0} onClick={() => setAdvancedPage(value => value - 1)}>Previous settings</button>
-                <span role="status">{advancedPage + 1} of 3</span>
-                <button type="button" disabled={advancedPage === 2} onClick={() => setAdvancedPage(value => value + 1)}>Next settings</button>
-              </nav>}
-              <button type="button" onClick={handlePreviewRoutes} disabled={generating} className={styles.primary}>
-                {generating ? 'Generating Tasks…' : 'Preview Tasks'}
-              </button>
-            </section>
-            {generationError ? <section className={`${styles.panel} ${styles.autoState}`} role="alert">
-              <h2 className={styles.warning}>Task Generation Failed</h2><p>{generationError}</p>
-              <button type="button" className={styles.secondary} onClick={handlePreviewRoutes} disabled={generating}>Retry Generation</button>
-            </section> : generatedTasks?.length ? <section className={styles.panel} aria-label="Review proposed cleanup tasks">
-              <div className={styles.panelHeader}><h2>Proposed cleanup tasks</h2>
-                <button type="button" className={styles.primary} onClick={handleConfirmAndDispatch} disabled={creating}>{creating ? 'Dispatching…' : 'Confirm & Dispatch'}</button>
-              </div>
-              {generatedTasks.slice(activeRouteIndex, activeRouteIndex + 1).map(task => {
-                const idx = activeRouteIndex
-                return <div key={idx} className={styles.routeCard}>
-                  <Input label="Task title" value={task.title} onChange={event => {
-                    const next = [...generatedTasks]; next[idx] = { ...next[idx], title: event.target.value }; setGeneratedTasks(next)
-                  }} />
-                  <div className={styles.routeFacts}>
-                    <p>Primary priority: <strong>{task.primary_priority.toFixed(1)}</strong></p>
-                    <p>{task.primary_target_is_cluster ? 'Cluster' : 'Report'} {task.primary_target_id?.substring(0, 6)} · {(task.included_reports || []).length} detour stops</p>
-                    <p>Detour: {(task.cumulative_detour_minutes ?? 0).toFixed(1)} mins</p>
-                    <p>Est. travel: {task.estimated_distance_km != null ? `~${Math.ceil(task.estimated_distance_km / 30 * 60)} min` : 'unavailable'}</p>
-                    <p>Shift cap: {autoSettings.max_route_duration_minutes ?? 480} min</p>
-                    {task.estimated_distance_km != null && <p className={autoSettings.max_route_distance_km && task.estimated_distance_km > autoSettings.max_route_distance_km ? styles.warning : ''}>
-                      Distance: {task.estimated_distance_km.toFixed(1)} km {autoSettings.max_route_distance_km ? `/ ${autoSettings.max_route_distance_km} km max` : ''}
-                      {autoSettings.max_route_distance_km && task.estimated_distance_km > autoSettings.max_route_distance_km && ' (Exceeds Limit)'}
-                    </p>}
-                  </div>
-                  <p className={styles.instructions}>Travel assumes 30 km/h; cleanup time is excluded.</p>
-                  <div className={styles.crewField} role="group" aria-label="Assign task crew">
-                    <span className={styles.fieldLabel}>Assign crew</span>
-                    <CrewChoices crews={availableCrew} selected={task.assigned_crew_ids} onChange={ids => {
-                      const next = [...generatedTasks]; next[idx] = { ...next[idx], assigned_crew_ids: ids }; setGeneratedTasks(next)
-                    }} />
-                  </div>
-                </div>
-              })}
-              <nav className={styles.pager} aria-label="Proposed task pages">
-                <button type="button" disabled={activeRouteIndex === 0} onClick={() => setRouteIndex(activeRouteIndex - 1)}>Previous task</button>
-                <span role="status">Task {activeRouteIndex + 1} of {generatedTasks.length}</span>
-                <button type="button" disabled={activeRouteIndex >= generatedTasks.length - 1} onClick={() => setRouteIndex(activeRouteIndex + 1)}>Next task</button>
-              </nav>
-            </section> : <section className={`${styles.panel} ${styles.autoState}`} aria-live="polite">
-              <h2>{generating ? 'Generating tasks…' : generatedTasks ? 'No Tasks Generated' : 'Ready to Auto-Generate'}</h2>
-              <p>{generatedTasks ? 'No eligible, unassigned reports match the routing criteria.' : 'Choose a routing strategy and preview cleanup tasks. Each proposal becomes a separate task when dispatched.'}</p>
-              {generatedTasks && <button type="button" className={styles.secondary} onClick={handlePreviewRoutes} disabled={generating}>Refresh & Retry</button>}
-            </section>}
-          </div>
-        </>}
+        </>
         {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
         </div>
       </div>

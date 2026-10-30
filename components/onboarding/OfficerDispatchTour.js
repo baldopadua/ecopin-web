@@ -12,7 +12,7 @@ import styles from './OfficerDispatchTour.module.css'
 const steps = [
   {
     title: 'Review hotzones', location: 'Command Center → Hotzone Intel',
-    target: '[data-command-panel]:has([aria-label="View all Critical Hotzones"]) h2',
+    target: '[data-command-panel]:has([aria-label="View all Priority Hotzones"]) h2',
     description: 'Start with the reports behind each hotzone before choosing work for today.',
     checks: ['Open a hotzone to review its location, citizen evidence and report status.', 'Compare severity and priority with other areas that need attention.'],
     tip: 'A priority score helps you review work; it does not dispatch a crew.',

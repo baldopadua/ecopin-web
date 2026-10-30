@@ -103,3 +103,5 @@
 @media (max-width: 1023px), (max-height: 699px) {
   .manualWorkspace, .autoWorkspace { flex: none; min-height: 560px; }
 }
+.autoNotice { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface-elevated); }
+.autoNotice p { margin: 0; color: var(--text-secondary); }

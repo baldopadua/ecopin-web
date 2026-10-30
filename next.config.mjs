@@ -42,6 +42,13 @@ const nextConfig = {
       }
     ],
   },
+  async redirects() {
+    return [
+      { source: '/experiments/yt-maps-landing', destination: '/explore', permanent: false },
+      { source: '/dashboard/field-crew/:path*', destination: '/auth', permanent: false },
+      { source: '/dashboard/admin/infrastructure', destination: '/dashboard/admin', permanent: false },
+    ];
+  },
   async headers() {
     const backend = serviceOrigin(process.env.NEXT_PUBLIC_BACKEND_API_URL);
     const database = serviceOrigin(process.env.NEXT_PUBLIC_SUPABASE_URL);

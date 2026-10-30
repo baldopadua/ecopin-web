@@ -7,20 +7,19 @@ import {buildMunicipalDecisions,DECISION_RULES} from '@/lib/municipal-decisions.
 import styles from './MunicipalDecisionCards.module.css';
 import {trendPeriodLabel} from '@/lib/barangay-trends.mjs';
 const types={resources:'Collection and crew planning',verification:'Verification capacity',resolution:'Resolution blockers'};
-export default function MunicipalDecisionCards({data,paused=false}){
+export default function MunicipalDecisionCards({data,area='all',paused=false}){
  const user=useUser();
  const [clock,setClock]=useState(()=>Date.now());
- const [area,setArea]=useState('all'),[type,setType]=useState('all'),[expanded,setExpanded]=useState(false);
+ const [type,setType]=useState('all'),[expanded,setExpanded]=useState(false);
  useEffect(()=>{const timer=setInterval(()=>setClock(Date.now()),60000);return()=>clearInterval(timer);},[]);
  const result=buildMunicipalDecisions(data,{now:new Date(clock)});
  const ready=!paused&&result.status==='ready';
  const cards=ready?result.cards.filter(c=>(area==='all'||c.areaKey===area)&&(type==='all'||c.type===type)):[];
  const shown=expanded?cards:cards.slice(0,6);
- const areas=data.groups.filter(g=>g.psgc_code);
  function destination(card){
-  if(card.destination==='reports')return {href:'/dashboard/raw-data',label:'Open report queue'};
+  if(card.destination==='reports')return {href:'/dashboard/officer/reports',label:'Open report queue'};
   return user?.role==='admin'
-   ?{href:'/dashboard/admin/optimization-settings',label:'Review resource settings'}
+   ?{href:'/dashboard/admin/settings?tab=fleet',label:'Review resource settings'}
    :{href:'/dashboard/officer/optimization',label:'Review dispatch capacity'};
  }
  return <section className={styles.section} aria-label="Municipal decision proposals">
@@ -30,9 +29,8 @@ export default function MunicipalDecisionCards({data,paused=false}){
    {result.comparison&&<p className={styles.scope}>Comparing {trendPeriodLabel(result.comparison)}.</p>}
    {result.notices.map(notice=><p className={styles.notice} key={notice}>{notice}</p>)}
    <div className={styles.filters}>
-    <label>Decision area<select aria-label="Decision area" value={area} onChange={e=>{setArea(e.target.value);setExpanded(false);}}><option value="all">All official barangays</option>{areas.map(g=><option key={g.psgc_code} value={g.psgc_code}>{g.name}</option>)}</select></label>
     <label>Decision type<select aria-label="Decision type" value={type} onChange={e=>{setType(e.target.value);setExpanded(false);}}><option value="all">All proposal types</option>{Object.entries(types).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label>
-    <p role="status">{shown.length} of {cards.length} matching proposals shown · {result.cards.length} across all official barangays.</p>
+    <p role="status">{shown.length} of {cards.length} matching proposals shown · {result.cards.length} across all official barangays. Area follows the barangay selected above.</p>
    </div>
    {cards.length===0&&<p className={styles.notice}>No planning rule matched this view. This does not mean there is no field work; inspect the ordinary report and dispatch queues.</p>}
    <div className={styles.grid}>{shown.map(card=>{

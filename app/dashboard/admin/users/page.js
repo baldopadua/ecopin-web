@@ -349,7 +349,6 @@ function UserManagementContent() {
         title="User Management"
         subtitle="Manage user accounts and roles"
         breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
           { label: 'Admin', href: '/dashboard/admin' },
           { label: 'Users' }
         ]}

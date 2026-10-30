@@ -1,9 +1,8 @@
 'use client'
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import Link from 'next/link'
 import { CircleMarker, MapContainer, Polyline, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet'
-import { ArrowUpRight, LocateFixed, MapPin, RefreshCw } from 'lucide-react'
+import { LocateFixed, MapPin, RefreshCw } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { fetchPublicReportPage } from '@/lib/api/public-report-page.mjs'
 import PublicReportPopup from './PublicReportPopup'
@@ -115,7 +114,6 @@ export default function LandingMap({ isDark }) {
       <MapPin size={20} className={styles.toolbarPin} />
       <PublicSelect id="preview-neighborhood" label="Neighborhood" value={location} onChange={setLocation} options={Object.entries(LOCATIONS).map(([value, place]) => ({ value, label: place.label }))} className={styles.toolbarSelect} />
       <PublicSelect id="preview-concern" label="Concern type" value={issueType} onChange={setIssueType} options={Object.entries(TYPES).map(([value, label]) => ({ value, label }))} className={styles.toolbarSelect} />
-      <Link href="/explore" aria-label="Open the full public map"><ArrowUpRight size={22} /></Link>
     </div>
     <MapContainer center={LOCATIONS.pasig.center} zoom={14} preferCanvas scrollWheelZoom={false} zoomControl={false} className={styles.leafletMap}>
       <TileLayer key={isDark ? 'dark' : 'light'} url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" className={isDark ? styles.darkTiles : styles.lightTiles} attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' />
@@ -127,6 +125,5 @@ export default function LandingMap({ isDark }) {
     <div className={styles.mapStatus} role="status">
       {state.loading ? 'Finding public reports…' : state.error ? <><span>Reports couldn’t load.</span><button onClick={() => setRetry(value => value + 1)}><RefreshCw size={14} /> Try again</button></> : state.count ? `${state.count}${state.hasMore ? '+' : ''} reviewed ${state.count === 1 ? 'report' : 'reports'} in this view` : 'No reviewed reports in this view. Try another area.'}
     </div>
-    <Link className={styles.fullMapLink} href="/explore">Open full map <ArrowUpRight size={16} /></Link>
   </div>
 }

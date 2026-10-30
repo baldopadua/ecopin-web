@@ -608,17 +608,19 @@ export default function ProfilePage() {
                 Keep your account protected with a strong, policy-compliant password.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                setShowPasswordForm(!showPasswordForm)
-                setPasswordData({ current_password: '', new_password: '', confirm_password: '' })
-              }}
-              className={styles.btnSecondary}
-            >
-              <KeyRound size={16} aria-hidden="true" />
-              <span>{showPasswordForm ? 'Cancel' : 'Change password'}</span>
-            </button>
+            {!showPasswordForm && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPasswordForm(true)
+                  setPasswordData({ current_password: '', new_password: '', confirm_password: '' })
+                }}
+                className={styles.btnSecondary}
+              >
+                <KeyRound size={16} aria-hidden="true" />
+                <span>Change password</span>
+              </button>
+            )}
           </div>
 
           {!showPasswordForm ? (

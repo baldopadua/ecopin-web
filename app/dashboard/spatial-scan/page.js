@@ -187,11 +187,7 @@ function TacticalScanContent() {
       <div className={styles.headingActions}>
         <Link href="/dashboard/spatial-scan/patterns">Historical hotspots</Link>
         <span className={styles.issued}>{observed ? 'Today · Manila time' : currentData?.prediction_date ? `${activeTab === 'historical' ? 'Snapshot from' : 'Issued'} ${forecastDate(currentData.prediction_date)}` : (loading && !hasMapData) ? 'Loading forecast…' : selectedDate ? `Snapshot from ${forecastDate(selectedDate)}` : 'Forecast unavailable'}</span>
-        {activeTab === 'historical' ? (
-          <button type="button" aria-label="Return to latest forecast" onClick={() => { setActiveTab('current'); setFocusedItem(null); }}>
-            <History size={16} aria-hidden="true" /><span>Back to Latest Forecast</span>
-          </button>
-        ) : (
+        {activeTab !== 'historical' && (
           <button type="button" aria-label="Past forecast snapshots" aria-pressed={false} disabled={!availableDates.length || observed}
             onClick={() => { setActiveTab('historical'); setFocusedItem(null); }}>
             <History size={16} aria-hidden="true" /><span>Past Snapshots</span>
@@ -280,7 +276,6 @@ function TacticalScanContent() {
     {!observed && (
       activeTab === 'historical' ? (
         <div className={styles.historyBar}>
-          <button type="button" className={styles.clearFilter} onClick={() => { setActiveTab('current'); setFocusedItem(null); }}>Latest forecast</button>
           <TimePlayer dates={availableDates} currentDate={selectedDate} onDateChange={handleDateChange} isProjective={false} />
         </div>
       ) : (
