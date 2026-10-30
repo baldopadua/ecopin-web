@@ -51,6 +51,7 @@ function ScopedOperationalTimeline({taskId,reportId}){
       {event.task_id&&<Link className="underline" href={`/dashboard/officer/operations/${event.task_id}`}>Task {event.task_id}</Link>}
       {event.report_id&&<Link className="underline" href={`/dashboard/raw-data/${event.report_id}`}>Report {event.report_id}</Link>}
      </div>
+     {event.event_type==='task_transition'&&<p className="text-sm">{event.details?.from_status||'Created'} → {event.details?.to_status||'Not recorded'}</p>}
      {event.details?.slot&&<p className="text-xs text-text-secondary">{event.details.slot==='before'?'Before':'After'} cleanup evidence</p>}
      {event.event_type==='assignment'&&event.details?.assigned===false&&<p className="text-sm">Assignment removed</p>}
      {event.details?.disposition&&<p className="text-xs text-text-secondary">Receipt disposition: {event.details.disposition.replaceAll('_',' ')}</p>}

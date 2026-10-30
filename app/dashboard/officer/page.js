@@ -7,8 +7,11 @@ import ReportLifecycleSummary from '@/components/reports/ReportLifecycleSummary'
 import CommandCenterPanel from '@/components/ui/CommandCenterPanel'
 import styles from '@/components/ui/CommandCenter.module.css'
 import PageHeader from '@/components/layout/PageHeader'
+import PageTabs from '@/components/ui/PageTabs'
+import LiveOperationsFeed from '@/components/reports/LiveOperationsFeed'
 import StatusBadge from '@/components/ui/StatusBadge'
 import UrgencyQueue from '@/components/reports/UrgencyQueue'
+import UnprocessedAlerts from '@/components/reports/UnprocessedAlerts'
 import OfficerDispatchTour from '@/components/onboarding/OfficerDispatchTour'
 import { useUser } from '@/components/auth/UserContext'
 import { OfficerGuard } from '@/components/auth/RequireRole'
@@ -17,6 +20,7 @@ import { reportDiagnostic } from '../../../lib/diagnostics.mjs';
 
 export default function OfficerHomepage() {
   const user = useUser()
+  const [view,setView]=useState('command-overview')
   const [queueLoading, setQueueLoading] = useState(true)
   const taskQuery = useDashboardTasks()
   const reportQuery = useDashboardReports()
@@ -117,11 +121,13 @@ export default function OfficerHomepage() {
   return (
     <OfficerGuard>
       <div className={`workspace-page ${styles.page}`}>
-        <PageHeader title="Command Center" subtitle={`Welcome, ${user?.full_name || 'Officer'}. System status is operational.`}>
+        <PageHeader title="Command Center" subtitle={`Welcome, ${user?.full_name || 'Officer'}. Review activity and dispatch work.`}>
           <Link href="/dashboard/officer/optimization" className={styles.primary} data-tour="route-generation">
             <CloudLightning size={16} aria-hidden="true" />Run Optimization
           </Link>
         </PageHeader>
+        <PageTabs label="Command Center views" tabs={[{id:'command-overview',label:'Overview'},{id:'operations-feed',label:'Operations feed'}]} value={view} onChange={setView} />
+        {view==='operations-feed'?<div id="operations-feed-panel" role="tabpanel" aria-labelledby="operations-feed-tab" className="workspace-fill"><LiveOperationsFeed /></div>:<div id="command-overview-panel" role="tabpanel" aria-labelledby="command-overview-tab" className="workspace-fill">
         {dataError && <div role="alert">
           Some dashboard data could not refresh. Previously loaded data is shown where available.
           <button type="button" onClick={() => { void taskQuery.refetch(); void reportQuery.refetch(); void clusterQuery.refetch() }}>Try again</button>
@@ -139,6 +145,7 @@ export default function OfficerHomepage() {
           </Link>)}
         </div>
         <UrgencyQueue compact />
+        <UnprocessedAlerts />
         <ReportLifecycleSummary reports={lifecycleQuery.data} compact loading={lifecycleQuery.isPending} error={lifecycleQuery.isError} onRetry={()=>lifecycleQuery.refetch()} />
         <div className={styles.panels}>
           <CommandCenterPanel title="Active Targets" items={activeTasks} loading={loading}
@@ -171,6 +178,7 @@ export default function OfficerHomepage() {
           </CommandCenterPanel>
         </div>
         <OfficerDispatchTour key={user?.id} />
+        </div>}
       </div>
     </OfficerGuard>
   )

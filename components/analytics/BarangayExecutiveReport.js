@@ -12,6 +12,7 @@ import {initialBarangayRange,formatHours} from '@/lib/barangay-analytics.mjs'
 import {patternLabel} from '@/lib/historical-patterns.mjs'
 import {caseTime} from '@/lib/incident-case-record.mjs'
 import styles from './BarangayExecutiveReport.module.css'
+import {comparableTrend,trendSummary,trendPeriodLabel} from '@/lib/barangay-trends.mjs'
 const number=value=>Number(value).toLocaleString('en-US',{maximumFractionDigits:1})
 const pct=value=>value==null?'No submissions':`${number(value)}%`
 const age=g=>g.backlog_7_29_days+g.backlog_30_plus_days
@@ -34,7 +35,7 @@ function ExecutiveSheet({data,hotspots,month,clock}){
    <p className={styles.note}>Counts cover all EcoPin concern types. They measure reporting activity, not waste tonnage, population-adjusted incidence or a causal service-performance score. Backlog is current at the snapshot, not month-end historical backlog.</p>
   </section>
   <section className={styles.decisions}><h2>Decision-support recommendations</h2><p>Draft rule policy {decisions.ruleVersion}. Proposal inputs cover {data.comparison.start_month} through {data.comparison.end_month}; monthly executive statistics above cover {month} only. Current workload uses the same database snapshot. Proposals do not allocate crews or change collection schedules.</p>
-   {decisions.comparison&&<p>Demand comparison: {decisions.comparison.previous} versus {decisions.comparison.current}, complete months only.</p>}
+   {decisions.comparison&&<p>Demand comparison: {trendPeriodLabel(decisions.comparison)}.</p>}
    {decisions.notices.map(notice=><p key={notice} className={styles.note}>{notice}</p>)}
    {decisions.status!=='ready'?<p>Recommendation evidence is unavailable; refresh before using proposals.</p>:!decisions.cards.length?<p>No decision rule matched this snapshot. Ordinary report and dispatch queues still require review.</p>:<>
     <p>{decisions.cards.length} proposals across all official barangays. Dashboard area/type filters and collapsed cards do not limit this report.</p>
@@ -60,6 +61,10 @@ function ExecutiveSheet({data,hotspots,month,clock}){
    <ReportTable caption={`Submissions and current verification state · ${month}`} rows={rows} columns={[
     ['Area',g=>g.name],['Submitted',g=>number(g.report_count)],['Approved',g=>number(g.approved_count)],['Rejected',g=>number(g.rejected_count)],['Pending',g=>number(g.pending_count)],['Processed',g=>`${number(g.verified_count)} / ${number(g.report_count)} (${pct(g.verification_rate_percent)})`],
    ]} />
+   <ReportTable caption={`Equal 30-day submission trends · ${trendPeriodLabel(comparableTrend(monthly))}`} rows={rows} columns={[
+    ['Area',g=>g.name],['Previous 30 days',g=>comparableTrend(monthly)?number(g.trend.previous_count):'Unavailable'],['Current 30 days',g=>comparableTrend(monthly)?number(g.trend.current_count):'Unavailable'],['Change',g=>{const t=comparableTrend(monthly)&&trendSummary(g.trend.previous_count,g.trend.current_count);return t?`${t.label}${t.smallSample?' · Small sample':''}`:'Unavailable'}],
+   ]} />
+   <p>Trend windows end at the latest complete month in the applied range and can extend before it. Zero baseline with reports means New Activity; no reports in either window means No activity. Counts measure reporting activity, not waste volume.</p>
    <p>Processed means approved or rejected, including automated verification. This does not measure officer review speed.</p>
    <ReportTable caption="Current all-time backlog by elapsed age at the snapshot" rows={rows} columns={[
     ['Area',g=>g.name],['Open',g=>number(g.backlog_total)],['Under 1 day',g=>number(g.backlog_under_1_day)],['1–2 days',g=>number(g.backlog_1_2_days)],['3–6 days',g=>number(g.backlog_3_6_days)],['7–29 days',g=>number(g.backlog_7_29_days)],['30+ days',g=>number(g.backlog_30_plus_days)],

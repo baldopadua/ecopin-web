@@ -1056,3 +1056,18 @@ Barangay Analytics offers an applied-range Executive report month selector and P
 ### PDT-32: field crew operations handover PDF
 
 Officer Operations/Sweeper Analytics and Admin Operational Events link to the common daily/period Operations Summary. Use inclusive Manila dates and an explicit Apply action; pause printing on drafts, stale data, errors or incomplete sources. Keep current task/team inventory distinct from period assignment history, receipt recipients, completion-linked stored stops, incident-level proof reviews and obstacles. Unknown task states and source gaps remain visible; no depot/GPS visits, historical team roster, generic edit-date milestones or whole-task verification are invented. Retain contested outcomes as claims and distinguish current source matches from superseded verification events. Exclude reporter account identities, preserve legitimate staff attribution and treat narrative obstacles as internal information. Use the shared A4 portal, repeating table/document headers and page counts, full rows with clean breaks and clear oversized-source failure. Contract and acceptance: ../ecopin_backend_node/docs/field-crew-operations-summary.md.
+
+
+## PDT-18 — Comparable demand trends
+
+Show an equal 30-day demand comparison alongside calendar-month totals. State exact half-open Manila date ranges and keep previous/current counts beside the percentage. Zero baseline with submissions reads “New Activity”; two zero counts read “No activity”. Label small samples. Missing or mismatched trend data reads “Unavailable”. Keep scope notes visible: windows may start before applied months, incomplete current months are excluded, and reporting counts are not waste tonnage. Apply the same contract to comparison rows, CSV, recommendation evidence and the executive A4 appendix. Use existing typography and table patterns.
+
+
+## PDT-23 — Stagnant incident alerts
+
+Keep a compact red/amber count summary in the officer Command Center. Red means at least five elapsed days since submission and amber means four to five days, with acknowledgement or real crew assignment still missing. Always include text labels alongside color. Open the full oldest-first queue in the shared keyboard-accessible dialog so all cases can be paged without breaking the fitted dashboard. Show missing actions, submission and snapshot times, existing incident-detail links and explicit loading/empty/error/stale states. Reading a notice does not remove an outstanding action. Use the existing surface, border and status colors; no pulsing alert decoration.
+
+
+## PDT-15 — Live operations tab
+
+Expose Operations feed beside Overview in the Command Center using the shared tab control. Keep task activity and crew connections in separate scrollable panes on desktop and stacked panes on phones. Show a text-labeled live/stale/unavailable/browser-offline state and the server snapshot time. Poll every 20 seconds while active; snapshots older than 30 seconds must visibly lose the live label. Distinguish recent contact from unknown and no recent contact, including sync-paused or backgrounded devices. Team summaries use aggregate member counts and do not claim physical presence. Preserve bigint-safe event history pagination, device-versus-server time labels, empty/error/retry behavior and keyboard access to scrollable regions.

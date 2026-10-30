@@ -39,3 +39,6 @@
 .page details p {margin-top:12px;font-size:14px;color:var(--text-secondary)}
 @media(max-width:1100px){.metrics {grid-template-columns:repeat(2,minmax(0,1fr));row-gap:20px}.metrics .card:nth-child(2){border-right:0}}
 @media(max-width:680px){.metrics,.charts {grid-template-columns:1fr}.metrics {padding:0 16px;gap:0}.metrics .card {padding:16px 0;border-right:0;border-bottom:1px solid var(--border)}.metrics .card:last-child{border-bottom:0}.sectionHeader label {flex-basis:100%;width:100%}.filters label {flex:1 1 180px}.filters button {flex:1 1 auto}.card,.notice {padding:16px}.duration {flex-direction:column}}
+
+.trendValue {display:inline-block;vertical-align:top}
+.trendValue small {display:block;font-size:12px;color:var(--text-secondary);margin-top:4px;line-height:1.5}
