@@ -1,4 +1,5 @@
 'use client'
+import OperationalTimeline from '@/components/reports/OperationalTimeline'
 import SecureImage from '@/components/ui/SecureImage'
 import React, { useEffect, useState, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
@@ -658,6 +659,10 @@ function CleanupTaskDetailContent() {
       />
 
       <div className="flex flex-col gap-6">
+         <details className="card">
+           <summary className="cursor-pointer min-h-11 py-3 font-medium">Recorded operational events</summary>
+           <OperationalTimeline key={task.id} taskId={task.id} />
+         </details>
          
          <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
             <section className={`xl:col-span-3 ${styles.routeCard}`} aria-labelledby="operation-route-title">

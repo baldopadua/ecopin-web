@@ -1,47 +1,26 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import { AdminGuard } from '@/components/auth/RequireRole'
-import { getSystemStats, getSystemLogs } from '@/lib/api'
+import { getSystemLogs } from '@/lib/api'
+import { useDashboardSystemStats } from '@/components/context/DashboardQueryProvider'
+import { DASHBOARD_QUERY_KEY } from '@/lib/dashboard-query-client.mjs'
 import StatsCard from '@/components/ui/StatsCard'
+import ReportLifecycleSummary from '@/components/reports/ReportLifecycleSummary'
 import DataTable from '@/components/ui/DataTable'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { Users, Settings, FileText } from 'lucide-react'
-import { reportDiagnostic } from '../../../lib/diagnostics.mjs';
 
 function AdminHomepageContent() {
   const router = useRouter()
-  const [stats, setStats] = useState(null)
-  const [recentLogs, setRecentLogs] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-
-  useEffect(() => {
-    loadStats()
-    loadRecentLogs()
-  }, [])
-
-  const loadStats = async () => {
-    try {
-      const data = await getSystemStats()
-      setStats(data)
-    } catch (err) {
-      reportDiagnostic('error', 'admin', 'Failed to load stats:', err)
-      setError('Failed to load system statistics')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loadRecentLogs = async () => {
-    try {
-      const data = await getSystemLogs({ limit: 4 })
-      setRecentLogs(data.logs || [])
-    } catch (err) {
-      reportDiagnostic('error', 'admin', 'Failed to load recent logs:', err)
-    }
-  }
+  const statsQuery = useDashboardSystemStats()
+  const logsQuery = useQuery({queryKey:[...DASHBOARD_QUERY_KEY,'recent-system-logs'],queryFn:()=>getSystemLogs({limit:4})})
+  const stats = statsQuery.data
+  const recentLogs = logsQuery.data?.logs || []
+  const loading = statsQuery.isPending
+  const error = statsQuery.isError && !stats ? 'Failed to load system statistics' : null
+  const loadStats = () => statsQuery.refetch()
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A'
@@ -137,13 +116,14 @@ function AdminHomepageContent() {
         />
         <div className="card">
           <p className="text-error">{error}</p>
+          <button type="button" className="btn-secondary mt-4" onClick={loadStats}>Retry statistics</button>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="workspace-page">
+    <div className="workspace-page workspace-page--flow">
       <PageHeader
         title="Admin Dashboard"
         subtitle="Manage users, settings, and view system logs"
@@ -182,23 +162,10 @@ function AdminHomepageContent() {
 
         <StatsCard
           title="Total Reports"
-          value={stats?.reports?.total || 0}
+          value={stats?.reports?.total ?? '—'}
           color="accent"
         >
-          <div className="mt-4 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-text-secondary">Unresolved</span>
-              <span className="text-text-primary font-medium">{stats?.reports?.byStatus?.unresolved || 0}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-text-secondary">Resolved</span>
-              <span className="text-text-primary font-medium">{stats?.reports?.byStatus?.resolved || 0}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-text-secondary">Pending</span>
-              <span className="text-text-primary font-medium">{stats?.reports?.byStatus?.pending || 0}</span>
-            </div>
-          </div>
+          <ReportLifecycleSummary reports={stats?.reports} error={statsQuery.isError} onRetry={loadStats} />
         </StatsCard>
 
         <StatsCard

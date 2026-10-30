@@ -1,4 +1,6 @@
 'use client'
+import PublicCleanupProof from './PublicCleanupProof'
+import {reportDiagnostic} from '@/lib/diagnostics.mjs'
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import SecureImage from '@/components/ui/SecureImage'
@@ -30,9 +32,9 @@ function ModalVideoPlayer({ src, poster }) {
             v.muted = true
             v.play()
               .then(() => setIsPlaying(true))
-              .catch((retryErr) => console.error('Modal muted play retry failed:', retryErr))
+              .catch((retryErr) => reportDiagnostic('error','media','Modal muted play retry failed:',retryErr))
           } else {
-            console.warn('Modal video play error:', err?.name, err?.message)
+            reportDiagnostic('warn','media','Modal video play error:',err)
           }
         })
     }
@@ -279,6 +281,7 @@ export default function ReportDetailModal({ report, evidence = [], agencyRespons
                 </p>
               </div>
 
+              <PublicCleanupProof key={report.id} reportId={report.id} />
               {/* Incident Details Grid */}
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div className="bg-surface p-3 border border-border rounded-sm">

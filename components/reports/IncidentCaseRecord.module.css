@@ -1,0 +1,39 @@
+.preview { min-width: 0; }
+.controls { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; margin-bottom: 1.5rem; }
+.controls p, .controls label { flex-basis: 100%; font-size: .875rem; }
+.controls textarea { margin-top: .5rem; }
+.sheet { box-sizing: border-box; width: 100%; max-width: 210mm; margin: 0 auto; padding: 12mm; color: #161b22; background: white; border: 1px solid #ccd1d7; font-family: Arial, sans-serif; font-size: 10pt; line-height: 1.45; overflow-wrap: anywhere; }
+.masthead { border-bottom: 2px solid #253447; padding-bottom: 4mm; }
+.masthead p { margin: 1mm 0; font-size: 9pt; }
+.sheet h1 { font-size: 22pt; line-height: 1.2; margin: 2mm 0; }
+.sheet h2 { font-size: 12pt; margin: 6mm 0 3mm; padding-bottom: 1.5mm; border-bottom: 1px solid #ccd1d7; break-after: avoid; }
+.sheet h3 { font-size: 12pt; margin: 3mm 0; }
+.sheet p { margin-bottom: 3mm; }
+.facts { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm 6mm; margin: 3mm 0; }
+.facts div { min-width: 0; }
+.facts dt { font-size: 8.5pt; color: #485361; }
+.facts dd { margin: 0; white-space: pre-wrap; }
+.sheet small { display: block; font-size: 8pt; line-height: 1.4; margin-top: 1mm; }
+.preserve { white-space: pre-wrap; }
+.photos { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; margin: 4mm 0; }
+.photos figure { margin: 0; break-inside: avoid; }
+.photos img { width: 100%; height: auto; max-height: 85mm; object-fit: contain; }
+.photos figcaption { font-size: 8.5pt; margin-top: 2mm; }
+.sheet table { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 3mm 0; font-size: 8pt; }
+.sheet th, .sheet td { padding: 2.5mm; border: 1px solid #ccd1d7; vertical-align: top; text-align: left; overflow-wrap: anywhere; }
+.sheet th { background: #edf0f3; color: #161b22; font-weight: bold; }
+.sheet thead { display: table-header-group; }
+.sheet tr { break-inside: avoid; }
+.notice { margin-top: 3mm; font-size: 8pt; color: #485361; }
+@media (max-width: 600px) {
+ .sheet { padding: 5mm; }
+ .facts, .photos { grid-template-columns: 1fr; }
+ .sheet th, .sheet td { padding: 1.5mm; }
+}
+@media print {
+ .evidence p:last-child { break-inside: avoid; }
+ .sheet { width: auto; max-width: none; padding: 0; margin: 0; border: 0; font-size: 10pt; }
+ .facts, .photos { grid-template-columns: 1fr 1fr; }
+ .sheet th, .sheet td { padding: 2.5mm; }
+ .sheet h2, .sheet h3 { break-after: avoid; }
+}

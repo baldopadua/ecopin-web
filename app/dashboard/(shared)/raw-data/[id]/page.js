@@ -1,4 +1,7 @@
 'use client'
+import Link from 'next/link'
+import CleanupProofReview from '@/components/reports/CleanupProofReview'
+import OperationalTimeline from '@/components/reports/OperationalTimeline'
 import SecureImage from '@/components/ui/SecureImage'
 import ImageLightbox from '@/components/ui/ImageLightbox'
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react'
@@ -76,9 +79,9 @@ function VideoEvidenceCard({ url, name, onExpand }) {
             v.muted = true
             v.play()
               .then(() => setIsPlaying(true))
-              .catch((retryErr) => console.error('Video muted play retry failed:', retryErr))
+              .catch((retryErr) => reportDiagnostic('error','media','Video muted play retry failed:',retryErr))
           } else {
-            console.warn('Video play error:', err?.name, err?.message)
+            reportDiagnostic('warn','media','Video play error:',err)
           }
         })
     }
@@ -163,6 +166,8 @@ export default function ReportDetailPage() {
   const [uploadingBefore, setUploadingBefore] = useState(false)
   const [uploadingAfter, setUploadingAfter] = useState(false)
   const [noteText, setNoteText] = useState('')
+  const [cleanupNotesDraft, setCleanupNotesDraft] = useState({reportId:null,value:''})
+  const cleanupNotes = cleanupNotesDraft.reportId===reportId ? cleanupNotesDraft.value : ''
   const [addingNote, setAddingNote] = useState(false)
   const [updatingConsent, setUpdatingConsent] = useState(false)
   const [notification, setNotification] = useState(null)
@@ -544,6 +549,10 @@ export default function ReportDetailPage() {
   }
 
   const handleStatusUpdate = async (newStatus) => {
+    if (['resolved','waiting_for_feedback'].includes(newStatus) && !cleanupNotes.trim()) {
+      setNotification({message:'Enter cleanup action notes below before resolving this report.',type:'warning'})
+      return
+    }
     // Check if trying to mark as resolved without photos
     if (newStatus === 'resolved' && (!report.before_photo_url || !report.after_photo_url)) {
       setNotification({ message: 'Please upload both before and after photos before marking the report as resolved.', type: 'warning' })
@@ -552,7 +561,7 @@ export default function ReportDetailPage() {
 
     setUpdatingStatus(true)
     try {
-      await updateReportStatus(reportId, newStatus)
+      await updateReportStatus(reportId, newStatus, cleanupNotes.trim())
       // Refresh report data
       const updatedReport = await fetchReportById(reportId)
       setReport(updatedReport)
@@ -579,6 +588,10 @@ export default function ReportDetailPage() {
   }
 
   const handleResolveReport = async () => {
+    if (!cleanupNotes.trim()) {
+      setNotification({message:'Enter cleanup action notes below before resolving this report.',type:'warning'})
+      return
+    }
     // Check if trying to resolve without photos
     if (!report.before_photo_url || !report.after_photo_url) {
       setNotification({ message: 'Please upload both before and after photos before resolving the report.', type: 'warning' })
@@ -587,7 +600,7 @@ export default function ReportDetailPage() {
 
     setResolvingReport(true)
     try {
-      const updatedReport = await lguResolveReport(reportId)
+      const updatedReport = await lguResolveReport(reportId, cleanupNotes.trim())
       setReport(updatedReport)
       setNotification({ message: 'Report resolved successfully. Waiting for reporter feedback.', type: 'success' })
     } catch (error) {
@@ -808,6 +821,7 @@ export default function ReportDetailPage() {
           { label: 'Details' }
         ]}
       >
+        {isStaff&&<Link href={`/dashboard/raw-data/${encodeURIComponent(reportId)}/print`} className="btn-secondary">Print case record</Link>}
         <a href="/contact" className="btn-secondary">Official contacts</a>
         <button
           onClick={() => loadReportData(true)}
@@ -946,6 +960,13 @@ export default function ReportDetailPage() {
 
               </div>
 
+              {isStaff && <section className="card space-y-3">
+                <label className="block font-medium" htmlFor="cleanup-action-notes">Cleanup action notes</label>
+                <textarea id="cleanup-action-notes" rows={3} maxLength={2000} className="w-full rounded-lg border border-border bg-surface p-3 text-text-primary" value={cleanupNotes} onChange={e=>setCleanupNotesDraft({reportId,value:e.target.value})} />
+                <p className="text-sm text-text-secondary">Required when resolving a physical cleanup. These staff notes stay private; public proof has its own reviewed summary.</p>
+              </section>}
+              {isStaff && <CleanupProofReview key={report.id} reportId={report.id} />}
+              {isStaff && <details className="card"><summary className="cursor-pointer min-h-11 py-3 font-medium">Recorded operational events</summary><OperationalTimeline key={report.id} reportId={report.id} /></details>}
               {/* Evidence Photos & Videos */}
               {['officer', 'admin'].includes(user?.role) &&
                 typeof report.notes === 'string' &&

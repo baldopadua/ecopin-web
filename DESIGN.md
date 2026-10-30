@@ -1026,3 +1026,48 @@ Keep account-wide name consent, with the report-level identity override taking p
 
 
 29 October 2026 navigation/metrics verification: Chromium fixtures passed at 1440px light/officer, 768px dark/admin and 320px dark/officer, including sidebar omissions, legacy redirect, URL-selected tabs, keyboard Home/End, retained month drafts, all 30 barangays plus unassigned, filters, CSV, stale/retry and no horizontal overflow or runtime errors. Planning-proposal evidence/filter safeguards passed at the same viewports. The existing Metrics overview, fitted layouts and PDF export passed in both themes. Web unit/deadline tests and the production build were also run; these fixture checks do not verify live staff data.
+
+### PDT-13: cleanup proof verification
+
+Officers review cleanup proof on web; Field Crew captures/completes work on mobile. Staff Report Details requires private cleanup action notes when resolving physical cleanup, separately from the citizen explanation and public summary. The verification section loads both originals before enabling approval, supports explicit hidden areas on each photo, requires a separate public summary and renewed privacy confirmation, preserves drafts on failure, and rejects stale source/publication reviews. Re-review restores masks/notes only for matching source photos. Render masks into new JPEGs on the server; a CSS preview is not the privacy boundary. Public report details show only the approved publication with written Before/After labels and completion/verification times. Missing/error proof has a truthful state and retry, with no fallback to originals. Contract, review reconciliation and coordinated release requirements: `../ecopin_backend_node/docs/cleanup-proof.md`.
+
+### PDT-25: reconciled report lifecycle counts
+
+The Admin overview and Officer Command Center use the same server snapshot for all stored reports. Show Submitted, Verified, Assigned, In progress, Resolved, Rejected and Uncategorized exactly once per report, with their sum equal to Total Reports. Keep original statuses and count definitions in a keyboard-accessible disclosure, with the snapshot time and rule version. Unknown statuses remain visible for investigation. Failed or incomplete snapshots show an unavailable state with Retry; retained snapshots are labeled stale. Operational queue cards retain their own stated scope.
+
+The Admin overview uses natural page flow because the complete breakdown and expandable definitions must not squeeze the activity log out of a short desktop viewport. Keep its shared sticky header. On desktop, the counts use two columns; the named statistics region can scroll through expanded definitions. The Officer summary is collapsed initially to preserve room for operational queues, expands to a seven-column count row, and uses a named scroll region for definitions. Narrow layouts grow naturally. Acceptance: lifecycle browser fixtures cover reconciled totals, 86 unknown reports, empty/error/retry states, reachable definitions/activity and no horizontal overflow. Audit and deployment status: `../ecopin_backend_node/docs/report-lifecycle-reconciliation.md`.
+
+
+### PDT-14: operational event timeline
+
+Admin Audit Logs links to Operational events, with optional explicit Task/Report UUID scope. Officer Task Details and staff Report Details show scoped, collapsed timelines. Use a simple chronological list in natural flow, newest recorded first, with Manila occurrence and server-received times and responsible staff account IDs. Label device arrival as a claim, never server-attested presence. Task-level server turnaround pairs use the latest assignment generation; missing pairs stay unknown. Report scope shows only report-associated events; Task Details holds task-level assignment and acknowledgement history. Clear rows on failed refresh, support retry and ID keyset pagination, wrap UUIDs on narrow screens and avoid inferring legacy events from updated_at. Reset the pagination session before fetching when the incoming task/report entity changes. Local contract, review reconciliation and release status: ../ecopin_backend_node/docs/operational-audit.md.
+
+
+### PDT-30: A4 single-incident case record
+
+Staff Incident Details links to a dedicated Print case record preview. Use a white, restrained municipal document with recorded address/pin, supplementary landmark/access information, verified redacted Before/After evidence and full recorded history. Optional copy-only directions never edit GIS or the case. Keep original evidence and reporter account fields out of the export; owner privacy takes precedence over staff attribution. Label shared task milestones and missing history. Disable printing while included evidence is loading/failed; failed snapshots clear old content and offer retry. Native Print / Save PDF uses A4 portrait, readable multi-page flow, repeated history headings, incident/snapshot margin headers and page counts in current Chromium. Hide all shell/controls through a dedicated print portal; preserve Unicode and full text. Contract, review and rollout: ../ecopin_backend_node/docs/incident-case-record.md.
+
+
+### PDT-31: monthly barangay executive A4 report
+
+Barangay Analytics offers an applied-range Executive report month selector and Print executive summary action. Default to the latest complete available month; visibly label current-month partial reports. The preview uses a single monthly database snapshot plus separately timestamped rolling hotspot context. Put the executive overview first, recommendations on a new page, and all 30 barangays plus unassigned and city totals in full statistical tables. Include all matched proposals regardless of dashboard filters; reference shared checks once without discarding prerequisites. Repeat table headers, report month/snapshot and page counts, and use clean A4 breaks with selectable Unicode text. Current all-time backlog, calendar-month metrics and rolling UTC hotspot bins must remain distinct. Expired/invalid/failed or unapplied statistics pause printing; optional hotspot failure is explicitly unavailable rather than zero. Share the A4 print boundary with incident export so the shell/controls cannot enter either document. Contract, verification and rollout: ../ecopin_backend_node/docs/barangay-executive-report.md.
+
+
+### PDT-32: field crew operations handover PDF
+
+Officer Operations/Sweeper Analytics and Admin Operational Events link to the common daily/period Operations Summary. Use inclusive Manila dates and an explicit Apply action; pause printing on drafts, stale data, errors or incomplete sources. Keep current task/team inventory distinct from period assignment history, receipt recipients, completion-linked stored stops, incident-level proof reviews and obstacles. Unknown task states and source gaps remain visible; no depot/GPS visits, historical team roster, generic edit-date milestones or whole-task verification are invented. Retain contested outcomes as claims and distinguish current source matches from superseded verification events. Exclude reporter account identities, preserve legitimate staff attribution and treat narrative obstacles as internal information. Use the shared A4 portal, repeating table/document headers and page counts, full rows with clean breaks and clear oversized-source failure. Contract and acceptance: ../ecopin_backend_node/docs/field-crew-operations-summary.md.
+
+
+## PDT-18 — Comparable demand trends
+
+Show an equal 30-day demand comparison alongside calendar-month totals. State exact half-open Manila date ranges and keep previous/current counts beside the percentage. Zero baseline with submissions reads “New Activity”; two zero counts read “No activity”. Label small samples. Missing or mismatched trend data reads “Unavailable”. Keep scope notes visible: windows may start before applied months, incomplete current months are excluded, and reporting counts are not waste tonnage. Apply the same contract to comparison rows, CSV, recommendation evidence and the executive A4 appendix. Use existing typography and table patterns.
+
+
+## PDT-23 — Stagnant incident alerts
+
+Keep a compact red/amber count summary in the officer Command Center. Red means at least five elapsed days since submission and amber means four to five days, with acknowledgement or real crew assignment still missing. Always include text labels alongside color. Open the full oldest-first queue in the shared keyboard-accessible dialog so all cases can be paged without breaking the fitted dashboard. Show missing actions, submission and snapshot times, existing incident-detail links and explicit loading/empty/error/stale states. Reading a notice does not remove an outstanding action. Use the existing surface, border and status colors; no pulsing alert decoration.
+
+
+## PDT-15 — Live operations tab
+
+Expose Operations feed beside Overview in the Command Center using the shared tab control. Keep task activity and crew connections in separate scrollable panes on desktop and stacked panes on phones. Show a text-labeled live/stale/unavailable/browser-offline state and the server snapshot time. Poll every 20 seconds while active; snapshots older than 30 seconds must visibly lose the live label. Distinguish recent contact from unknown and no recent contact, including sync-paused or backgrounded devices. Team summaries use aggregate member counts and do not claim physical presence. Preserve bigint-safe event history pagination, device-versus-server time labels, empty/error/retry behavior and keyboard access to scrollable regions.

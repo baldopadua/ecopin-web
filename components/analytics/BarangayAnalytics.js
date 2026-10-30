@@ -1,11 +1,13 @@
 "use client";
 import {useEffect,useState} from 'react';
+import {useRouter} from 'next/navigation';
 import Button from '@/components/ui/Button';
 import DataTable from '@/components/ui/DataTable';
 import MunicipalDecisionCards from '@/components/analytics/MunicipalDecisionCards';
 import {fetchBarangayAnalytics} from '@/lib/api/barangay-analytics';
 import {initialBarangayRange,analyticsCsv,sortBarangays,formatHours} from '@/lib/barangay-analytics.mjs';
 import styles from './BarangayAnalytics.module.css';
+import {comparableTrend,trendSummary,trendPeriodLabel} from '@/lib/barangay-trends.mjs';
 const bands=[['backlog_under_1_day','Under 1 day'],['backlog_1_2_days','1–2 days'],['backlog_3_6_days','3–6 days'],['backlog_7_29_days','7–29 days'],['backlog_30_plus_days','30+ days']];
 const number=value=>Number(value??0).toLocaleString('en-US');
 const percent=value=>value==null?'—':`${value}%`;
@@ -17,6 +19,8 @@ function Bars({rows,label}) {
  </li>)}</ol>;
 }
 export default function BarangayAnalytics(){
+ const router=useRouter();
+ const [executiveMonth,setExecutiveMonth]=useState('');
  const [range,setRange]=useState(initialBarangayRange),[draft,setDraft]=useState(initialBarangayRange);
  const [loaded,setLoaded]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState(null);
  const [reload,setReload]=useState(0),[validation,setValidation]=useState(''),[selected,setSelected]=useState('all');
@@ -47,14 +51,20 @@ export default function BarangayAnalytics(){
   document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);setExportNotice('CSV download started. Check your browser downloads.');
   }catch {setExportNotice('The CSV could not download. Please try again.');}
  }
+ const availableMonths=loaded?.total.monthly.map(m=>m.month)||[];
+ const reportMonth=availableMonths.includes(executiveMonth)?executiveMonth:availableMonths.filter(m=>m<initialBarangayRange().end).at(-1)||loaded?.end_month||'';
  const total=loaded?.total;
  const focus=loaded&&(selected==='all'?total:loaded.groups.find(g=>g.key===selected))||total;
  const rows=loaded?sortBarangays(loaded.groups.filter(g=>g.name.toLowerCase().includes(search.trim().toLowerCase())),sort):[];
+ const trend=comparableTrend(loaded);
+ const trendText=g=>{const value=trend&&trendSummary(g?.trend?.previous_count,g?.trend?.current_count);return value?<span className={styles.trendValue}>{value.label}<small>{number(value.previous)} → {number(value.current)} reports{value.smallSample?' · Small sample':''}</small></span>:'Unavailable';};
  const unassigned=loaded?.groups.find(g=>g.key==='unassigned');
  return <div className={styles.page}>
   <header className={styles.sectionHeader}>
    <div><h2>Barangay operations</h2><p className={styles.muted}>Compare submissions, open work and resolution times across Pasig.</p></div>
    <Button variant="secondary" onClick={download} disabled={!canExport}>Download CSV</Button>
+   <label>Executive report month<select aria-label="Executive report month" value={reportMonth} disabled={!canExport} onChange={e=>setExecutiveMonth(e.target.value)}>{availableMonths.map(month=><option key={month} value={month}>{month}{month===initialBarangayRange().end?' (month to date)':''}</option>)}</select></label>
+   <Button variant="secondary" disabled={!canExport||!reportMonth} onClick={()=>router.push(`/dashboard/officer/metrics/barangay-print/${reportMonth}`)}>Print executive summary</Button>
   </header>
   <form onSubmit={apply} className={styles.filters} aria-label="Analytics months" noValidate>
    <label>From month<input type="month" min="2000-01" max={initialBarangayRange().end} value={draft.start} onChange={e=>setDraft({...draft,start:e.target.value})} /></label>
@@ -87,6 +97,7 @@ export default function BarangayAnalytics(){
     <div className={styles.sectionHeader}><div><h2>Monthly demand and current workload</h2><p className={styles.muted}>Select an area to inspect its trend and backlog. All locations includes unassigned and outside-baseline reports.</p></div>
      <label>Trend area<select value={selected} onChange={e=>setSelected(e.target.value)}><option value="all">All locations</option>{loaded.groups.map(g=><option key={g.key} value={g.key}>{g.name}</option>)}</select></label>
     </div>
+    <p><strong>Equal-period demand trend · {focus.name}</strong>: {trendText(focus)}</p><p className={styles.muted}>{trendPeriodLabel(trend)}. Windows can extend before the selected months. A zero baseline shows New Activity; 0 → 0 means No activity. Small samples do not establish a sustained trend.</p>
     <div className={styles.charts}>
      <section><h3>Monthly report volume · {focus.name}</h3><p className={styles.muted}>Number of reports created; zero months are shown.</p><Bars label="Monthly report counts" rows={focus.monthly.map(m=>({label:m.month,value:m.report_count}))} /></section>
      <section><h3>Backlog age now · {focus.name}</h3><p className={styles.muted}>Elapsed time since submission, across all months. {number(focus.backlog_total)} open reports.</p><Bars label="Current backlog age bands" rows={bands.map(([key,label])=>({label,value:focus[key]}))} /></section>
@@ -103,6 +114,7 @@ export default function BarangayAnalytics(){
      emptyMessage="No barangays match that name." columns={[
       {key:'name',label:'Barangay',render:(_,g)=><span>{g.name}{g.psgc_code&&<small>{g.psgc_code}</small>}</span>},
       {key:'report_count',label:'Submitted',render:number},
+      {key:'trend',label:'30-day trend',render:(_,g)=>trendText(g)},
       {key:'verification_rate_percent',label:'Verification processed',render:(_,g)=><span>{percent(g.verification_rate_percent)}<small>{number(g.verified_count)} / {number(g.report_count)}</small></span>},
       {key:'pending_count',label:'Awaiting verification',render:number},
       {key:'backlog_total',label:'Open now',render:number},

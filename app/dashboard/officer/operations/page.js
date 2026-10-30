@@ -1,4 +1,5 @@
 'use client'
+import Link from 'next/link'
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { fetchCleanupTasks } from '@/lib/api'
@@ -127,6 +128,7 @@ export default function CleanupTasksPage() {
             <span>Create cleanup task</span>
           </button>
         </OfficerGuard>
+        <Link href="/dashboard/operations-summary" className="btn-secondary">Print operations summary</Link>
       </PageHeader>
 
       {/* Search and Filters */}
