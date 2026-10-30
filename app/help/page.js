@@ -1,20 +1,15 @@
 'use client'
 
-import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
-import { HelpCircle, MessageSquareText, ShieldAlert, ArrowLeft } from 'lucide-react'
+import { HelpCircle, MessageSquareText, Smartphone } from 'lucide-react'
 import Link from 'next/link'
 import LandingNavigation from '@/components/landing/LandingNavigation'
 import PublicFooter from '@/components/landing/PublicFooter'
 import usePublicTheme from '@/components/landing/usePublicTheme'
 import SearchableFAQ from '@/components/support/SearchableFAQ'
-import CitizenTicketForm from '@/components/support/CitizenTicketForm'
 import styles from './Help.module.css'
 
 function HelpContent() {
-  const searchParams = useSearchParams()
-  const refCode = searchParams.get('ref') || ''
-
   return (
     <>
       <div className={styles.hero}>
@@ -32,13 +27,19 @@ function HelpContent() {
 
       <div className={styles.ticketDivider} />
 
-      {/* Citizen Ticket Submission Form */}
-      <section aria-labelledby="ticket-form-heading">
+      {/* Tickets are private to the signed-in citizen, so they live in the Android app. */}
+      <section id="tickets" aria-labelledby="ticket-form-heading" className={styles.ticketNotice}>
         <h2 id="ticket-form-heading" className={styles.sectionHeading}>
           <MessageSquareText size={22} className="text-primary" />
-          Direct Report Ticket & Status Inquiry
+          Need help with your own report?
         </h2>
-        <CitizenTicketForm defaultReferenceCode={refCode} />
+        <p>
+          Support tickets are tied to your EcoPin account, so only you can see your questions, the ticket reference and the SWMO reply.
+          Open a ticket and check its status from the Help screen in the EcoPin Android app.
+        </p>
+        <Link href="/#mobile-app" className={styles.appLink}>
+          <Smartphone size={18} /> Get the Android app
+        </Link>
       </section>
     </>
   )

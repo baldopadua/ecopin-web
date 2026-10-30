@@ -29,6 +29,7 @@ import {
     SlidersHorizontal,
     Truck,
     ShieldCheck,
+    LifeBuoy,
     Loader2,
 } from 'lucide-react'
 
@@ -47,6 +48,7 @@ const officerNavigation = [
     { name: 'Optimization', href: '/dashboard/officer/optimization', icon: Route },
     { name: 'Crew Management', href: '/dashboard/officer/crew-management', icon: Users },
     { name: 'Reports', href: '/dashboard/officer/reports', icon: FileText },
+    { name: 'Support tickets', href: '/dashboard/support-tickets', icon: LifeBuoy },
     { name: 'Metrics', href: '/dashboard/officer/metrics', icon: BarChart3 },
     { name: 'Spatial Scan', href: '/dashboard/spatial-scan', icon: Scan },
 ]
@@ -62,6 +64,7 @@ const fieldCrewNavigation = [
 const adminNavigation = [
     { name: 'Dashboard', href: '/dashboard/admin', icon: LayoutDashboard },
     { name: 'Users', href: '/dashboard/admin/users', icon: Users },
+    { name: 'Support tickets', href: '/dashboard/support-tickets', icon: LifeBuoy },
     { name: 'System', href: '/dashboard/admin/settings', icon: Settings },
     { name: 'Optimization', href: '/dashboard/admin/optimization-settings', icon: SlidersHorizontal },
     { name: 'Sweeper Settings', href: '/dashboard/admin/sweeper-settings', icon: Truck },

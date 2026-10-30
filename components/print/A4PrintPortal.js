@@ -8,6 +8,10 @@ export default function A4PrintPortal({header,footer,children}){
    @top-left { content: ${JSON.stringify(header)}; font-family: Arial, sans-serif; font-size: 8pt; }
    @bottom-left { content: ${JSON.stringify(footer)}; font-family: Arial, sans-serif; font-size: 8pt; }
    @bottom-right { content: "Page " counter(page) " of " counter(pages); font-family: Arial, sans-serif; font-size: 8pt; }
+  }
+  @media print {
+   html, body { height: auto !important; overflow: visible !important; background: white !important; }
+   body > :not([data-ecopin-print-root]) { display: none !important; }
   }`}</style>{children}
  </div>,document.body)
 }

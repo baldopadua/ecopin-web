@@ -1,6 +1,4 @@
 .root { display: none; }
 @media print {
- :global(html), :global(body) { height: auto !important; overflow: visible !important; background: white !important; }
- :global(body > :not([data-ecopin-print-root])) { display: none !important; }
  .root { display: block !important; color: black; }
 }

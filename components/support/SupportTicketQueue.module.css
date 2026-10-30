@@ -1,0 +1,23 @@
+.panel { min-width: 0; padding: 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); margin-bottom: 16px; }
+.panel p { margin: 8px 0; color: var(--text-secondary); overflow-wrap: anywhere; }
+.header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.header h2, .header h3 { margin: 0; font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
+.header h3 { font-size: 15px; }
+.header h2 span { color: var(--text-secondary); font-weight: 400; }
+.filters, .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+.actions > *, .filters button { min-height: 44px; padding: 8px 12px; }
+.list { list-style: none; padding: 0; margin: 12px 0; }
+.ticket { padding: 16px 0; border-top: 1px solid var(--border); }
+.ticket p { font-size: 14px; white-space: pre-wrap; }
+.meta { font-size: 13px; }
+.status { padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; font-size: 12px; }
+.reply { padding: 12px; border-left: 3px solid var(--workspace-link); background: var(--surface-elevated); border-radius: 0 8px 8px 0; color: var(--text-primary); }
+.dialog { width: min(560px, calc(100vw - 32px)); }
+.replyForm { padding: 24px; overflow-wrap: anywhere; }
+.replyForm h2 { font-size: 20px; font-weight: 600; margin-bottom: 12px; }
+.replyForm label { display: block; font-weight: 500; margin: 16px 0 8px; }
+.replyForm textarea, .replyForm select { width: 100%; padding: 12px; min-height: 44px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-primary); }
+.replyForm textarea { resize: vertical; }
+.quote { padding: 12px; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); white-space: pre-wrap; max-height: 160px; overflow: auto; }
+.error { color: var(--text-primary); padding: 12px; border: 1px solid var(--border); border-radius: 8px; }
+@media (max-width: 480px) { .panel, .replyForm { padding: 16px; } .actions > * { flex: 1 1 100%; text-align: center; } }

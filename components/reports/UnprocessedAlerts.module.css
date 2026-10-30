@@ -1,23 +1,32 @@
-.panel {border:1px solid var(--border);border-radius:16px;background:var(--surface);padding:20px;min-width:0;flex-shrink:0}
-.header,.footer {display:flex;gap:16px;justify-content:space-between;align-items:center;flex-wrap:wrap}
-.header>div {flex:1 1 300px}
-.header h2 {font-size:20px;font-weight:500;margin:0}
-.header p,.panel p {margin:8px 0;line-height:1.6}
-.note,.footer {font-size:12px;color:var(--text-secondary)}
-.counts {display:flex;flex-wrap:wrap;gap:12px}
-.counts>span {padding:8px 12px;border-radius:6px;border:1px solid var(--border)}
-.panel .overdue,.detail .overdue {border-left:4px solid var(--status-error);background:color-mix(in srgb,var(--status-error) 7%,var(--surface))}
-.panel .approaching,.detail .approaching {border-left:4px solid var(--status-warning);background:color-mix(in srgb,var(--status-warning) 7%,var(--surface))}
-.list {list-style:none;margin:16px 0;padding:0;display:grid;gap:12px}
-.list li {padding:16px;border:1px solid var(--border);border-radius:8px;overflow-wrap:anywhere;min-width:0}
-.list h3 {font-size:16px;font-weight:500;margin:0 0 4px}
-.list h3 a,.review {color:var(--workspace-link);text-decoration:underline;text-underline-offset:3px}
-.list li>div>span {font-size:14px}
-.review {display:inline-flex;align-items:center;min-height:44px;font-size:14px}
-.footer {border-top:1px solid var(--border);padding-top:12px}
-@media(max-width:680px){.panel {padding:16px}.header {align-items:start}.footer>span {flex-basis:100%}}
+.panel { min-width: 0; flex-shrink: 0; padding: 16px 20px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
+.summary { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.icon { display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px; border-radius: 12px; background: var(--surface-elevated); color: var(--workspace-link); }
+.text { flex: 1 1 320px; min-width: 0; display: grid; gap: 8px; }
+.text h2, .dialogHeader h2 { margin: 0; font-size: 20px; font-weight: 500; letter-spacing: -0.02em; }
+.counts { display: flex; flex-wrap: wrap; gap: 8px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.note { margin: 0; font-size: 12px; color: var(--text-secondary); }
+.error { margin: 0; font-size: 14px; color: var(--text-primary); }
+.error::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: var(--error); }
 
-.actions {display:flex;flex-wrap:wrap;gap:8px}
-.detail {width:min(760px,100%);max-height:calc(100dvh - 32px);overflow:auto;box-sizing:border-box;border:1px solid var(--border);border-radius:16px;padding:20px;color:var(--text-primary);background:var(--surface);font-size:14px}
-.detail h2 {font-size:20px;font-weight:500;margin:0}
-.detail p {margin:8px 0;line-height:1.6}
+.dialog { display: flex; flex-direction: column; gap: 16px; width: min(960px, 100%); max-height: calc(100dvh - 32px); box-sizing: border-box;
+  padding: 24px; border: 1px solid var(--border); border-radius: 24px; background: var(--surface); color: var(--text-primary);
+  box-shadow: var(--shadow-dialog); font-size: 14px; }
+.dialogHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.dialogHeader>div { flex: 1 1 320px; min-width: 0; }
+.dialogHeader p { margin: 8px 0 0; max-width: 60ch; color: var(--text-secondary); line-height: 1.6; }
+.meta { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.meta .note { margin-left: auto; }
+.table { min-height: 0; display: flex; flex-direction: column; }
+.table>div { min-height: 0; max-height: 100%; }
+.table a { display: inline-flex; align-items: center; min-height: 44px; color: var(--workspace-link); text-decoration: underline; text-underline-offset: 3px; }
+.empty { margin: 0; padding: 24px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface-elevated); color: var(--text-secondary); }
+.footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--text-secondary); }
+@media (max-width: 680px) {
+ .panel { padding: 16px; }
+ .dialog { padding: 16px; border-radius: 20px; }
+ .meta .note { margin-left: 0; flex-basis: 100%; }
+}
+@media (max-width: 480px) { .actions { width: 100%; } .actions>* { flex: 1 1 100%; } }
+
+.nowrap { white-space: nowrap; }

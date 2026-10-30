@@ -24,8 +24,19 @@
 .overlay:focus { outline: none; }
 
 .content {
+  position: relative;
+  z-index: 1;
   width: min(100%, 400px);
   text-align: center;
+}
+/* Soft halo keeps the title legible over the map */
+.content::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -48px -64px;
+  background: radial-gradient(ellipse at center, var(--background, #fff) 35%, transparent 72%);
+  opacity: 0.92;
 }
 
 .emblem {
@@ -74,6 +85,8 @@
 @keyframes turn { to { transform: rotate(360deg); } }
 
 .inlineLoading, .pageLoading {
+  position: relative;
+  overflow: hidden;
   display: grid;
   place-items: center;
   padding: 32px 24px;
@@ -82,6 +95,38 @@
 }
 .inlineLoading { min-height: 280px; height: 100%; }
 .pageLoading { min-height: 100dvh; }
+
+/* Exit: background and content leave as one layer so nothing is left floating. */
+.exiting {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  min-height: 0;
+  pointer-events: none;
+  animation: overlayOut 560ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+.exiting .content { animation: contentOut 560ms cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+.exiting .ring { animation: turn 0.9s linear infinite; }
+.pageReveal { display: flex; flex-direction: column; flex: 1 0 auto; animation: pageIn 560ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes overlayOut {
+  0% { opacity: 1; }
+  35% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes contentOut {
+  0% { opacity: 1; transform: scale(1); filter: blur(0); }
+  100% { opacity: 0; transform: scale(1.08); filter: blur(4px); }
+}
+@keyframes pageIn {
+  0% { opacity: 0; transform: translateY(10px) scale(0.99); }
+  100% { opacity: 1; transform: none; }
+}
+
+/* The spinner is functional feedback, so it keeps turning (slower) under reduced motion. */
 @media (prefers-reduced-motion: reduce) {
-  .ring { animation: none; }
+  .ring, .exiting .ring { animation-duration: 2.4s; }
+  .exiting { animation-duration: 200ms; }
+  .exiting .content { animation: none; }
+  .pageReveal { animation-duration: 200ms; transform: none; }
 }

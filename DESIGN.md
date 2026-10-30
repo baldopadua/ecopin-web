@@ -79,6 +79,8 @@ Avoid neon accents, purple gradients, decorative charts, excessive glass panels,
 | `/mobile` | Redirect to `/#mobile-app` |
 | `/mobile-app` | Redirect to `/#mobile-app` |
 | `/downloads` | Existing APK download and installation help |
+| `/help` | Public FAQ with search. Support tickets are private to a signed-in citizen, and citizens sign in only in the Android app, so this page points there instead of collecting tickets |
+| `/support` | Redirect to `/help#tickets` |
 | `/ecopin-app-release.apk` | Direct Android download from an explicit download link |
 | `/auth` | Anonymous account action |
 | `/dashboard` | Signed-in account action; dashboard design is outside this scope |
@@ -803,7 +805,7 @@ PublicSelect replaces the native OS-highlight menus in the landing filters, gall
 
 Measure available viewport space and open above when needed. Limit list height and scroll only the list, never jump the page while navigating options. Lenis excludes data-native-scroll surfaces as well as Leaflet popups.
 
-PublicLoadingState uses a quiet branded pin and status within the content area. Public pages use short fade/translation entrances rather than a fullscreen wipe. PublicMotion applies a 450ms, 12px page entrance and reduced-motion overrides; Explore fades over 300ms. Do not alter private dashboard loading behavior as part of this scope.
+PublicLoadingState (and the navigation overlay) share PageLoadingIndicator: the existing logo ring, title, and description sit over a faded street map (RouteMapBackdrop) that is near-opaque at the center and masks out to the page background, so it follows light and dark themes. A route line draws between two pins over a 4.6s loop; reduced motion shows the finished route statically. Public pages use short fade/translation entrances rather than a fullscreen wipe. PublicMotion applies a 450ms, 12px page entrance and reduced-motion overrides; Explore fades over 300ms. Do not alter private dashboard loading behavior as part of this scope.
 
 Sources: [Explore wrapper](app/explore/ExplorePage.js), [report browser](app/explore/PublicMap.js), [toolbar](app/explore/GalleryToolbar.js), [mode switch](app/explore/ViewModeSwitch.js), [styles](app/explore/Explore.module.css), [photo viewer](app/explore/PhotoViewer.js), [focus](app/explore/useDialogFocus.js), [popup](components/landing/PublicReportPopup.js), [dropdown](components/ui/PublicSelect.js), [search](lib/public-gallery.mjs), and [URL helper](lib/explore-url.mjs).
 
@@ -1065,9 +1067,9 @@ Show an equal 30-day demand comparison alongside calendar-month totals. State ex
 
 ## PDT-23 — Stagnant incident alerts
 
-Keep a compact red/amber count summary in the officer Command Center. Red means at least five elapsed days since submission and amber means four to five days, with acknowledgement or real crew assignment still missing. Always include text labels alongside color. Open the full oldest-first queue in the shared keyboard-accessible dialog so all cases can be paged without breaking the fitted dashboard. Show missing actions, submission and snapshot times, existing incident-detail links and explicit loading/empty/error/stale states. Reading a notice does not remove an outstanding action. Use the existing surface, border and status colors; no pulsing alert decoration.
+Keep a compact red/amber count summary in the officer Command Center. Red means at least five elapsed days since submission and amber means four to five days, with acknowledgement or real crew assignment still missing. Always include text labels alongside color. Open the full oldest-first queue in the shared keyboard-accessible dialog so all cases can be paged without breaking the fitted dashboard. Render the queue as a shared `DataTable` (Report link, Status, Waiting, Still needs, Submitted) inside the dialog with the Details chevron, never as stacked tinted cards. Show counts and row status with the shared `StatePill` (written label plus a small status dot); no colored left bars or tinted fills. Show snapshot time, existing incident-detail links and explicit loading/empty/error/stale states. Reading a notice does not remove an outstanding action. Use the existing surface, border and status colors; no pulsing alert decoration.
 
 
 ## PDT-15 — Live operations tab
 
-Expose Operations feed beside Overview in the Command Center using the shared tab control. Keep task activity and crew connections in separate scrollable panes on desktop and stacked panes on phones. Show a text-labeled live/stale/unavailable/browser-offline state and the server snapshot time. Poll every 20 seconds while active; snapshots older than 30 seconds must visibly lose the live label. Distinguish recent contact from unknown and no recent contact, including sync-paused or backgrounded devices. Team summaries use aggregate member counts and do not claim physical presence. Preserve bigint-safe event history pagination, device-versus-server time labels, empty/error/retry behavior and keyboard access to scrollable regions.
+Expose Operations feed beside Overview in the Command Center using the shared tab control. Keep task activity and crew connections in separate scrollable panes on desktop and stacked panes on phones. Show a text-labeled live/stale/unavailable/browser-offline state and the server snapshot time. Poll every 20 seconds while active; snapshots older than 30 seconds must visibly lose the live label. Distinguish recent contact from unknown and no recent contact, including sync-paused or backgrounded devices. Show the four connection totals as one bordered summary strip, and task activity and crew connections as shared `DataTable` panes (no hand-built lists or heading-per-row feeds); the state label uses the shared `StatePill`. Team summaries use aggregate member counts and do not claim physical presence. Preserve bigint-safe event history pagination, device-versus-server time labels, empty/error/retry behavior and keyboard access to scrollable regions.

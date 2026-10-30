@@ -5,7 +5,7 @@ import Button from '@/components/ui/Button';
 import DataTable from '@/components/ui/DataTable';
 import MunicipalDecisionCards from '@/components/analytics/MunicipalDecisionCards';
 import {fetchBarangayAnalytics} from '@/lib/api/barangay-analytics';
-import {initialBarangayRange,analyticsCsv,sortBarangays,formatHours} from '@/lib/barangay-analytics.mjs';
+import {initialBarangayRange,analyticsCsv,sortBarangays,formatHours,unassignedReasonsText} from '@/lib/barangay-analytics.mjs';
 import styles from './BarangayAnalytics.module.css';
 import {comparableTrend,trendSummary,trendPeriodLabel} from '@/lib/barangay-trends.mjs';
 const bands=[['backlog_under_1_day','Under 1 day'],['backlog_1_2_days','1–2 days'],['backlog_3_6_days','3–6 days'],['backlog_7_29_days','7–29 days'],['backlog_30_plus_days','30+ days']];
@@ -59,6 +59,7 @@ export default function BarangayAnalytics(){
  const trend=comparableTrend(loaded);
  const trendText=g=>{const value=trend&&trendSummary(g?.trend?.previous_count,g?.trend?.current_count);return value?<span className={styles.trendValue}>{value.label}<small>{number(value.previous)} → {number(value.current)} reports{value.smallSample?' · Small sample':''}</small></span>:'Unavailable';};
  const unassigned=loaded?.groups.find(g=>g.key==='unassigned');
+ const reasons=loaded?unassignedReasonsText(loaded.quality):null;
  return <div className={styles.page}>
   <header className={styles.sectionHeader}>
    <div><h2>Barangay operations</h2><p className={styles.muted}>Compare submissions, open work and resolution times across Pasig.</p></div>
@@ -90,7 +91,7 @@ export default function BarangayAnalytics(){
    </dl>
    <details className={styles.notice} aria-label="Data coverage">
     <summary>Coverage: {number(unassigned?.report_count)} unassigned reports · {number(total.missing_resolution_count+total.invalid_resolution_count)} missing/invalid resolution times</summary>
-    <p>{number(unassigned?.report_count)} of {number(total.report_count)} selected-period reports and {number(unassigned?.backlog_total)} currently open reports have unassigned locations. Border, outside and unreconciled locations are not forced into a barangay.</p>
+    <p>{number(unassigned?.report_count)} of {number(total.report_count)} selected-period reports and {number(unassigned?.backlog_total)} currently open reports have unassigned locations. Border, outside and unreconciled locations are not forced into a barangay.{reasons&&` ${reasons}`}</p>
     <p>{number(total.missing_resolution_count)} resolved reports lack a resolution timestamp; {number(total.invalid_resolution_count)} have invalid timestamps across stored history. These are excluded from duration statistics. {number(loaded.quality.excluded_creation_timestamps)} records with missing/future creation times are excluded.</p>
    </details>
    <section className={styles.card} aria-label="Area detail">

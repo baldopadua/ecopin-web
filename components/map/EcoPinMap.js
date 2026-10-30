@@ -20,6 +20,8 @@ import useMapPhotoEvidence from './useMapPhotoEvidence'
 import { Filter, Check } from 'lucide-react'
 import { reportDiagnostic } from '../../lib/diagnostics.mjs';
 import { MAP_LOCATIONS, getDistanceKm } from '@/lib/map-search.mjs';
+import { groupNearbyMarkers } from '@/lib/marker-grouping.mjs';
+import ClusterMarker from './ClusterMarker';
 
 // Polyfill Buffer for browser environment
 if (typeof window !== 'undefined' && !window.Buffer) {
@@ -34,6 +36,8 @@ const normalizeString = (str) => {
 const PLP_CENTER = [14.561433, 121.075636]
 const DEFAULT_ZOOM = 15
 const CLUSTER_EXPAND_ZOOM = 15
+// Nearby individual pins collapse into one count marker up to this zoom; closer in, each report shows.
+const PIN_GROUP_MAX_ZOOM = 16
 
 // area bounds
 const PASIG_BOUNDS = [
@@ -555,6 +559,21 @@ export default function EcoPinMap({ reports: externalReports, centerLat, centerL
   ), [photoPins, showPins, mapBounds, processedReportsInfo, renderedClusterIds, hideClusters, showClusters, zoom])
   const pinPhotos = useMapPhotoEvidence(visiblePhotoReports, photoPins)
 
+  // Individual pins that sit close together collapse into a count marker so dense areas stay readable.
+  // The active, selected and focused reports always stay as their own pin.
+  const pinGroups = useMemo(() => {
+    const placeable = !showPins ? [] : processedReportsInfo.parsedReports.filter(report =>
+      !(report.cluster_id && renderedClusterIds.has(report.cluster_id) && !hideClusters && showClusters && zoom <= CLUSTER_EXPAND_ZOOM))
+    if (zoom > PIN_GROUP_MAX_ZOOM) return placeable.map(report => ({ key: `single:${report.id}`, items: [report] }))
+    const keepSingle = new Set([...selectedReportsSet, activeReportId, selectedReportId, focusReportId].filter(Boolean).map(String))
+    return groupNearbyMarkers(placeable, { zoom, getPosition: report => [report.parsedLat, report.parsedLng], getId: report => String(report.id), keepSingle })
+  }, [showPins, processedReportsInfo, renderedClusterIds, hideClusters, showClusters, zoom, selectedReportsSet, activeReportId, selectedReportId, focusReportId])
+  const singleReports = useMemo(() => pinGroups.filter(group => group.items.length === 1).map(group => group.items[0]), [pinGroups])
+  const zoomToGroup = useCallback(group => {
+    const map = mapRef.current
+    if (map) map.fitBounds(group.items.map(report => [report.parsedLat, report.parsedLng]), { padding: [60, 60], maxZoom: PIN_GROUP_MAX_ZOOM + 2 })
+  }, [])
+
   if (!mounted) return (
     <div className="h-full w-full flex items-center justify-center bg-surface dark:bg-[#000000] transition-colors duration-300">
       <img src="/Solo Logo Light.png" alt="Loading..." className="h-24 w-auto object-contain animate-pulse dark:hidden" />
@@ -810,7 +829,18 @@ export default function EcoPinMap({ reports: externalReports, centerLat, centerL
           })}
 
           {/* Report Pins */}
-          {showPins && processedReportsInfo.parsedReports.map((report) => {
+          {pinGroups.filter(group => group.items.length > 1).map(group => (
+            <ClusterMarker
+              key={group.key}
+              position={[group.lat, group.lng]}
+              count={group.items.length}
+              selectedCount={group.items.filter(report => selectedReportsSet.has(report.id)).length}
+              overdue={group.items.some(report => report.is_overdue)}
+              label="Nearby reports"
+              eventHandlers={{ click: () => zoomToGroup(group) }}
+            />
+          ))}
+          {showPins && singleReports.map((report) => {
             // Hide individual pins that belong to clusters when zoomed out AND clusters are enabled
             // Show them when zoomed in OR when clusters are disabled
             // Only hide them if the cluster marker is ACTUALLY being rendered

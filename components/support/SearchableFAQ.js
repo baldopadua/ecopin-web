@@ -22,7 +22,7 @@ const FAQ_ITEMS = [
     id: 'report-wrong-location',
     category: 'reports',
     question: 'Can I edit or update the location if my GPS placed the pin on the wrong street?',
-    answer: 'If the report is still in pending review, you can submit a Status Inquiry or Report Correction ticket below with your Reference Code. Alternatively, you can withdraw the report in the mobile app and re-submit with the pin dragged to the exact landmark.'
+    answer: 'If the report is still in pending review, you can open a Location Correction ticket from the Help screen in the EcoPin Android app and link it to your report. Alternatively, you can withdraw the report in the mobile app and re-submit with the pin dragged to the exact landmark.'
   },
   {
     id: 'status-meaning',
@@ -164,7 +164,7 @@ export default function SearchableFAQ({ onSelectReferenceHelp }) {
         <div className={styles.emptyState}>
           <HelpCircle size={32} className={styles.emptyIcon} />
           <h3>No matching answers found</h3>
-          <p>Try searching for a different keyword or submit a ticket to the support team below.</p>
+          <p>Try searching for a different keyword or open a support ticket from the Help screen in the EcoPin Android app.</p>
         </div>
       )}
     </div>

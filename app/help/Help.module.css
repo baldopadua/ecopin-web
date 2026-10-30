@@ -89,3 +89,32 @@
 :global(.dark) .ticketDivider {
   border-color: #2a2a2a;
 }
+
+.ticketNotice p {
+  margin: 0 0 16px;
+  max-width: 640px;
+  line-height: 1.6;
+  color: var(--text-secondary, #475569);
+}
+
+:global(.dark) .ticketNotice p {
+  color: #9ca3af;
+}
+
+.appLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 12px;
+  background: var(--primary, #2563eb);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.appLink:focus-visible {
+  outline: 3px solid var(--primary, #2563eb);
+  outline-offset: 3px;
+}

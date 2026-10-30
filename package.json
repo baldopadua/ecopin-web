@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "check:css-modules": "node scripts/check-css-module-purity.mjs",
     "test:unit": "node --test tests/public-report-page.test.mjs tests/rate-limiter.test.mjs tests/private-media.test.mjs tests/optimization-response.test.mjs tests/sweeper-config.test.mjs tests/report-analytics.test.mjs tests/sweeper-analytics.test.mjs tests/public-gallery.test.mjs tests/public-pin-layout.test.mjs tests/status-labels.test.mjs tests/explore-url.test.mjs tests/time-player.test.mjs tests/cleanup-task-preview.test.mjs tests/dispatch-preview.test.mjs tests/dispatch-result-notice.test.mjs tests/web-session-routes.test.mjs tests/web-session-store.test.mjs tests/session-credentials.test.mjs tests/forward-forecast.test.mjs tests/dashboard-query-client.test.mjs tests/secure-image-skeleton.test.mjs tests/residual-capacity-ui.test.mjs tests/incomplete-tasks-ui.test.mjs tests/report-quota-policy.test.mjs tests/photo-attribution.test.mjs tests/web-account-deletion.test.mjs tests/map-pin-consistency.test.mjs tests/map-search.test.mjs",
     "test:e2e": "node --test tests/*.browser.cjs",
     "test": "npm run test:unit && node --test tests/response-deadline.test.mjs"

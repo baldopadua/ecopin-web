@@ -8,7 +8,7 @@ import {fetchExecutiveAnalytics} from '@/lib/api/barangay-executive'
 import {getHistoricalPatterns} from '@/lib/api/hotspot'
 import {executiveFresh,executiveHotspots} from '@/lib/barangay-executive.mjs'
 import {buildMunicipalDecisions} from '@/lib/municipal-decisions.mjs'
-import {initialBarangayRange,formatHours} from '@/lib/barangay-analytics.mjs'
+import {initialBarangayRange,formatHours,unassignedReasonsText} from '@/lib/barangay-analytics.mjs'
 import {patternLabel} from '@/lib/historical-patterns.mjs'
 import {caseTime} from '@/lib/incident-case-record.mjs'
 import styles from './BarangayExecutiveReport.module.css'
@@ -30,7 +30,7 @@ function ExecutiveSheet({data,hotspots,month,clock}){
   <section><h2>Executive overview</h2><p>{number(total.report_count)} citizen reports were submitted in {month}; {number(total.verified_count)} have a processed verification outcome ({pct(total.verification_rate_percent)}). The current open workload is {number(total.backlog_total)} reports across all recorded months, including {number(age(total))} aged seven days or more.</p>
    <dl className={styles.metrics}><div><dt>Submitted in month</dt><dd>{number(total.report_count)}</dd></div><div><dt>Awaiting verification</dt><dd>{number(total.pending_count)}</dd></div><div><dt>Current backlog</dt><dd>{number(total.backlog_total)}</dd></div><div><dt>Median resolution</dt><dd>{formatHours(total.median_resolution_hours)}</dd></div></dl>
    <p>Resolution events in {month}: {number(total.resolution_count)} valid samples · Average {formatHours(total.average_resolution_hours)} · 90th percentile {formatHours(total.p90_resolution_hours)}. No samples means unavailable, not zero-hour performance.</p>
-   <p>Coverage: all 30 official barangays and a separate unassigned bucket. Unassigned locations account for {number(unknown.report_count)} monthly submissions and {number(unknown.backlog_total)} open reports. Missing/future submission times excluded across stored history: {number(monthly.quality.excluded_creation_timestamps)}. Missing / invalid resolution times across stored history: {number(total.missing_resolution_count)} / {number(total.invalid_resolution_count)}.</p>
+   <p>Coverage: all 30 official barangays and a separate unassigned bucket. Unassigned locations account for {number(unknown.report_count)} monthly submissions and {number(unknown.backlog_total)} open reports. {unassignedReasonsText(monthly.quality)} Missing/future submission times excluded across stored history: {number(monthly.quality.excluded_creation_timestamps)}. Missing / invalid resolution times across stored history: {number(total.missing_resolution_count)} / {number(total.invalid_resolution_count)}.</p>
    <h3>Largest current recorded backlogs</h3><ol className={styles.priorities}>{top.map(g=><li key={g.key}><strong>{g.name}</strong>: {number(g.backlog_total)} open; {number(age(g))} aged 7+ days.</li>)}</ol>
    <p className={styles.note}>Counts cover all EcoPin concern types. They measure reporting activity, not waste tonnage, population-adjusted incidence or a causal service-performance score. Backlog is current at the snapshot, not month-end historical backlog.</p>
   </section>
