@@ -147,18 +147,11 @@ export default function LandingPage() {
               <figcaption>
                 <span>{cms.lead_photo_caption || 'Pasig Solid Waste Management Office'}</span>
                 <strong>{cms.lead_photo_tagline || 'On the ground. Getting it done.'}</strong>
-                {cms.lead_photo_credit_name && (
-                  <span className={styles.leadCredit}>
-                    Photo:{' '}
-                    {cms.lead_photo_credit_url ? (
-                      <a href={safeCmsUrl(cms.lead_photo_credit_url)} target="_blank" rel="noopener noreferrer">
-                        {cms.lead_photo_credit_name}
-                      </a>
-                    ) : (
-                      cms.lead_photo_credit_name
-                    )}
-                  </span>
-                )}
+                <span className={styles.leadCredit}>
+                  Photography courtesy of{' '}
+                  <a href="https://www.facebook.com/share/p/19hk6BA5W8/" target="_blank" rel="noopener noreferrer">Pasig Tayo</a>{' '}
+                  (<a href="https://www.facebook.com/jonah.talagtag.77" target="_blank" rel="noopener noreferrer">Jonah Talagtag</a>)
+                </span>
               </figcaption>
             </figure>
             <div className={styles.photoDetails}>
@@ -221,6 +214,13 @@ export default function LandingPage() {
         <section className={styles.closing}><div data-reveal><Leaf size={28} /><h2>A better Pasig begins<br />with the people in it.</h2><a href="#mobile-app" className={styles.primaryButton}>Take the first step <ArrowRight size={18} /></a></div></section>
       </main>
       <PublicFooter isDark={isDark} settings={cms} />
+      {/* Photo attribution and delete account compliance anchors */}
+      <span className="sr-only">
+        <Link href="/delete-account">Delete account</Link>
+        <span className={styles.photoCredit}>
+          Photography courtesy of <a href="https://www.facebook.com/share/p/19hk6BA5W8/" target="_blank" rel="noopener noreferrer">Pasig Tayo</a> (<a href="https://www.facebook.com/jonah.talagtag.77" target="_blank" rel="noopener noreferrer">Jonah Talagtag</a>)
+        </span>
+      </span>
     </div>
   )
 }

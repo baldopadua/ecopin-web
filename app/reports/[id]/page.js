@@ -373,6 +373,24 @@ export default function PublicReportPage() {
                     <Download size={16} /> Get EcoPin App
                   </Link>
                   <Link
+                    href={`/help?ref=${encodeURIComponent(report.id)}`}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      background: 'var(--surface-raised, #ffffff)',
+                      border: '1px solid var(--border-subtle, #cbd5e1)',
+                      color: 'var(--primary, #0052cc)',
+                      padding: '10px 16px',
+                      borderRadius: '12px',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      textDecoration: 'none'
+                    }}
+                  >
+                    Status Inquiry / Ticket
+                  </Link>
+                  <Link
                     href="/explore"
                     style={{
                       display: 'inline-flex',

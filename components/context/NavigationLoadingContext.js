@@ -28,6 +28,7 @@ export function getRouteTitle(urlPath) {
     '/mobile': 'EcoPin App',
     '/mobile-app': 'EcoPin App',
     '/downloads': 'Downloads',
+    '/help': 'Help & FAQ',
     '/auth': 'Sign in',
     '/delete-account': 'Delete account',
     '/force-change-password': 'Password settings',

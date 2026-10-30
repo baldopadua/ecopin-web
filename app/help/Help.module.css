@@ -1,0 +1,91 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--background, #ffffff);
+  color: var(--text-primary, #0f172a);
+}
+
+:global(.dark) .page {
+  background-color: #121212;
+  color: #f3f4f6;
+}
+
+.main {
+  flex: 1;
+  max-width: 920px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 40px 20px 80px;
+}
+
+.hero {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  background-color: rgba(0, 82, 204, 0.08);
+  color: var(--primary, #0052cc);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+:global(.dark) .badge {
+  background-color: rgba(96, 165, 250, 0.15);
+  color: #93c5fd;
+}
+
+.title {
+  font-size: clamp(28px, 4vw, 38px);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  margin: 0 0 12px;
+  color: var(--text-primary, #0f172a);
+}
+
+:global(.dark) .title {
+  color: #f3f4f6;
+}
+
+.subtitle {
+  font-size: 16px;
+  color: var(--text-secondary, #475569);
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+:global(.dark) .subtitle {
+  color: #9ca3af;
+}
+
+.sectionHeading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 20px;
+  color: var(--text-primary, #0f172a);
+}
+
+:global(.dark) .sectionHeading {
+  color: #f3f4f6;
+}
+
+.ticketDivider {
+  margin: 48px 0 32px;
+  border-top: 1px solid var(--border, #e2e8f0);
+}
+
+:global(.dark) .ticketDivider {
+  border-color: #2a2a2a;
+}

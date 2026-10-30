@@ -55,6 +55,7 @@ export default function PublicFooter({ isDark = false, settings }) {
                 <Link href="/explore?view=gallery">Reports Gallery</Link>
                 <Link href="/#how-it-works">Citizen Guide</Link>
                 <Link href="/downloads">Android App</Link>
+                <Link href="/help">Help & FAQ</Link>
                 <Link href="/contact">Official cleanup contacts</Link>
                 <Link href="/delete-account">Delete account</Link>
               </nav>

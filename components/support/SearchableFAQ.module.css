@@ -1,0 +1,264 @@
+.faqSection {
+  width: 100%;
+  margin-bottom: 48px;
+}
+
+.searchBarWrapper {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted, #94a3b8);
+  pointer-events: none;
+}
+
+:global(.dark) .searchIcon {
+  color: #6b7280;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 14px 44px 14px 46px;
+  border-radius: 14px;
+  border: 1px solid var(--border, #cbd5e1);
+  background-color: var(--surface-raised, #ffffff);
+  color: var(--text-primary, #0f172a);
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+  box-sizing: border-box;
+}
+
+:global(.dark) .searchInput {
+  background-color: #1c1c1c;
+  border-color: #2a2a2a;
+  color: #f3f4f6;
+}
+
+.searchInput:focus {
+  border-color: var(--primary, #0052cc);
+  box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.15);
+}
+
+:global(.dark) .searchInput:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+}
+
+.clearButton {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 4px;
+  border-radius: 50%;
+  color: var(--text-muted, #94a3b8);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+:global(.dark) .clearButton {
+  color: #9ca3af;
+}
+
+.clearButton:hover {
+  color: var(--text-primary, #0f172a);
+  background-color: var(--border-subtle, rgba(203, 213, 225, 0.3));
+}
+
+:global(.dark) .clearButton:hover {
+  color: #f3f4f6;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.categoryPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.categoryPill {
+  padding: 8px 16px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid var(--border, #cbd5e1);
+  background-color: var(--surface-raised, #ffffff);
+  color: var(--text-secondary, #475569);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+:global(.dark) .categoryPill {
+  background-color: #1c1c1c;
+  border-color: #2a2a2a;
+  color: #9ca3af;
+}
+
+.categoryPill:hover {
+  border-color: var(--primary, #0052cc);
+  color: var(--primary, #0052cc);
+}
+
+:global(.dark) .categoryPill:hover {
+  border-color: #60a5fa;
+  color: #60a5fa;
+}
+
+.categoryPillActive {
+  background-color: var(--primary, #0052cc);
+  border-color: var(--primary, #0052cc);
+  color: #ffffff;
+}
+
+:global(.dark) .categoryPillActive {
+  background-color: #0052cc;
+  border-color: #0052cc;
+  color: #ffffff;
+}
+
+.categoryPillActive:hover {
+  background-color: #0042a3;
+  color: #ffffff;
+}
+
+.accordionList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.accordionItem {
+  border-radius: 14px;
+  border: 1px solid var(--border, #e2e8f0);
+  background-color: var(--surface-raised, #ffffff);
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+:global(.dark) .accordionItem {
+  background-color: #1c1c1c;
+  border-color: #2a2a2a;
+}
+
+.accordionItem:hover {
+  border-color: var(--border-strong, #cbd5e1);
+}
+
+:global(.dark) .accordionItem:hover {
+  border-color: #3b4252;
+}
+
+.accordionItemOpen {
+  border-color: rgba(0, 82, 204, 0.4);
+  box-shadow: 0 4px 16px rgba(0, 82, 204, 0.06);
+}
+
+:global(.dark) .accordionItemOpen {
+  border-color: rgba(96, 165, 250, 0.4);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.accordionHeader {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  gap: 16px;
+}
+
+.questionText {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary, #0f172a);
+  line-height: 1.4;
+}
+
+:global(.dark) .questionText {
+  color: #f3f4f6;
+}
+
+.chevronIcon {
+  color: var(--text-muted, #94a3b8);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+}
+
+:global(.dark) .chevronIcon {
+  color: #9ca3af;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+  color: var(--primary, #0052cc);
+}
+
+:global(.dark) .chevronOpen {
+  color: #60a5fa;
+}
+
+.accordionContent {
+  padding: 0 20px 20px;
+  color: var(--text-secondary, #475569);
+  font-size: 14px;
+  line-height: 1.6;
+  border-top: 1px solid rgba(0, 82, 204, 0.08);
+  margin-top: 4px;
+  padding-top: 14px;
+}
+
+:global(.dark) .accordionContent {
+  color: #9ca3af;
+  border-top-color: rgba(255, 255, 255, 0.06);
+}
+
+.highlight {
+  background-color: rgba(254, 240, 138, 0.5);
+  padding: 1px 3px;
+  border-radius: 4px;
+}
+
+:global(.dark) .highlight {
+  background-color: rgba(161, 98, 7, 0.4);
+  color: #fef08a;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 40px 20px;
+  background-color: var(--surface-raised, #ffffff);
+  border-radius: 16px;
+  border: 1px dashed var(--border, #cbd5e1);
+  color: var(--text-secondary, #475569);
+}
+
+:global(.dark) .emptyState {
+  background-color: #1c1c1c;
+  border-color: #2a2a2a;
+  color: #9ca3af;
+}
+
+.emptyIcon {
+  color: var(--text-muted, #94a3b8);
+  margin-bottom: 12px;
+}
+
+:global(.dark) .emptyIcon {
+  color: #6b7280;
+}
