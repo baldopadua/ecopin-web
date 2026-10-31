@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Search, ChevronDown, X, HelpCircle, ArrowRight } from 'lucide-react'
-import Link from 'next/link'
+import { Search, ChevronDown, X, HelpCircle } from 'lucide-react'
 import styles from './SearchableFAQ.module.css'
 
 const FAQ_ITEMS = [
@@ -28,7 +27,13 @@ const FAQ_ITEMS = [
     id: 'status-meaning',
     category: 'status',
     question: 'What do the different report statuses mean?',
-    answer: 'Unresolved: Incident verified and queued for dispatch. In Progress: An SWMO field crew has been assigned and is actively responding or on-site. Resolved: Crew submitted verifiable cleanup after-photos. Closed: Final sign-off completed.'
+    answer: 'Each report shows one of these statuses.',
+    terms: [
+      ['Unresolved', 'The incident is verified and queued for dispatch.'],
+      ['In progress', 'An SWMO field crew has been assigned and is responding or on site.'],
+      ['Resolved', 'The crew submitted cleanup after-photos.'],
+      ['Closed', 'Final sign-off is complete.']
+    ]
   },
   {
     id: 'evidence-photos',
@@ -57,11 +62,11 @@ const FAQ_ITEMS = [
 ]
 
 const CATEGORIES = [
-  { id: 'all', label: 'All Questions' },
-  { id: 'reports', label: 'Reporting & GPS' },
-  { id: 'status', label: 'Status & Verification' },
-  { id: 'citizen', label: 'Citizen Trust' },
-  { id: 'emergency', label: 'Emergency Guidance' }
+  { id: 'all', label: 'All questions' },
+  { id: 'reports', label: 'Reporting and GPS' },
+  { id: 'status', label: 'Status and verification' },
+  { id: 'citizen', label: 'Citizen trust' },
+  { id: 'emergency', label: 'Emergency guidance' }
 ]
 
 export default function SearchableFAQ({ onSelectReferenceHelp }) {
@@ -86,16 +91,16 @@ export default function SearchableFAQ({ onSelectReferenceHelp }) {
 
   return (
     <div className={styles.faqSection}>
-      {/* Search Input Bar */}
+      <label htmlFor="faq-search" className={styles.searchLabel}>Search questions</label>
       <div className={styles.searchBarWrapper}>
-        <Search size={18} className={styles.searchIcon} />
+        <Search size={18} className={styles.searchIcon} aria-hidden="true" />
         <input
-          type="text"
+          id="faq-search"
+          type="search"
           className={styles.searchInput}
-          placeholder="Search questions (e.g. status, cleanup time, GPS location, trust score)..."
+          placeholder="Try “status”, “photos” or “GPS”"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          aria-label="Search FAQ"
         />
         {searchQuery && (
           <button
@@ -104,19 +109,17 @@ export default function SearchableFAQ({ onSelectReferenceHelp }) {
             onClick={() => setSearchQuery('')}
             aria-label="Clear search"
           >
-            <X size={16} />
+            <X size={16} aria-hidden="true" />
           </button>
         )}
       </div>
 
-      {/* Filter Category Pills */}
-      <div className={styles.categoryPills} role="tablist" aria-label="FAQ categories">
+      <div className={styles.categoryPills} role="group" aria-label="FAQ categories">
         {CATEGORIES.map(cat => (
           <button
             key={cat.id}
             type="button"
-            role="tab"
-            aria-selected={activeCategory === cat.id}
+            aria-pressed={activeCategory === cat.id}
             className={`${styles.categoryPill} ${activeCategory === cat.id ? styles.categoryPillActive : ''}`}
             onClick={() => setActiveCategory(cat.id)}
           >
@@ -124,6 +127,10 @@ export default function SearchableFAQ({ onSelectReferenceHelp }) {
           </button>
         ))}
       </div>
+
+      <p className={styles.resultCount} role="status">
+        {filteredItems.length === 1 ? '1 answer' : `${filteredItems.length} answers`}
+      </p>
 
       {/* Accordion Items List */}
       {filteredItems.length > 0 ? (
@@ -145,15 +152,28 @@ export default function SearchableFAQ({ onSelectReferenceHelp }) {
                   <span className={styles.questionText}>{item.question}</span>
                   <ChevronDown
                     size={18}
+                    aria-hidden="true"
                     className={`${styles.chevronIcon} ${isOpen ? styles.chevronOpen : ''}`}
                   />
                 </button>
                 {isOpen && (
                   <div
                     id={`faq-answer-${item.id}`}
+                    role="region"
+                    aria-label={item.question}
                     className={styles.accordionContent}
                   >
                     <p>{item.answer}</p>
+                    {item.terms && (
+                      <dl className={styles.termList}>
+                        {item.terms.map(([term, meaning]) => (
+                          <div key={term}>
+                            <dt>{term}</dt>
+                            <dd>{meaning}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    )}
                   </div>
                 )}
               </div>
@@ -162,9 +182,16 @@ export default function SearchableFAQ({ onSelectReferenceHelp }) {
         </div>
       ) : (
         <div className={styles.emptyState}>
-          <HelpCircle size={32} className={styles.emptyIcon} />
-          <h3>No matching answers found</h3>
-          <p>Try searching for a different keyword or open a support ticket from the Help screen in the EcoPin Android app.</p>
+          <HelpCircle size={32} className={styles.emptyIcon} aria-hidden="true" />
+          <p className={styles.emptyTitle}>No answers match your search</p>
+          <p>Try a different keyword, or open a support ticket from the Help screen in the EcoPin Android app.</p>
+          <button
+            type="button"
+            className={styles.resetButton}
+            onClick={() => { setSearchQuery(''); setActiveCategory('all') }}
+          >
+            Clear search and filters
+          </button>
         </div>
       )}
     </div>

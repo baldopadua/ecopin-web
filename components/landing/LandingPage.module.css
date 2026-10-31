@@ -24,19 +24,11 @@
 .header { width: 100%; padding: 0; display: flex; flex-direction: column; position: fixed; left: 0; right: 0; top: 0; z-index: 1000; border-bottom: 1px solid var(--landing-border); background: color-mix(in srgb, var(--landing-bg) 90%, transparent); backdrop-filter: blur(16px); transition: transform .5s, opacity .5s; }
 .headerWithBanner { flex-direction: column; padding: 0; gap: 0; }
 .headerBar { width: 100%; padding: 12px 48px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
-.headerHidden { transform: translateY(-110%); opacity: 0; pointer-events: none; }
-.sideNav { position: fixed; right: 24px; top: 50%; transform: translate(100px, -50%); opacity: 0; pointer-events: none; z-index: 1000; display: flex; flex-direction: column; padding: 8px; gap: 4px; border: 1px solid var(--landing-border); border-radius: 999px; background: color-mix(in srgb, var(--landing-bg) 94%, transparent); box-shadow: 0 8px 32px #00000012; backdrop-filter: blur(16px); transition: transform .6s cubic-bezier(.22,1,.36,1), opacity .4s; }
-.sideNavVisible { transform: translate(0, -50%); opacity: 1; pointer-events: auto; }
-.sideNav a, .sideNav button { position: relative; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; color: var(--landing-muted); }
-.sideNav a:hover, .sideNav button:hover, .sideNav a:focus-visible, .sideNav button:focus-visible { background: var(--landing-soft); color: var(--landing-blue); }
-.sideNav [data-tooltip]::before { content: attr(data-tooltip); position: absolute; right: 56px; background: var(--landing-text); color: var(--landing-bg); padding: 8px 12px; border-radius: 8px; white-space: nowrap; font-size: 12px; opacity: 0; pointer-events: none; transform: translateX(8px); transition: opacity .2s, transform .2s; }
-.sideNav [data-tooltip]:hover::before, .sideNav [data-tooltip]:focus-visible::before { opacity: 1; transform: translateX(0); }
 .mobileMotion { display: none; }
 .accountAvatar { width: 28px; height: 28px; display: grid; place-items: center; overflow: hidden; border-radius: 50%; background: #0052cc; color: white; font-size: 13px; }
 .accountAvatar img { width: 100%; height: 100%; object-fit: cover; }
 .profileButton { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; }
 .profileButton .accountAvatar { width: 40px; height: 40px; background: var(--landing-soft); }
-.sideNav .accountAvatar { width: 32px; height: 32px; background: var(--landing-soft); }
 .accountName { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .page [data-reveal]:focus-within { opacity: 1 !important; transform: none !important; }
 .brand { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
@@ -49,15 +41,15 @@
 .headerActions { display: flex; align-items: center; gap: 16px; }
 .iconButton { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; color: var(--landing-muted); background: transparent; border: 0; }
 .iconButton:hover { background: var(--landing-soft); }
-.signIn { display: inline-flex; align-items: center; gap: 16px; padding: 12px 20px; border-radius: 999px; background: var(--landing-text); color: var(--landing-bg); font-size: 14px; min-height: 44px; }
+.signIn { display: inline-flex; align-items: center; gap: 16px; padding: 12px 20px; border-radius: 999px; background: transparent; color: var(--landing-text); border: 1px solid var(--landing-border); font-size: 14px; min-height: 44px; transition: border-color .2s, background .2s; }
+.signIn:hover { border-color: var(--landing-text); }
 .menuButton { display: none; }
 .skipLink { position: fixed; top: 8px; left: 8px; transform: translateY(-200%); background: var(--landing-bg); color: var(--landing-blue); padding: 16px; z-index: 1000; }
 .skipLink:focus { transform: none; }
 .hero { position: relative; width: 100%; min-height: max(880px, calc(100svh - 68px)); }
 .heroCopy { position: relative; z-index: 5; text-align: center; padding: 64px 24px 0; pointer-events: none; }
 .heroCopy a { pointer-events: auto; }
-.eyebrow { display: inline-flex; align-items: center; gap: 8px; color: var(--landing-green); font-size: 13px; min-height: 44px; }
-.greenDot { width: 8px; height: 8px; background: var(--landing-green); border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.eyebrow { display: inline-flex; align-items: center; color: var(--landing-green); font-size: 13px; font-weight: 500; min-height: 44px; }
 .heroCopy h1 { font-size: clamp(44px, 5.2vw, 72px); line-height: 1.08; letter-spacing: -.045em; font-weight: 500; margin: 16px 0 24px; }
 .blueText { color: var(--landing-blue); }
 .inlinePin { display: inline-flex; width: 80px; height: 48px; border-radius: 999px; background: var(--landing-green-bg); vertical-align: middle; align-items: center; justify-content: center; transform: rotate(-8deg); border: 1px solid var(--landing-border); }
@@ -73,7 +65,8 @@
 .leafletMap { position: absolute; inset: 0; height: 100%; width: 100%; z-index: auto; background: var(--landing-soft); font-family: inherit; }
 .lightTiles { filter: grayscale(1) contrast(.85); opacity: .75; }
 .darkTiles { filter: grayscale(1) invert(1) brightness(.75); opacity: .8; }
-.mapFade { position: absolute; inset: 0; pointer-events: none; z-index: 400; background: linear-gradient(to bottom, var(--landing-bg) 0%, color-mix(in srgb, var(--landing-bg) 98%, transparent) 22%, color-mix(in srgb, var(--landing-bg) 85%, transparent) 40%, color-mix(in srgb, var(--landing-bg) 35%, transparent) 62%, transparent 82%); }
+/* Top fade keeps pins out from under the hero copy; the short bottom fade softens the edge into the promise strip. */
+.mapFade { position: absolute; inset: 0; pointer-events: none; z-index: 400; background: linear-gradient(to top, var(--landing-bg) 0, transparent 64px), linear-gradient(to bottom, var(--landing-bg) 0%, color-mix(in srgb, var(--landing-bg) 98%, transparent) 30%, color-mix(in srgb, var(--landing-bg) 90%, transparent) 48%, color-mix(in srgb, var(--landing-bg) 45%, transparent) 64%, transparent 80%); }
 .mapToolbar { display: flex; align-items: center; gap: 24px; position: absolute; top: 568px; left: 50%; transform: translateX(-50%); z-index: 450; padding: 12px 16px 12px 24px; width: 520px; max-width: calc(100% - 32px); border-radius: 999px; background: var(--landing-bg); box-shadow: 0 8px 32px #17212e12; border: 1px solid var(--landing-border); }
 .toolbarPin { color: var(--landing-blue); flex-shrink: 0; }
 .toolbarSelect { flex: 1; min-width: 0; }
@@ -87,10 +80,10 @@
 .mapControls button { background: var(--landing-bg); color: var(--landing-text); width: 44px; height: 44px; display: grid; place-items: center; font-size: 24px; }
 .mapControls button + button { border-top: 1px solid var(--landing-border); }
 .mapControls button:hover { background: var(--landing-soft); }
-.mapCaption { position: absolute; z-index: 450; bottom: 64px; left: 48px; display: flex; align-items: center; gap: 8px; padding: 16px 20px; background: var(--landing-bg); border-radius: 12px; border: 1px solid var(--landing-border); font-size: 14px; box-shadow: 0 4px 16px #00000008; }
-.mapCaption small { color: var(--landing-muted); font-size: 12px; border-left: 1px solid var(--landing-border); margin-left: 8px; padding-left: 16px; }
-.mapStatus { position: absolute; z-index: 450; bottom: 28px; left: 48px; max-width: calc(100% - 280px); color: var(--landing-muted); background: var(--landing-bg); padding: 4px 8px; border-radius: 4px; font-size: 12px; display: flex; align-items: center; gap: 12px; }
-.mapStatus button { display: inline-flex; align-items: center; gap: 4px; color: var(--landing-blue); min-height: 44px; }
+.mapCaption { position: absolute; z-index: 450; bottom: 64px; left: 48px; display: flex; align-items: center; gap: 16px; padding: 12px 20px; background: var(--landing-bg); border-radius: 12px; border: 1px solid var(--landing-border); font-size: 14px; box-shadow: 0 4px 16px #00000010; }
+.mapCaption small { color: var(--landing-muted); font-size: 12px; }
+.mapCount { display: inline-flex; align-items: center; gap: 12px; font-weight: 500; color: var(--landing-text); }
+.mapCaption button { display: inline-flex; align-items: center; gap: 4px; color: var(--landing-blue); min-height: 44px; }
 .fullMapLink { position: absolute; z-index: 450; right: 48px; bottom: 64px; display: inline-flex; align-items: center; gap: 8px; padding: 12px 16px; border-radius: 999px; background: var(--landing-bg); color: var(--landing-blue); font-size: 13px; min-height: 44px; border: 1px solid var(--landing-border); }
 .mapLoading { height: 100%; padding-top: 640px; text-align: center; color: var(--landing-muted); background: linear-gradient(var(--landing-bg), var(--landing-soft)); }
 .reportPin { background: transparent; border: none; }
@@ -109,14 +102,16 @@
 .srOnly { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
 .mapPreview :global(.leaflet-popup-content-wrapper), .mapPreview :global(.leaflet-popup-tip) { background: var(--landing-bg); color: var(--landing-text); }
 .mapPreview :global(.leaflet-popup-content a), .mapPreview :global(.leaflet-popup-close-button) { color: var(--landing-blue); }
-.reportPopup { display: flex; flex-direction: column; gap: 8px; width: 220px; color: var(--landing-text); font-family: var(--font-outfit), sans-serif; }
-.reportPopup > span { color: var(--landing-blue); font-size: 12px; }
-.reportPopup strong { font-size: 17px; line-height: 1.25; }
-.reportPopup p { margin: 0 !important; line-height: 1.5; max-height: 100px; overflow: auto; }
-.reportPopup small { text-transform: capitalize; }
-.reportPopup .popupLocation { display: flex; align-items: flex-start; gap: 5px; font-size: 11.5px; font-weight: 500; color: var(--landing-muted, #64748b); line-height: 1.35; word-break: break-word; }
+.reportPopup { display: flex; flex-direction: column; gap: 8px; width: 240px; color: var(--landing-text); font-family: var(--font-outfit), sans-serif; }
+.reportPopup .popupHead { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.reportPopup .popupHead > span:first-child { color: var(--landing-blue); font-size: 14px; font-weight: 500; }
+.reportPopup strong { font-size: 17px; font-weight: 500; line-height: 1.25; }
+.reportPopup p { margin: 0 !important; font-size: 14px; line-height: 1.5; color: var(--landing-muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.reportPopup .popupStatus { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 400; color: var(--landing-muted); text-transform: capitalize; }
+.reportPopup .popupStatus i { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.reportPopup .popupLocation { display: flex; align-items: flex-start; gap: 6px; font-size: 14px; color: var(--landing-muted); line-height: 1.4; word-break: break-word; }
 .reportPopup .popupLocation svg { flex-shrink: 0; margin-top: 2px; color: var(--landing-blue); }
-.reportPopup .popupAction { display: flex; align-items: center; gap: 8px; min-height: 44px; color: var(--landing-blue); font-family: inherit; font-size: 14px; padding: 0; background: transparent; text-align: left; }
+.reportPopup .popupAction { border-top: 1px solid var(--landing-border); display: flex; align-items: center; gap: 8px; min-height: 44px; font-weight: 500; color: var(--landing-blue); font-family: inherit; font-size: 14px; padding: 0; background: transparent; text-align: left; }
 .mapPreview :global(.leaflet-popup-content):has(.reportPopupCompact) { margin: 10px 14px; }
 .reportPopupCompact { display: flex; flex-direction: column; gap: 4px; width: 180px; color: var(--landing-text); font-family: var(--font-outfit), sans-serif; }
 .reportPopupCompact > span { color: var(--landing-blue); font-size: 11px; text-transform: capitalize; }
@@ -156,7 +151,6 @@
 @media (prefers-reduced-motion: reduce), (hover: none), (pointer: coarse) {
   .phone { transform: none; transition: none; }
 }
-.phoneCaption { margin-top: 32px; font-size: 12px; color: var(--landing-green); display: flex; align-items: center; gap: 8px; z-index: 1; }
 .mobileCopy ul { list-style: none; padding: 0; margin: 24px 0 32px; display: flex; flex-direction: column; gap: 12px; }
 .mobileCopy li { display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--landing-muted); }
 .mobileCopy li svg { width: 18px; color: var(--landing-green); flex-shrink: 0; }
@@ -177,17 +171,17 @@
 .closing .primaryButton svg { color: white; margin: 0; }
 .closing .primaryButton { margin-top: 24px; }
 .footer { background: var(--landing-bg); border-top: 1px solid var(--landing-border); padding: 64px 24px 32px; width: 100%; }
-.footerContainer { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr 1.25fr; gap: 48px; }
+.footerContainer { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 48px; }
 .footerColBrand { display: flex; flex-direction: column; gap: 14px; }
 .footerLogo { display: inline-block; }
 .footerCopy { display: flex; flex-direction: column; gap: 8px; }
 .footerTagline { font-size: 15px; font-weight: 600; color: var(--landing-text); margin: 0; }
 .footerDisclaimer { font-size: 13px; line-height: 1.6; color: var(--landing-muted); margin: 0; }
+
 .footerCredits { margin-top: 8px; }
 .photoCredit { font-size: 12px; color: var(--landing-muted); margin: 0; line-height: 1.5; }
 .photoCredit a { color: var(--landing-muted); text-decoration: underline; text-underline-offset: 2px; }
 .photoCredit a:hover { color: var(--landing-text); }
-
 .footerColNav { display: flex; flex-direction: column; gap: 28px; }
 .footerColTitle { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--landing-text); margin: 0 0 12px 0; }
 .footerLinks { display: flex; flex-direction: column; gap: 10px; }
@@ -201,8 +195,9 @@
 .officeDetail a { color: var(--landing-muted); text-decoration: underline; text-underline-offset: 2px; }
 .officeDetail a:hover { color: var(--landing-blue); }
 
+.footerColQuestions { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
 .footerColForm { display: flex; flex-direction: column; }
-.contactFormCard { background: var(--landing-soft); border: 1px solid var(--landing-border); border-radius: 20px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+.contactFormCard { background: var(--landing-soft); border: 1px solid var(--landing-border); border-radius: 16px; padding: 24px; }
 .contactFormHeader { margin-bottom: 16px; }
 .contactFormTitle { font-size: 16px; font-weight: 700; color: var(--landing-text); margin: 0 0 4px 0; }
 .contactFormSubtitle { font-size: 12px; color: var(--landing-muted); margin: 0; }
@@ -228,7 +223,6 @@
 
 .footerBottomBar { max-width: 1280px; margin: 48px auto 0; padding-top: 24px; border-top: 1px solid var(--landing-border); display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--landing-muted); flex-wrap: wrap; gap: 12px; }
 
-:global(.dark) .contactFormCard { background: #161616; border-color: #2a2a2a; }
 :global(.dark) .formInputCompact, :global(.dark) .formTextareaCompact { background: #111111; border-color: #333333; }
 @media (max-width: 1280px) {
   .promiseStrip, .about, .guide { margin-left: 48px; margin-right: 48px; }
@@ -248,7 +242,7 @@
   .promiseStrip strong { font-size: 15px; }
   .promiseStrip > a { display: none; }
   .footerContainer { grid-template-columns: 1fr 1fr; gap: 36px; }
-  .footerColForm { grid-column: span 2; }
+  .footerColQuestions { grid-column: span 2; }
 }
 @media (max-width: 767px) {
   .header { padding: 0; }
@@ -278,9 +272,9 @@
   .mapToolbar label + label { padding-left: 12px; }
   .mapToolbar select { font-size: 13px; }
   .mapControls { right: 16px; top: 608px; }
-  .mapCaption { left: 16px; right: 16px; bottom: 104px; padding: 12px; font-size: 12px; }
+  .mapCaption { left: 16px; right: 16px; bottom: 40px; padding: 12px; font-size: 13px; }
   .mapCaption small { display: none; }
-  .mapStatus { bottom: 40px; left: 16px; max-width: calc(100% - 152px); font-size: 11px; }
+  .mapFade { background: linear-gradient(to top, var(--landing-bg) 0, transparent 48px), linear-gradient(to bottom, var(--landing-bg) 0%, color-mix(in srgb, var(--landing-bg) 96%, transparent) 56%, color-mix(in srgb, var(--landing-bg) 50%, transparent) 68%, transparent 84%); }
   .fullMapLink { right: 16px; bottom: 40px; font-size: 12px; padding: 12px; }
   .promiseStrip { margin: 0 24px; padding: 24px 0; flex-wrap: wrap; row-gap: 24px; }
   .promiseStrip > div { gap: 12px; flex: 1 1 240px; }
@@ -303,7 +297,7 @@
   .closing { padding: 48px 24px; }
   .footer { padding: 48px 20px 28px; }
   .footerContainer { grid-template-columns: 1fr; gap: 36px; }
-  .footerColForm { grid-column: span 1; }
+  .footerColQuestions { grid-column: span 1; }
   .formRowTwo { grid-template-columns: 1fr; }
   .footerBottomBar { flex-direction: column; align-items: flex-start; gap: 8px; margin-top: 36px; }
 }
@@ -347,14 +341,9 @@
 .photoDetails { display: flex; flex-direction: column; gap: 24px; }
 .photoDetails .photoFrame { aspect-ratio: 2.15; }
 .photoDetails figcaption { color: var(--landing-muted); font-size: 13px; padding-top: 12px; }
-.communityFoot { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-top: 24px; }
-.communityFoot p { color: var(--landing-muted); font-size: 14px; }
 @media (max-width: 1024px) {
   .photoLead { min-height: 432px; }
   .photoDetails .photoFrame { aspect-ratio: 1.7; }
-  .about, .guide, .promiseStrip { margin-right: 104px; }
-  .mobileSection { margin-right: 96px; }
-  .community { padding-right: 104px; }
 }
 @media (max-width: 767px) {
   .navSpacer { height: 60px; }
@@ -371,11 +360,9 @@
   .photoDetails .photoFrame { aspect-ratio: 1; }
   .photoLead figcaption strong { font-size: 24px; }
   .photoLead > figcaption { padding: 64px 24px 24px; }
-  .communityFoot { flex-direction: column; align-items: flex-start; gap: 8px; }
-  /* Symmetric gutters: the quick-navigation rail is disabled below 768px, so no right-hand reservation. */
+    /* Symmetric mobile gutters (the quick-navigation rail is retired). */
   .about, .guide, .promiseStrip { margin-right: 24px; padding-right: 0; }
   .mobileSection { margin-right: 16px; padding: 32px 24px; }
-  .sideNav { display: none; }
   .mobileCopy .primaryButton { padding: 12px; font-size: 13px; gap: 8px; }
   .mobileCopy .primaryButton svg:last-child { display: none; }
   .phoneStage { padding: 0; }

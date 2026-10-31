@@ -3,20 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useDeferredValue } from 'react'
 import { useMap } from 'react-leaflet'
 import L from 'leaflet'
-import {
-  Search,
-  X,
-  Compass,
-  MapPin,
-  AlertTriangle,
-  ClipboardList,
-  Layers,
-  ChevronRight,
-  ChevronDown,
-  Flame,
-  Building2,
-  SlidersHorizontal
-} from 'lucide-react'
+import { Search, X, ChevronDown } from 'lucide-react'
 import {
   MAP_LOCATIONS,
   PASIG_LANDMARKS_AND_ADDRESSES,
@@ -25,6 +12,7 @@ import {
   searchAddressGeocode
 } from '@/lib/map-search.mjs'
 import { formatReportAddress } from '@/lib/format-location.mjs'
+import { getReportStatusHex } from '@/lib/helpers/statusHelpers'
 
 export default function MapSearch({
   reports = [],
@@ -283,6 +271,17 @@ export default function MapSearch({
     }
   }
 
+  const TABS = [
+    { id: 'all', label: 'All', count: tabCounts.all },
+    { id: 'hotspots', label: 'Hotspots', count: tabCounts.hotspots },
+    { id: 'reports', label: 'Reports', count: tabCounts.reports },
+    { id: 'locations', label: 'Landmarks', fullLabel: 'Landmarks and addresses', count: tabCounts.locations },
+    ...(tabCounts.tasks > 0 ? [{ id: 'tasks', label: 'Tasks', count: tabCounts.tasks }] : []),
+  ]
+  const heading = deferredQuery.trim()
+    ? `Results for “${deferredQuery}”`
+    : { hotspots: 'Active clusters and hotspots', reports: 'Recent reports', locations: 'Pasig landmarks and addresses', tasks: 'Cleanup tasks' }[activeTab] || 'Points of interest and hotspots'
+
   return (
     <div
       ref={containerRef}
@@ -292,346 +291,137 @@ export default function MapSearch({
       onDoubleClick={e => e.stopPropagation()}
       onWheel={e => e.stopPropagation()}
     >
-      {/* Search Input Bar with Categories filter pill */}
-      <div className="flex items-center gap-1.5 p-1.5 bg-surface-elevated/95 dark:bg-[#1C1C1C]/95 backdrop-blur-md text-text-primary border border-border shadow-lg rounded-2xl transition-all hover:shadow-xl">
-        <form onSubmit={handleSubmit} className="flex-1 flex items-center gap-2 px-2.5 min-w-0">
-          <Search size={16} className="text-text-secondary shrink-0" aria-hidden="true" />
-          <input
-            type="search"
-            aria-label="Search landmarks, addresses, reports, or hotspots"
-            placeholder="Search landmarks, addresses, reports, hotspots…"
-            value={query}
-            className="w-full py-1.5 bg-transparent text-xs sm:text-sm text-text-primary placeholder:text-text-muted outline-none"
-            onFocus={() => setOpen(true)}
-            onChange={e => {
-              setQuery(e.target.value)
-              setOpen(true)
-            }}
-            onKeyDown={e => {
-              e.stopPropagation()
-              if (e.key === 'Escape') setOpen(false)
-            }}
-          />
-          {query && (
-            <button
-              type="button"
-              aria-label="Clear map search"
-              onClick={() => {
-                setQuery('')
-                setActiveTab('all')
-                setOpen(true)
-              }}
-              className="p-1 rounded-full text-text-muted hover:text-text-primary hover:bg-surface transition-colors shrink-0"
-            >
-              <X size={14} />
-            </button>
-          )}
-        </form>
-
-        {/* Categories & Filter Dropdown Toggle Pill */}
-        <div
-          className={`flex items-center rounded-xl border text-[11px] font-semibold transition-all shrink-0 ${
-            open
-              ? 'bg-[#0052cc] text-white border-[#0052cc] shadow-sm'
-              : activeTab !== 'all'
-              ? 'bg-[#0052cc]/10 border-[#0052cc]/40 text-[#0052cc] dark:text-[#60A5FA]'
-              : 'bg-surface border-border text-text-secondary hover:text-text-primary hover:bg-surface-elevated'
-          }`}
-        >
+      {/* One quiet search bar: 44px, 12px corners, 1px border */}
+      <form onSubmit={handleSubmit} role="search" className="flex items-center gap-1 pl-3 pr-1 min-h-[44px] bg-surface text-text-primary border border-border rounded-xl shadow-[0_4px_16px_#00000010] focus-within:border-[#0052cc]">
+        <Search size={16} className="text-text-secondary shrink-0" aria-hidden="true" />
+        <input
+          type="search"
+          aria-label="Search landmarks, addresses, reports, or hotspots"
+          placeholder="Search landmarks, addresses, reports"
+          value={query}
+          className="flex-1 min-w-0 h-11 px-2 bg-transparent text-sm text-text-primary placeholder:text-text-secondary outline-none focus-visible:!outline-none [&::-webkit-search-cancel-button]:hidden"
+          onFocus={() => setOpen(true)}
+          onChange={e => {
+            setQuery(e.target.value)
+            setOpen(true)
+          }}
+          onKeyDown={e => {
+            e.stopPropagation()
+            if (e.key === 'Escape') setOpen(false)
+          }}
+        />
+        {query && (
           <button
             type="button"
+            aria-label="Clear map search"
             onClick={() => {
-              setOpen(prev => !prev)
+              setQuery('')
+              setActiveTab('all')
+              setOpen(true)
             }}
-            className={`flex items-center gap-1.5 py-1.5 rounded-xl transition-all outline-none ${
-              activeTab !== 'all' ? 'pl-2.5 pr-1.5' : 'px-3'
-            }`}
-            title={
-              activeTab !== 'all'
-                ? `Filtered by ${
-                    activeTab === 'hotspots'
-                      ? 'Hotspots'
-                      : activeTab === 'reports'
-                      ? 'Reports'
-                      : activeTab === 'locations'
-                      ? 'Landmarks'
-                      : 'Tasks'
-                  } — Click to browse categories`
-                : 'Browse map categories and filter options'
-            }
-            aria-expanded={open}
-            aria-label={
-              activeTab === 'all'
-                ? 'Filter categories'
-                : `Filtered by ${
-                    activeTab === 'hotspots'
-                      ? 'Hotspots'
-                      : activeTab === 'reports'
-                      ? 'Reports'
-                      : activeTab === 'locations'
-                      ? 'Landmarks'
-                      : 'Tasks'
-                  }`
-            }
+            className="grid h-11 w-11 place-items-center rounded-lg text-text-secondary hover:text-text-primary shrink-0"
           >
-            {activeTab === 'hotspots' ? (
-              <Flame size={13} className={open ? 'text-white' : 'text-amber-500'} />
-            ) : activeTab === 'reports' ? (
-              <MapPin size={13} className={open ? 'text-white' : 'text-blue-500'} />
-            ) : activeTab === 'locations' ? (
-              <Building2 size={13} className={open ? 'text-white' : 'text-purple-500'} />
-            ) : activeTab === 'tasks' ? (
-              <ClipboardList size={13} className={open ? 'text-white' : 'text-emerald-500'} />
-            ) : (
-              <SlidersHorizontal size={13} className={open ? 'text-white' : 'text-text-muted'} />
-            )}
-
-            <span>
-              {activeTab === 'all'
-                ? 'Categories'
-                : activeTab === 'hotspots'
-                ? 'Hotspots'
-                : activeTab === 'reports'
-                ? 'Reports'
-                : activeTab === 'locations'
-                ? 'Landmarks'
-                : 'Tasks'}
-            </span>
-
-            <span
-              className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
-                open
-                  ? 'bg-white/25 text-white'
-                  : activeTab === 'hotspots'
-                  ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300'
-                  : activeTab === 'reports'
-                  ? 'bg-blue-500/15 text-blue-700 dark:text-blue-300'
-                  : activeTab === 'locations'
-                  ? 'bg-purple-500/15 text-purple-700 dark:text-purple-300'
-                  : activeTab === 'tasks'
-                  ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
-                  : 'bg-surface-elevated text-text-muted border border-border/50'
-              }`}
-            >
-              {activeTab === 'all' ? tabCounts.all : tabCounts[activeTab]}
-            </span>
-
-            <ChevronDown
-              size={12}
-              className={`transition-transform duration-150 ${open ? 'rotate-180 text-white' : 'text-text-muted'}`}
-              aria-hidden="true"
-            />
+            <X size={16} aria-hidden="true" />
           </button>
+        )}
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-label={open ? 'Hide map results' : 'Browse map results'}
+          onClick={() => setOpen(prev => !prev)}
+          className="grid h-11 w-11 place-items-center rounded-lg text-text-secondary hover:text-text-primary shrink-0"
+        >
+          <ChevronDown size={16} aria-hidden="true" className={`transition-transform duration-150 ${open ? 'rotate-180' : ''}`} />
+        </button>
+      </form>
 
-          {/* Instant deselect button: reverts back to Categories label */}
-          {activeTab !== 'all' && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation()
-                setActiveTab('all')
-              }}
-              title="Deselect category and revert to Categories"
-              aria-label="Deselect category"
-              className={`p-1 mr-1 rounded-full transition-colors ${
-                open
-                  ? 'hover:bg-white/20 text-white/80 hover:text-white'
-                  : 'hover:bg-[#0052cc]/15 text-[#0052cc] dark:text-[#60A5FA]'
-              }`}
-            >
-              <X size={12} />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Dropdown Results & Filter Panel */}
       {open && (
-        <div className="mt-2 bg-surface-elevated dark:bg-[#1C1C1C] text-text-primary border border-border shadow-2xl rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 max-h-[460px] flex flex-col">
-          {/* Category Filter Chips (Segmented Bar with Zero Scrollbar) */}
-          <div
-            className="flex items-center gap-1.5 p-2 border-b border-border bg-surface/60 overflow-x-auto text-xs shrink-0 no-scrollbar"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-          >
-            {[
-              { id: 'all', label: 'All', count: tabCounts.all },
-              { id: 'hotspots', label: 'Hotspots', count: tabCounts.hotspots, icon: Flame, iconTone: 'text-amber-500' },
-              { id: 'reports', label: 'Reports', count: tabCounts.reports, icon: MapPin, iconTone: 'text-blue-500' },
-              { id: 'locations', label: 'Landmarks', fullLabel: 'Landmarks & Addresses', count: tabCounts.locations, icon: Building2, iconTone: 'text-purple-500' },
-              ...(tabCounts.tasks > 0 ? [{ id: 'tasks', label: 'Tasks', count: tabCounts.tasks, icon: ClipboardList, iconTone: 'text-emerald-500' }] : []),
-            ].map(tab => {
-              const Icon = tab.icon
-              const isSelected = activeTab === tab.id
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  title={isSelected ? `Deselect ${tab.label} (revert to Categories)` : (tab.fullLabel || tab.label)}
-                  onClick={() => {
-                    // Toggle off if already selected, reverting back to 'all' (none selected)
-                    setActiveTab(prev => prev === tab.id ? 'all' : tab.id)
-                  }}
-                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl font-medium text-[11px] sm:text-xs transition-all whitespace-nowrap shrink-0 border ${
-                    isSelected
-                      ? 'bg-[#0052cc] text-white border-[#0052cc] shadow-sm font-semibold'
-                      : 'bg-surface/80 border-border/70 text-text-secondary hover:bg-surface hover:text-text-primary hover:border-border'
-                  }`}
-                >
-                  {Icon && (
-                    <Icon
-                      size={12}
-                      className={isSelected ? 'text-white' : tab.iconTone || 'text-text-muted'}
-                    />
-                  )}
-                  <span>{tab.label}</span>
-                  <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-semibold ${
-                      isSelected
-                        ? 'bg-white/20 text-white'
-                        : 'bg-surface-elevated text-text-muted'
+        <div className="mt-2 bg-surface text-text-primary border border-border rounded-2xl shadow-[0_8px_32px_#17212e1f] overflow-hidden max-h-[460px] flex flex-col">
+          {/* Category filter: the same pill segmented control as the Explore status filter */}
+          <div className="p-3 border-b border-border shrink-0 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+            <div role="group" aria-label="Result category" className="inline-flex gap-0.5 p-0.5 border border-border rounded-full">
+              {TABS.map(tab => {
+                const isSelected = activeTab === tab.id
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    aria-pressed={isSelected}
+                    title={tab.fullLabel || tab.label}
+                    onClick={() => setActiveTab(prev => prev === tab.id ? 'all' : tab.id)}
+                    className={`min-h-[40px] px-3 rounded-full text-[13px] font-medium whitespace-nowrap transition-colors ${
+                      isSelected ? 'bg-[#0052cc] text-white' : 'text-text-secondary hover:text-text-primary'
                     }`}
                   >
-                    {tab.count}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-
-          {/* Section Summary Header with Quick Reset */}
-          <div className="px-3.5 py-2 flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-text-muted border-b border-border/50 bg-surface/20 shrink-0">
-            <span>
-              {deferredQuery.trim()
-                ? `Results for "${deferredQuery}"`
-                : activeTab === 'hotspots'
-                ? 'Active Clusters & Hotspots'
-                : activeTab === 'reports'
-                ? 'Recent Reports'
-                : activeTab === 'locations'
-                ? 'Pasig Landmarks & Addresses'
-                : activeTab === 'tasks'
-                ? 'Cleanup Tasks'
-                : 'Points of interest & Hotspots'}
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-semibold text-text-muted">
-                {displayedItems.length} total
-              </span>
-              {activeTab !== 'all' && (
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('all')}
-                  className="text-[10px] text-workspace-link hover:underline normal-case font-medium flex items-center gap-1"
-                >
-                  <X size={10} />
-                  <span>Clear filter</span>
-                </button>
-              )}
+                    {tab.label} <span className={isSelected ? 'text-white/80' : 'text-text-muted'}>{tab.count}</span>
+                  </button>
+                )
+              })}
             </div>
           </div>
 
-          {/* Scrollable Items List with Custom Scrollbar */}
-          <div className="flex-1 overflow-y-auto p-1.5 space-y-1 custom-scrollbar">
+          <div className="px-4 py-2 flex items-center justify-between gap-3 text-[13px] text-text-secondary border-b border-border shrink-0">
+            <span className="truncate">{heading}</span>
+            <span className="shrink-0">
+              {displayedItems.length} {displayedItems.length === 1 ? 'result' : 'results'}
+              {activeTab !== 'all' && (
+                <button type="button" onClick={() => setActiveTab('all')} className="ml-3 text-workspace-link hover:underline underline-offset-4">Clear filter</button>
+              )}
+            </span>
+          </div>
+
+          <div className="flex-1 overflow-y-auto custom-scrollbar">
             {displayedItems.length === 0 ? (
-              <div className="py-8 px-4 text-center">
-                <AlertTriangle size={24} className="mx-auto mb-2 text-text-muted" />
-                <p className="text-xs font-semibold text-text-primary">No matching results found</p>
-                <p className="text-[11px] text-text-muted mt-1 max-w-[260px] mx-auto">
+              <div className="px-4 py-8">
+                <p className="text-sm font-medium text-text-primary">No matching results</p>
+                <p className="text-sm text-text-secondary mt-1 max-w-[320px]">
                   {deferredQuery.trim()
-                    ? `No items match "${deferredQuery}". Try searching by landmark, street address, or barangay.`
-                    : 'No items available in this category.'}
+                    ? `Nothing matches “${deferredQuery}”. Try a landmark, street address or barangay.`
+                    : 'Nothing is available in this category yet.'}
                 </p>
                 {activeTab !== 'all' && (
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('all')}
-                    className="mt-3 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium text-white bg-[#0052cc] hover:bg-[#003d99] transition-colors"
-                  >
-                    View All Categories
-                  </button>
+                  <button type="button" onClick={() => setActiveTab('all')} className="mt-3 min-h-[44px] text-sm font-medium text-workspace-link hover:underline underline-offset-4">Show all results</button>
                 )}
               </div>
             ) : (
-              displayedItems.map(item => {
-                const isSelected = selectedReportId === item.id
-                const hasDemoPrefix = typeof item.title === 'string' && item.title.startsWith('[DEMO] ')
-                const cleanTitle = hasDemoPrefix ? item.title.replace('[DEMO] ', '') : item.title
-                const displayTitle = item.kind === 'Hotspot' && item.nearbyLandmark && !cleanTitle.includes(item.nearbyLandmark)
-                  ? `${cleanTitle} • ${item.nearbyLandmark}`
-                  : cleanTitle
+              <ul>
+                {displayedItems.map(item => {
+                  const isSelected = selectedReportId === item.id
+                  const cleanTitle = typeof item.title === 'string' ? item.title.replace(/^\[DEMO\] /, '') : item.title
+                  const displayTitle = item.kind === 'Hotspot' && item.nearbyLandmark && !cleanTitle.includes(item.nearbyLandmark)
+                    ? `${cleanTitle} · ${item.nearbyLandmark}`
+                    : cleanTitle
+                  const statusText = (item.status || '').replace(/_/g, ' ')
+                  let meta = null
+                  if (item.kind === 'Hotspot') meta = `${item.report_count} ${item.report_count === 1 ? 'report' : 'reports'}`
+                  else if (item.kind === 'Location') meta = item.category || (item.isGeocoded ? 'Address' : 'Landmark')
+                  else if (statusText) meta = statusText
 
-                return (
-                  <button
-                    key={`${item.kind}-${item.id}`}
-                    type="button"
-                    onClick={() => handleSelect(item)}
-                    className={`w-full text-left p-2.5 rounded-xl transition-all flex items-start gap-2.5 group border ${
-                      isSelected
-                        ? 'bg-[#0052cc]/10 border-[#0052cc]/40 text-[#0052cc] dark:text-[#60A5FA]'
-                        : 'border-transparent hover:bg-surface hover:border-border text-text-primary'
-                    }`}
-                  >
-                    {/* Kind Icon Badge */}
-                    <div className={`p-2 rounded-xl mt-0.5 shrink-0 transition-colors ${
-                      item.kind === 'Hotspot'
-                        ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 group-hover:bg-amber-500 group-hover:text-white'
-                        : item.kind === 'Report'
-                        ? 'bg-[#0052cc]/15 text-[#0052cc] dark:text-[#60A5FA] group-hover:bg-[#0052cc] group-hover:text-white'
-                        : item.kind === 'Task'
-                        ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white'
-                        : 'bg-purple-500/15 text-purple-600 dark:text-purple-400 group-hover:bg-purple-500 group-hover:text-white'
-                    }`}>
-                      {item.kind === 'Hotspot' && <Flame size={14} />}
-                      {item.kind === 'Report' && <MapPin size={14} />}
-                      {item.kind === 'Location' && (item.category === 'Address' || item.category === 'Thoroughfare' ? <MapPin size={14} /> : <Building2 size={14} />)}
-                      {item.kind === 'Task' && <ClipboardList size={14} />}
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-1.5">
-                        <span className="font-semibold text-xs truncate group-hover:text-[#0052cc] dark:group-hover:text-[#60A5FA] transition-colors">
-                          {displayTitle}
+                  return (
+                    <li key={`${item.kind}-${item.id}`} className="border-b border-border last:border-b-0">
+                      <button
+                        type="button"
+                        onClick={() => handleSelect(item)}
+                        aria-current={isSelected ? 'true' : undefined}
+                        className={`w-full min-h-[56px] px-4 py-3 text-left flex items-start justify-between gap-4 transition-colors ${
+                          isSelected ? 'bg-surface-elevated' : 'hover:bg-surface-elevated'
+                        }`}
+                      >
+                        <span className="min-w-0">
+                          <span className={`block text-sm font-medium leading-snug ${isSelected ? 'text-workspace-link' : 'text-text-primary'}`}>{displayTitle}</span>
+                          {item.subtitle && <span className="block mt-0.5 text-[13px] text-text-secondary truncate">{item.subtitle}</span>}
                         </span>
-
-                        {/* Badges */}
-                        {item.kind === 'Hotspot' && (
-                          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/20 shrink-0">
-                            {item.report_count} {item.report_count === 1 ? 'report' : 'reports'}
+                        {meta && (
+                          <span className={`shrink-0 inline-flex items-center gap-2 text-[13px] text-text-secondary ${item.kind === 'Report' || item.kind === 'Task' ? 'capitalize' : ''}`}>
+                            {item.kind === 'Report' && item.status && <i aria-hidden="true" className="h-2 w-2 rounded-full" style={{ backgroundColor: getReportStatusHex(item.status) }} />}
+                            {meta}
                           </span>
                         )}
-                        {item.kind === 'Report' && item.status && (
-                          <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold capitalize shrink-0 ${
-                            item.status === 'resolved'
-                              ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
-                              : item.status === 'in_progress'
-                              ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300'
-                              : 'bg-red-500/15 text-red-700 dark:text-red-300'
-                          }`}>
-                            {item.status.replace(/_/g, ' ')}
-                          </span>
-                        )}
-                        {item.kind === 'Task' && item.status && (
-                          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold capitalize bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 shrink-0">
-                            {item.status.replace(/_/g, ' ')}
-                          </span>
-                        )}
-                        {item.kind === 'Location' && (
-                          <span className="px-1.5 py-0.2 rounded-full text-[10px] font-medium bg-surface text-text-muted shrink-0">
-                            {item.category || (item.isGeocoded ? 'Address' : 'Landmark')}
-                          </span>
-                        )}
-                      </div>
-
-                      <p className="text-[11px] text-text-secondary truncate mt-0.5">
-                        {item.subtitle}
-                      </p>
-                    </div>
-
-                    <ChevronRight size={14} className="text-text-muted mt-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </button>
-                )
-              })
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
             )}
           </div>
         </div>

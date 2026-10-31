@@ -1,9 +1,12 @@
 .preview { min-width: 0; }
-.controls { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-bottom: 1.5rem; }
-.controls p, .controls form { flex-basis: 100%; font-size: .875rem; }
-.controls form { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; }
-.controls label { display: flex; flex-direction: column; gap: .5rem; }
-.controls input { min-height: 44px; border: 1px solid var(--border); background: var(--surface); border-radius: 8px; padding: .5rem; color: var(--text-primary); }
+.controls { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; padding: 20px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.spacer { flex: 1; }
+.controls form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+.controls label { display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: var(--text-secondary); }
+.controls input { min-height: 44px; min-width: 176px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text-primary); font: inherit; font-size: 14px; }
+.noteText { margin: 0; max-width: 72ch; font-size: 14px; line-height: 1.6; color: var(--text-secondary); }
+.status { margin: 0; font-size: 14px; color: var(--text-primary); }
 .sheet { box-sizing: border-box; width: 100%; max-width: 210mm; margin: auto; padding: 12mm; color: #18212b; background: white; border: 1px solid #ccd1d7; font: 10pt/1.5 Arial, sans-serif; overflow-wrap: anywhere; }
 .masthead { border-bottom: 2px solid #253447; padding-bottom: 4mm; }
 .masthead p { margin: 1mm 0; font-size: 9pt; }
@@ -41,3 +44,32 @@
  .metrics { grid-template-columns: repeat(4,minmax(0,1fr)); }
  .appendix, .decisions { break-before: page; }
 }
+
+/* Shared print identity (DESIGN.md): Outfit, sentence case, hairline rules, no filled or boxed tables. */
+.sheet { font-family: var(--font-outfit), 'Outfit', sans-serif; font-size: 10pt; line-height: 1.55; color: #17212e; border-color: #e5e9ee; }
+.masthead { border-bottom: 1px solid #e5e9ee; padding-bottom: 6mm; }
+.masthead p:first-child { color: #27754d; font-size: 10pt; font-weight: 500; margin: 0 0 2mm; }
+.sheet h1 { font-size: 26pt; font-weight: 500; line-height: 1.1; letter-spacing: -0.035em; margin: 2mm 0 4mm; }
+.sheet h2 { font-size: 14pt; font-weight: 500; letter-spacing: -0.02em; margin: 9mm 0 3mm; padding: 0; border: 0; break-after: avoid; }
+.sheet h3 { font-size: 11pt; font-weight: 500; }
+.sheet strong { font-weight: 500; }
+.metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4mm; border: 0; border-top: 1px solid #e5e9ee; border-bottom: 1px solid #e5e9ee; padding: 4mm 0; margin: 5mm 0; }
+.metrics dt { font-size: 9pt; color: #59636e; }
+.metrics dd { font-size: 20pt; font-weight: 500; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.sheet table { font-size: 8.5pt; margin: 3mm 0 6mm; }
+.sheet caption { font-size: 11pt; font-weight: 500; padding: 0 0 2mm; }
+.sheet th, .sheet td { border: 0; border-bottom: 1px solid #e5e9ee; padding: 2.5mm 2mm; }
+.sheet thead th { background: none; color: #59636e; font-weight: 500; border-bottom: 1px solid #17212e; }
+.sheet small, .note { color: #59636e; }
+@media print {
+ .sheet th, .sheet td { padding: 2.5mm 2mm; }
+ .metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.sheet { padding: 14mm; border-radius: 4px; }
+.audience { font-size: 11pt; }
+.period { font-size: 11pt; font-weight: 500; }
+.snapshot { font-size: 9pt; color: #59636e; }
+.priorities li { margin-bottom: 1.5mm; }
+@media (max-width: 600px) { .controls { padding: 16px; } .toolbar > :global(a), .toolbar > button { flex: 1 1 100%; text-align: center; } .spacer { display: none; } }
+@media print { .sheet { padding: 0; border-radius: 0; } }

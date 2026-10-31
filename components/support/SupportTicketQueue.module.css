@@ -1,23 +1,41 @@
-.panel { min-width: 0; padding: 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); margin-bottom: 16px; }
-.panel p { margin: 8px 0; color: var(--text-secondary); overflow-wrap: anywhere; }
-.header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.header h2, .header h3 { margin: 0; font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
-.header h3 { font-size: 15px; }
-.header h2 span { color: var(--text-secondary); font-weight: 400; }
-.filters, .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
-.actions > *, .filters button { min-height: 44px; padding: 8px 12px; }
-.list { list-style: none; padding: 0; margin: 12px 0; }
-.ticket { padding: 16px 0; border-top: 1px solid var(--border); }
-.ticket p { font-size: 14px; white-space: pre-wrap; }
-.meta { font-size: 13px; }
-.status { padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; font-size: 12px; }
-.reply { padding: 12px; border-left: 3px solid var(--workspace-link); background: var(--surface-elevated); border-radius: 0 8px 8px 0; color: var(--text-primary); }
-.dialog { width: min(560px, calc(100vw - 32px)); }
-.replyForm { padding: 24px; overflow-wrap: anywhere; }
-.replyForm h2 { font-size: 20px; font-weight: 600; margin-bottom: 12px; }
-.replyForm label { display: block; font-weight: 500; margin: 16px 0 8px; }
-.replyForm textarea, .replyForm select { width: 100%; padding: 12px; min-height: 44px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-primary); }
+.panel { min-width: 0; padding: 20px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); margin-bottom: 16px; }
+.panel p { margin: 0; color: var(--text-secondary); overflow-wrap: anywhere; }
+.header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.header h2 { margin: 0; font-size: 18px; font-weight: 500; letter-spacing: -0.01em; }
+.count { margin-top: 4px !important; font-size: 14px; }
+.note { margin-top: 12px !important; max-width: 72ch; font-size: 14px; line-height: 1.6; }
+.filters, .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 16px; }
+.filters { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); }
+.filters button { min-height: 40px; padding: 8px 16px; border: 0; border-radius: 999px; background: transparent; color: var(--text-secondary); font-size: 14px; font-weight: 500; cursor: pointer; }
+.filters button[aria-pressed='true'] { background: #0052cc; color: #fff; }
+.filters button:focus-visible { outline: 2px solid var(--workspace-link); outline-offset: 2px; }
+.actions > * { min-height: 44px; padding: 8px 20px; }
+.link { padding: 0; border: 0; background: transparent; color: var(--workspace-link); font: inherit; font-weight: 500; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.empty { padding: 32px 0 16px; max-width: 56ch; }
+.empty h3 { margin: 0; font-size: 18px; font-weight: 500; color: var(--text-primary); }
+.panel .empty p { margin-top: 8px; font-size: 15px; line-height: 1.6; }
+.list { list-style: none; padding: 0; margin: 16px 0 0; }
+.ticket { padding: 24px 0; border-top: 1px solid var(--border); }
+.ticketHead { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.ticketTitle { min-width: 0; }
+.ticketTitle h3 { margin: 0; font-size: 18px; font-weight: 500; line-height: 1.3; overflow-wrap: anywhere; }
+.panel .category { margin: 0 0 4px; color: var(--workspace-link); font-size: 14px; font-weight: 500; }
+.state { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; white-space: nowrap; color: var(--text-primary); }
+.state i { width: 8px; height: 8px; border-radius: 50%; background: var(--text-secondary); flex-shrink: 0; }
+.state[data-tone='info'] i { background: var(--info); }
+.state[data-tone='success'] i { background: var(--success); }
+.panel .meta { margin-top: 8px; font-size: 14px; }
+.meta code { font-family: inherit; font-size: inherit; }
+.panel .body { margin-top: 12px; font-size: 15px; line-height: 1.6; white-space: pre-wrap; color: var(--text-primary); max-width: 72ch; }
+.reply { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border); max-width: 72ch; }
+.panel .replyLabel { font-size: 14px; color: var(--text-secondary); }
+.panel .reply .body { margin-top: 4px; }
+.replyForm { width: min(560px, 100%); max-height: calc(100dvh - 32px); overflow: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-dialog, 24px); box-shadow: var(--shadow-dialog); padding: 24px; overflow-wrap: anywhere; }
+.replyForm .actions { justify-content: flex-end; margin-top: 24px; }
+.replyForm h2 { margin: 0 0 12px; font-size: 20px; font-weight: 500; letter-spacing: -0.01em; }
+.replyForm label { display: block; font-size: 14px; font-weight: 500; margin: 16px 0 8px; }
+.replyForm textarea, .replyForm select { width: 100%; padding: 12px; min-height: 44px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text-primary); font: inherit; font-size: 14px; }
 .replyForm textarea { resize: vertical; }
-.quote { padding: 12px; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); white-space: pre-wrap; max-height: 160px; overflow: auto; }
-.error { color: var(--text-primary); padding: 12px; border: 1px solid var(--border); border-radius: 8px; }
-@media (max-width: 480px) { .panel, .replyForm { padding: 16px; } .actions > * { flex: 1 1 100%; text-align: center; } }
+.quote { padding: 0 0 16px; border-bottom: 1px solid var(--border); color: var(--text-secondary); white-space: pre-wrap; max-height: 160px; overflow: auto; margin: 0; }
+.error { color: var(--text-primary); padding: 12px; border: 1px solid var(--border); border-radius: 12px; }
+@media (max-width: 480px) { .panel, .replyForm { padding: 16px; } .actions > * { flex: 1 1 100%; text-align: center; } .ticketHead { flex-direction: column; gap: 8px; } }

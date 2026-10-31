@@ -16,7 +16,7 @@ function Table({title,columns,rows,rowKey}){return rows.length?<table><caption>{
 function Sheet({data}){
  const day=data.start_day===data.end_day,taskCount=new Set(data.verified.map(v=>v.task_id).filter(Boolean)).size
  return <article aria-label="Field crew operations summary" className={styles.sheet}>
-  <header><p>ECOPIN / PASIG CITY / SWMO</p><h1>{day?'Daily field crew operations':'Field crew operations summary'}</h1><p><strong>{data.start_day}{!day&&` through ${data.end_day}`} · Manila calendar dates, inclusive</strong></p><p>Snapshot: {caseTime(data.generated_at)} · Manila (UTC+8)</p></header>
+  <header><p className={styles.label}>EcoPin · Pasig City Solid Waste Management Office</p><h1>{day?'Daily field crew operations':'Field crew operations summary'}</h1><p className={styles.period}>{data.start_day}{!day&&` through ${data.end_day}`} · Manila calendar dates, inclusive</p><p className={styles.snapshot}>Snapshot taken {caseTime(data.generated_at)} · Manila time (UTC+8)</p></header>
   <section><h2>Shift handover overview</h2><dl className={styles.metrics}>{[['Tasks listed',data.tasks.length],['Assignment changes',data.assignments.length],['Completion-linked stops',data.waypoints.length],['Proof review events',data.verified.length],['Obstacles / observations',data.obstacles.length]].map(([title,count])=><div key={title}><dt>{title}</dt><dd>{count}</dd></div>)}</dl>
    <p>Period entries use recorded assignment, verification and cleanup-completion times. Offline outcomes use server submission time, with claimed observation time shown separately.</p>
    <p>Inventory is current at the snapshot: tasks created or active in the period, plus unfinished/unknown-state tasks created by period-end. Rosters and open blocks reflect snapshot state, not historic end-of-day status.</p>
@@ -69,12 +69,23 @@ function Session({from,through}){
  async function print(){if(!data||changed||printing||!operationsFresh(data.generated_at))return;setPrinting(true);try{await document.fonts.ready;flushSync(()=>setClock(Date.now()));if(operationsFresh(data.generated_at))window.print()}finally{setPrinting(false)}}
  const sheet=data&&<Sheet data={data}/>
  return <div className={`workspace-page workspace-page--flow ${styles.preview}`}>
-  <div className={styles.controls}><Link href="/dashboard" className="btn-secondary">Back to dashboard</Link><button type="button" className="btn-primary" disabled={!ready||printing} onClick={print}>{printing?'Preparing print…':'Print / Save PDF'}</button><button type="button" className="btn-secondary" onClick={()=>setAttempt(n=>n+1)}>Reload summary</button>
-   <form onSubmit={apply} noValidate><label>From date<input type="date" value={draft.from} min="2000-01-01" max={operationsToday()} onChange={e=>setDraft({...draft,from:e.target.value})}/></label><label>Through date<input type="date" value={draft.through} min="2000-01-01" max={operationsToday()} onChange={e=>setDraft({...draft,through:e.target.value})}/></label><button type="submit" className="btn-secondary">Apply dates</button><button type="button" className="btn-secondary" onClick={()=>setDraft({from:operationsToday(),through:operationsToday()})}>Use today</button></form>
-   <p>A4 portrait. Choose “Save as PDF” in the print dialog; turn off browser-added headers and footers. Dates are inclusive and use Manila time. Use the same date for a daily handover.</p>
-   {changed&&<p role="status">Date changes are not applied. Apply dates before printing.</p>}{validation&&<p role="alert">{validation}</p>}
+  <div className={styles.controls}>
+   <div className={styles.toolbar}>
+    <Link href="/dashboard" className="btn-secondary">Back to dashboard</Link>
+    <span className={styles.spacer} />
+    <button type="button" className="btn-secondary" onClick={()=>setAttempt(n=>n+1)}>Reload summary</button>
+    <button type="button" className="btn-primary" disabled={!ready||printing} onClick={print}>{printing?'Preparing print…':'Print / Save PDF'}</button>
+   </div>
+   <form onSubmit={apply} noValidate>
+    <label>From date<input type="date" value={draft.from} min="2000-01-01" max={operationsToday()} onChange={e=>setDraft({...draft,from:e.target.value})}/></label>
+    <label>Through date<input type="date" value={draft.through} min="2000-01-01" max={operationsToday()} onChange={e=>setDraft({...draft,through:e.target.value})}/></label>
+    <button type="submit" className="btn-secondary">Apply dates</button>
+    <button type="button" className="btn-secondary" onClick={()=>setDraft({from:operationsToday(),through:operationsToday()})}>Use today</button>
+   </form>
+   <p className={styles.note}>Prints on A4 portrait. In the print dialog, choose Save as PDF and turn off headers and footers. Dates are inclusive and use Manila time; use one date for a daily handover.</p>
+   {changed&&<p role="status" className={styles.status}>Date changes are not applied yet. Apply the dates before printing.</p>}{validation&&<p role="alert" className={styles.status}>{validation}</p>}
   </div>
   {!current?<p role="status">Loading complete operations summary…</p>:current.error?<div role="alert"><p>{current.error}</p><button className="btn-secondary" onClick={()=>setAttempt(n=>n+1)}>Retry operations summary</button></div>:<>{!operationsFresh(data.generated_at,clock)&&<p role="alert">The snapshot is expired or its clock is invalid. Reload before printing.</p>}{sheet}</>}
-  <A4PrintPortal header={ready?`Crew operations / ${from} to ${through} / ${caseTime(data.generated_at)} (Manila)`:'Operations summary not ready'} footer="EcoPin / Field crew operations summary">{ready?sheet:<p>Operations summary not ready. Apply the dates and load a fresh complete snapshot before printing.</p>}</A4PrintPortal>
+  <A4PrintPortal header={ready?`Field crew operations · ${from} to ${through} · snapshot ${caseTime(data.generated_at)} (Manila)`:'Operations summary not ready'} footer="EcoPin field crew operations summary">{ready?sheet:<p>Operations summary not ready. Apply the dates and load a fresh complete snapshot before printing.</p>}</A4PrintPortal>
  </div>
 }

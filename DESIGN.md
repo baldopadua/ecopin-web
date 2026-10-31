@@ -1,6 +1,6 @@
 # EcoPin Web Design Contract
 
-Updated: 19 October 2026
+Updated: 31 October 2026
 
 This document defines EcoPin's public web experience and the shared visual and interaction contract for administrator and officer workspaces. Sections 1–20 preserve the public landing, Explore, login, download, and citizen-guide design in detail. Section 21 defines the role-workspace contract; later sections retain route-specific staff requirements.
 
@@ -30,10 +30,15 @@ This is a target contract, not a claim that every route already meets it or that
 18. [Login page contract](#18-login-page-contract)
 19. [Explore page contract](#19-explore-page-contract)
 20. [Android installation page contract](#20-android-installation-page-contract)
+    - 20a. [Official contacts page](#20a-official-contacts-page-contact)
 21. [Administrator and officer workspace contract](#21-administrator-and-officer-workspace-contract)
 22. [Password recovery and staff feedback](#22-password-recovery-and-staff-feedback)
 23. [Officer analytics](#23-officer-analytics)
 24. [Admin sweeper settings](#24-admin-sweeper-settings)
+25. [Administrator report video limits](#25-administrator-report-video-limits)
+26. [Feature addenda](#26-feature-addenda)
+
+The dated feature addenda (response deadlines, PDT-xx) are grouped in section 26. Every visual value they use must come from sections 3–5 and 21. An addendum does not create a new token, radius, or status color.
 
 ## 1. Direction and nonnegotiable rules
 
@@ -41,7 +46,7 @@ This is a target contract, not a claim that every route already meets it or that
 
 Design for Pasig citizens who may have little technical experience. The page must explain EcoPin before asking people to use it: see local environmental concerns, understand the public reports, and learn how to report from an Android phone.
 
-The visual direction is civic, welcoming, and calm. The innovative element is the composition: a large centered headline over a map that gradually emerges, followed by a compact navigation rail and a photographic account of field work. Familiar links, labeled dropdowns, recognizable icons, and plain language keep the experience easy to use.
+The visual direction is civic, welcoming, and calm. The innovative element is the composition: a large centered headline over a map that gradually emerges, with a persistent header and a photographic account of field work. Familiar links, labeled dropdowns, recognizable icons, and plain language keep the experience easy to use.
 
 The supplied real estate landing reference informed the large centered headline, fading map, floating filter bar, and generous space. EcoPin uses its own identity, Pasig context, public report data, and environmental language. Reference branding, property listings, commercial claims, and unrelated imagery are not part of this design.
 
@@ -79,7 +84,9 @@ Avoid neon accents, purple gradients, decorative charts, excessive glass panels,
 | `/mobile` | Redirect to `/#mobile-app` |
 | `/mobile-app` | Redirect to `/#mobile-app` |
 | `/downloads` | Existing APK download and installation help |
-| `/help` | Public FAQ with search. Support tickets are private to a signed-in citizen, and citizens sign in only in the Android app, so this page points there instead of collecting tickets |
+| `/contact` | Official SWMO cleanup contacts (PDT-05, UX-15) |
+| `/delete-account` | Citizen account-deletion information, linked once from the footer |
+| `/help` | Public FAQ with search, built on the `--landing-*` tokens only (no hardcoded dark overrides), title weight 500, plain green eyebrow, left-aligned hero, 1184px container with 48px gutters (24px below 768px). Desktop is a two-column layout: FAQ on the left, a sticky 16px-radius "Need help with your own report?" card on the right (single column at 1024px and below). The labelled 48px search, 44px category pills (`aria-pressed` toggle buttons, not tabs), a polite answer count, 16px answer text and a clear-filters action in the empty state. Support tickets are private to a signed-in citizen, and citizens sign in only in the Android app, so this page points there instead of collecting tickets |
 | `/support` | Redirect to `/help#tickets` |
 | `/ecopin-app-release.apk` | Direct Android download from an explicit download link |
 | `/auth` | Anonymous account action |
@@ -91,19 +98,21 @@ The home page is an introduction and usable preview. Explore map and gallery mod
 
 | Order | Section | Role |
 | --- | --- | --- |
-| 1 | Header | Brand, four primary destinations, theme, account |
+| 1 | Header | Brand, five primary destinations, theme, account |
 | 2 | Hero | “A cleaner Pasig starts with us.”, map exploration, app action |
 | 3 | Promise strip | Rooted in Pasig, reviewed reports, made for citizens |
 | 4 | About | Explain the service; offer map and gallery paths |
 | 5 | SWMO photo story | Show the field crews collecting waste and clearing debris |
 | 6 | Android showcase | Explain photo, location, description, and tracking benefits |
 | 7 | Citizen guide | Three reporting steps and a review/privacy note |
-| 8 | Closing invitation | Repeat the app action in a quiet green section |
-| 9 | Footer | Brand, short tagline, Map, Gallery, Citizen guide, Pasig identity |
+| 8 | Closing invitation | Repeat the app action (primary) and the map (text action) in a quiet green section |
+| 9 | Footer | Brand, the one tagline, Reports Gallery, Citizen Guide, Help & FAQ, Official cleanup contacts, Delete account, SWMO office details, a “Send us a message” link to `/contact#message`, Pasig identity (see UX-13) |
 
 Section anchors are `#main-content`, `#about`, `#mobile-app`, and `#how-it-works`. The guide remains on the page even though “How it works” is removed from the primary navigation.
 
-The hero's strongest action is “Explore the map”; its secondary action is “Get the EcoPin app.” Later sections repeat these choices in context. Avoid introducing competing primary actions.
+The hero's strongest action is “Explore the map” (filled); its secondary action is “Get the EcoPin app” (text action to `#mobile-app`). Later sections repeat these choices in context. Avoid introducing competing primary actions; the header “Sign in” is an outlined pill so it does not read as a second primary.
+
+The page uses one tagline, “Small actions. A cleaner Pasig.”, in the hero label and the footer brand column. The hero label is plain text, not a link. Do not add more slogans or orphan one-line taglines between sections; each section has one label, one heading, and its supporting copy.
 
 ## 3. Color, theme, and brand
 
@@ -126,6 +135,29 @@ Primary filled actions retain `#0052cc` with white text in both themes. Hover us
 
 Dark surfaces are neutral charcoal. Do not replace them with blue-gray slate. Change semantic tokens together rather than introducing isolated hardcoded surface colors.
 
+### One shared palette across web and app
+
+The landing tokens, the staff shell (`DashboardShell.module.css`), and the native app (`AppColors` / `AppStatusColors`) all use the same values. This table is the cross-platform source of truth. A change here must also be made in `ecopin_app/DESIGN.md`.
+
+| Role | Light | Dark | Web token | Native token |
+| --- | --- | --- | --- | --- |
+| Page background | `#ffffff` | `#121212` | `--landing-bg`, `--background` | `backgroundLight/Dark` |
+| Surface | `#ffffff` | `#1c1c1c` | `--surface` | `surfaceLight/Dark` |
+| Quiet / elevated surface | `#f5f7fa` | `#242424` | `--surface-elevated` | quiet surface |
+| Main text | `#17212e` | `#f5f5f5` | `--landing-text`, `--text-primary` | `textPrimaryLight/Dark` |
+| Secondary text | `#59636e` | `#b0b0b0` | `--landing-muted`, `--text-secondary` | `textSecondaryLight/Dark` |
+| Border / divider | `#e5e9ee` | `#333333` | `--landing-border`, `--border` | `dividerLight/Dark` |
+| Filled primary | `#0052cc` (hover `#003d99`) | `#0052cc` | `--accent-primary` | `primary` |
+| Link / blue emphasis | `#0052cc` | `#82b6ff` | `--landing-blue`, `--workspace-link` | `linkDark` |
+| Environmental | `#27754d` | `#83cba0` | `--landing-green` | `environmentalLight/Dark` |
+| Success | `#2e7d32` | `#83cba0` | `--success` | `AppStatusColors.success` |
+| Warning | `#b45309` | `#fcd34d` | `--warning` | `AppStatusColors.warning` |
+| Error | `#d32f2f` | `#fca5a5` | `--error` | `AppStatusColors.error` |
+| Information | `#0369a1` | `#82b6ff` | `--info` | `AppStatusColors.info` |
+| Feedback purple | `#6d28d9` | `#c4b5fd` | `--purple` | `AppStatusColors.feedback` |
+
+Known drift (code follow-up, not a precedent): `app/globals.css` still defines Tailwind grays (`#111827`, `#4b5563`, `#d1d5db`, `#e5e7eb`, `#f3f4f6`; dark `#f3f4f6`, `#9ca3af`, `#2a2a2a`, `#161616`). It also uses bright status values (`--warning #F9A825`, `--info #0288D1`, `--purple #8B5CF6`/`#A78BFA`) that fail text contrast on white. Pages outside the staff shell inherit these values. New work uses the table above, and `globals.css` should converge on it.
+
 ### Global tokens and canonical report-status colors (UX-01, UX-03)
 
 `app/globals.css` is the token source for dashboard and shared pages. Never reference a token that is not defined there.
@@ -143,7 +175,7 @@ Dark surfaces are neutral charcoal. Do not replace them with blue-gray slate. Ch
 | `in_progress`, `acknowledged`, `pending_owner_consent` | Blue | `--info` |
 | `waiting_for_feedback`, `responded` | Purple | `--purple` |
 | `resolved` | Green | `--success` |
-| `closed` | Grey | muted |
+| `closed`, unknown | Grey | muted (`--text-secondary`) |
 
 Badges (`getReportStatusColor`), Leaflet photo pins' status pip (`pinIcon.js`), the dashboard/public photo markers (`reportPinStatus.js` + `ReportPhotoMarker.module.css`, which use AA-darkened variants of the same hues) and `/explore` fallback badges must all follow this table. Add a new status in `statusHelpers.js` first, then in the mobile helper and the two docs. Amber is reserved for warning/SLA risk, not for a report lifecycle status.
 
@@ -161,9 +193,9 @@ Use this existing theme mechanism; do not add a second independent theme state o
 
 ### Brand assets
 
-Use the existing full EcoPin logo in the header and footer and the solo logo inside the phone illustration. Header and footer logos render at approximately 30px high, with the header reduced on mobile. Their width remains proportional.
+Use the existing full EcoPin logo in the header and footer and the solo logo inside the phone illustration. Header and footer logos render at approximately 32px high, with the header reduced on mobile. Their width remains proportional.
 
-The dark header/footer treatment applies `brightness(0) invert(1)` for a white silhouette. Keep the logo clear on both surfaces and preserve the accessible home link name. The navigation logo has no supporting tagline at any viewport width.
+Dark theme swaps in the `Full Logo Dark.png` asset; light theme uses `Full Logo Light.png`. Do not apply a CSS invert/brightness filter to the logo (UX-13). Keep the logo clear on both surfaces and preserve the accessible home link name. The navigation logo has no supporting tagline at any viewport width.
 
 ## 4. Typography and iconography
 
@@ -190,13 +222,13 @@ Keep one H1. Use H2 for sections and H3 for feature/step titles. Preserve semant
 
 Use Lucide line icons consistently, generally 16–24px. The hero pin is 32px on desktop and 24px on mobile. Pair unfamiliar icons with text or an accessible name. Decorative icons should not repeat the control's spoken name.
 
-The green inline pin capsule is a distinctive hero accent: 80 × 48px on desktop, 56 × 36px on mobile, rounded as a pill, rotated `-8deg`. The word “us.” uses blue emphasis.
+The green inline pin capsule is a distinctive hero accent: 80 × 48px on desktop, 56 × 36px on mobile, rounded as a pill, rotated `-8deg`. The word “us.” uses blue emphasis. Shared rule with the native welcome: “us.” takes the one brand accent that contrasts with its background. That is blue on this white page, and soft green on the app's civic-blue field.
 
 ## 5. Spacing, shape, and elevation
 
 ### Rhythm and reading width
 
-Use a 4px/8px spacing rhythm: 4, 8, 12, 16, 20, 24, 32, 40, 48, 56, 64, 80, and 96px. Use smaller values inside controls and larger values between sections.
+Use a 4px/8px spacing rhythm: 4, 8, 12, 16, 20, 24, 32, 40, 48, 56, 64, 80, and 96px. Use smaller values inside controls and larger values between sections. The native app uses the same rhythm (4/8/16/24/32/48/64, plus 12 and 20 inside groups). The values 40, 56, 80, and 96 are for web page sections only.
 
 Map anchors, icon geometry, the phone drawing, and viewport calculations are intentional geometric exceptions. They are not a reason to add arbitrary content padding.
 
@@ -211,21 +243,23 @@ Map anchors, icon geometry, the phone drawing, and viewport calculations are int
 
 | Element | Radius |
 | --- | --- |
-| Primary actions, header sign-in, side rail, hero capsule | Pill / `999px` or greater |
-| Feature cards and photo frames | 16px |
-| App showcase | 24px |
-| Notes, icon tiles, map caption and controls | 12px |
-| Rail tooltips | 8px |
+| Primary/secondary actions, chips, header sign-in, hero capsule | Pill / `999px` |
+| Cards, panels, feature cards, photo frames, gallery thumbnails | 16px |
+| Dialogs, sheets, app showcase, download card | 24px |
+| Inputs, dropdowns/menus, notes, icon tiles, map caption and controls, selected tab | 12px |
+| Dropdown options, tooltips | 8px |
 | Mobile map toolbar | 20px |
 | Phone chassis | 36px, as an illustration-specific exception |
+
+This is the same scale as the native app's `radiusButton`/`radiusChip` (pill), `radiusInput` (12), `radiusCard` (16), and `radiusDialog` (24). Use no other radii outside the illustration and map-geometry exceptions.
 
 Use 1px borders for ordinary surfaces and dividers. Photo-pin borders and the phone frame deliberately use thicker outlines to remain recognizable.
 
 ### Elevation
 
-Use shadows to indicate floating controls or lift, not to decorate every section. Current examples include `0 8px 32px` with low-opacity color for the rail/toolbar and `0 4px 16px` for quiet map controls/captions. The phone and map pins use stronger shadows because they are isolated objects over a background.
+Use shadows to indicate floating controls or lift, not to decorate every section. Current examples include `0 8px 32px` with low-opacity color for the floating filter toolbar and `0 4px 16px` for quiet map controls/captions. The phone and map pins use stronger shadows because they are isolated objects over a background.
 
-The header and rail use 16px backdrop blur with theme-colored backgrounds at 90% and 94% opacity respectively. Keep blur confined to navigation rather than applying it to the whole page.
+The header uses 16px backdrop blur with a theme-colored background at 90% opacity. Keep blur confined to navigation rather than applying it to the whole page.
 
 ## 6. Hero composition and full viewport map
 
@@ -235,8 +269,8 @@ The map begins behind the header and hero copy and stretches to both screen edge
 
 | Measurement | Desktop | Mobile, up to 767px |
 | --- | --- | --- |
-| Navigation spacer | 104px | 76px |
-| Hero minimum height | `max(880px, calc(100svh - 104px))` | `max(800px, calc(100svh - 76px))` |
+| Navigation spacer (header height) | 68px (112px with banner) | 60px (120px with banner) |
+| Hero minimum height | `max(880px, calc(100svh - 68px))` | `max(800px, calc(100svh - 60px))` |
 | Map section top | `-104px` | `-76px` |
 | Map section remaining edges | Bottom, left, right: 0 | Same |
 | Hero copy padding | 64px 24px 0 | 40px 16px 0 |
@@ -244,7 +278,7 @@ The map begins behind the header and hero copy and stretches to both screen edge
 | Filter bar width | 520px, maximum `calc(100% - 32px)` | Same maximum |
 | Zoom/reset controls | Right 32px, top 680px | Right 16px, top 608px |
 
-The minimum-height calculation allows a hero longer than a short screen, while growing to cover a tall one. Do not restore a fixed hero height that leaves a white strip below the map. Do not cap the map at the text reading width or round it into a contained card.
+The map section's negative top offset is larger than the header, so the map always starts behind the header (including when the banner is shown) and no page background shows above it. The minimum-height calculation allows a hero longer than a short screen, while growing to cover a tall one. Do not restore a fixed hero height that leaves a white strip below the map. Do not cap the map at the text reading width or round it into a contained card.
 
 The map preview fills its parent with `height: 100%`. The copy's wrapper uses `pointer-events: none`, while its links restore `pointer-events: auto`. The gradient also ignores pointer events, so the map remains usable underneath.
 
@@ -255,10 +289,12 @@ The fade is a full-size overlay using the current page background, including in 
 | Position down the map | Page-color opacity |
 | --- | --- |
 | 0% | 100% |
-| 22% | 98% |
-| 40% | 85% |
-| 62% | 35% |
-| 82% onward | Transparent |
+| 30% | 98% |
+| 48% | 90% |
+| 64% | 45% |
+| 80% onward | Transparent |
+
+Below 768px the hero copy reaches further down the map, so the stops are 0% 100%, 56% 96%, 68% 50%, and transparent from 84%. A second short gradient fades the bottom 64px (48px on mobile) of the map into the page background so it meets the promise strip without a hard edge. Pins must never sit visibly behind the headline, body copy, or hero actions.
 
 Use `color-mix(in srgb, ...)` for intermediate stops. The extended fade protects the headline and gently introduces geographic detail farther down. Do not shorten it into a hard transition immediately beneath the title.
 
@@ -268,7 +304,7 @@ Light tiles use grayscale, contrast 0.85, and opacity 0.75. Dark tiles use grays
 
 The preview establishes `isolation: isolate`. The Leaflet map itself uses `z-index: auto`; its internal panes manage tile, marker, and popup layering. Setting the entire map to `z-index: 0` previously trapped popups behind the fade.
 
-The fade is at 400 inside the map composition; floating toolbar, caption, status, and full-map link are at 450. Hero copy has its own positioned layer above the map composition. Header and rail are at 1000. Selected markers also receive a Leaflet `zIndexOffset` of 1000.
+The fade is at 400 inside the map composition; floating toolbar, caption, status, and full-map link are at 450. Hero copy has its own positioned layer above the map composition. The header is at 1000. Selected markers also receive a Leaflet `zIndexOffset` of 1000.
 
 Keep OpenStreetMap attribution visible and usable. Moving controls or altering height must not clip it.
 
@@ -276,40 +312,36 @@ Keep OpenStreetMap attribution visible and usable. Moving controls or altering h
 
 Source: [LandingNavigation.js](components/landing/LandingNavigation.js) and [usePublicAccount.js](components/landing/usePublicAccount.js).
 
-### One destination list, two presentations
+### One destination list, one header
 
-| Order | Header label | Rail name / tooltip | Destination |
-| --- | --- | --- | --- |
-| 1 | Home | Home | `#main-content` |
-| 2 | Explore | Explore | `/explore` |
-| 3 | About | About | `#about` |
-| 4 | Download | Download App | `#mobile-app` |
-| 5 | Theme icon | Destination theme | Toggle existing theme |
-| 6 | Account control | My account / Sign in | `/dashboard` / `/auth` |
+| Order | Header label | Destination |
+| --- | --- | --- |
+| 1 | Home | `#main-content` (`/` off the landing) |
+| 2 | Explore | `/explore` |
+| 3 | About | `#about` (`/#about` off the landing) |
+| 4 | Download | `#mobile-app` (`/#mobile-app` off the landing) |
+| 5 | Contact | `/contact` (marked current on that page) |
+| 5 | Theme icon | Toggle existing theme |
+| 6 | Account control | `/dashboard` (avatar) / `/auth` (“Sign in”) |
 
-Both presentations derive the first four destinations from one shared definition. Do not restore “Explore reports,” “About EcoPin,” or a primary “How it works” link. Do not reorder the rail independently.
+The destinations come from the single `links` definition in `LandingNavigation.js`. Every public page that renders the header uses this list. Do not restore “Explore reports,” “About EcoPin,” or a primary “How it works” link.
 
 Use native anchors for same-page hashes and Next.js `Link` for routes. This allows Lenis to handle anchors without competing router scrolling.
 
-### Hero header to right-side rail
+### Persistent header
 
-The full-width header is fixed at the top while the hero intersects the viewport. An `IntersectionObserver` activates the rail only when the hero is no longer intersecting and its bottom has passed above the viewport.
+The full-width header is fixed at the top on every public page and stays visible while scrolling. It is 68px high (60px below 768px), with a 1px bottom border and the blurred background described in section 5. An optional banner (for example, a maintenance or advisory notice) sits above the bar inside the header, and the spacer grows to match.
 
-The header moves upward by `translateY(-110%)` and fades over 500ms. The icon rail sits on the right at vertical center. It enters from `translate(100px, -50%)` to `translate(0, -50%)`, using a 600ms eased transform and 400ms opacity transition.
+The earlier right-side icon rail and the header-to-rail swap have been retired; `LandingNavigation` no longer renders them. Do not reintroduce a second navigation presentation without updating this section, the gutters in section 13, and the browser checks.
 
-The inactive presentation is `inert`, `aria-hidden`, and ignores pointer events. This prevents duplicate invisible navigation in the keyboard and assistive-technology experience. Returning to the hero restores the header.
-
-Rail controls are 44 × 44px. Tooltips appear to the left, on hover and keyboard focus, with a 200ms fade/translation. Every icon has an accessible label even when the tooltip is not showing.
-
-On mobile, a menu button opens the four text destinations below the header at 76px. It exposes `aria-expanded`, changes its open/close name, and closes after a selection.
+Header icon controls are 44 × 44px with accessible names. Below 768px, a menu button opens the five text destinations below the header. It exposes `aria-expanded`, changes its open/close name (“Open navigation” / “Close navigation”), and closes after a selection.
 
 ### Current account, avatar only
 
-Anonymous visitors see “Sign in” in the header and a profile icon in the rail. A session changes both controls to the current account avatar. Both use the same photo source and destination.
+Anonymous visitors see “Sign in” in the header. A session changes this control to the current account avatar, linking to `/dashboard`.
 
 - Header account target: 44 × 44px, avatar 40px.
-- Rail account target: 44 × 44px, avatar 32px.
-- Source: `user.avatar_url`, falling back to `/icons/users.png`, rendered with `SecureImage`.
+- Source: `user.avatar_url`, rendered with `SecureImage`. The fallback is the local `/icons/users.png`. Code drift: `LandingNavigation` currently falls back to `ui-avatars.com` with a random background. That sends the user's name to a third party and adds off-palette colors, so it should be replaced by the local asset.
 - No visible account name, truncated text, or initials beside the avatar.
 - The full name remains in the accessible label, for example “Open account for Ava Mendoza.”
 
@@ -332,7 +364,7 @@ Use Leaflet/React Leaflet for the real map. The component loads dynamically on t
 - Provide a reset control named “Return map to Pasig City.”
 - Provide labeled PublicSelect controls for Neighborhood and Concern type.
 - Keep both the toolbar's full-map action and the lower “Open full map” link.
-- Keep a quiet caption: “Pasig City, through your eyes,” with “Drag to explore · Tap a pin” where space allows.
+- Keep one bottom-left caption card. It leads with the live report status (the count, loading, empty, or error with “Try again”) in main-text weight 500, followed by “Drag to explore · Tap a pin” where space allows. The count is the only real figure on the page, so it is not demoted to a separate small label.
 
 Reset returns the location selection and map view to All of Pasig. It does not clear the concern-type selection.
 
@@ -419,18 +451,18 @@ Popups follow the page theme: background and text use the landing tokens, and da
 
 Sources: [ReportPhotoMarker.js](components/map/ReportPhotoMarker.js), [ReportPhotoMarker.module.css](components/map/ReportPhotoMarker.module.css), [EcoPinMarker.js](components/map/EcoPinMarker.js), [OperationsMap.js](components/map/OperationsMap.js), [useMapPhotoEvidence.js](components/map/useMapPhotoEvidence.js).
 
-Specialized map views in the authenticated staff portals (Officer & Field Crew: `HotzoneDetail`, `OperationsMap`, and single-report operation views) unify on the modernized photo pin design rather than legacy unanchored flat dots.
+Specialized map views in the authenticated officer/administrator workspace (`HotzoneDetail`, `OperationsMap`, and single-report operation views; field crew is mobile-only, so any retained `/dashboard/field-crew/*` route is legacy code, not a supported web workspace) unify on the modernized photo pin design rather than legacy unanchored flat dots.
 
 1. **Modernized Photo Pin Architecture**:
    - **Dimensions & Anchor**: 50px wide × 58px tall total marker footprint. Base anchor is `[25, 58]` (the bottom-center tip of the downward pointer), and popup anchor is `[0, -62]` (floating cleanly above the frame).
    - **Visual Structure**: 50px circular photo frame with 3px solid `--pin-color` border, 2px white outline, and `box-shadow: 0 3px 12px #00000033`. The photo thumbnail renders via token-safe `SecureImage` with a smooth shimmer skeleton to prevent layout jumps.
    - **Downward Pointer**: Built via CSS `::after` triangle (12px wide × 8px tall, `left: 19px, top: 49px`) colored with `--pin-color`, providing precise needle pinning on coordinates across zoom levels.
    - **Status Badge / Pip**: 24×24px circle anchored at the top-right corner (`right: -4px, top: -3px`) with a 2px white border, filled with `--pin-color`, displaying a dedicated Lucide icon matching the report lifecycle state:
-     - `unresolved`, `submitted`, `pending`: `AlertCircle` with tone `--error` (`#d32f2f`)
-     - `in_progress`: `Clock3` with tone `--warning` (`#b45309`)
-     - `resolved`: `Check` with tone `--success` (`#2e7d32`)
-     - `waiting_for_feedback`: `MessageSquare` with tone `--info` (`#0369a1`)
+     - `unresolved`, `submitted`, `pending`, `rejected`: `AlertCircle` with tone `--error` (`#d32f2f`)
+     - `in_progress`, `acknowledged`: `Clock3` with tone `--info` (`#0369a1`)
      - `pending_owner_consent`: `LockKeyhole` with tone `--info` (`#0369a1`)
+     - `waiting_for_feedback`, `responded`: `MessageSquare` with tone `--purple` (`#6d28d9`)
+     - `resolved`: `Check` with tone `--success` (`#2e7d32`)
      - `closed`: `CheckCheck` with tone `--muted` (`#59636e`)
      - Unknown / fallback: `HelpCircle` with tone `--muted` (`#59636e`)
    - **Selection Highlight**: `outline: 3px solid #0052cc`, `box-shadow: 0 0 0 6px #0052cc33, 0 4px 16px #00000033`, and `zIndexOffset: 1000`.
@@ -441,14 +473,15 @@ Specialized map views in the authenticated staff portals (Officer & Field Crew: 
    - **Single-Report Operation Detail (`/dashboard/field-crew/operations/[id]/[report_id]`)**: Enables `photoPins={true}` on the static map view.
    - **Shared Map Grid (`/dashboard/(shared)/map-grid`)**: Passes `photoPins={true}` to both `EcoPinMap` and `CrewTaskLayer`.
    - **Evidence Loading Safety**: `useMapPhotoEvidence` queries photo evidence for all reports whose location precision is not `'approximate'`, preserving privacy for private-property reports while ensuring internal task and cluster reports reliably resolve images. `ReportPhotoMarker` and `EcoPinMarker` safely fall back to preloaded `report.photo_url` / `report.image_url` / `report.image` attributes.
-   - **Fallback Marker**: `createEcoPinIcon` aligns with the unified status palette (`error`, `warning`, `success`, `info`, `muted`) whenever photo rendering is disabled or unsupported.
+   - These tones follow the canonical status table in section 3 (`reportPinStatus.js`). Amber/`--warning` is never a pin lifecycle tone; it is reserved for SLA risk.
+   - **Fallback Marker**: `createEcoPinIcon` aligns with the unified status palette (`error`, `info`, `purple`, `success`, `muted`) whenever photo rendering is disabled or unsupported.
 
 Cluster markers use the same pointed silhouette, with a 54px circular count face, an offset backing circle, and a Layers badge. SLA-breached groups retain a red border and a TriangleAlert badge. Full selection uses a blue ring; partial selection uses a dashed ring. The marker title announces the eligible report count, selected count, and overdue state. See [ClusterMarker.js](components/map/ClusterMarker.js). Group selection, popup actions, and sweeper dimming remain unchanged.
 
 3. **Route & Optimization Waypoint Pins (`RouteLayer.js`, `routePinIcon.js`)**:
    - **Waypoint Stops**: Replaces legacy unanchored 40px flat dots with a pointed 36×46px teardrop vector SVG silhouette (`iconAnchor: [18, 45]`, `popupAnchor: [0, -46]`). The bottom needle tip points with mathematical accuracy directly at each stop coordinate where the route path arrives, preventing line obscuration across zoom levels.
    - **Crew Color Fidelity**: The outer teardrop shell and inner accent ring dynamically reflect the assigned crew's color (`color` from `CREW_COLORS`), preserving immediate visual identification across multi-crew route maps. A 2.5px white perimeter stroke ensures contrast over all street and satellite map tiles.
-   - **Sequence Number Legibility**: Inside a crisp white center disc (`r=10.5`), the stop sequence number (`seq`) renders in bold dark slate (`#0f172a`), maintaining 100% legibility across light, dark, and bright crew colors.
+   - **Sequence Number Legibility**: Inside a crisp white center disc (`r=10.5`), the stop sequence number (`seq`) renders in bold main text (`#17212e`, the light `--landing-text`/`--text-primary` value, used in both themes because the disc is always white), maintaining 100% legibility across light, dark, and bright crew colors.
    - **Depot Markers**: SWMO Headquarters depot waypoints use a 38×48px pointed teardrop silhouette (`iconAnchor: [19, 47]`, `popupAnchor: [0, -48]`) in official SWMO blue (`#0052CC`) with a crisp vector facility icon, replacing legacy OS emojis.
    - **Path Preservation**: Polylines, OSRM road-routing coordinates, caching, distance/duration metrics, and map bounds auto-fitting remain completely intact.
 
@@ -492,7 +525,7 @@ Keep clipping inside the frame so zoom does not shift surrounding layout. These 
 
 The promise strip uses three icon-and-copy pairs separated from the next section by a quiet border. These are service characteristics, not statistics: “Rooted in Pasig,” “Reviewed reports,” and “Made for citizens.”
 
-About uses an explanatory column beside two compact feature cards and a full-row green community note. The cards offer map and gallery paths; the note reinforces shared care without inventing impact numbers. Cards use a soft surface, 24px padding, 16px radius, and a 44px icon tile.
+About uses an explanatory column beside two compact feature cards and a full-row green community note. The cards end in real links, “Open the map” (`/explore`) and “Browse the gallery” (`/explore?view=gallery`); a card that describes an action must offer it. the note reinforces shared care without inventing impact numbers. Cards use a soft surface, 24px padding, 16px radius, and a 44px icon tile.
 
 ### Android showcase
 
@@ -508,7 +541,7 @@ The phone is a CSS illustration, named “Illustration of the EcoPin mobile repo
 - Decorative orbit: subdued circular borders behind the phone.
 - The illustration's tiny labels stay inside the illustration; they are not the page's reading-text standard.
 
-Use a native `download` link for the APK. Say “Free Android app · Direct APK download,” and link installation help to `/downloads`. Do not trigger an APK download merely by scrolling to the showcase.
+Use a native `download` link for the APK. Under it, show one meta line, “Free Android app · Direct APK download · {version}” (version only when the CMS supplies it), then the “Need help installing?” link to `/downloads`. CMS release notes appear on `/downloads`, not on the landing card. Do not trigger an APK download merely by scrolling to the showcase.
 
 ### Citizen guide and closing
 
@@ -522,7 +555,7 @@ Display 01–03, recognizable icons, top dividers, short headings, and plain-lan
 
 The green guide note explains that reports are reviewed before becoming public and asks citizens to avoid including other people's personal information. Keep this note near the instructions.
 
-The closing green band repeats the app action with “A better Pasig begins with the people in it.” The footer stays simple: existing logo, short tagline, Map, Gallery, Citizen guide, and “EcoPin · Pasig City.”
+The closing green band, “A better Pasig begins with the people in it.”, ends with a filled “Get the EcoPin app” action and an “Explore the map” text action; it is never a dead end. The footer stays quiet and link-led. It holds the existing logo, the tagline, the links listed in section 2 (Reports Gallery, Citizen Guide, Help & FAQ, Official cleanup contacts, Delete account), CMS office details, a short “Questions?” column linking to `/contact#message`, and “EcoPin · City Government of Pasig.” Explore is not repeated there (UX-13). The footer keeps the WT-98 photo credit.
 
 ## 12. Scrolling, animation, and interaction
 
@@ -588,28 +621,24 @@ Source: the cascade in [LandingPage.module.css](components/landing/LandingPage.m
 | --- | --- |
 | Up to 1280px | Reading-section side margins 48px; showcase margins 24px; About and navigation gaps tighten |
 | Up to 1024px | Header padding 24px; navigation gaps 16px; showcase padding 48px 32px and gap 32px; photo proportions tighten |
-| Up to 767px | Header/menu/spacer use mobile layout; hero/map offset uses 76px; sections stack; guide becomes one column; showcase copy precedes phone; rail becomes compact |
+| Up to 767px | Header/menu/spacer use mobile layout; header becomes 60px with a menu button; sections stack; guide becomes one column; showcase copy precedes phone |
 | Below 375px | H1 38px; hero actions stack; feature cards become one column; auxiliary desktop breaks disappear |
 
-### Space for the rail
+### Gutters and CTA budget
 
-CTA budget (UX-13): `/explore` is linked once from the hero button and once from the main navigation (the rail omits it); the footer keeps only `Reports Gallery`. Download appears in the navigation and the `#mobile-app` section (plus its `/downloads` install help). Photo attribution appears once, in the About lead-photo caption; `/delete-account` appears once, in the footer. The footer contact form falls back to `http://localhost:4002`, matching `NEXT_PUBLIC_BACKEND_API_URL`. Do not re-add the dark-mode logo invert filter: `Full Logo Dark.png` is already the dark asset.
+CTA budget (UX-13): `/explore` is linked once from the hero button and once from the main navigation; the footer keeps only `Reports Gallery`. Download appears in the navigation and the `#mobile-app` section (plus its `/downloads` install help). Photo attribution (WT-98) appears in the SWMO lead-photo caption and in the shared footer, because the footer also serves pages and the login slideshow that use those photos; `/delete-account` appears once, in the footer. The contact message form falls back to `http://localhost:4002`, matching `NEXT_PUBLIC_BACKEND_API_URL`. Do not re-add the dark-mode logo invert filter: `Full Logo Dark.png` is already the dark asset.
 
-The rail is fixed, so the content must reserve room for it. Do not simply place it over text.
-
-At tablet widths, About, guide, and promise strip use a 104px right margin; the showcase uses a 96px right margin; the story uses 104px right padding.
-
-Below 768px the quick-navigation rail is not rendered (`LandingNavigation` uses `matchMedia`) and the sticky header with its menu stays visible instead, so mobile sections use symmetric 24px (showcase 16px) gutters with no right-hand reservation; the closing band and footer use their normal padding. Tablet widths keep the reservations above.
+Reading sections use symmetric gutters: 48px up to 1280px, 24px below 768px (showcase 16px). The closing band and footer use their normal padding. No right-hand reservation is needed now that the rail is retired. Code drift: `LandingPage.module.css` still applies 104px/96px right margins to About, guide, promise strip, showcase, and story at tablet widths. These are leftover rail reservations and should be removed so tablet gutters are symmetric.
 
 The mobile Android action uses compact 12px padding and 13px type; its trailing arrow is hidden to avoid overflow. The phone is reduced rather than clipped. The photo story stacks the lead above two supporting squares.
 
-The hero map stays full width even though later reading content reserves a rail gutter.
+The hero map stays full width even though later reading content has side gutters.
 
 ### Viewport checks
 
 Check widths 320, 768, 1024, 1440, and 1920px, including tall pairs 320 × 900, 768 × 1366, 1024 × 900, 1440 × 1200, and 1920 × 1500.
 
-Required outcomes: no horizontal overflow, no map side gutters, no uncovered bottom strip on tall screens, no rail over reading text, no clipped attribution, no overlapping toolbar/hero actions, and usable controls in both themes.
+Required outcomes: no horizontal overflow, no map side gutters, no uncovered bottom strip on tall screens, asymmetric leftover gutters, no clipped attribution, no overlapping toolbar/hero actions, and usable controls in both themes.
 
 ## 14. Accessibility and content integrity
 
@@ -618,7 +647,7 @@ These are quality constraints and current behavior, not a blanket certification 
 - Use landmarks, one H1, logical headings, labeled sections, and a real ordered reporting guide.
 - Keep “Skip to content” as the first keyboard destination and visibly reveal it on focus.
 - Provide meaningful photo alt text; keep decorative images/icons from repeating nearby text.
-- Give icon-only controls accessible names and show rail tooltips on keyboard focus.
+- Give icon-only controls accessible names .
 - Hide and make the inactive navigation inert; do not leave duplicate links in tab order.
 - Use labeled select-only comboboxes with associated IDs, expanded/selected state, keyboard selection, and an accessible listbox.
 - Provide visible focus outlines: 3px in the blue token with a 4px offset for landing links, buttons, and selects.
@@ -630,7 +659,7 @@ These are quality constraints and current behavior, not a blanket certification 
 
 Use 4.5:1 for ordinary text and 3:1 for large text and essential control boundaries as contrast verification targets. Test actual combinations after changing tokens, transparency, or image overlays.
 
-Primary actions are at least 48px high; map buttons, rail controls, account controls, dropdown buttons/options, and many text actions have 44px targets. Verify actual rendered targets rather than making a blanket accessibility certification.
+Primary actions are at least 48px high; map buttons, header icon controls, account controls, dropdown buttons/options, and many text actions have 44px targets. Verify actual rendered targets rather than making a blanket accessibility certification.
 
 The current full-motion policy is described in Section 12. The browser checks do not constitute a complete accessibility audit, reduced-motion compliance, or legal/government certification.
 
@@ -649,7 +678,7 @@ Use reviewed-report wording accurately. An empty view is not evidence that a nei
 | [app/page.js](app/page.js) | Home route and landing metadata |
 | [LandingPage.js](components/landing/LandingPage.js) | Section composition, copy, actions, editorial assets |
 | [LandingPage.module.css](components/landing/LandingPage.module.css) | Landing tokens, geometry, surfaces, responsive rules, interaction styling |
-| [LandingNavigation.js](components/landing/LandingNavigation.js) | Shared destinations, header/rail transition, menu and account presentation |
+| [LandingNavigation.js](components/landing/LandingNavigation.js) | Shared destinations, persistent header, menu and account presentation |
 | [PublicFooter.js](components/landing/PublicFooter.js) | Shared public footer on home, downloads, account deletion, Explore, and public report details; CMS office details and SWMO Facebook URL |
 | [FooterContactForm.js](components/landing/FooterContactForm.js) | Shared footer contact form, validation, submission, and success/error feedback |
 | [usePublicTheme.js](components/landing/usePublicTheme.js) | Existing public theme observation and toggle |
@@ -681,8 +710,8 @@ These constraints preserve the final design choices and the fixes made during it
 | Home looks like a report dashboard | Keep the introductory hero and explanatory sections; keep detailed browsing at `/explore` |
 | Map or header becomes contained | Both span the viewport; reading-width caps belong to later content |
 | Hero fails on tall screens | Preserve viewport-aware minimum height and negative map offset |
-| Navigation disappears during reading | Keep fixed hero header and switch to the right icon rail after the hero |
-| Header and rail diverge | Derive destinations from one list and preserve their order/labels |
+| Navigation disappears during reading | Keep the fixed header visible on every public page |
+| Navigation labels drift between pages | Derive destinations from the single `links` list and preserve their order/labels |
 | Sign-in ignores an active account | Subscribe to token changes and render the current account avatar in both presentations |
 | Account text crowds navigation | Keep visible account identity avatar-only; retain full accessible name |
 | SWMO photos imply random citizen work | Keep SWMO attribution and avoid unsupported incident correlations |
@@ -694,7 +723,7 @@ These constraints preserve the final design choices and the fixes made during it
 | Photos load into broken or duplicate markers | Use cached HTML icons and stable marker instances, not shared live DOM or photo-keyed group remounts |
 | Query order shuffles separated pins | Sort group members by stable report ID |
 | Popup fights map centering | Preserve deliberate selection pan and disable popup automatic pan |
-| Rail covers mobile copy | Preserve the responsive right gutter |
+| Header covers anchored content | Keep `scroll-margin-top` on anchor targets at least the header height |
 | Hash navigation scrolls twice or jumps | Use native anchors and one active smooth-scroll owner |
 | Editorial imagery becomes live evidence | Keep editorial, category, and report imagery clearly distinguished |
 | Styling changes leak into other roles | Keep landing styling scoped and respect public-page boundaries |
@@ -725,7 +754,7 @@ The pin-layout tests are a separate command; they are not included in the curren
 
 The browser check needs the preview running, Playwright, and an installed Chromium browser. Set `ECOPIN_PLAYWRIGHT_PATH` to a supplied Playwright package directory and `ECOPIN_CHROMIUM_PATH` to a Chromium executable when using workspace-provided tools. `ECOPIN_TEST_URL` optionally overrides the default `http://localhost:4001`.
 
-Browser fixtures use synthetic reports and accounts without changing server data. The check covers account changes and avatar consistency, navigation labels/order and header/rail switching, full viewport width/height and overflow, anchors and menu closure, theme changes, route transitions, empty/error/retry states, photo popups, cluster expansion, one-time entrances, and landing scrolling cleanup. It deliberately exercises the current motion behavior with both an old reduced preference and a system reduced-motion setting.
+Browser fixtures use synthetic reports and accounts without changing server data. The check covers account changes and avatar consistency, navigation labels/order and the persistent header, full viewport width/height and overflow, anchors and menu closure, theme changes, route transitions, empty/error/retry states, photo popups, cluster expansion, one-time entrances, and landing scrolling cleanup. It deliberately exercises the current motion behavior with both an old reduced preference and a system reduced-motion setting.
 
 ### Visual and interaction acceptance
 
@@ -737,8 +766,8 @@ Browser fixtures use synthetic reports and accounts without changing server data
 - [ ] Check report loading, empty, unavailable/retry, and absent-photo states.
 - [ ] Confirm wheel scrolling moves the page and nested popup scrolling remains usable.
 - [ ] Scroll through the sections, observe stagger, then return upward; content stays visible.
-- [ ] Confirm header remains fixed in the hero and the rail takes over after it.
-- [ ] Confirm mobile menu closes on selection and rail tooltips work on focus.
+- [ ] Confirm the header stays fixed and readable over every section in both themes.
+- [ ] Confirm the mobile menu closes on selection and icon controls have names on focus.
 - [ ] Switch accounts/sign out and confirm the correct account action updates without a reload.
 - [ ] Follow map/gallery paths, return with browser history, and check app/guide anchors.
 - [ ] Confirm the direct download action and installation-help destination.
@@ -776,9 +805,11 @@ Saved reports, bookmark controls, export reports, and web submission actions are
 
 Explore uses the cached photo-pin renderer (`pinIcon.js`) and batch-evidence endpoint. Maintain secure public media handling, stable report IDs, grouping, and existing viewport filters. Dark mode changes the actual tile layer: its theme key remounts the Leaflet layer so the appropriate CSS class takes effect. Dark tiles are grayscale/inverted with brightness .8 and contrast .9; light tiles have grayscale .3 and contrast .9. Preserve attribution and readable map controls.
 
-Landing and Explore render the same PublicReportPopup: category, 17px Outfit title, description, written status, illustration disclosure where applicable, and a single View report action. Keep the compact 220px content width, theme surface, 8px content gaps, and 44px action. No bookmarks or conflicting popup font/shape overrides. Explore opens the report detail panel; landing links to its canonical public report URL.
+Landing and Explore share `PublicReportPopup` in two variants. Explore uses the full variant (`.reportPopup`): category, 17px Outfit title, description, written status, illustration disclosure where applicable, and a single View report action, at 220px content width with 8px gaps and a 44px action. The status is a 10px canonical-color dot plus the written status (no "Status:" prefix), the description clamps to three lines, and the action sits under a 1px divider. Popups use the 16px card radius. The landing hero uses the compact variant (`.reportPopupCompact`) defined in section 9: 180px, 14px title, no description. Both use the same theme surface, Outfit, and blue action. No bookmarks or conflicting popup font/shape overrides. Explore opens the report detail panel; landing links to its canonical public report URL.
 
-The report panel heading is “Reports.” Its sort control uses the shared dropdown with Newest first, By priority, and By status; do not concatenate a crowded “Sort by:” prefix into the value. Details retain readable metadata and written statuses, with secure evidence handling.
+Map-view report rows are divided list rows, not boxed cards: an 88px 16px-radius thumbnail with no overlay badges, one status line (canonical dot, written status, severity), a 16px title, the address, a prose meta line ("Waste report from Oct 29, 2026, by Anonymous"), a one-line compact response deadline, and a plain share icon button. The selected row gets the soft surface and a 3px blue left rule. The row body is a real button; the share control is a sibling, never nested.
+
+The report panel heading is “Reports.” Its sort control uses the shared dropdown with Newest first, By priority, and By status; do not concatenate a crowded “Sort by:” prefix into the value. Details retain readable metadata and written statuses, with secure evidence handling. The details panel is a quiet record, not a card grid: a flat 16px photo frame (no gradient overlay or badges on the photo), a written status line with a canonical-color dot, a 22px weight-500 title, the response-deadline notice, a divided definition list (Reported, Location with a "Show on map" link, Priority, Reported by), the citizen description as 16px prose, then photo thumbnails and Before/After cleanup photos. It shows the address only, never raw coordinates, and never presents a category illustration as evidence; when no extra photos exist it says so.
 
 ### Gallery controls and search
 
@@ -797,11 +828,14 @@ Map view and Gallery view share a unified UI contract to ensure visual consisten
    - Status filtering uses an identical segmented control (`All reports`, `Unresolved`, `In progress`, `Resolved`) with `aria-pressed`, 44px min touch targets, Outfit typography, and a prominent animated sliding active indicator pill (`#0052cc` background, white text, 600 weight, 0.25s cubic-bezier ease).
    - Filter dropdowns (Layers, Location/Barangay, Date, Category, Severity) use unified pill buttons with 16px Lucide leading icons, active count indicators, and 14px chevron indicators.
    - The view mode switch (Map view vs Gallery view) is positioned consistently on the right side of the primary toolbar across both views.
-   - When filters are applied, a consistent "Reset filters" button appears with an `X` icon and active filter count badge.
+   - The status control is a fully rounded (pill) segmented control with a 1px border and 2px padding; the sliding indicator is the filled primary pill. The map carries one plain scope note, "Showing verified reports only" (bordered surface pill, green shield icon only), not a green badge with a shadow.
+- The shared response-deadline notice is a left rule colored by state (red overdue, amber approaching, neutral scheduled) with the label on its own line and the time below; no filled tinted box.
+- When filters are applied, a consistent "Reset filters" button appears with an `X` icon and active filter count badge. It is sentence case at 14px and uses the status-error display color (`#d32f2f` light, `#fca5a5` dark), never all-caps or hardcoded reds.
+   - Explore text follows the typography rules: no all-caps labels, nothing below 12px, report-card titles and meta lines wrap instead of truncating, and gallery status badges use `getReportStatusHex` (never amber).
 
 2. **Unified Report Card Presentation**:
-   - Photo thumbnails use 12px–16px rounded corners, object-cover aspect ratios, and smooth hover scaling.
-   - Status badges are anchored at the top-left of the photo frame as rounded-full pills with Lucide icons (`CheckCircle` for resolved, `AlertCircle` for high priority/urgent, `Clock` for in progress, amber pill for unresolved).
+   - Photo thumbnails use 16px rounded corners (the card/photo-frame tier), object-cover aspect ratios, and smooth hover scaling.
+   - Status badges are anchored at the top-left of the photo frame as rounded-full pills with Lucide icons and the canonical section 3 colors (`AlertCircle` red for unresolved, `Clock` blue for in progress, `MessageSquare` purple for waiting for feedback, `CheckCircle` green for resolved). Priority/urgency is a separate badge and never replaces the status badge. Unresolved is red, not amber.
    - Citizen publisher identity strictly follows consent disclosure: citizen name is shown when `data_consent` is granted; otherwise defaults to `Anonymous`.
    - Incident location consistently displays the reverse-geocoded or translated street/barangay address with a civic blue `MapPin` icon rather than raw coordinates.
    - Share actions provide one-click URL copying with visual feedback (`Link copied!` checkmark badge).
@@ -820,7 +854,7 @@ PublicSelect replaces the native OS-highlight menus in the landing filters, gall
 
 Measure available viewport space and open above when needed. Limit list height and scroll only the list, never jump the page while navigating options. Lenis excludes data-native-scroll surfaces as well as Leaflet popups.
 
-PublicLoadingState (and the navigation overlay) share PageLoadingIndicator: the existing logo ring, title, and description sit over a faded street map (RouteMapBackdrop) that is near-opaque at the center and masks out to the page background, so it follows light and dark themes. A route line draws between two pins over a 4.6s loop; reduced motion shows the finished route statically. Public pages use short fade/translation entrances rather than a fullscreen wipe. PublicMotion applies a 450ms, 12px page entrance and reduced-motion overrides; Explore fades over 300ms. Do not alter private dashboard loading behavior as part of this scope.
+Public pages render immediately with default CMS values; there is no full-screen first-load overlay, and the static hero never waits on the CMS request. If the CMS later reports maintenance mode, the maintenance page replaces the content. Entrance wrappers animate opacity only: a filled `transform` would make the wrapper the containing block for the fixed header and let it scroll away. PublicLoadingState (and the navigation overlay) share PageLoadingIndicator: the existing logo ring, title, and description sit over a faded street map (RouteMapBackdrop) that is near-opaque at the center and masks out to the page background, so it follows light and dark themes. A route line draws between two pins over a 4.6s loop; reduced motion shows the finished route statically. Public pages use short fade/translation entrances rather than a fullscreen wipe. PublicMotion applies a 450ms, 12px page entrance and reduced-motion overrides; Explore fades over 300ms. Do not alter private dashboard loading behavior as part of this scope.
 
 Sources: [Explore wrapper](app/explore/ExplorePage.js), [report browser](app/explore/PublicMap.js), [toolbar](app/explore/GalleryToolbar.js), [mode switch](app/explore/ViewModeSwitch.js), [styles](app/explore/Explore.module.css), [photo viewer](app/explore/PhotoViewer.js), [focus](app/explore/useDialogFocus.js), [popup](components/landing/PublicReportPopup.js), [dropdown](components/ui/PublicSelect.js), [search](lib/public-gallery.mjs), and [URL helper](lib/explore-url.mjs).
 
@@ -835,10 +869,10 @@ Sources: [Explore wrapper](app/explore/ExplorePage.js), [report browser](app/exp
 
 - `/reports/[id]` is styled only by `app/reports/[id]/ReportPermalink.module.css` (global tokens `--surface-raised`, `--surface-sunken`, `--border-*`, `--accent-primary`; no inline styles). All interactive controls are at least 44px tall. It has exactly one Explore link (the back link); the error state has no extra buttons.
 - Privacy: rejected reports are never rendered (the page shows "This report is not publicly available."); location shows the barangay or "Pasig City", never raw GPS coordinates. The location-verification result appears once, as the `StatusBadge type="location_verification"`; the banner carries no verification text. Do not mention rewards or other features that do not exist. The backend enforces the same rule: `readReportForViewer` returns 404 for rejected reports to anonymous viewers (authorized owners and staff still read them through the authenticated path), so the page filter is a second layer.
-- Contact details are centralized: read them through `getOfficialContacts(cms)` (`lib/official-contacts.mjs`) and the public CMS; do not hardcode phone numbers or emails in pages or FAQ copy. `/contact` shows the SWMO email once, as the "Email SWMO" button, and its main container uses a 32px top padding because `LandingNavigation` already renders a spacer.
-- `tel:`/`mailto:` buttons do nothing on desktops without a handler, so `/contact` pairs every call/email action with a copy button (`CopyValueButton`, with `execCommand` fallback), a "Write in Gmail (browser)" compose link, and a note. Keep a visible fallback next to any new `tel:`/`mailto:` action.
-- The footer "Send us a message" form only sends an email through `/api/contact/send`; it never creates a support ticket (tickets require a signed-in citizen and are created in the Android app). Its success message and subtitle say so. Do not describe it as ticketing.
-- `/help#tickets` explains that tickets live in the Android app and that the footer "Send us a message" form is for general questions and creates no trackable ticket. `#tickets` has `scroll-margin-top: 80px` so the fixed header does not cover it.
+- Contact details are centralized: read them through `getOfficialContacts(cms)` (`lib/official-contacts.mjs`) and the public CMS; do not hardcode phone numbers or emails in pages or FAQ copy. `/contact` exposes the SWMO email through the "Email SWMO" and "Copy email address" buttons and never prints it as body text. Its layout is defined in section 20a.
+- `tel:`/`mailto:` buttons do nothing on desktops without a handler, so `/contact` pairs every call/email action with a copy button (`CopyValueButton`, with `execCommand` fallback), a "write in Gmail" compose link inside the fallback note, and the note itself. Keep a visible fallback next to any new `tel:`/`mailto:` action.
+- The "Send us a message" form lives on `/contact#message` (the footer links to it) and only sends an email through `/api/contact/send`; it never creates a support ticket (tickets require a signed-in citizen and are created in the Android app). Its success message and subtitle say so. Do not describe it as ticketing.
+- `/help#tickets` explains that tickets live in the Android app and that the `/contact` "Send us a message" form is for general questions and creates no trackable ticket. `#tickets` has `scroll-margin-top: 80px` so the fixed header does not cover it.
 
 ## 20. Android installation page contract
 
@@ -851,6 +885,24 @@ Explain downloading the APK, finding it in Downloads, and following Android's in
 Sources: [downloads](app/downloads/page.js) and [styles](app/downloads/Downloads.module.css).
 
 The refinements browser check verifies feature removals, map theme changes, popup font parity, dropdown keyboard behavior without page jumps, search/layout controls, photo and report navigation, download behavior, mobile layouts, and slideshow timing/pause. Use synthetic browser fixtures; do not mutate production reports to verify visual changes.
+
+## 20a. Official contacts page (`/contact`)
+
+The page has one job: get a barangay leader or event organizer on the phone with SWMO. The office number is the one large element; everything around it stays quiet.
+
+- **Frame:** the shared public header and footer, the landing reading width (1184px), and padding of 48px 48px 96px (32px 24px 56px below 768px, 24px 16px 48px at 480px and below). Title metadata is “Contact SWMO | EcoPin” (`app/contact/layout.js`).
+- **Intro:** the green section label, one H1 (`clamp(36px, 4.4vw, 56px)`, weight 500, tracking `-0.035em`), and one 17px muted paragraph (15px on mobile) capped at 640px. The intro says a report is not required to call.
+- **Order:** intro, then the message form at full reading width, then the contact cards. The form leads because general questions are the most common use of the page; the call actions stay one scroll away.
+- **Grid (below the form, 24px gap above):** at 1025px and wider, a `7fr / 5fr` grid with a 24px gap. The office card is on the left; the right column stacks the emergency card and the “Have these details ready” checklist, so neither column leaves a gap. From 768px to 1024px the office card spans the full width and the two right-column cards sit side by side; below 768px everything is one column.
+- **Cards:** the 16px card tier, a 1px `--landing-border`, the page background, and 32px padding (24px below 768px, 20px at 480px and below). Card headings are 20px, weight 500. Default card paragraphs are 15px muted, set through a zero-specificity `:where()` rule so specific classes can override them.
+- **Office card:** office name (15px muted), then the trunkline at 40px (32px on mobile), weight 500, tabular figures, in main text color, with “local {extension}” beside it at 20px muted. An 11-digit mobile number (`09XXXXXXXXX`) is grouped as `0917 372 6888` for reading aloud; other formats show as published, and copy buttons copy the raw value. Below it: the operator instruction (14px), then one filled “Call SWMO trunkline” action and an outlined “Copy phone number”. A divided “Prefer email?” block holds outlined “Email SWMO” and “Copy email address”, and a fallback note with the Gmail compose link. A divided closing line states that calling or emailing does not submit a report or dispatch a crew.
+- **Emergency card:** the heading “Immediate danger?” with an `--error` warning icon (the icon is the only red), a short instruction, the hotline at 28px tabular figures, and outlined call and copy actions. No tinted fill or colored side bar.
+- **Checklist:** a plain single-column list with 8px green dots, not numbered (the items are not a sequence).
+- **Message form:** `#message`, full reading width, directly under the intro. Its title is an h2 held at the 20px card-heading tier.
+- **Sources:** a divided 13px muted footnote with the verification date and the two official source links.
+- **Actions:** all page actions are 48px tall pills with 24px horizontal padding and 8px icon gaps. Only “Call SWMO trunkline” is filled; actions stretch to full width at 480px and below. Focus uses the 3px blue outline with a 4px offset.
+
+Source: [page](app/contact/page.js), [styles](app/contact/contact.module.css), [copy fallback](app/contact/CopyValueButton.js). Browser checks: `tests/official-contacts.browser.cjs`, `tests/official-contact-settings.browser.cjs`.
 
 ## 21. Administrator and officer workspace contract
 
@@ -877,12 +929,12 @@ The visual direction is civic, friendly, and calm: Outfit typography, neutral ch
 - Primary actions use `#0052cc` with white text in both themes; hover may use `#003d99`.
 - Links and non-filled blue emphasis use `#0052cc` in light mode and `#82b6ff` in dark mode through `--workspace-link`.
 - Dark surfaces remain neutral charcoal. Do not shift them to blue-gray slate.
-- Status colors are readable display colors: success `#2e7d32` / `#83cba0`, warning `#b45309` / `#fcd34d`, error `#d32f2f` / `#fca5a5`, and information `#0369a1` / `#82b6ff`. Pair color with written status; never change workflow meaning to fit a color.
+- Status colors are readable display colors: success `#2e7d32` / `#83cba0`, warning `#b45309` / `#fcd34d`, error `#d32f2f` / `#fca5a5`, information `#0369a1` / `#82b6ff`, and feedback purple `#6d28d9` / `#c4b5fd` (the shared table in section 3). The shell should define `--purple` with these values too. Pair color with written status; never change workflow meaning to fit a color.
 - Use sentence case. Reserve monospace for identifiers or actual machine-formatted values. Avoid all-caps tracking, neon status overrides, decorative slashes, gradients, and heavy shadows.
 
 ### Page frame, header, and controls
 
-Use a consistent page frame with 24px desktop padding, 16px narrow-screen padding, and a 20px vertical gap. Panels use 20px inner padding, a 1px semantic border, a 16px radius, and a theme surface. Inputs and buttons have a 44px minimum height; inputs and menus use 12px corners, dialogs use 24px corners, and primary/secondary actions use the shared pill treatment. Keep captions at least 12px and ordinary body text at 14–16px.
+Use a consistent page frame with 24px desktop padding, 16px narrow-screen padding, and a 20px vertical gap. Panels use 20px inner padding, a 1px semantic border, a 16px radius (the card tier in section 5), and a theme surface. Inputs and buttons have a 44px minimum height; inputs and menus use 12px corners, dialogs use 24px corners, and primary/secondary actions use the shared pill treatment. Keep captions at least 12px and ordinary body text at 14–16px.
 
 Every page uses the same heading hierarchy and dimensions; do not shrink a heading to make a crowded page fit. The shared header uses a 28px medium-weight title (24px below 768px), 14px subtitle, and 12px breadcrumb. Long titles wrap cleanly. Keep page actions next to the heading where they fit, then wrap them without reducing targets or text size. Never override the shared header with page-local margins, negative offsets, hidden subtitles, or a smaller type scale.
 
@@ -894,7 +946,7 @@ On fitted desktop workspaces (at least 1024px wide and 700px high), the header s
 
 All workspace tab strips use `PageTabs`. The track has a tinted elevated surface, 1px border, 16px radius, 4px inset, and 8px gap. A selected tab has a surface fill, 1px border, 12px radius, and blue text; each tab has a 44px minimum height. On narrow screens the strip scrolls horizontally without shrinking or wrapping tab labels.
 
-Keep tab focus outlines inset within the rounded button; the generic shell focus rule must not override this and push the outline into the rail's overflow clipping. Sweeper Settings uses a padded outer panel with a separate inner scroll region and 6px focus clearance. Work-time forms are responsive cards with their own rounded borders and readable spacing; narrow layouts stack the save action rather than squeezing or clipping controls.
+Keep tab focus outlines inset within the rounded button; the generic shell focus rule must not override this and push the outline into the tab track's overflow clipping. Sweeper Settings uses a padded outer panel with a separate inner scroll region and 6px focus clearance. Work-time forms are responsive cards with their own rounded borders and readable spacing; narrow layouts stack the save action rather than squeezing or clipping controls.
 
 Use the shared tab keyboard behavior: Left/Right Arrow moves between tabs, Home selects the first, End selects the last, and focus follows selection. Keep the tablist named. Each tab's `aria-controls` points to a matching `tabpanel`; each panel names its tab with `aria-labelledby`. Only the active panel is exposed. Preserve focus and panel state when changing tabs.
 
@@ -999,6 +1051,10 @@ System Settings > Security includes a labeled Maximum video duration (seconds) c
 The Flutter report flow records videos through the camera and has no gallery-video selector. Its dedicated authenticated media-policy endpoint exposes only duration limits; server byte probing independently enforces the current database value. Duration validation is separate from environmental AI approval. See [the backend policy](../ecopin_backend_node/docs/report-video-policy.md) for rollout and verification. The settings browser fixture covers the loaded value, saved payload, and retry in both themes.
 
 
+## 26. Feature addenda
+
+Dated feature contracts for staff and public pages. They inherit tokens, radii, type, and status colors from sections 3–5 and 21.
+
 ### Dispatch publication feedback and load readiness
 
 Route publication failures take precedence over an empty task array in officer feedback. Display the supplied failure reason; do not infer shift-hours exhaustion or assert rollback from a generic failure. Pending routing remains pending even when no task list is returned. Mixed planning excludes crews with incomplete vehicle capacity/starting loads or missing load estimates on unfinished assigned tasks, and lists those crews with an actionable explanation in the capacity panel. A saved older draft must pass the same readiness check before claims/tasks are committed. Ready crews may still participate. Keep final database capacity/time checks authoritative; never invent missing live task estimates or crew capacities to force publication.
@@ -1022,7 +1078,7 @@ Display the saved severity in Report Details. Already-approved reports with no s
 
 Show citizen photo-review explanations in a named Manual review request section between Description and Evidence Media on the officer/admin web report detail page. Preserve photo numbering, newlines and long text, and render submissions as plain text. Do not label empty or unrelated processing notes as citizen requests. Retain the explanation after approval; rejection appends a labeled officer reason without erasing the citizen's request. Keep this display out of the native officer app and field-crew presentation.
 
-## Response deadline visibility - 27 October 2026
+### Response deadline visibility - 27 October 2026
 
 The public landing-map popup, Explore map/list/gallery/detail panel and public report page expose response-deadline indicators without sign-in. Keep deadlines separate from response status and severity. Use neutral Response deadline, amber Response deadline approaching in the final 20% of the real SLA window, and red Response overdue at/beyond the deadline, with text and icons in both themes. Do not call reports expired or hide them when overdue. Details show the exact local target time and explain that response time does not guarantee cleanup completion. Preserve approval/consent filtering and approximate locations. The implementation, migration order and verification limits are documented in `docs/response-deadlines.md`.
 
@@ -1092,16 +1148,16 @@ Barangay Analytics offers an applied-range Executive report month selector and P
 Officer Operations/Sweeper Analytics and Admin Operational Events link to the common daily/period Operations Summary. Use inclusive Manila dates and an explicit Apply action; pause printing on drafts, stale data, errors or incomplete sources. Keep current task/team inventory distinct from period assignment history, receipt recipients, completion-linked stored stops, incident-level proof reviews and obstacles. Unknown task states and source gaps remain visible; no depot/GPS visits, historical team roster, generic edit-date milestones or whole-task verification are invented. Retain contested outcomes as claims and distinguish current source matches from superseded verification events. Exclude reporter account identities, preserve legitimate staff attribution and treat narrative obstacles as internal information. Use the shared A4 portal, repeating table/document headers and page counts, full rows with clean breaks and clear oversized-source failure. Contract and acceptance: ../ecopin_backend_node/docs/field-crew-operations-summary.md.
 
 
-## PDT-18 — Comparable demand trends
+### PDT-18: Comparable demand trends
 
 Show an equal 30-day demand comparison alongside calendar-month totals. State exact half-open Manila date ranges and keep previous/current counts beside the percentage. Zero baseline with submissions reads “New Activity”; two zero counts read “No activity”. Label small samples. Missing or mismatched trend data reads “Unavailable”. Keep scope notes visible: windows may start before applied months, incomplete current months are excluded, and reporting counts are not waste tonnage. Apply the same contract to comparison rows, CSV, recommendation evidence and the executive A4 appendix. Use existing typography and table patterns.
 
 
-## PDT-23 — Stagnant incident alerts
+### PDT-23: Stagnant incident alerts
 
 Keep a compact red/amber count summary in the officer Command Center. Red means at least five elapsed days since submission and amber means four to five days, with acknowledgement or real crew assignment still missing. Always include text labels alongside color. Open the full oldest-first queue in the shared keyboard-accessible dialog so all cases can be paged without breaking the fitted dashboard. Render the queue as a shared `DataTable` (Report link, Status, Waiting, Still needs, Submitted) inside the dialog with the Details chevron, never as stacked tinted cards. Show counts and row status with the shared `StatePill` (written label plus a small status dot); no colored left bars or tinted fills. Show snapshot time, existing incident-detail links and explicit loading/empty/error/stale states. Reading a notice does not remove an outstanding action. Use the existing surface, border and status colors; no pulsing alert decoration.
 
 
-## PDT-15 — Live operations tab
+### PDT-15: Live operations tab
 
 Expose Operations feed beside Overview in the Command Center using the shared tab control. Keep task activity and crew connections in separate scrollable panes on desktop and stacked panes on phones. Show a text-labeled live/stale/unavailable/browser-offline state and the server snapshot time. Poll every 20 seconds while active; snapshots older than 30 seconds must visibly lose the live label. Distinguish recent contact from unknown and no recent contact, including sync-paused or backgrounded devices. Show the four connection totals as one bordered summary strip, and task activity and crew connections as shared `DataTable` panes (no hand-built lists or heading-per-row feeds); the state label uses the shared `StatePill`. Team summaries use aggregate member counts and do not claim physical presence. Preserve bigint-safe event history pagination, device-versus-server time labels, empty/error/retry behavior and keyboard access to scrollable regions.

@@ -86,50 +86,60 @@
   .taskMeta { width: 100%; justify-content: space-between; margin-top: 8px; }
 }
 
+.perfHeader { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; margin-top: 4px; }
+.perfHeader h2 { margin: 0; font-size: 20px; font-weight: 500; letter-spacing: -0.02em; color: var(--text-primary); }
+.perfHeader p { margin: 4px 0 0; font-size: 14px; color: var(--text-secondary); }
+.exportActions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.exportActions button, .exportActions a { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; }
+.textAction { background: transparent; border: 0; color: var(--workspace-link); font: inherit; font-size: 14px; font-weight: 500; padding: 0 12px; cursor: pointer; }
+.textAction:hover:not(:disabled) { text-decoration: underline; text-underline-offset: 4px; }
+.textAction:disabled { opacity: 0.5; cursor: not-allowed; }
+
 .perfCardGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
-  margin-top: 20px;
-  margin-bottom: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
 }
 
 .perfStatCard {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 18px 22px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  gap: 4px;
+  padding: 20px 24px;
+  border-left: 1px solid var(--border);
 }
+.perfStatCard:first-child { border-left: 0; }
+.perfStatCard p { margin: 0; font-size: 14px; color: var(--text-secondary); }
+@media (max-width: 719px) { .perfStatCard { border-left: 0; border-top: 1px solid var(--border); } .perfStatCard:first-child { border-top: 0; } }
 
-.perfStatCard:hover {
-  border-color: color-mix(in srgb, var(--workspace-link) 30%, var(--border));
-  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.08);
-  transform: translateY(-1px);
-}
 
-.statHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: var(--text-muted);
-  font-size: 12px;
-  text-transform: uppercase;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-}
+.statHeader { font-size: 14px; color: var(--text-secondary); }
+.statUnit { font-size: 14px; font-weight: 400; color: var(--text-secondary); }
 
 .statValue {
-  font-size: 26px;
-  font-weight: 700;
+  font-size: 32px;
+  font-weight: 500;
   color: var(--text-primary);
   line-height: 1.15;
   letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
+
+.perfPanel { padding: 20px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
+.panelTitle { margin: 0; font-size: 18px; font-weight: 500; letter-spacing: -0.01em; color: var(--text-primary); }
+.panelNote { margin: 4px 0 0; font-size: 14px; color: var(--text-secondary); }
+.distList { list-style: none; margin: 16px 0 0; padding: 0; display: flex; flex-direction: column; }
+.distList li { display: grid; grid-template-columns: minmax(150px, 220px) minmax(0, 1fr) 96px; align-items: center; gap: 16px; min-height: 44px; border-top: 1px solid var(--border); font-size: 14px; }
+.distList li:first-child { border-top: 0; }
+.distLabel { color: var(--text-primary); }
+.distTrack { display: block; height: 8px; border-radius: 999px; background: var(--surface-elevated); overflow: hidden; }
+.distFill { display: block; height: 100%; border-radius: 999px; }
+.distCount { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.distCount span { color: var(--text-secondary); }
+@media (max-width: 599px) { .distList li { grid-template-columns: minmax(0, 1fr) 80px; row-gap: 4px; padding: 8px 0; } .distTrack { grid-column: 1 / -1; order: 3; } }
+.filterLabel { font-size: 14px; color: var(--text-secondary); }
 
 .modalOverlay {
   position: fixed;
@@ -145,12 +155,12 @@
 .modalDialog {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: 24px;
   width: 100%;
   max-width: 860px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-dialog, 0 16px 40px rgba(0, 0, 0, 0.25));
   transform: translateZ(0);
 }
 
@@ -233,36 +243,28 @@
 }
 
 .modalMetricCard {
-  background: var(--surface-elevated);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 16px 18px;
+  padding: 0 0 0 16px;
+  border-left: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  gap: 4px;
 }
+.modalMetricCard:first-child { padding-left: 0; border-left: 0; }
 
-.modalMetricCard:hover {
-  border-color: color-mix(in srgb, var(--workspace-link) 25%, var(--border));
-}
 
 .modalMetricLabel {
-  font-size: 11px;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  font-weight: 600;
-  letter-spacing: 0.05em;
+  font-size: 14px;
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
-  justify-content: space-between;
 }
 
 .modalMetricValue {
-  font-size: 22px;
-  font-weight: 700;
+  font-size: 26px;
+  font-weight: 500;
   color: var(--text-primary);
   line-height: 1.2;
+  font-variant-numeric: tabular-nums;
 }
 
 .tableToolbar {
@@ -289,35 +291,29 @@
   background-color: var(--surface);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238A9180' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 10px center;
+  background-position: right 12px center;
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 6px 32px 6px 12px;
-  height: 36px;
-  line-height: 22px;
-  font-size: 13px;
-  font-weight: 500;
+  border-radius: 12px;
+  padding: 8px 36px 8px 12px;
+  height: 44px;
+  line-height: 24px;
+  font-size: 14px;
+  font-weight: 400;
   color: var(--text-primary);
   outline: none;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease;
 }
 
-.selectInput:focus {
-  border-color: var(--workspace-link);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--workspace-link) 15%, transparent);
-}
+.selectInput:focus-visible { border-color: var(--workspace-link); outline: 2px solid var(--workspace-link); outline-offset: 2px; }
 
 .modalToolbar {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  background: var(--surface-elevated);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 12px 16px;
+  padding: 0;
 }
 
 @media (min-width: 640px) {
@@ -348,26 +344,23 @@
   background-color: var(--surface);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238A9180' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 10px center;
+  background-position: right 12px center;
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 6px 32px 6px 12px;
-  height: 36px;
-  line-height: 22px;
-  font-size: 13px;
-  font-weight: 500;
+  border-radius: 12px;
+  padding: 8px 36px 8px 12px;
+  height: 44px;
+  line-height: 24px;
+  font-size: 14px;
+  font-weight: 400;
   color: var(--text-primary);
   outline: none;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease;
 }
 
-.modalSelectInput:focus {
-  border-color: var(--workspace-link);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--workspace-link) 15%, transparent);
-}
+.modalSelectInput:focus-visible { border-color: var(--workspace-link); outline: 2px solid var(--workspace-link); outline-offset: 2px; }
 
 .viewActionLink {
   display: inline-flex;
@@ -384,3 +377,10 @@
 }
 
 
+
+/* Completed-task rows in the performance dialogs: divided rows, not boxed cards. */
+.modalTaskItem { border: 0; border-bottom: 1px solid var(--border); border-radius: 0; background: transparent; padding: 12px 4px; }
+.modalTaskItem:hover { background: var(--surface-elevated); border-color: var(--border); }
+.modalFooter { border-bottom-left-radius: 24px; border-bottom-right-radius: 24px; }
+
+.statEmpty { display: inline-block; padding: 6px 0; font-size: 18px; font-weight: 400; color: var(--text-secondary); letter-spacing: 0; }

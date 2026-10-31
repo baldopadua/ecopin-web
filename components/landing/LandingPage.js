@@ -4,7 +4,7 @@ import { useRef, useState } from 'react'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { ArrowDown, ArrowRight, Camera, CheckCircle2, Download, Leaf, Loader2, MapPin, ShieldCheck, Smartphone, Megaphone, Info, AlertTriangle } from 'lucide-react'
+import { ArrowRight, Camera, CheckCircle2, Download, Leaf, Loader2, MapPin, ShieldCheck, Smartphone, Megaphone, Info, AlertTriangle } from 'lucide-react'
 import styles from './LandingPage.module.css'
 import usePublicTheme from './usePublicTheme'
 import useLandingMotion from './useLandingMotion'
@@ -104,11 +104,12 @@ export default function LandingPage() {
       <main id="main-content">
         <section ref={heroRef} className={styles.hero} aria-labelledby="hero-heading">
           <div className={styles.heroCopy} data-reveal>
-            <a href="#about" className={styles.eyebrow}><span className={styles.greenDot} /> Small actions. A better city. <ArrowRight size={14} /></a>
+            <span className={styles.eyebrow}>Small actions. A cleaner Pasig.</span>
             <h1 id="hero-heading">A cleaner Pasig<br />starts with <span className={styles.inlinePin}><MapPin aria-hidden="true" /></span> <span className={styles.blueText}>us.</span></h1>
             <p>See what’s happening in your neighborhood.<br className={styles.desktopBreak} /> Report a concern. Help care for the city we call home.</p>
             <div className={styles.heroActions}>
               <Link href="/explore" className={styles.primaryButton}>Explore the map <ArrowRight size={18} /></Link>
+              <a href="#mobile-app" className={styles.textButton}>Get the EcoPin app <ArrowRight size={16} /></a>
             </div>
           </div>
           <div className={styles.mapSection}><LandingMap isDark={isDark} /></div>
@@ -118,7 +119,6 @@ export default function LandingPage() {
           <div><MapPin /><p><strong>Rooted in Pasig</strong><span>Your city, on one map</span></p></div>
           <div><ShieldCheck /><p><strong>Reviewed reports</strong><span>A clearer view of local concerns</span></p></div>
           <div><Smartphone /><p><strong>Made for citizens</strong><span>Report from your Android phone</span></p></div>
-          <a href="#about" aria-label="Learn more about EcoPin"><ArrowDown size={20} /></a>
         </div>
 
         <section id="about" className={styles.about} aria-labelledby="about-heading">
@@ -128,9 +128,9 @@ export default function LandingPage() {
             <p>EcoPin connects the things you notice every day with the people who can help. Together, we can make environmental concerns easier to see, report, and follow.</p>
           </div>
           <div className={styles.features}>
-            <article data-reveal="100"><div className={styles.featureIcon}><MapPin /></div><h3>Know what’s nearby.</h3><p>Explore reported concerns across Pasig. Tap a pin to see the issue and its status.</p></article>
-            <article data-reveal="200"><div className={`${styles.featureIcon} ${styles.greenIcon}`}><ShieldCheck /></div><h3>See the bigger picture.</h3><p>Prefer browsing reports one by one? Switch to the gallery for a closer look.</p></article>
-            <div className={styles.communityNote} data-reveal="200"><Leaf size={30} /><p>Every report is a small step toward<br /><strong>a cleaner, more caring Pasig.</strong></p><span>It starts with noticing.</span></div>
+            <article data-reveal="100"><div className={styles.featureIcon}><MapPin /></div><h3>Know what’s nearby.</h3><p>Explore reported concerns across Pasig. Tap a pin to see the issue and its status.</p><Link href="/explore">Open the map <ArrowRight size={14} /></Link></article>
+            <article data-reveal="200"><div className={`${styles.featureIcon} ${styles.greenIcon}`}><ShieldCheck /></div><h3>See the bigger picture.</h3><p>Prefer browsing reports one by one? Switch to the gallery for a closer look.</p><Link href="/explore?view=gallery">Browse gallery <ArrowRight size={14} /></Link></article>
+            <div className={styles.communityNote} data-reveal="200"><Leaf size={30} /><p>Every report is a small step toward<br /><strong>a cleaner, more caring Pasig.</strong></p></div>
           </div>
         </section>
 
@@ -157,7 +157,6 @@ export default function LandingPage() {
               <figure data-reveal="200"><div className={styles.photoFrame}><LandingPhoto src={cms.gallery_photo_2_url || '/images/community/working-together.jpg'} alt="Two SWMO field crew members carrying a large piece of wood together beside a collection truck" fill sizes="(max-width: 767px) 100vw, 35vw" /></div><figcaption>{cms.gallery_photo_2_caption || 'Working together to clear bulky debris.'}</figcaption></figure>
             </div>
           </div>
-          <div className={styles.communityFoot} data-reveal><p>Notice a concern in your area? Give it a place on the map.</p></div>
         </section>
 
         <section id="mobile-app" className={styles.mobileSection} aria-labelledby="mobile-heading">
@@ -187,7 +186,6 @@ export default function LandingPage() {
                 />
               </div>
             </div>
-            <span className={styles.phoneCaption}><CheckCircle2 size={16} /> A small action, wherever you are.</span>
           </div>
           <div className={styles.mobileCopy} data-reveal>
             <span className={styles.sectionLabel}><Smartphone size={16} /> EcoPin in your pocket</span>
@@ -195,21 +193,25 @@ export default function LandingPage() {
             <p>Turn a photo into a report. With the EcoPin Android app, you can share environmental concerns and follow what happens next.</p>
             <ul><li><CheckCircle2 /> Add a photo and the location</li><li><CheckCircle2 /> Describe the issue in your own words</li><li><CheckCircle2 /> Keep track of your reports</li></ul>
             <a href={safeCmsUrl(cms.app_download_url, "/ecopin-app-release.apk")} download className={styles.primaryButton}><Download size={18} /> Download for Android <ArrowRight size={18} /></a>
-            {cms.app_version_name && <p>Latest release: {cms.app_version_name}</p>}
-            {cms.app_release_notes && <p className="whitespace-pre-line">{cms.app_release_notes}</p>}
             {safeCmsUrl(cms.app_playstore_url) && <a href={safeCmsUrl(cms.app_playstore_url)} className={styles.textButton} target="_blank" rel="noopener noreferrer">Get it on Google Play <ArrowRight size={18} /></a>}
-            <span className={styles.downloadNote}>Free Android app · Direct APK download</span>
+            {/* Release notes live on /downloads; keep the card to one meta line. */}
+            <span className={styles.downloadNote}>Free Android app · Direct APK download{cms.app_version_name ? ` · ${cms.app_version_name}` : ''}</span>
             <a href="/downloads" className={styles.installHelp}>Need help installing? <ArrowRight size={14} /></a>
           </div>
         </section>
 
         <section id="how-it-works" className={styles.guide} aria-labelledby="guide-heading">
-          <div className={styles.guideHeading} data-reveal><div><span className={styles.sectionLabel}>From noticing to taking action</span><h2 id="guide-heading">Three simple steps.<br />One meaningful difference.</h2></div><p>No complicated forms. Just share what you see.<br />Here’s how to get started in the EcoPin app.</p></div>
+          <div className={styles.guideHeading} data-reveal><div><span className={styles.sectionLabel}>From noticing to taking action</span><h2 id="guide-heading">Three simple steps.<br />One meaningful difference.</h2></div></div>
           <ol className={styles.steps}>{steps.map(({ icon: Icon, title, text }, index) => <li key={title} data-reveal={index * 100}><div className={styles.stepTop}><span>0{index + 1}</span><Icon size={24} /></div><h3>{title}</h3><p>{text}</p></li>)}</ol>
           <div className={styles.guideNote}><ShieldCheck size={20} /><p>Reports are reviewed before they appear on the public map. Please share accurate details and avoid including other people’s personal information.</p></div>
         </section>
 
-        <section className={styles.closing}><div data-reveal><Leaf size={28} /><h2>A better Pasig begins<br />with the people in it.</h2></div></section>
+        <section className={styles.closing} aria-labelledby="closing-heading">
+          <div data-reveal>
+            <Leaf size={28} />
+            <h2 id="closing-heading">A better Pasig begins<br />with the people in it.</h2>
+          </div>
+        </section>
       </main>
       <PublicFooter isDark={isDark} settings={cms} />
     </div>

@@ -430,7 +430,7 @@ export default function ProfilePage() {
               />
             ) : (
               <img
-                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(formData.full_name || user?.email || 'User')}&background=random&color=fff&size=256`}
+                src="/icons/users.png"
                 alt=""
                 className={styles.avatarImg}
               />

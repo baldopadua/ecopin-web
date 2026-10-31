@@ -1,6 +1,5 @@
 'use client'
 import Link from 'next/link'
-import CleanupProofReview from '@/components/reports/CleanupProofReview'
 import OperationalTimeline from '@/components/reports/OperationalTimeline'
 import SecureImage from '@/components/ui/SecureImage'
 import ImageLightbox from '@/components/ui/ImageLightbox'
@@ -28,7 +27,6 @@ import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
 import { useUser } from '@/components/auth/UserContext'
 import {
   RefreshCw,
-  Image as ImageIcon,
   Loader2,
   Copy,
   Check,
@@ -85,7 +83,7 @@ function VideoEvidenceCard({ url, name, onExpand }) {
   }
 
   return (
-    <div className="relative group rounded-lg overflow-hidden border border-border bg-black w-full h-48 flex items-center justify-center">
+    <div className="relative group rounded-2xl overflow-hidden border border-[var(--border)] bg-[var(--surface-elevated)] w-full h-48 flex items-center justify-center">
       <video
         ref={videoRef}
         key={url}
@@ -806,7 +804,7 @@ export default function ReportDetailPage() {
               {/* Report Information */}
               <div className="card">
                 <h2 className={`text-xl font-semibold text-text-primary mb-2 ${isStaff ? styles.reportTitle : ''}`}>{report.title}</h2>
-                <p className="text-sm text-text-secondary mb-6">Issue: {report.issue_type?.replaceAll('_', ' ') || 'General'}</p>
+                <p className="text-sm text-text-secondary mb-6">Concern: <span className="capitalize">{report.issue_type?.replaceAll('_', ' ') || 'General'}</span></p>
 
                 <h3 className="text-lg font-semibold text-text-primary mb-3">Description</h3>
                 <p className={`text-text-primary leading-relaxed mb-6 ${isStaff ? styles.description : ''}`}>
@@ -820,7 +818,6 @@ export default function ReportDetailPage() {
 
               </div>
 
-              {isStaff && <CleanupProofReview key={report.id} reportId={report.id} />}
               {isStaff && <details className="card"><summary className="cursor-pointer min-h-11 py-3 font-medium">Recorded operational events</summary><OperationalTimeline key={report.id} reportId={report.id} /></details>}
               {/* Evidence Photos & Videos */}
               {['officer', 'admin'].includes(user?.role) &&
@@ -842,17 +839,9 @@ export default function ReportDetailPage() {
               <div className="card">
                 <h2 className="text-xl font-bold text-text-primary mb-4">{isStaff ? 'Evidence media' : 'Evidence Media'}</h2>
                 {(loading || isRefreshing) ? (
-                  <div className="h-48 bg-surface-elevated rounded-lg flex flex-col items-center justify-center border border-dashed border-border gap-2">
-                    <Loader2 className="w-8 h-8 text-[var(--primary)] animate-spin" aria-hidden="true" />
-                    <p className="text-sm text-text-muted">Loading evidence media...</p>
-                  </div>
+                  <p role="status" className="text-sm text-text-secondary">Loading evidence media…</p>
                 ) : evidence.length === 0 ? (
-                  <div className={`h-48 bg-surface-elevated rounded-lg flex items-center justify-center border border-dashed border-border ${isStaff ? styles.emptyMedia : ''}`}>
-                    <div className="text-center">
-                      <ImageIcon size={48} className="text-text-muted mx-auto mb-2" aria-hidden="true" />
-                      <p className="text-text-muted">No evidence media available</p>
-                    </div>
-                  </div>
+                  <p className="text-sm text-text-secondary">No citizen evidence media is on record for this report.</p>
                 ) : (
                   <div className={isStaff ? styles.evidenceGrid : 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4'}>
                     {evidence.map((img, index) => {
@@ -871,7 +860,7 @@ export default function ReportDetailPage() {
                               src={img.url}
                               alt={`Evidence ${index + 1}`}
                               loadingLabel="Loading evidence photo..."
-                              className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                              className="w-full h-48 object-cover rounded-2xl cursor-pointer"
                             />
                             </button>
                           )}
@@ -883,11 +872,11 @@ export default function ReportDetailPage() {
 
                 {/* Before & After Photos */}
                 {report.validation_status !== 'rejected' && !(report.on_private_property && report.property_owner_consent_status === 'denied') && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 pt-6 border-t border-[var(--border)]">
                   {/* Before Photo */}
-                  <div className="p-4 border border-border rounded-lg">
+                  <div>
                     <div className="flex justify-between items-center mb-3">
-                      <h3 className="font-semibold">{isStaff ? 'Before photos' : 'Before Photos'}</h3>
+                      <h3>{isStaff ? 'Before photos' : 'Before Photos'}</h3>
                     </div>
                     {(Array.isArray(report.before_photos) && report.before_photos.length > 0) || report.before_photo_url ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -907,23 +896,21 @@ export default function ReportDetailPage() {
                             <SecureImage
                               src={url}
                               alt={`Before ${idx + 1}`}
-                              className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                              className="w-full h-48 object-cover rounded-2xl cursor-pointer"
                             />
                             </button>
                           )
                         ))}
                       </div>
                     ) : (
-                      <div className="h-48 bg-surface-elevated rounded-lg flex items-center justify-center border border-dashed border-border">
-                        <p className="text-text-muted">No before photo uploaded</p>
-                      </div>
+                      <p className="text-sm text-text-secondary">No before photo was uploaded.</p>
                     )}
                   </div>
 
                   {/* After Photo */}
-                  <div className="p-4 border border-border rounded-lg">
+                  <div>
                     <div className="flex justify-between items-center mb-3">
-                      <h3 className="font-semibold">{isStaff ? 'After photos' : 'After Photos'}</h3>
+                      <h3>{isStaff ? 'After photos' : 'After Photos'}</h3>
                     </div>
                     {(Array.isArray(report.after_photos) && report.after_photos.length > 0) || report.after_photo_url ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -943,16 +930,14 @@ export default function ReportDetailPage() {
                             <SecureImage
                               src={url}
                               alt={`After ${idx + 1}`}
-                              className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                              className="w-full h-48 object-cover rounded-2xl cursor-pointer"
                             />
                             </button>
                           )
                         ))}
                       </div>
                     ) : (
-                      <div className="h-48 bg-surface-elevated rounded-lg flex items-center justify-center border border-dashed border-border">
-                        <p className="text-text-muted">No after photo uploaded</p>
-                      </div>
+                      <p className="text-sm text-text-secondary">No after photo was uploaded.</p>
                     )}
                   </div>
                 </div>
@@ -973,10 +958,10 @@ export default function ReportDetailPage() {
                       rows={3}
                       disabled={addingNote}
                       className={`input w-full rounded-lg border border-border bg-surface p-3 text-text-primary ${isStaff ? styles.noteInput : ''}`}
-                      placeholder="Enter an operational note..."
+                      placeholder="Write an operational note"
                     />
                     <button type="submit" className="btn-primary min-h-11" disabled={addingNote || !noteText.trim()}>
-                      {addingNote ? 'Saving note...' : 'Add note'}
+                      {addingNote ? 'Saving note…' : 'Add note'}
                     </button>
                   </form>
                 )}

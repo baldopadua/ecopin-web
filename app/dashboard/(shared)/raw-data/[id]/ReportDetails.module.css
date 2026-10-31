@@ -2,7 +2,7 @@
 .staffPage .mainColumn, .staffPage .sidebar { min-width: 0; display: grid; gap: 20px; }
 .staffPage .mainColumn > *, .staffPage .sidebar > * { min-width: 0; margin-top: 0; }
 .staffPage :global(.card) h2 { font-size: 18px; line-height: 1.4; font-weight: 500; }
-.staffPage :global(.card) h3 { font-size: 14px; line-height: 1.5; font-weight: 600; }
+.staffPage :global(.card) h3 { font-size: 14px; line-height: 1.5; font-weight: 500; }
 .staffPage :global(.card) .reportTitle { font-size: 20px; margin-bottom: 8px; }
 .staffPage .description { margin-bottom: 0; font-size: 14px; line-height: 1.7; white-space: pre-wrap; }
 .staffPage :global(.card) { overflow-wrap: anywhere; }
@@ -20,8 +20,8 @@
 .staffPage .activityEntry { display: grid; gap: 8px; padding: 16px 0; }
 .staffPage .activityEntry p { margin: 0; }
 .staffPage .emptyMedia { height: auto; min-height: 160px; padding: 24px 16px; border-radius: 12px; }
-.staffPage .dangerButton { color: var(--error); border-color: color-mix(in srgb, var(--error) 30%, var(--border)); background: color-mix(in srgb, var(--error) 5%, var(--surface)); }
-.staffPage .dangerButton:hover:not(:disabled) { background: color-mix(in srgb, var(--error) 12%, var(--surface)); }
+.staffPage .dangerButton { color: var(--error); border-color: var(--border); background: transparent; }
+.staffPage .dangerButton:hover:not(:disabled) { border-color: var(--error); background: transparent; }
 @media (min-width: 768px) and (max-width: 1199px) {
   .staffPage .sidebar { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
 }
@@ -31,3 +31,6 @@
 @media (max-width: 600px) {
   .staffPage .evidenceGrid { grid-template-columns: minmax(0, 1fr); }
 }
+
+.staffPage .metadata > div > p:first-child { font-size: 13px; color: var(--text-secondary); }
+.staffPage .metadata p { overflow-wrap: anywhere; }

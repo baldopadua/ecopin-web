@@ -5,12 +5,7 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { getPublicCmsSettings } from '@/lib/api/admin'
 import { DEFAULT_PUBLIC_CMS, isPublicSitePath } from '@/lib/public-cms.mjs'
-import PublicLoadingState from '@/components/ui/PublicLoadingState'
 import styles from '@/components/landing/LandingPage.module.css'
-import loadingStyles from '@/components/ui/NavigationLoadingScreen.module.css'
-
-// Keep the first-load screen up long enough for the spinner to complete a few turns.
-const MIN_LOADING_MS = 1800
 
 const PublicCmsContext = createContext({ cms: DEFAULT_PUBLIC_CMS })
 export const usePublicCms = () => useContext(PublicCmsContext)
@@ -20,13 +15,6 @@ export default function PublicSiteProvider({ children }) {
   const publicPage = isPublicSitePath(pathname)
   const contactsPage = pathname === '/contact'
   const [cms, setCms] = useState(DEFAULT_PUBLIC_CMS)
-  const [loading, setLoading] = useState(true)
-  const [minElapsed, setMinElapsed] = useState(false)
-  const [overlayGone, setOverlayGone] = useState(false)
-  useEffect(() => {
-    const timer = setTimeout(() => setMinElapsed(true), MIN_LOADING_MS)
-    return () => clearTimeout(timer)
-  }, [])
   useEffect(() => {
     if (!publicPage) return
     let active = true
@@ -34,7 +22,6 @@ export default function PublicSiteProvider({ children }) {
       const settings = await getPublicCmsSettings()
       if (!active) return
       if (settings) setCms({ ...DEFAULT_PUBLIC_CMS, ...settings })
-      setLoading(false)
     }
     void refresh()
     const timer = setInterval(refresh, 60000)
@@ -42,11 +29,9 @@ export default function PublicSiteProvider({ children }) {
     return () => { active = false; clearInterval(timer); window.removeEventListener('focus', refresh) }
   }, [publicPage])
 
-  const ready = !loading && minElapsed
-  const showOverlay = publicPage && !contactsPage && !overlayGone
+  // Public pages render immediately with default CMS values; the static hero must not wait on a request.
   let content = children
-  if (publicPage && !contactsPage && !ready) content = null
-  else if (publicPage && !contactsPage && cms.maintenance_mode === true) content = (
+  if (publicPage && !contactsPage && cms.maintenance_mode === true) content = (
     <main className={`${styles.page} ${styles.maintenancePage}`}>
       <section className="max-w-xl text-center space-y-6" aria-labelledby="maintenance-title">
         <h1 id="maintenance-title" className="text-3xl font-medium">EcoPin is under maintenance</h1>
@@ -58,8 +43,7 @@ export default function PublicSiteProvider({ children }) {
   )
   return (
     <PublicCmsContext.Provider value={{ cms }}>
-      {showOverlay && <PublicLoadingState label="Loading public site…" fullScreen exiting={ready} onExited={() => setOverlayGone(true)} />}
-      {publicPage && !contactsPage && ready ? <div className={loadingStyles.pageReveal}>{content}</div> : content}
+      {content}
     </PublicCmsContext.Provider>
   )
 }

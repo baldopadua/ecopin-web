@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Send, Check, Loader2 } from 'lucide-react'
 import { reportDiagnostic } from '@/lib/diagnostics.mjs'
+import PublicSelect from '@/components/ui/PublicSelect'
 import styles from './LandingPage.module.css'
 
 export default function FooterContactForm({ cms }) {
@@ -92,7 +93,7 @@ export default function FooterContactForm({ cms }) {
           <div className={styles.footerColForm}>
             <div className={styles.contactFormCard}>
               <div className={styles.contactFormHeader}>
-                <h3 className={styles.contactFormTitle}>Send us a message</h3>
+                <h2 id="message-heading" className={styles.contactFormTitle}>Send us a message</h2>
                 <p className={styles.contactFormSubtitle}>General questions by email. For your own report, open a support ticket in the Android app.</p>
               </div>
 
@@ -108,13 +109,14 @@ export default function FooterContactForm({ cms }) {
               )}
 
               <form onSubmit={handleEmailSubmit} className={styles.footerForm}>
-                <div className={styles.formFieldCompact}>
-                  <label htmlFor="contact-recipient" className={styles.formLabelCompact}>Send to</label>
-                  <select id="contact-recipient" name="recipient" value={emailForm.recipient} onChange={handleEmailChange} className={styles.formInputCompact}>
-                    <option value="support">EcoPin support</option>
-                    {cms.contact_office_email && <option value="office">SWMO office</option>}
-                  </select>
-                </div>
+                <PublicSelect
+                  id="contact-recipient"
+                  label="Send to"
+                  value={emailForm.recipient}
+                  onChange={recipient => setEmailForm(form => ({ ...form, recipient }))}
+                  options={[{ value: 'support', label: 'EcoPin support' }, ...(cms.contact_office_email ? [{ value: 'office', label: 'SWMO office' }] : [])]}
+                  className={styles.formFieldCompact}
+                />
                 <div className={styles.formRowTwo}>
                   <div className={styles.formFieldCompact}>
                     <label htmlFor="contact-name" className={styles.formLabelCompact}>Name</label>

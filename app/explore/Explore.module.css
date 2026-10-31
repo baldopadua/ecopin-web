@@ -21,11 +21,11 @@
 .galleryToolbar { position: relative; z-index: 900; padding: 12px 24px; background: var(--landing-bg); border-bottom: 1px solid var(--landing-border); display: flex; flex-direction: column; gap: 12px; flex-shrink: 0; }
 .toolbarRow { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .galleryFilters { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.statusTabs { position: relative; display: flex; align-items: center; padding: 4px; gap: 4px; border: 1px solid var(--landing-border); border-radius: 12px; background: var(--landing-soft); isolation: isolate; }
-.statusTabsIndicator { position: absolute; top: 4px; bottom: 4px; left: 0; background: #0052cc; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 82, 204, 0.35); transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), width 0.25s cubic-bezier(0.16, 1, 0.3, 1); z-index: 1; pointer-events: none; }
-.statusTabs button { position: relative; z-index: 2; min-height: 44px; padding: 8px 12px; border-radius: 8px; color: var(--landing-muted); font-size: 12px; font-weight: 500; background: transparent; transition: color 0.2s ease; cursor: pointer; }
+.statusTabs { position: relative; display: flex; align-items: center; padding: 2px; gap: 2px; border: 1px solid var(--landing-border); border-radius: 999px; background: var(--landing-bg); isolation: isolate; }
+.statusTabsIndicator { position: absolute; top: 2px; bottom: 2px; left: 0; background: #0052cc; border-radius: 999px; transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), width 0.25s cubic-bezier(0.16, 1, 0.3, 1); z-index: 1; pointer-events: none; }
+.statusTabs button { position: relative; z-index: 2; min-height: 40px; padding: 8px 16px; border-radius: 999px; color: var(--landing-muted); font-size: 14px; font-weight: 500; background: transparent; transition: color 0.2s ease; cursor: pointer; }
 .statusTabs button:hover { color: var(--landing-text); }
-.statusTabs button[aria-pressed='true'] { color: #ffffff; font-weight: 600; }
+.statusTabs button[aria-pressed='true'] { color: #ffffff; font-weight: 500; }
 @media (prefers-reduced-motion: reduce) { .statusTabsIndicator { transition: none; } }
 .filterSelect { width: 160px; }
 .sortSelect { width: 160px; max-width: 100%; }

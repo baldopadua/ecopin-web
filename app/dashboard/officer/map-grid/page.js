@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import { useDashboardReports, useDashboardTasks, useDashboardClusters } from '@/components/context/DashboardQueryProvider'
 import { OfficerGuard } from '@/components/auth/RequireRole'
-import { Map, SlidersHorizontal, X, AlertTriangle, RotateCcw, MapPin, Layers, Flame, ClipboardList } from 'lucide-react'
+import { SlidersHorizontal, X, AlertTriangle } from 'lucide-react'
 import styles from './MapGrid.module.css'
 import { REPORT_PIN_STATUSES } from '@/components/map/reportPinStatus'
 import { MAP_LOCATIONS } from '@/lib/map-search.mjs'
@@ -170,7 +170,6 @@ function OfficerMapContent() {
           >
             <div className={styles.controlsHeader}>
               <h2 id="map-grid-controls-title">
-                <Map size={18} aria-hidden="true" />
                 <span>Map controls</span>
               </h2>
               <button
@@ -188,12 +187,11 @@ function OfficerMapContent() {
                 <legend>Map layers</legend>
                 <div className={styles.layerGrid}>
                   {[
-                    { label: 'Report pins', checked: showPins, onChange: setShowPins, icon: MapPin },
-                    { label: 'Report clusters', checked: showClusters, onChange: setShowClusters, icon: Layers },
-                    { label: 'Heatmap', checked: showHeatmap, onChange: setShowHeatmap, icon: Flame },
-                    { label: 'Cleanup task pins', checked: showTaskPins, onChange: setShowTaskPins, icon: ClipboardList },
+                    { label: 'Report pins', checked: showPins, onChange: setShowPins },
+                    { label: 'Report clusters', checked: showClusters, onChange: setShowClusters },
+                    { label: 'Heatmap', checked: showHeatmap, onChange: setShowHeatmap },
+                    { label: 'Cleanup task pins', checked: showTaskPins, onChange: setShowTaskPins },
                   ].map(layer => {
-                    const LayerIcon = layer.icon
                     return (
                       <label key={layer.label} className={styles.layer}>
                         <input
@@ -201,7 +199,6 @@ function OfficerMapContent() {
                           checked={layer.checked}
                           onChange={event => layer.onChange(event.target.checked)}
                         />
-                        {LayerIcon && <LayerIcon size={14} className={styles.layerIcon} aria-hidden="true" />}
                         <span>{layer.label}</span>
                       </label>
                     )
@@ -214,9 +211,7 @@ function OfficerMapContent() {
                   <div className={styles.sectionTitleGroup}>
                     <h3 id="map-grid-filters-title">Report filters</h3>
                     {filtersActive && (
-                      <span className={styles.filterCountBadge}>
-                        {activeFilterCount} active
-                      </span>
+                      <span className={styles.filterCount}>{activeFilterCount} active</span>
                     )}
                   </div>
                   <button
@@ -225,8 +220,7 @@ function OfficerMapContent() {
                     disabled={!filtersActive}
                     onClick={() => { setStatusFilter('all'); setTypeFilter('all'); setLocationFilter('all') }}
                   >
-                    <RotateCcw size={14} aria-hidden="true" />
-                    Reset
+                    Reset filters
                   </button>
                 </div>
                 <div className={styles.filters}>
@@ -316,7 +310,6 @@ function OfficerMapContent() {
               <section className={styles.section} aria-labelledby="map-grid-telemetry-title">
                 <div className={styles.sectionHeader}>
                   <h3 id="map-grid-telemetry-title">Live map summary</h3>
-                  <span className={styles.telemetryTag}>Active</span>
                 </div>
                 <div className={styles.statsGrid}>
                   <div className={styles.statCard}>
@@ -324,19 +317,19 @@ function OfficerMapContent() {
                     <span className={styles.statLabel}>Total reports</span>
                   </div>
                   <div className={styles.statCard}>
-                    <span className={`${styles.statValue} ${styles.statWarning}`}>
+                    <span className={styles.statValue}>
                       {reports.filter(r => r.status === 'unresolved').length}
                     </span>
                     <span className={styles.statLabel}>Unresolved</span>
                   </div>
                   <div className={styles.statCard}>
-                    <span className={`${styles.statValue} ${styles.statInfo}`}>
+                    <span className={styles.statValue}>
                       {clusters.length}
                     </span>
                     <span className={styles.statLabel}>Clusters</span>
                   </div>
                   <div className={styles.statCard}>
-                    <span className={`${styles.statValue} ${styles.statSuccess}`}>
+                    <span className={styles.statValue}>
                       {tasks.filter(t => t.status !== 'completed').length}
                     </span>
                     <span className={styles.statLabel}>Active tasks</span>

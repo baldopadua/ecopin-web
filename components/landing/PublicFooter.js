@@ -2,10 +2,9 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { ExternalLink } from 'lucide-react'
+import { ArrowRight, ExternalLink } from 'lucide-react'
 import { usePublicCms } from '@/components/public/PublicSiteProvider'
 import { safeCmsUrl } from '@/lib/public-cms.mjs'
-import FooterContactForm from './FooterContactForm'
 import { getOfficialContacts } from '@/lib/official-contacts.mjs'
 import styles from './LandingPage.module.css'
 
@@ -89,12 +88,16 @@ export default function PublicFooter({ isDark = false, settings }) {
             </div>
           </div>
 
-          <FooterContactForm cms={cms} />
+          {/* The full message form lives on /contact so the footer stays a quiet link list. */}
+          <div className={styles.footerColQuestions}>
+            <h3 className={styles.footerColTitle}>Questions?</h3>
+            <p className={styles.officeDetail}>Email SWMO or EcoPin support with a general question. To track a reply, open a ticket in the Android app.</p>
+            <Link href="/contact#message" className={styles.installHelp}>Send us a message <ArrowRight size={14} /></Link>
+          </div>
         </div>
 
         <div className={styles.footerBottomBar}>
           <span>EcoPin · City Government of Pasig</span>
-          <span>Small actions. A cleaner Pasig.</span>
         </div>
       </footer>
   )

@@ -17,6 +17,7 @@
   --warning: #b45309;
   --error: #d32f2f;
   --info: #0369a1;
+  --purple: #6d28d9;
   --landing-bg: var(--surface);
   --landing-soft: var(--surface-elevated);
   --landing-border: var(--border);
@@ -40,6 +41,7 @@
   --warning: #fcd34d;
   --error: #fca5a5;
   --info: #82b6ff;
+  --purple: #c4b5fd;
   --shadow-dialog: 0 24px 64px #00000066;
 }
 .main {

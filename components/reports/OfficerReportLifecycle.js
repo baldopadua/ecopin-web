@@ -1,7 +1,14 @@
-import { Check, Clock, AlertTriangle } from 'lucide-react'
-import StatusBadge from '@/components/ui/StatusBadge'
+import { Check } from 'lucide-react'
+import { getReportStatusHex } from '@/lib/helpers/statusHelpers'
 import styles from './OfficerReportLifecycle.module.css'
 import { REPORT_LIFECYCLE_STAGES as stages, getReportLifecycleStage } from '@/lib/report-lifecycle.mjs'
+
+const words = value => String(value || 'not recorded').replaceAll('_', ' ')
+const VALIDATION_TONE = { approved: 'var(--success)', rejected: 'var(--error)' }
+const CONSENT_TONE = { obtained: 'var(--success)', denied: 'var(--error)' }
+function Status({ title, value, tone }) {
+  return <span className={styles.status}><span>{title}</span><strong><i aria-hidden="true" style={{ backgroundColor: tone }} />{words(value)}</strong></span>
+}
 
 export default function OfficerReportLifecycle({ report, slaInfo }) {
   const currentStage = getReportLifecycleStage(report)
@@ -14,14 +21,11 @@ export default function OfficerReportLifecycle({ report, slaInfo }) {
       <h2 id="report-lifecycle-title">Operational lifecycle</h2>
       <p className={styles.intro}>Progress from citizen submission to field resolution.</p>
       <div className={styles.statuses}>
-        {!stopped && <span className={styles.status}>Report status <StatusBadge status={report.status} type="report" /></span>}
-        <span className={styles.status}>Citizen review <StatusBadge status={report.validation_status} type="validation" /></span>
-        {report.on_private_property && <span className={styles.status}>Property consent <StatusBadge status={report.property_owner_consent_status} type="consent" /></span>}
+        {!stopped && <Status title="Report status" value={report.status} tone={getReportStatusHex(report.status)} />}
+        <Status title="Citizen review" value={report.validation_status} tone={VALIDATION_TONE[report.validation_status] || 'var(--info)'} />
+        {report.on_private_property && <Status title="Property consent" value={report.property_owner_consent_status} tone={CONSENT_TONE[report.property_owner_consent_status] || 'var(--warning)'} />}
         {!stopped && slaInfo && (
-          <span className={styles.deadline} data-state={slaInfo.status}>
-            {slaInfo.status === 'breached' ? <AlertTriangle size={16} aria-hidden="true" /> : <Clock size={16} aria-hidden="true" />}
-            {slaInfo.label}
-          </span>
+          <span className={styles.deadline} data-state={slaInfo.status}>{slaInfo.label}</span>
         )}
       </div>
       {stopped ? (

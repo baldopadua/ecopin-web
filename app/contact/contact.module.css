@@ -1,21 +1,77 @@
-.main { max-width: 840px; margin: 0 auto; padding: 32px 24px 56px; color: var(--landing-text); }
-.main h1 { font-size: clamp(28px, 5vw, 44px); line-height: 1.15; margin: 12px 0 20px; }
-.main h2 { font-size: 22px; margin: 0 0 12px; }
+/* Contact page: landing reading width (1184px), 16px cards, 4/8 spacing rhythm (DESIGN.md section 20a). */
+.main { max-width: 1184px; margin: 0 auto; padding: 48px 48px 96px; color: var(--landing-text); }
 .main p, .main li { line-height: 1.65; overflow-wrap: anywhere; }
-.main a:not([class]) { color: var(--landing-blue); text-underline-offset: 3px; }
-.card { border: 1px solid var(--landing-border); border-radius: 20px; padding: 24px; margin: 24px 0; background: var(--landing-bg); }
-.number { font-size: 24px; font-weight: 600; }
-.number span { display: inline-block; font-size: 18px; }
+.main a:not([class]) { color: var(--landing-blue); text-decoration: underline; text-underline-offset: 3px; }
+.main a:not([class]):hover { text-decoration-thickness: 2px; }
+
+.intro { max-width: 640px; margin-bottom: 40px; }
+.intro h1 { font-size: clamp(36px, 4.4vw, 56px); font-weight: 500; line-height: 1.1; letter-spacing: -.035em; margin: 12px 0 16px; }
+.intro > p:last-child { font-size: 17px; color: var(--landing-muted); margin: 0; }
+
+.layout { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 24px; align-items: start; margin-top: 24px; }
+.aside { display: grid; gap: 24px; }
+
+.card { border: 1px solid var(--landing-border); border-radius: 16px; padding: 32px; background: var(--landing-bg); }
+.card h2 { display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 500; line-height: 1.3; letter-spacing: -.02em; margin: 0 0 12px; }
+/* :where() keeps this default at zero specificity so .number, .hint and friends override it. */
+:where(.card) > :where(p) { margin: 0 0 16px; color: var(--landing-muted); font-size: 15px; }
+
+/* The office number is the page's one large element: the job of this page is to call it. */
+.officeName { color: var(--landing-muted); font-size: 15px; margin: 0; }
+.number { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin: 8px 0 12px; color: var(--landing-text); font-size: 40px; font-weight: 500; line-height: 1.15; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.extension { font-size: 20px; color: var(--landing-muted); letter-spacing: 0; }
+.hint { font-size: 14px; color: var(--landing-muted); margin: 0 0 20px; }
+
 .actions { display: flex; flex-wrap: wrap; gap: 12px; }
-.main .actions a, .card > a { min-height: 44px; padding: 12px 20px; }
-.main ul { padding-left: 22px; }
-.main footer { font-size: 13px; }
-@media (max-width: 480px) { .main { padding: 24px 16px 40px; } .card { padding: 20px; } .actions a { width: 100%; justify-content: center; } }
+.main .actions a, .main .actions button { min-height: 48px; padding: 12px 24px; gap: 8px; font-size: 15px; font-weight: 500; }
 
-.secondary { display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--landing-border); border-radius: 999px; color: var(--landing-blue); }
+.emailRow { margin-top: 32px; padding-top: 32px; border-top: 1px solid var(--landing-border); }
+.emailRow h3 { font-size: 16px; font-weight: 500; margin: 0 0 12px; }
+.emailRow .hint { margin: 16px 0 0; }
 
-.main .actions .copyButton, .copyButton { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px; border: 1px solid var(--landing-border); border-radius: 999px; background: transparent; color: var(--landing-text); font: inherit; font-size: 15px; cursor: pointer; }
+.scope { margin: 32px 0 0; padding-top: 20px; border-top: 1px solid var(--landing-border); font-size: 14px; color: var(--landing-muted); }
+
+.emergency h2 svg { color: var(--error); flex-shrink: 0; }
+.emergencyNumber { font-size: 28px; font-weight: 500; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--landing-text); margin: 0 0 16px; }
+
+.checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; font-size: 15px; }
+.checklist li { position: relative; padding-left: 20px; color: var(--landing-text); }
+.checklist li::before { content: ''; position: absolute; left: 0; top: .6em; width: 8px; height: 8px; border-radius: 50%; background: var(--landing-green); }
+
+/* The message form leads at full reading width; the contact cards follow in the grid below it. */
+.messageSection { scroll-margin-top: 88px; }
+/* The shared form's title is an h2 here; keep it on the card-heading tier rather than the landing section size. */
+.main .messageSection h2 { font-size: 20px; font-weight: 500; line-height: 1.3; letter-spacing: -.02em; margin: 0 0 8px; }
+
+.sources { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--landing-border); font-size: 13px; color: var(--landing-muted); }
+.sources p { margin: 0 0 8px; }
+.sources p:last-child { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 0; }
+
+.secondary { display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--landing-border); border-radius: 999px; color: var(--landing-blue); background: transparent; transition: border-color .2s; }
+.secondary:hover { border-color: var(--landing-blue); }
+
+.copyButton { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 24px; border: 1px solid var(--landing-border); border-radius: 999px; background: transparent; color: var(--landing-text); font: inherit; font-size: 15px; cursor: pointer; transition: background .2s; }
 .copyButton:hover { background: var(--landing-soft); }
-.copyButton:focus-visible { outline: 3px solid var(--landing-blue); outline-offset: 3px; }
-.fallbackNote { font-size: 13px; color: var(--landing-muted); margin-top: 12px; }
-@media (max-width: 480px) { .copyButton { width: 100%; } }
+.main a:focus-visible, .copyButton:focus-visible { outline: 3px solid var(--landing-blue); outline-offset: 4px; }
+
+@media (max-width: 1024px) {
+  .layout { grid-template-columns: 1fr; }
+  .aside { grid-template-columns: 1fr 1fr; align-items: start; }
+}
+@media (max-width: 767px) {
+  .main { padding: 32px 24px 56px; }
+  .intro { margin-bottom: 32px; }
+  .intro > p:last-child { font-size: 15px; }
+  .aside { grid-template-columns: 1fr; }
+  .card { padding: 24px; }
+  .number { font-size: 32px; }
+  .extension { font-size: 17px; }
+}
+@media (max-width: 480px) {
+  .main { padding: 24px 16px 48px; }
+  .card { padding: 20px; }
+  .actions > * { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .secondary, .copyButton { transition: none; }
+}

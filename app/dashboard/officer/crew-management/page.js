@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback, useMemo, useId } from 'react'
 import Link from 'next/link'
-import { UserPlus, UserMinus, Users, Search, ChevronDown, ChevronUp, ClipboardCheck, Clock, CheckCircle2, Award, Filter, Download } from 'lucide-react'
+import { UserPlus, UserMinus, Users, Search, ChevronDown, ChevronUp, ClipboardCheck, Download } from 'lucide-react'
 import PageHeader from '@/components/layout/PageHeader'
 import Notification from '@/components/ui/Notification'
 import StatusBadge from '@/components/ui/StatusBadge'
@@ -11,30 +11,8 @@ import { SkeletonCard } from '@/components/ui/Skeleton'
 import { getCrewsWithMembers, updateCrewMembers, getUnassignedFieldCrew } from '@/lib/api/optimization'
 import { fetchCrewPerformance } from '@/lib/api'
 import { OfficerGuard } from '@/components/auth/RequireRole'
-import usePublicTheme from '@/components/landing/usePublicTheme'
 import styles from './CrewManagement.module.css'
-import { Bar, Doughnut } from 'react-chartjs-2'
-import { getCsatEntry } from '@/lib/helpers/csatScale'
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  ArcElement,
-  Tooltip,
-  Legend,
-  Title
-} from 'chart.js'
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  ArcElement,
-  Tooltip,
-  Legend,
-  Title
-)
+import { getCsatEntry, CSAT_SCALE } from '@/lib/helpers/csatScale'
 
 
 function Avatar({ user, size = 'md' }) {
@@ -50,7 +28,7 @@ function Avatar({ user, size = 'md' }) {
   }
   return (
     <img
-      src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.full_name || user.email || 'User')}&background=random&color=fff&size=${size === 'sm' ? '64' : '80'}`}
+      src="/icons/users.png"
       alt={user.full_name}
       className={`${sizeClass} ${styles.avatar}`}
     />
@@ -70,7 +48,7 @@ function MemberChip({ user, onRemove, removing }) {
     <div className={styles.member}>
       <Avatar user={user} size="sm" />
       <div className="min-w-0">
-        <p className="text-sm font-semibold text-text-primary truncate">{user.full_name || 'Unnamed'}</p>
+        <p className="text-sm font-medium text-text-primary truncate">{user.full_name || 'Unnamed'}</p>
         <p className="text-xs text-text-muted truncate capitalize">{user.role?.replace('_', ' ') || 'Field Crew'}</p>
       </div>
       <button
@@ -139,7 +117,7 @@ function CrewCard({ crew, onAdd, onRemove, unassigned, notification, setNotifica
             <span className="text-sm text-text-muted">
               {crew.shift_start?.slice(0, 5)} – {crew.shift_end?.slice(0, 5)}
             </span>
-            <span className="text-xs text-text-muted">·</span>
+            <span className="text-sm text-text-muted">·</span>
             <span className="text-sm text-text-muted">Max. {crew.max_tasks_per_shift} tasks</span>
           </div>
         </div>
@@ -226,7 +204,7 @@ function CrewCard({ crew, onAdd, onRemove, unassigned, notification, setNotifica
                     >
                       <Avatar user={user} size="sm" />
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-text-primary truncate">{user.full_name || 'Unnamed'}</p>
+                        <p className="text-sm font-medium text-text-primary truncate">{user.full_name || 'Unnamed'}</p>
                         <p className="text-xs text-text-muted truncate capitalize">{user.role?.replace('_', ' ') || 'Field Crew'}</p>
                       </div>
                       <UserPlus size={18} className={styles.addIcon} aria-hidden="true" />
@@ -375,9 +353,9 @@ function MemberTasksModal({ member, onClose }) {
           <div className="flex items-center gap-3">
             <Avatar user={member} size="md" />
             <div>
-              <h3 className="font-bold text-lg text-text-primary">{member.full_name}</h3>
+              <h3 className="font-medium text-lg text-text-primary">{member.full_name}</h3>
               <p className="text-xs text-text-muted">
-                {member.role?.replace('_', ' ') || 'Field Crew'} • Individual Performance Profile
+                {member.role?.replace('_', ' ') || 'Field Crew'} · Individual performance
               </p>
             </div>
           </div>
@@ -391,26 +369,26 @@ function MemberTasksModal({ member, onClose }) {
           <div className={styles.modalMetricsGrid}>
             <div className={styles.modalMetricCard}>
               <span className={styles.modalMetricLabel}>
-                Tasks Resolved
-                <CheckCircle2 size={14} className="text-emerald-500" />
+                Tasks resolved
+                
               </span>
               <span className={styles.modalMetricValue}>
                 {member.performance?.total_completed || 0}
               </span>
-              <span className="text-[11px] text-text-muted">Individual resolutions</span>
+              <span className="text-xs text-text-muted">Resolved by this person</span>
             </div>
 
             <div className={styles.modalMetricCard}>
               <span className={styles.modalMetricLabel}>
-                Avg Speed
-                <Clock size={14} className="text-blue-500" />
+                Average speed
+                
               </span>
               <span className={styles.modalMetricValue}>
                 {member.performance?.avg_turnaround_hours != null
                   ? `${member.performance.avg_turnaround_hours}h`
                   : '—'}
               </span>
-              <span className="text-[11px] text-text-muted">Assignment to done</span>
+              <span className="text-xs text-text-muted">Assignment to done</span>
             </div>
 
             <div className={styles.modalMetricCard}>
@@ -427,7 +405,7 @@ function MemberTasksModal({ member, onClose }) {
                   'N/A'
                 )}
               </span>
-              <span className="text-[11px] text-text-muted">
+              <span className="text-xs text-text-muted">
                 {member.performance?.avg_satisfaction_rating != null
                   ? `${getSatisfactionInfo(member.performance.avg_satisfaction_rating).label} • `
                   : ''}
@@ -451,41 +429,36 @@ function MemberTasksModal({ member, onClose }) {
             </div>
 
             <div className={styles.modalFilters}>
-              <div className="flex items-center gap-1.5 text-xs font-medium text-text-muted">
-                <Filter size={13} aria-hidden="true" />
-                <span>Rating:</span>
-              </div>
+              <span className={styles.filterLabel}>Rating</span>
               <select
                 value={ratingFilter}
                 onChange={(e) => setRatingFilter(e.target.value)}
                 className={styles.modalSelectInput}
                 aria-label="Filter tasks by rating"
               >
-                <option value="all">All Ratings</option>
-                <option value="high">😊/😄 High (4.0+)</option>
-                <option value="rated">Has Citizen Rating</option>
+                <option value="all">All ratings</option>
+                <option value="high">High (4.0 and above)</option>
+                <option value="rated">Has a citizen rating</option>
                 <option value="unrated">Unrated</option>
               </select>
 
-              <div className="flex items-center gap-1.5 text-xs font-medium text-text-muted ml-1">
-                <span>Sort:</span>
-              </div>
+              <span className={styles.filterLabel}>Sort by</span>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 className={styles.modalSelectInput}
                 aria-label="Sort completed tasks"
               >
-                <option value="recent">Newest First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="rating_desc">Highest Citizen Rating</option>
-                <option value="speed_asc">Fastest Duration</option>
+                <option value="recent">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="rating_desc">Highest citizen rating</option>
+                <option value="speed_asc">Fastest duration</option>
               </select>
             </div>
           </div>
 
           <div className="flex justify-between items-center mb-0.5 mt-1">
-            <h4 className="text-sm font-semibold text-text-primary">Completed Tasks History</h4>
+            <h4 className="text-sm font-semibold text-text-primary">Completed tasks</h4>
             <span className="text-xs text-text-muted">
               {filteredTasks.length > 0
                 ? `Showing ${startIndex + 1}–${Math.min(startIndex + itemsPerPage, filteredTasks.length)} of ${filteredTasks.length}`
@@ -510,12 +483,10 @@ function MemberTasksModal({ member, onClose }) {
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-semibold text-text-primary truncate">
+                        <span className="text-sm font-medium text-text-primary truncate">
                           {task.title}
                         </span>
-                        <span className="px-2 py-0.5 text-[11px] font-medium rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                          Resolved
-                        </span>
+                        <span className="inline-flex items-center gap-1.5 text-xs text-text-secondary"><i aria-hidden="true" className="h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--success)' }} />Resolved</span>
                       </div>
                       <div className="flex items-center gap-3 text-xs text-text-muted">
                         <span>Completed: {task.completed_at ? new Date(task.completed_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</span>
@@ -532,17 +503,17 @@ function MemberTasksModal({ member, onClose }) {
                           const satInfo = getSatisfactionInfo(task.avg_rating)
                           return (
                             <span
-                              className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-surface-elevated border border-border"
+                              className="inline-flex items-center gap-1.5 text-sm font-medium"
                               title={`Citizen Rating: ${satInfo.label} (${task.avg_rating})`}
                             >
                               <span className="text-sm leading-none">{satInfo.emoji}</span>
                               <span>{task.avg_rating}</span>
-                              <span className="hidden sm:inline text-[11px] text-text-muted font-normal">• {satInfo.label}</span>
+                              <span className="hidden sm:inline text-xs text-text-muted font-normal">• {satInfo.label}</span>
                             </span>
                           )
                         })()
                       ) : (
-                        <span className="text-xs text-text-muted px-2 py-1 rounded-md bg-surface border border-border/50">No rating</span>
+                        <span className="text-sm text-text-muted">No rating</span>
                       )}
                       <span className={styles.viewActionLink}>
                         Inspect <ChevronDown size={14} className="-rotate-90" />
@@ -636,9 +607,9 @@ function CrewTeamTasksModal({ crew, onClose }) {
               <Users size={18} />
             </div>
             <div>
-              <h3 className="font-bold text-lg text-text-primary">{crew.name}</h3>
+              <h3 className="font-medium text-lg text-text-primary">{crew.name}</h3>
               <p className="text-xs text-text-muted">
-                {crew.member_count || 0} crew members {crew.team_lead ? `• Lead: ${crew.team_lead.full_name}` : ''} • Squad Performance Profile
+                {crew.member_count || 0} crew members {crew.team_lead ? `• Lead: ${crew.team_lead.full_name}` : ''} · Crew performance
               </p>
             </div>
           </div>
@@ -652,26 +623,26 @@ function CrewTeamTasksModal({ crew, onClose }) {
           <div className={styles.modalMetricsGrid}>
             <div className={styles.modalMetricCard}>
               <span className={styles.modalMetricLabel}>
-                Squad Resolved
-                <CheckCircle2 size={14} className="text-emerald-500" />
+                Tasks resolved
+                
               </span>
               <span className={styles.modalMetricValue}>
                 {crew.performance?.total_completed || 0}
               </span>
-              <span className="text-[11px] text-text-muted">Collective operations</span>
+              <span className="text-xs text-text-muted">Resolved by this crew</span>
             </div>
 
             <div className={styles.modalMetricCard}>
               <span className={styles.modalMetricLabel}>
-                Avg Speed
-                <Clock size={14} className="text-blue-500" />
+                Average speed
+                
               </span>
               <span className={styles.modalMetricValue}>
                 {crew.performance?.avg_turnaround_hours != null
                   ? `${crew.performance.avg_turnaround_hours}h`
                   : '—'}
               </span>
-              <span className="text-[11px] text-text-muted">Assignment to done</span>
+              <span className="text-xs text-text-muted">Assignment to done</span>
             </div>
 
             <div className={styles.modalMetricCard}>
@@ -688,7 +659,7 @@ function CrewTeamTasksModal({ crew, onClose }) {
                   'N/A'
                 )}
               </span>
-              <span className="text-[11px] text-text-muted">
+              <span className="text-xs text-text-muted">
                 {crew.performance?.avg_satisfaction_rating != null
                   ? `${getSatisfactionInfo(crew.performance.avg_satisfaction_rating).label} • `
                   : ''}
@@ -712,41 +683,36 @@ function CrewTeamTasksModal({ crew, onClose }) {
             </div>
 
             <div className={styles.modalFilters}>
-              <div className="flex items-center gap-1.5 text-xs font-medium text-text-muted">
-                <Filter size={13} aria-hidden="true" />
-                <span>Rating:</span>
-              </div>
+              <span className={styles.filterLabel}>Rating</span>
               <select
                 value={ratingFilter}
                 onChange={(e) => setRatingFilter(e.target.value)}
                 className={styles.modalSelectInput}
                 aria-label="Filter squad tasks by rating"
               >
-                <option value="all">All Ratings</option>
-                <option value="high">😊/😄 High (4.0+)</option>
-                <option value="rated">Has Citizen Rating</option>
+                <option value="all">All ratings</option>
+                <option value="high">High (4.0 and above)</option>
+                <option value="rated">Has a citizen rating</option>
                 <option value="unrated">Unrated</option>
               </select>
 
-              <div className="flex items-center gap-1.5 text-xs font-medium text-text-muted ml-1">
-                <span>Sort:</span>
-              </div>
+              <span className={styles.filterLabel}>Sort by</span>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 className={styles.modalSelectInput}
                 aria-label="Sort squad completed tasks"
               >
-                <option value="recent">Newest First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="rating_desc">Highest Citizen Rating</option>
-                <option value="speed_asc">Fastest Duration</option>
+                <option value="recent">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="rating_desc">Highest citizen rating</option>
+                <option value="speed_asc">Fastest duration</option>
               </select>
             </div>
           </div>
 
           <div className="flex justify-between items-center mb-0.5 mt-1">
-            <h4 className="text-sm font-semibold text-text-primary">Squad Task Completion History</h4>
+            <h4 className="text-sm font-semibold text-text-primary">Completed tasks</h4>
             <span className="text-xs text-text-muted">
               {filteredTasks.length > 0
                 ? `Showing ${startIndex + 1}–${Math.min(startIndex + itemsPerPage, filteredTasks.length)} of ${filteredTasks.length}`
@@ -771,12 +737,10 @@ function CrewTeamTasksModal({ crew, onClose }) {
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-semibold text-text-primary truncate">
+                        <span className="text-sm font-medium text-text-primary truncate">
                           {task.title}
                         </span>
-                        <span className="px-2 py-0.5 text-[11px] font-medium rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                          Resolved
-                        </span>
+                        <span className="inline-flex items-center gap-1.5 text-xs text-text-secondary"><i aria-hidden="true" className="h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--success)' }} />Resolved</span>
                       </div>
                       <div className="flex items-center gap-3 text-xs text-text-muted">
                         <span>Completed: {task.completed_at ? new Date(task.completed_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</span>
@@ -793,17 +757,17 @@ function CrewTeamTasksModal({ crew, onClose }) {
                           const satInfo = getSatisfactionInfo(task.avg_rating)
                           return (
                             <span
-                              className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-surface-elevated border border-border"
+                              className="inline-flex items-center gap-1.5 text-sm font-medium"
                               title={`Citizen Rating: ${satInfo.label} (${task.avg_rating})`}
                             >
                               <span className="text-sm leading-none">{satInfo.emoji}</span>
                               <span>{task.avg_rating}</span>
-                              <span className="hidden sm:inline text-[11px] text-text-muted font-normal">• {satInfo.label}</span>
+                              <span className="hidden sm:inline text-xs text-text-muted font-normal">• {satInfo.label}</span>
                             </span>
                           )
                         })()
                       ) : (
-                        <span className="text-xs text-text-muted px-2 py-1 rounded-md bg-surface border border-border/50">No rating</span>
+                        <span className="text-sm text-text-muted">No rating</span>
                       )}
                       <span className={styles.viewActionLink}>
                         Inspect <ChevronDown size={14} className="-rotate-90" />
@@ -834,7 +798,6 @@ function CrewTeamTasksModal({ crew, onClose }) {
 
 
 function PerformanceView({ performanceData, loading }) {
-  const { isDark } = usePublicTheme()
   const [selectedMember, setSelectedMember] = useState(null)
   const [selectedCrew, setSelectedCrew] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -918,176 +881,18 @@ function PerformanceView({ performanceData, loading }) {
     setMemberPage(1)
   }, [searchQuery, csatFilter, sortBy])
 
-  // Chart A: Citizen Satisfaction Distribution (Doughnut)
-  const csatChartData = useMemo(() => {
-    const dist = performanceData?.overall?.rating_distribution || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
-    const total = (dist[5] || 0) + (dist[4] || 0) + (dist[3] || 0) + (dist[2] || 0) + (dist[1] || 0)
+  // Citizen satisfaction distribution: counts per rating, highest rating first, in the canonical CSAT colors
+  const csatDistribution = useMemo(() => {
+    const dist = performanceData?.overall?.rating_distribution || {}
+    const total = CSAT_SCALE.reduce((sum, entry) => sum + (dist[entry.rating] || 0), 0)
     return {
-      hasData: total > 0,
       total,
-      data: {
-        labels: ['5 - Very Satisfied', '4 - Satisfied', '3 - Neutral', '2 - Dissatisfied', '1 - Very Dissatisfied'],
-        datasets: [
-          {
-            data: [dist[5] || 0, dist[4] || 0, dist[3] || 0, dist[2] || 0, dist[1] || 0],
-            backgroundColor: isDark 
-              ? ['#3b82f6', '#60a5fa', '#94a3b8', '#fbbf24', '#f87171']
-              : ['#0052cc', '#3b82f6', '#94a3b8', '#f59e0b', '#ef4444'],
-            borderWidth: 2,
-            borderColor: isDark ? '#1e293b' : '#ffffff',
-            hoverOffset: 4
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'right',
-            labels: {
-              boxWidth: 12,
-              padding: 12,
-              font: { size: 12, family: 'sans-serif' },
-              color: isDark ? '#cbd5e1' : '#475569'
-            }
-          },
-          tooltip: {
-            backgroundColor: isDark ? '#0f172a' : '#ffffff',
-            titleColor: isDark ? '#f8fafc' : '#0f172a',
-            bodyColor: isDark ? '#cbd5e1' : '#334155',
-            borderColor: isDark ? '#334155' : '#e2e8f0',
-            borderWidth: 1,
-            callbacks: {
-              label: (context) => {
-                const count = context.parsed || 0
-                const pct = total > 0 ? ((count / total) * 100).toFixed(1) : 0
-                return ` ${count} review${count === 1 ? '' : 's'} (${pct}%)`
-              }
-            }
-          }
-        },
-        cutout: '62%'
-      }
+      rows: [...CSAT_SCALE].reverse().map(entry => {
+        const count = dist[entry.rating] || 0
+        return { ...entry, count, percent: total > 0 ? (count / total) * 100 : 0 }
+      })
     }
-  }, [performanceData?.overall?.rating_distribution, isDark])
-
-  // Chart C: Top Individual Accomplishments & Citizen Satisfaction (Dual-Axis Bar)
-  const personnelChartData = useMemo(() => {
-    const members = performanceData?.members || []
-    const top = [...members]
-      .sort((a, b) => (b.performance?.total_completed || 0) - (a.performance?.total_completed || 0))
-      .slice(0, 8)
-
-    const labels = top.map(m => (m.full_name || 'Personnel').split(' ').slice(0, 2).join(' '))
-    const taskCounts = top.map(m => m.performance?.total_completed || 0)
-    const csatScores = top.map(m => Number(m.performance?.avg_satisfaction_rating) || 0)
-    const hasData = taskCounts.some(c => c > 0) || csatScores.some(s => s > 0)
-
-    return {
-      hasData,
-      data: {
-        labels: labels.length ? labels : ['No Personnel'],
-        datasets: [
-          {
-            label: 'Tasks Resolved',
-            data: taskCounts.length ? taskCounts : [0],
-            backgroundColor: isDark ? '#3b82f6' : '#0052cc',
-            hoverBackgroundColor: isDark ? '#60a5fa' : '#003d99',
-            borderRadius: 6,
-            yAxisID: 'y'
-          },
-          {
-            label: 'Citizen CSAT (1-5)',
-            data: csatScores.length ? csatScores : [0],
-            backgroundColor: isDark ? '#93c5fd' : '#60a5fa',
-            hoverBackgroundColor: isDark ? '#bfdbfe' : '#3b82f6',
-            borderRadius: 6,
-            yAxisID: 'y1'
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'top',
-            labels: {
-              boxWidth: 12,
-              padding: 14,
-              font: { size: 12, family: 'sans-serif' },
-              color: isDark ? '#cbd5e1' : '#475569'
-            }
-          },
-          tooltip: {
-            backgroundColor: isDark ? '#0f172a' : '#ffffff',
-            titleColor: isDark ? '#f8fafc' : '#0f172a',
-            bodyColor: isDark ? '#cbd5e1' : '#334155',
-            borderColor: isDark ? '#334155' : '#e2e8f0',
-            borderWidth: 1,
-            callbacks: {
-              label: (ctx) => {
-                if (ctx.datasetIndex === 0) {
-                  return ` Tasks Resolved: ${ctx.parsed.y}`
-                }
-                const score = ctx.parsed.y
-                return score > 0 ? ` CSAT Rating: ${score.toFixed(1)} / 5.0` : ' CSAT Rating: Not rated'
-              }
-            }
-          }
-        },
-        scales: {
-          x: {
-            ticks: {
-              color: isDark ? '#f1f5f9' : '#0f172a',
-              font: { size: 12, weight: '500' }
-            },
-            grid: { display: false }
-          },
-          y: {
-            type: 'linear',
-            display: true,
-            position: 'left',
-            beginAtZero: true,
-            ticks: {
-              precision: 0,
-              color: isDark ? '#94a3b8' : '#64748b',
-              font: { size: 11 }
-            },
-            title: {
-              display: true,
-              text: 'Tasks Resolved',
-              color: isDark ? '#94a3b8' : '#475569',
-              font: { size: 11, weight: '600' }
-            },
-            grid: {
-              color: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)'
-            }
-          },
-          y1: {
-            type: 'linear',
-            display: true,
-            position: 'right',
-            min: 0,
-            max: 5,
-            ticks: {
-              stepSize: 1,
-              color: isDark ? '#94a3b8' : '#64748b',
-              font: { size: 11 }
-            },
-            title: {
-              display: true,
-              text: 'Citizen CSAT (out of 5)',
-              color: isDark ? '#94a3b8' : '#475569',
-              font: { size: 11, weight: '600' }
-            },
-            grid: { drawOnChartArea: false }
-          }
-        }
-      }
-    }
-  }, [performanceData?.members, isDark])
+  }, [performanceData?.overall?.rating_distribution])
 
   // 1. Professional Formatted Spreadsheet Exporter (HTML .xls format opened natively with website blue theme in Excel)
   const handleExportPerformanceExcel = useCallback(() => {
@@ -1279,288 +1084,6 @@ function PerformanceView({ performanceData, loading }) {
     URL.revokeObjectURL(url)
   }, [performanceData])
 
-  // 2. High-Res Styled PDF Export with Charts & EcoPin Blue Theme
-  const [isExportingPDF, setIsExportingPDF] = useState(false)
-  const handleExportPerformancePDF = useCallback(async () => {
-    if (isExportingPDF) return
-    setIsExportingPDF(true)
-    try {
-      const [{ default: jsPDF }, { default: autoTable }, { Chart, registerables }] = await Promise.all([
-        import('jspdf'),
-        import('jspdf-autotable'),
-        import('chart.js')
-      ])
-
-      Chart.register(...registerables)
-
-      const doc = new jsPDF()
-      const primaryBlue = [0, 82, 204] // EcoPin Workspace Blue #0052cc
-      const today = new Date().toISOString().split('T')[0]
-      const crews = performanceData?.crews || []
-      const members = performanceData?.members || []
-      const overall = performanceData?.overall || {}
-
-      // ==========================================
-      // PAGE 1: Executive Cover & Overall Analytics
-      // ==========================================
-
-      // Header Banner
-      doc.setFillColor(...primaryBlue)
-      doc.rect(0, 0, 210, 36, 'F')
-      doc.setTextColor(255, 255, 255)
-      doc.setFontSize(22)
-      doc.setFont('helvetica', 'bold')
-      doc.text('EcoPin Performance & CSAT Report', 14, 20)
-      doc.setFontSize(9.5)
-      doc.setFont('helvetica', 'normal')
-      doc.text(`Official Operations Audit • Generated on ${new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}`, 14, 28)
-
-      // Overall Summary KPI Table
-      const overallSat = getSatisfactionInfo(overall.avg_satisfaction_rating)
-      autoTable(doc, {
-        startY: 42,
-        head: [['Operations Metric', 'Value', 'Operations Metric', 'Value']],
-        body: [
-          ['Total Completed Tasks', `${overall.total_completed || 0} operations`, 'Average Resolution Time', overall.avg_turnaround_hours != null ? `${overall.avg_turnaround_hours} hours` : '—'],
-          ['Citizen Satisfaction (CSAT)', `${overall.avg_satisfaction_rating != null ? overall.avg_satisfaction_rating : 'N/A'} / 5.0 (${overallSat.label})`, 'Total Reviews Received', `${overall.total_ratings_received || 0} citizen reviews`]
-        ],
-        headStyles: { fillColor: primaryBlue, textColor: 255, fontStyle: 'bold' },
-        alternateRowStyles: { fillColor: [240, 247, 255] },
-        theme: 'grid',
-        styles: { fontSize: 9, cellPadding: 4 }
-      })
-
-      // Generate Charts dynamically onto offscreen canvases
-      const createChartCanvas = (width, height) => {
-        const canvas = document.createElement('canvas')
-        canvas.width = width
-        canvas.height = height
-        canvas.style.display = 'none'
-        document.body.appendChild(canvas)
-        return canvas
-      }
-
-      // Chart 1: Citizen Satisfaction Breakdown (Doughnut Chart)
-      const dist = overall.rating_distribution || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
-      const csatCanvas = createChartCanvas(420, 260)
-      const csatChart = new Chart(csatCanvas, {
-        type: 'doughnut',
-        data: {
-          labels: ['5 - Very Satisfied', '4 - Satisfied', '3 - Neutral', '2 - Dissatisfied', '1 - Very Dissatisfied'],
-          datasets: [{
-            data: [dist[5] || 0, dist[4] || 0, dist[3] || 0, dist[2] || 0, dist[1] || 0],
-            backgroundColor: ['#0052cc', '#3b82f6', '#94a3b8', '#f59e0b', '#ef4444'],
-            borderWidth: 2,
-            borderColor: '#ffffff'
-          }]
-        },
-        options: {
-          responsive: false,
-          animation: false,
-          plugins: {
-            legend: { position: 'right', labels: { boxWidth: 12, font: { size: 10, family: 'sans-serif' } } },
-            title: { display: true, text: 'Citizen Feedback Distribution (CSAT)', font: { size: 12, weight: 'bold' }, color: '#0f172a' }
-          }
-        }
-      })
-
-      // Chart 2: Squad Tasks Completion (Horizontal Bar Chart)
-      const squadLabels = crews.slice(0, 6).map(c => c.name || 'Squad')
-      const squadTaskCounts = crews.slice(0, 6).map(c => c.performance?.total_completed || 0)
-      const squadCanvas = createChartCanvas(460, 260)
-      const squadChart = new Chart(squadCanvas, {
-        type: 'bar',
-        data: {
-          labels: squadLabels.length ? squadLabels : ['No Squads'],
-          datasets: [{
-            label: 'Resolved Operations',
-            data: squadTaskCounts.length ? squadTaskCounts : [0],
-            backgroundColor: '#0052cc',
-            borderRadius: 4
-          }]
-        },
-        options: {
-          responsive: false,
-          animation: false,
-          indexAxis: 'y',
-          plugins: {
-            legend: { display: false },
-            title: { display: true, text: 'Operations Completed by Squad', font: { size: 12, weight: 'bold' }, color: '#0f172a' }
-          },
-          scales: {
-            x: { beginAtZero: true, ticks: { precision: 0 } }
-          }
-        }
-      })
-
-      // Insert Charts side by side
-      const chartsY = doc.lastAutoTable.finalY + 8
-      doc.setTextColor(15, 23, 42)
-      doc.setFontSize(12)
-      doc.setFont('helvetica', 'bold')
-      doc.text('Operational Visualizations', 14, chartsY)
-
-      const csatImg = csatChart.toBase64Image()
-      const squadImg = squadChart.toBase64Image()
-
-      doc.addImage(csatImg, 'PNG', 14, chartsY + 4, 88, 54)
-      doc.addImage(squadImg, 'PNG', 106, chartsY + 4, 90, 54)
-
-      // Cleanup offscreen canvases
-      csatChart.destroy()
-      squadChart.destroy()
-      csatCanvas.remove()
-      squadCanvas.remove()
-
-      // Section: Field Crew Squads Performance Table on Page 1
-      const table1Y = chartsY + 64
-      doc.setFontSize(12)
-      doc.setFont('helvetica', 'bold')
-      doc.text('1. Field Crew Squads Summary', 14, table1Y)
-
-      const squadRows = crews.map(c => {
-        const sat = getSatisfactionInfo(c.performance?.avg_satisfaction_rating)
-        return [
-          c.name || 'Unnamed Squad',
-          c.team_lead?.full_name || '—',
-          `${c.member_count || 0} crew`,
-          c.performance?.total_completed || 0,
-          c.performance?.avg_turnaround_hours ? `${c.performance.avg_turnaround_hours}h` : '—',
-          `${sat.scoreText} (${sat.label})`
-        ]
-      })
-
-      autoTable(doc, {
-        startY: table1Y + 4,
-        head: [['Squad Name', 'Team Lead', 'Members', 'Resolved', 'Avg Speed', 'Citizen CSAT']],
-        body: squadRows,
-        headStyles: { fillColor: primaryBlue, textColor: 255, fontStyle: 'bold' },
-        alternateRowStyles: { fillColor: [248, 250, 252] },
-        theme: 'striped',
-        styles: { fontSize: 8.5, cellPadding: 3.5 }
-      })
-
-      // ==========================================
-      // PAGE 2: Individual Personnel Accomplishments & Audit
-      // ==========================================
-      doc.addPage()
-
-      // Page 2 Header Banner
-      doc.setFillColor(...primaryBlue)
-      doc.rect(0, 0, 210, 24, 'F')
-      doc.setTextColor(255, 255, 255)
-      doc.setFontSize(14)
-      doc.setFont('helvetica', 'bold')
-      doc.text('2. Individual Personnel Accomplishments & Audit', 14, 16)
-
-      // Chart 3: Top Individual Accomplishments (Tasks Cleared Bar Chart)
-      // Sort members by total_completed descending and take top 8
-      const topMembers = [...members]
-        .sort((a, b) => (b.performance?.total_completed || 0) - (a.performance?.total_completed || 0))
-        .slice(0, 8)
-
-      const memberNames = topMembers.map(m => (m.full_name || 'Crew').split(' ').slice(0, 2).join(' '))
-      const memberCompletedCounts = topMembers.map(m => m.performance?.total_completed || 0)
-      const memberCsatScores = topMembers.map(m => Number(m.performance?.avg_satisfaction_rating) || 0)
-
-      const memberCanvas = createChartCanvas(880, 260)
-      const memberChart = new Chart(memberCanvas, {
-        type: 'bar',
-        data: {
-          labels: memberNames.length ? memberNames : ['No Personnel'],
-          datasets: [
-            {
-              label: 'Tasks Resolved',
-              data: memberCompletedCounts.length ? memberCompletedCounts : [0],
-              backgroundColor: '#0052cc',
-              borderRadius: 4,
-              yAxisID: 'y'
-            },
-            {
-              label: 'Citizen CSAT (out of 5)',
-              data: memberCsatScores.length ? memberCsatScores : [0],
-              backgroundColor: '#60a5fa',
-              borderRadius: 4,
-              yAxisID: 'y1'
-            }
-          ]
-        },
-        options: {
-          responsive: false,
-          animation: false,
-          plugins: {
-            legend: { position: 'top', labels: { boxWidth: 12, font: { size: 10, family: 'sans-serif' } } },
-            title: { display: true, text: 'Top Personnel Accomplishments & Citizen Satisfaction', font: { size: 12, weight: 'bold' }, color: '#0f172a' }
-          },
-          scales: {
-            y: {
-              type: 'linear',
-              display: true,
-              position: 'left',
-              title: { display: true, text: 'Tasks Resolved', font: { size: 9 } },
-              beginAtZero: true,
-              ticks: { precision: 0 }
-            },
-            y1: {
-              type: 'linear',
-              display: true,
-              position: 'right',
-              title: { display: true, text: 'CSAT (1-5)', font: { size: 9 } },
-              min: 0,
-              max: 5,
-              grid: { drawOnChartArea: false }
-            }
-          }
-        }
-      })
-
-      const memberChartImg = memberChart.toBase64Image()
-      doc.addImage(memberChartImg, 'PNG', 14, 30, 182, 54)
-
-      memberChart.destroy()
-      memberCanvas.remove()
-
-      // Personnel Leaderboard Table under the accomplishments chart
-      const memberRows = members.slice(0, 45).map(m => {
-        const sat = getSatisfactionInfo(m.performance?.avg_satisfaction_rating)
-        return [
-          m.full_name || 'Crew Member',
-          m.email || '—',
-          (m.role || 'field_crew').replace('_', ' '),
-          m.performance?.total_completed || 0,
-          m.performance?.avg_turnaround_hours ? `${m.performance.avg_turnaround_hours}h` : '—',
-          `${sat.scoreText} (${sat.label})`,
-          m.performance?.total_ratings_received || 0
-        ]
-      })
-
-      autoTable(doc, {
-        startY: 88,
-        head: [['Personnel Name', 'Email', 'Role', 'Tasks', 'Avg Speed', 'Citizen CSAT', 'Reviews']],
-        body: memberRows,
-        headStyles: { fillColor: [30, 58, 138], textColor: 255, fontStyle: 'bold' },
-        alternateRowStyles: { fillColor: [248, 250, 252] },
-        theme: 'striped',
-        styles: { fontSize: 8, cellPadding: 3.5 }
-      })
-
-      // Page numbers on all pages
-      const pageCount = doc.internal.getNumberOfPages()
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i)
-        doc.setFontSize(8)
-        doc.setTextColor(148, 163, 184)
-        doc.text(`EcoPin Smart City Operations • Page ${i} of ${pageCount}`, 14, 290)
-      }
-
-      doc.save(`ecopin_performance_report_${today}.pdf`)
-    } catch (err) {
-      console.error('Failed to export PDF:', err)
-    } finally {
-      setIsExportingPDF(false)
-    }
-  }, [performanceData, isExportingPDF])
-
   // 3. Clean UTF-8 BOM CSV Exporter
   const handleExportPerformanceCSV = useCallback(() => {
     const today = new Date().toISOString().split('T')[0]
@@ -1640,161 +1163,97 @@ function PerformanceView({ performanceData, loading }) {
 
   return (
     <div className="space-y-6">
-      {/* Top Action Bar for Performance Tab with Formatted Export Buttons */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-surface border border-border rounded-2xl p-4 shadow-sm">
+      <div className={styles.perfHeader}>
         <div>
-          <h2 className="text-base font-bold text-text-primary">Performance & CSAT Analytics</h2>
-          <p className="text-xs text-text-muted mt-0.5">
-            Operational turnaround and citizen satisfaction metrics across all field squads and personnel.
-          </p>
+          <h2>Performance and CSAT</h2>
+          <p>Turnaround and citizen satisfaction across all field crews and personnel.</p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={handleExportPerformanceExcel}
-            disabled={!performanceData || (!performanceData.members?.length && !performanceData.crews?.length)}
-            className="inline-flex items-center justify-center gap-1.5 min-h-[38px] px-3.5 py-1.5 rounded-xl border border-border bg-surface-elevated text-text-primary text-xs font-semibold hover:bg-surface hover:border-workspace-link hover:text-workspace-link transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Download styled spreadsheet with colored tables and cards"
-          >
-            <Download size={14} className="text-workspace-link" />
-            <span>Excel Sheet (.xls)</span>
+        <div className={styles.exportActions}>
+          <button type="button" className="btn-secondary" onClick={handleExportPerformanceExcel} disabled={!performanceData || (!performanceData.members?.length && !performanceData.crews?.length)} title="Download a formatted spreadsheet">
+            <Download size={16} aria-hidden="true" />
+            <span>Excel (.xls)</span>
           </button>
-
-          <button
-            type="button"
-            onClick={handleExportPerformancePDF}
-            disabled={!performanceData || (!performanceData.members?.length && !performanceData.crews?.length) || isExportingPDF}
-            className="inline-flex items-center justify-center gap-1.5 min-h-[38px] px-3.5 py-1.5 rounded-xl border border-border bg-surface-elevated text-text-primary text-xs font-semibold hover:bg-surface hover:border-workspace-link hover:text-workspace-link transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Download styled PDF document report"
-          >
-            <Download size={14} className="text-workspace-link" />
-            <span>{isExportingPDF ? 'Generating…' : 'PDF Report'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleExportPerformanceCSV}
-            disabled={!performanceData || (!performanceData.members?.length && !performanceData.crews?.length)}
-            className="inline-flex items-center justify-center gap-1.5 min-h-[38px] px-3 py-1.5 rounded-xl border border-border bg-surface text-text-muted text-xs font-medium hover:text-text-primary hover:border-workspace-link transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Download raw CSV with UTF-8 support"
-          >
-            <span>Raw CSV</span>
+          <Link href="/dashboard/officer/crew-management/report" className="btn-secondary" title="Open the A4 report preview to print or save as PDF">
+            <Download size={16} aria-hidden="true" />
+            <span>PDF report</span>
+          </Link>
+          <button type="button" className={styles.textAction} onClick={handleExportPerformanceCSV} disabled={!performanceData || (!performanceData.members?.length && !performanceData.crews?.length)} title="Download raw CSV with UTF-8 support">
+            CSV
           </button>
         </div>
       </div>
 
-      {/* Overall Performance Stats Cards */}
-      <div className={styles.perfCardGrid}>
+      <section className={styles.perfCardGrid} aria-label="Overall performance">
         <div className={styles.perfStatCard}>
-          <div className={styles.statHeader}>
-            <span>Completed Tasks</span>
-            <CheckCircle2 size={18} className="text-emerald-500" />
-          </div>
-          <div className={styles.statValue}>
-            {performanceData?.overall?.total_completed || 0}
-          </div>
-          <p className="text-xs text-text-muted">Total tasks resolved</p>
+          <span className={styles.statHeader}>Completed tasks</span>
+          <span className={styles.statValue}>{performanceData?.overall?.total_completed || 0}</span>
+          <p>Tasks resolved</p>
         </div>
-
         <div className={styles.perfStatCard}>
-          <div className={styles.statHeader}>
-            <span>Average Resolution</span>
-            <Clock size={18} className="text-blue-500" />
-          </div>
-          <div className={styles.statValue}>
-            {performanceData?.overall?.avg_turnaround_hours != null
-              ? `${performanceData.overall.avg_turnaround_hours}h`
-              : '—'}
-          </div>
-          <p className="text-xs text-text-muted">From assignment to completion</p>
+          <span className={styles.statHeader}>Average resolution</span>
+          <span className={styles.statValue}>
+            {performanceData?.overall?.avg_turnaround_hours != null ? `${performanceData.overall.avg_turnaround_hours}h` : '—'}
+          </span>
+          <p>From assignment to completion</p>
         </div>
-
         <div className={styles.perfStatCard}>
-          <div className={styles.statHeader}>
-            <span>Citizen Satisfaction</span>
-          </div>
-          <div className={styles.statValue}>
+          <span className={styles.statHeader}>Citizen satisfaction</span>
+          <span className={styles.statValue}>
             {performanceData?.overall?.avg_satisfaction_rating != null ? (
-              <span className="inline-flex items-center gap-2">
-                <span>{getSatisfactionInfo(performanceData.overall.avg_satisfaction_rating).emoji}</span>
-                <span>{performanceData.overall.avg_satisfaction_rating}</span>
-                <span className="text-xs text-text-muted font-normal">/ 5.0</span>
-              </span>
+              <>
+                <span aria-hidden="true">{getSatisfactionInfo(performanceData.overall.avg_satisfaction_rating).emoji}</span>{' '}
+                {performanceData.overall.avg_satisfaction_rating}
+                <span className={styles.statUnit}> / 5</span>
+              </>
             ) : (
-              'No ratings yet'
+              <span className={styles.statEmpty}>No ratings yet</span>
             )}
-          </div>
-          <p className="text-xs text-text-muted">
-            {performanceData?.overall?.avg_satisfaction_rating != null
-              ? `${getSatisfactionInfo(performanceData.overall.avg_satisfaction_rating).label} • `
-              : ''}
+          </span>
+          <p>
+            {performanceData?.overall?.avg_satisfaction_rating != null ? `${getSatisfactionInfo(performanceData.overall.avg_satisfaction_rating).label} · ` : ''}
             {performanceData?.overall?.total_ratings_received || 0} citizen reviews
           </p>
         </div>
-      </div>
+      </section>
 
-      {/* Visual Performance Charts Section */}
-      <div className="grid grid-cols-1 gap-5">
-        {/* Chart A: Citizen Satisfaction Breakdown */}
-        <div className="border border-border rounded-2xl bg-surface p-5 shadow-sm flex flex-col">
-          <div className="mb-4">
-            <h3 className="text-base font-semibold text-text-primary">Citizen Feedback Breakdown (CSAT)</h3>
-            <p className="text-xs text-text-muted mt-0.5">Distribution of verified citizen ratings across 5 sentiment levels. <Link href="/dashboard/officer/metrics?tab=feedback" className="text-workspace-link underline">Full CSAT analytics</Link></p>
-          </div>
-          <div className="relative flex-1 min-h-[260px] flex items-center justify-center">
-            {csatChartData.hasData ? (
-              <Doughnut data={csatChartData.data} options={csatChartData.options} />
-            ) : (
-              <div className="text-center py-10 text-text-muted text-xs">
-                No citizen reviews recorded yet to display chart
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Chart C: Top Individual Accomplishments & Citizen Satisfaction */}
-      <div className="border border-border rounded-2xl bg-surface p-5 shadow-sm">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
-          <div>
-            <h3 className="text-base font-semibold text-text-primary">Top Personnel Accomplishments & Citizen Satisfaction</h3>
-            <p className="text-xs text-text-muted mt-0.5">Tasks resolved (primary axis) compared to average citizen satisfaction score (secondary axis)</p>
-          </div>
-          <span className="text-xs font-medium text-text-secondary px-2.5 py-1 rounded-full bg-surface-elevated border border-border">
-            Top Performing Personnel
-          </span>
-        </div>
-        <div className="relative w-full h-[280px]">
-          {personnelChartData.hasData ? (
-            <Bar data={personnelChartData.data} options={personnelChartData.options} />
-          ) : (
-            <div className="flex items-center justify-center h-full text-center py-10 text-text-muted text-xs">
-              No individual personnel tasks completed yet to display chart
-            </div>
-          )}
-        </div>
-      </div>
+      <section className={styles.perfPanel} aria-labelledby="csat-distribution-title">
+        <h3 id="csat-distribution-title" className={styles.panelTitle}>How citizens rated cleanups</h3>
+        <p className={styles.panelNote}>Share of verified ratings at each level. <Link href="/dashboard/officer/metrics?tab=feedback" className="text-workspace-link underline underline-offset-4">Full CSAT analytics</Link></p>
+        {csatDistribution.total === 0 ? (
+          <p className={styles.panelNote}>No citizen reviews have been recorded yet.</p>
+        ) : (
+          <ul className={styles.distList}>
+            {csatDistribution.rows.map(row => (
+              <li key={row.rating}>
+                <span className={styles.distLabel}><span aria-hidden="true">{row.emoji}</span> {row.rating} · {row.label}</span>
+                <span className={styles.distTrack} aria-hidden="true"><span className={styles.distFill} style={{ width: `${row.percent}%`, backgroundColor: row.color }} /></span>
+                <span className={styles.distCount}>{row.count} <span>({row.percent.toFixed(0)}%)</span></span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       {/* Crew Teams Leaderboard Table */}
-      <div className="border border-border rounded-2xl bg-surface p-5 shadow-sm">
+      <div className={styles.perfPanel}>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
           <div>
-            <h3 className="text-base font-semibold text-text-primary">Field Crew Teams Performance</h3>
-            <p className="text-xs text-text-muted mt-0.5">Click any team row to inspect full squad operations and review history</p>
+            <h3 className={styles.panelTitle}>Crew teams</h3>
+            <p className={styles.panelNote}>Select a team to see its completed tasks and ratings.</p>
           </div>
-          <span className="text-xs font-medium text-text-secondary px-2.5 py-1 rounded-full bg-surface-elevated border border-border">
-            {(performanceData?.crews || []).length} active { (performanceData?.crews || []).length === 1 ? 'squad' : 'squads'}
+          <span className={styles.panelNote}>
+            {(performanceData?.crews || []).length} active { (performanceData?.crews || []).length === 1 ? 'team' : 'teams'}
           </span>
         </div>
         <DataTable
           columns={[
             {
               key: 'name',
-              label: 'Crew Team',
+              label: 'Crew team',
               width: '30%',
               render: (name, row) => (
                 <div className="flex flex-col">
-                  <span className="font-semibold text-text-primary hover:text-workspace-link">{name || 'Unnamed Crew'}</span>
+                  <span className="font-medium text-text-primary">{name || 'Unnamed Crew'}</span>
                   {row.team_lead && (
                     <span className="text-xs text-text-muted">Lead: {row.team_lead.full_name}</span>
                   )}
@@ -1809,17 +1268,17 @@ function PerformanceView({ performanceData, loading }) {
             },
             {
               key: 'tasks',
-              label: 'Resolved Tasks',
+              label: 'Resolved tasks',
               width: '20%',
               render: (_, row) => (
-                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                <span className="font-medium text-text-primary">
                   {row.performance?.total_completed || 0}
                 </span>
               )
             },
             {
               key: 'turnaround',
-              label: 'Avg Turnaround',
+              label: 'Average turnaround',
               width: '20%',
               render: (_, row) => (
                 <span>
@@ -1852,19 +1311,19 @@ function PerformanceView({ performanceData, loading }) {
           emptyMessage="No crew teams found."
           onRowClick={(row) => setSelectedCrew(row)}
           rowActionLabel={(row) => `View tasks completed by ${row.name || 'squad'}`}
-          caption="Crew Teams Performance"
+          caption="Crew team performance"
         />
       </div>
 
       {/* Individual Crew Members Performance Table with Search, Filter & Pagination */}
-      <div className="border border-border rounded-2xl bg-surface p-5 shadow-sm">
+      <div className={styles.perfPanel}>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
           <div>
-            <h3 className="text-base font-semibold text-text-primary">Individual Personnel Leaderboard</h3>
-            <p className="text-xs text-text-muted mt-0.5">Click any personnel row to view individual completed tasks and metrics</p>
+            <h3 className={styles.panelTitle}>Personnel</h3>
+            <p className={styles.panelNote}>Select a person to see their completed tasks and ratings.</p>
           </div>
-          <span className="text-xs font-medium text-text-secondary px-2.5 py-1 rounded-full bg-surface-elevated border border-border">
-            {filteredMembers.length} {filteredMembers.length === 1 ? 'member' : 'members'} found
+          <span className={styles.panelNote}>
+            {filteredMembers.length} {filteredMembers.length === 1 ? 'person' : 'people'}
           </span>
         </div>
 
@@ -1883,37 +1342,32 @@ function PerformanceView({ performanceData, loading }) {
           </div>
 
           <div className={styles.tableFilters}>
-            <div className="flex items-center gap-1.5 text-xs text-text-muted">
-              <Filter size={13} aria-hidden="true" />
-              <span>CSAT:</span>
-            </div>
+            <span className={styles.filterLabel}>Rating</span>
             <select
               value={csatFilter}
               onChange={(e) => setCsatFilter(e.target.value)}
               className={styles.selectInput}
               aria-label="Filter by CSAT Rating"
             >
-              <option value="all">All Ratings</option>
-              <option value="high">😊/😄 High (4.0+)</option>
-              <option value="mid">😐 Neutral (2.5 – 3.9)</option>
-              <option value="low">😢/😕 Low (&lt; 2.5)</option>
+              <option value="all">All ratings</option>
+              <option value="high">High (4.0 and above)</option>
+              <option value="mid">Neutral (2.5 to 3.9)</option>
+              <option value="low">Low (below 2.5)</option>
               <option value="unrated">Unrated</option>
             </select>
 
-            <div className="flex items-center gap-1.5 text-xs text-text-muted ml-1">
-              <span>Sort:</span>
-            </div>
+            <span className={styles.filterLabel}>Sort by</span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
               className={styles.selectInput}
               aria-label="Sort personnel"
             >
-              <option value="tasks_desc">Most Tasks Completed</option>
-              <option value="tasks_asc">Least Tasks Completed</option>
-              <option value="csat_desc">Highest Citizen CSAT</option>
-              <option value="speed_asc">Fastest Turnaround</option>
-              <option value="name_asc">Name (A–Z)</option>
+              <option value="tasks_desc">Most tasks completed</option>
+              <option value="tasks_asc">Fewest tasks completed</option>
+              <option value="csat_desc">Highest CSAT</option>
+              <option value="speed_asc">Fastest turnaround</option>
+              <option value="name_asc">Name (A to Z)</option>
             </select>
           </div>
         </div>
@@ -1922,13 +1376,13 @@ function PerformanceView({ performanceData, loading }) {
           columns={[
             {
               key: 'full_name',
-              label: 'Crew Member',
+              label: 'Crew member',
               width: '30%',
               render: (name, row) => (
                 <div className="flex items-center gap-2.5">
                   <Avatar user={row} size="sm" />
                   <div className="flex flex-col">
-                    <span className="font-semibold text-text-primary hover:text-workspace-link">{name || 'Unnamed Crew'}</span>
+                    <span className="font-medium text-text-primary">{name || 'Unnamed Crew'}</span>
                     <span className="text-xs text-text-muted">{row.tasks?.length || 0} tasks tracked</span>
                   </div>
                 </div>
@@ -1936,17 +1390,17 @@ function PerformanceView({ performanceData, loading }) {
             },
             {
               key: 'tasks',
-              label: 'Completed Tasks',
+              label: 'Completed tasks',
               width: '25%',
               render: (_, row) => (
-                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                <span className="font-medium text-text-primary">
                   {row.performance?.total_completed || 0}
                 </span>
               )
             },
             {
               key: 'turnaround',
-              label: 'Avg Turnaround',
+              label: 'Average turnaround',
               width: '25%',
               render: (_, row) => (
                 <span>
@@ -1983,7 +1437,7 @@ function PerformanceView({ performanceData, loading }) {
           }
           onRowClick={(row) => setSelectedMember(row)}
           rowActionLabel={(row) => `View tasks completed by ${row.full_name || 'member'}`}
-          caption="Crew Performance"
+          caption="Personnel performance"
         />
 
         {totalMemberPages > 1 && (
@@ -2246,7 +1700,7 @@ function CrewManagementContent() {
                     >
                       <Avatar user={user} size="sm" />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-text-primary truncate">{user.full_name || 'Unnamed'}</p>
+                        <p className="text-sm font-medium text-text-primary truncate">{user.full_name || 'Unnamed'}</p>
                         <p className="text-xs text-text-muted truncate capitalize">{user.role?.replace('_', ' ') || 'Field Crew'}</p>
                       </div>
                     </div>

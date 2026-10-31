@@ -122,9 +122,11 @@ export default function LandingMap({ isDark }) {
       <MapControls onReset={() => setLocation('pasig')} />
     </MapContainer>
     <div className={styles.mapFade} aria-hidden="true" />
-    <div className={styles.mapCaption}><span className={styles.greenDot} /><span>Pasig City, through your eyes</span><small>Drag to explore · Tap a pin</small></div>
-    <div className={styles.mapStatus} role="status">
-      {state.loading ? 'Finding public reports…' : state.error ? <><span>Reports couldn’t load.</span><button onClick={() => setRetry(value => value + 1)}><RefreshCw size={14} /> Try again</button></> : state.count ? `${state.count}${state.hasMore ? '+' : ''} reviewed ${state.count === 1 ? 'report' : 'reports'} in this view` : 'No reviewed reports in this view. Try another area.'}
+    <div className={styles.mapCaption}>
+      <span className={styles.mapCount} role="status">
+        {state.loading ? 'Finding public reports…' : state.error ? <><span>Reports couldn’t load.</span><button onClick={() => setRetry(value => value + 1)}><RefreshCw size={14} /> Try again</button></> : state.count ? `${state.count}${state.hasMore ? '+' : ''} reviewed ${state.count === 1 ? 'report' : 'reports'} in this view` : 'No reviewed reports in this view. Try another area.'}
+      </span>
+      <small>Drag to explore · Tap a pin</small>
     </div>
   </div>
 }

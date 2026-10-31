@@ -1,7 +1,13 @@
 .preview { min-width: 0; }
-.controls { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; margin-bottom: 1.5rem; }
-.controls p, .controls label { flex-basis: 100%; font-size: .875rem; }
-.controls textarea { margin-top: .5rem; }
+.controls { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; padding: 20px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.spacer { flex: 1; }
+.field { display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: var(--text-secondary); }
+.field textarea { padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text-primary); font: inherit; font-size: 14px; resize: vertical; }
+.note { margin: 0; max-width: 72ch; font-size: 14px; line-height: 1.6; color: var(--text-secondary); }
+.label { color: #27754d; font-size: 10pt; font-weight: 500; }
+.period { font-size: 11pt; font-weight: 500; }
+.snapshot { font-size: 9pt; color: #59636e; }
 .sheet { box-sizing: border-box; width: 100%; max-width: 210mm; margin: 0 auto; padding: 12mm; color: #161b22; background: white; border: 1px solid #ccd1d7; font-family: Arial, sans-serif; font-size: 10pt; line-height: 1.45; overflow-wrap: anywhere; }
 .masthead { border-bottom: 2px solid #253447; padding-bottom: 4mm; }
 .masthead p { margin: 1mm 0; font-size: 9pt; }
@@ -37,3 +43,34 @@
  .sheet th, .sheet td { padding: 2.5mm; }
  .sheet h2, .sheet h3 { break-after: avoid; }
 }
+
+/* Shared print identity (DESIGN.md): Outfit, sentence case, hairline rules, no filled or boxed tables. */
+.sheet { font-family: var(--font-outfit), 'Outfit', sans-serif; font-size: 10pt; line-height: 1.55; color: #17212e; border-color: #e5e9ee; }
+.masthead { border-bottom: 1px solid #e5e9ee; padding-bottom: 6mm; }
+.masthead p:first-child { color: #27754d; font-size: 10pt; font-weight: 500; margin: 0 0 2mm; }
+.sheet h1 { font-size: 26pt; font-weight: 500; line-height: 1.1; letter-spacing: -0.035em; margin: 2mm 0 4mm; }
+.sheet h2 { font-size: 14pt; font-weight: 500; letter-spacing: -0.02em; margin: 9mm 0 3mm; padding: 0; border: 0; break-after: avoid; }
+.sheet h3 { font-size: 11pt; font-weight: 500; }
+.sheet strong { font-weight: 500; }
+.sheet table { font-size: 8.5pt; margin: 3mm 0 6mm; }
+.sheet caption { font-size: 11pt; font-weight: 500; padding: 0 0 2mm; }
+.sheet th, .sheet td { border: 0; border-bottom: 1px solid #e5e9ee; padding: 2.5mm 2mm; }
+.sheet thead th { background: none; color: #59636e; font-weight: 500; border-bottom: 1px solid #17212e; }
+.sheet small, .note { color: #59636e; }
+@media print {
+ .sheet th, .sheet td { padding: 2.5mm 2mm; }
+}
+
+.sheet { padding: 14mm; border-radius: 4px; }
+.facts { gap: 4mm 8mm; margin: 4mm 0; }
+.facts dt { font-size: 9pt; color: #59636e; }
+.facts dd { color: #17212e; }
+.notice { margin: 4mm 0 0; padding-top: 3mm; border-top: 1px solid #e5e9ee; font-size: 9pt; color: #59636e; }
+.photos figcaption { color: #59636e; font-size: 9pt; }
+.photos img { border: 1px solid #e5e9ee; border-radius: 4px; }
+@media (max-width: 600px) { .controls { padding: 16px; } .toolbar > :global(a), .toolbar > button { flex: 1 1 100%; text-align: center; } .spacer { display: none; } }
+@media print { .sheet { padding: 0; border-radius: 0; } }
+
+.check { display: flex; align-items: flex-start; gap: 12px; font-size: 14px; color: var(--text-primary); cursor: pointer; }
+.check input { width: 18px; height: 18px; margin-top: 2px; accent-color: #0052cc; flex-shrink: 0; }
+.check small { display: block; margin-top: 2px; color: var(--text-secondary); font-size: 13px; }

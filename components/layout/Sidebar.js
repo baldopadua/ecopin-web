@@ -117,7 +117,7 @@ export default function Sidebar() {
             <Link href="/dashboard/profile" className={styles.profile} onClick={() => handleNavClick('/dashboard/profile', mobile)}
                 aria-label={collapsed ? `Profile for ${user?.full_name || user?.email || 'your account'}` : undefined}>
                 {user?.avatar_url ? <SecureImage src={user.avatar_url} alt="" className={styles.avatar} />
-                    : <img src={`https://ui-avatars.com/api/?name=${user?.full_name || user?.email || 'User'}&background=random&color=fff&size=128`} alt="" className={styles.avatar} />}
+                    : <img src="/icons/users.png" alt="" className={styles.avatar} />}
                 {!collapsed && <span className={styles.identity}>{user?.full_name || user?.email || 'Your account'}
                     <small>{user?.role?.replaceAll('_', ' ')}</small></span>}
             </Link>
