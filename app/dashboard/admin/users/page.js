@@ -10,6 +10,7 @@ import Pagination from '@/components/ui/Pagination'
 import PageTabs from '@/components/ui/PageTabs'
 import useTablePageSize from '@/components/ui/useTablePageSize'
 import StatusBadge from '@/components/ui/StatusBadge'
+import Dialog from '@/components/ui/Dialog'
 import { getAllUsers, updateUserRole, deleteUser, createUser, getSystemSettings, changeUserPassword } from '@/lib/api'
 import { Eye, EyeOff, KeyRound, Trash2, Loader2, Users, UserPlus, Shield, UserCheck, AlertCircle, Sparkles, CheckCircle2, RotateCcw } from 'lucide-react'
 import styles from './UserActions.module.css'
@@ -31,6 +32,7 @@ function UserManagementContent() {
   const itemsPerPage = customPageSize
   const [activeTab, setActiveTab] = useState('users')
   const [updatingRole, setUpdatingRole] = useState(null)
+  const [pendingRole, setPendingRole] = useState(null)
   const [deletingUser, setDeletingUser] = useState(null)
   const [creatingUser, setCreatingUser] = useState(false)
   const [newUser, setNewUser] = useState({ email: '', password: '', full_name: '', role: 'citizen' })
@@ -117,6 +119,7 @@ function UserManagementContent() {
   const paginatedUsers = filteredUsers.slice((safeCurrentPage - 1) * itemsPerPage, safeCurrentPage * itemsPerPage)
 
   const handleRoleChange = async (userId, newRole) => {
+    setPendingRole(null)
     try {
       setUpdatingRole(userId)
       await updateUserRole(userId, newRole)
@@ -286,7 +289,7 @@ function UserManagementContent() {
       render: (value, row) => (
         <select
           value={value}
-          onChange={(e) => handleRoleChange(row.id, e.target.value)}
+          onChange={(e) => setPendingRole({ userId: row.id, name: row.full_name || row.email, from: value, to: e.target.value })}
           disabled={updatingRole === row.id}
           className="input text-sm py-1"
         >
@@ -354,6 +357,21 @@ function UserManagementContent() {
         ]}
       />
 
+      <Dialog open={pendingRole !== null} onClose={() => setPendingRole(null)} labelledBy="role-change-title">
+        {pendingRole && (
+          <div className="p-6 max-w-md">
+            <h3 id="role-change-title" className="text-xl font-bold text-text-primary mb-2">Change role?</h3>
+            <p className="text-text-secondary mb-4">
+              {pendingRole.name} will change from <strong>{pendingRole.from.replace('_', ' ')}</strong> to <strong>{pendingRole.to.replace('_', ' ')}</strong>. Their access changes immediately.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button type="button" className="btn-secondary" onClick={() => setPendingRole(null)} autoFocus>Cancel</button>
+              <button type="button" className="btn-primary" onClick={() => handleRoleChange(pendingRole.userId, pendingRole.to)}>Change role</button>
+            </div>
+          </div>
+        )}
+      </Dialog>
+
       {notification && (
         <Notification
           message={notification.message}
@@ -410,7 +428,7 @@ function UserManagementContent() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className="input pr-10"
-                  placeholder="Leave blank for default: 12345678Aa@"
+                  placeholder="Enter a new password"
                 />
                 <button
                   type="button"

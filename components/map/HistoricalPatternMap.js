@@ -3,13 +3,14 @@ import { useEffect } from 'react';
 import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { patternColor, patternLabel } from '../../lib/historical-patterns.mjs';
+import { PASIG_CENTER, PASIG_BOUNDS, PASIG_MIN_ZOOM } from '@/lib/map/pasigMapConstants'
 function Focus({ pattern }) {
   const map = useMap();
   useEffect(() => { if (pattern) map.stop().setView([pattern.center_lat, pattern.center_lng], 16, {animate:false}); }, [map, pattern]);
   return null;
 }
 export default function HistoricalPatternMap({ data, selected, onSelect, snapshot, windowKey }) {
-  return <MapContainer center={[14.575,121.085]} zoom={13} style={{height:'100%',width:'100%'}} aria-label="Observed density clusters map">
+  return <MapContainer center={PASIG_CENTER} zoom={13} maxBounds={PASIG_BOUNDS} maxBoundsViscosity={1} minZoom={PASIG_MIN_ZOOM} style={{height:'100%',width:'100%'}} aria-label="Observed density clusters map">
     <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' />
     <Focus pattern={selected} />
     <GeoJSON key={`${snapshot}-${windowKey}`} data={data} style={f => ({ color:patternColor(f.properties.pattern), weight:2, fillOpacity:0.24 })}

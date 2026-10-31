@@ -11,7 +11,6 @@ import PageHeader from '@/components/layout/PageHeader'
 import PageTabs from '@/components/ui/PageTabs'
 import LiveOperationsFeed from '@/components/reports/LiveOperationsFeed'
 import StatusBadge from '@/components/ui/StatusBadge'
-import UrgencyQueue from '@/components/reports/UrgencyQueue'
 import UnprocessedAlerts from '@/components/reports/UnprocessedAlerts'
 import OfficerDispatchTour from '@/components/onboarding/OfficerDispatchTour'
 import { useUser } from '@/components/auth/UserContext'
@@ -155,7 +154,6 @@ export default function OfficerHomepage() {
             <strong>{loading ? '—' : value}</strong><small>{note}</small>
           </Link>)}
         </div>
-        <UrgencyQueue compact />
         <UnprocessedAlerts />
         <ReportLifecycleSummary reports={lifecycleQuery.data} compact loading={lifecycleQuery.isPending} error={lifecycleQuery.isError} onRetry={()=>lifecycleQuery.refetch()} />
         <div className={styles.panels}>

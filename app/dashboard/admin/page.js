@@ -1,7 +1,6 @@
 'use client'
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import PageHeader from '@/components/layout/PageHeader'
 import { AdminGuard } from '@/components/auth/RequireRole'
 import { getAuditLogs } from '@/lib/api/admin'
@@ -10,10 +9,8 @@ import { DASHBOARD_QUERY_KEY } from '@/lib/dashboard-query-client.mjs'
 import StatsCard from '@/components/ui/StatsCard'
 import ReportLifecycleSummary from '@/components/reports/ReportLifecycleSummary'
 import DataTable from '@/components/ui/DataTable'
-import { Users, Settings, FileText } from 'lucide-react'
 
 function AdminHomepageContent() {
-  const router = useRouter()
   const statsQuery = useDashboardSystemStats()
   const logsQuery = useQuery({queryKey:[...DASHBOARD_QUERY_KEY,'recent-audit-feed'],queryFn:()=>getAuditLogs({limit:5})})
   const stats = statsQuery.data
@@ -109,7 +106,7 @@ function AdminHomepageContent() {
     <div className="workspace-page workspace-page--flow">
       <PageHeader
         title="Admin Dashboard"
-        subtitle="Manage users, settings, and view system logs"
+        subtitle="System totals and the latest audit activity"
         breadcrumbs={[
           { label: 'Admin' }
         ]}
@@ -156,48 +153,6 @@ function AdminHomepageContent() {
           color="accent"
           subtitle="Total system actions logged"
         />
-      </div>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <button
-          onClick={() => router.push('/dashboard/admin/users')}
-          className="card hover:border-accent-green transition-colors cursor-pointer text-left"
-        >
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-full bg-accent-green/10 flex items-center justify-center">
-              <Users size={20} className="text-accent-green" aria-hidden="true" />
-            </div>
-            <h3 className="text-lg font-semibold text-text-primary">User Management</h3>
-          </div>
-          <p className="text-sm text-text-secondary">Manage user accounts and roles</p>
-        </button>
-
-        <button
-          onClick={() => router.push('/dashboard/admin/settings')}
-          className="card hover:border-accent-green transition-colors cursor-pointer text-left"
-        >
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-full bg-accent-green/10 flex items-center justify-center">
-              <Settings size={20} className="text-accent-green" aria-hidden="true" />
-            </div>
-            <h3 className="text-lg font-semibold text-text-primary">System Settings</h3>
-          </div>
-          <p className="text-sm text-text-secondary">Configure password requirements and security</p>
-        </button>
-
-        <button
-          onClick={() => router.push('/dashboard/admin/audit-logs')}
-          className="card hover:border-accent-green transition-colors cursor-pointer text-left"
-        >
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-full bg-accent-green/10 flex items-center justify-center">
-              <FileText size={20} className="text-accent-green" aria-hidden="true" />
-            </div>
-            <h3 className="text-lg font-semibold text-text-primary">Audit Logs</h3>
-          </div>
-          <p className="text-sm text-text-secondary">Review audit trail and system events</p>
-        </button>
       </div>
 
       {/* Recent System Logs */}

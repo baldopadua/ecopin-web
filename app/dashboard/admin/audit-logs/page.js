@@ -55,6 +55,8 @@ function AuditLogsContent({ tabs }) {
   const [archiveStatus, setArchiveStatus] = useState(null)
   const [archiving, setArchiving] = useState(false)
   const [archiveResult, setArchiveResult] = useState(null)
+  const [confirmingArchive, setConfirmingArchive] = useState(false)
+  const [archiveConfirmText, setArchiveConfirmText] = useState('')
   const [selectedLog, setSelectedLog] = useState(null)
   const { containerRef } = useTablePageSize({ resetKey: JSON.stringify(filters) })
   const itemsPerPage = customPageSize
@@ -89,6 +91,8 @@ function AuditLogsContent({ tabs }) {
   }
 
   const handleArchive = async () => {
+    setConfirmingArchive(false)
+    setArchiveConfirmText('')
     try {
       setArchiving(true)
       const res = await executeAuditArchive({ limit: 1000 })
@@ -324,7 +328,7 @@ function AuditLogsContent({ tabs }) {
           {archiveStatus?.eligible_for_archival > 0 && (
             <button
               type="button"
-              onClick={handleArchive}
+              onClick={() => setConfirmingArchive(true)}
               disabled={archiving}
               className={styles.sealBtn}
             >
@@ -421,6 +425,36 @@ function AuditLogsContent({ tabs }) {
           />
         </div>
       </div>
+
+      <Dialog
+        open={confirmingArchive}
+        onClose={() => { setConfirmingArchive(false); setArchiveConfirmText('') }}
+        labelledBy="archive-confirm-title"
+      >
+        <section className={styles.detailDialog}>
+          <header className={styles.detailHeader}>
+            <div>
+              <h2 id="archive-confirm-title">Seal audit records?</h2>
+              <p>Up to 1,000 of the oldest eligible records move to the 7-year WORM archive. This cannot be undone.</p>
+            </div>
+          </header>
+          <div className={styles.detailBody}>
+            <label htmlFor="archive-confirm-input">Type ARCHIVE to confirm</label>
+            <input
+              id="archive-confirm-input"
+              className="input"
+              value={archiveConfirmText}
+              onChange={(e) => setArchiveConfirmText(e.target.value)}
+              autoComplete="off"
+              autoFocus
+            />
+            <div className="flex gap-3 mt-4">
+              <button type="button" className="btn-secondary" onClick={() => { setConfirmingArchive(false); setArchiveConfirmText('') }}>Cancel</button>
+              <button type="button" className="btn-primary" disabled={archiveConfirmText !== 'ARCHIVE' || archiving} onClick={handleArchive}>Seal records</button>
+            </div>
+          </div>
+        </section>
+      </Dialog>
 
       <Dialog
         open={selectedLog !== null}

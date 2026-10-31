@@ -4,6 +4,7 @@ import usePublicTheme from '@/components/landing/usePublicTheme'
 import publicStyles from '@/components/landing/LandingPage.module.css'
 import { getOfficialContacts } from '@/lib/official-contacts.mjs'
 import { usePublicCms } from '@/components/public/PublicSiteProvider'
+import CopyValueButton from './CopyValueButton'
 import styles from './contact.module.css'
 
 export default function OfficialContactPage() {
@@ -22,14 +23,18 @@ export default function OfficialContactPage() {
         <p className={styles.number}>{contacts.swmoPhone} {contacts.extension&&<span>local {contacts.extension}</span>}</p>
         <p>Call the office trunkline{contacts.extension?`, then ask the operator for SWMO, local ${contacts.extension}`:''}. The call button dials the trunkline only.</p>
         <div className={styles.actions}><a className={publicStyles.primaryButton} href={contacts.swmoTel}>Call SWMO trunkline</a>
-          {contacts.email&&<a className={styles.secondary} href={`mailto:${contacts.email}?subject=Barangay%20cleanup%20coordination`}>Email SWMO</a>}</div>
+          <CopyValueButton value={contacts.swmoPhone} label="Copy phone number" />
+          {contacts.email&&<a className={styles.secondary} href={`mailto:${contacts.email}?subject=Barangay%20cleanup%20coordination`}>Email SWMO</a>}
+          {contacts.email&&<a className={styles.secondary} href={`https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(contacts.email)}&su=${encodeURIComponent('Barangay cleanup coordination')}`} target="_blank" rel="noopener noreferrer">Write in Gmail (browser)</a>}
+          {contacts.email&&<CopyValueButton value={contacts.email} label="Copy email address" />}</div>
+        {contacts.email&&<p className={styles.fallbackNote}>Calling and email buttons open your phone or mail app. If nothing opens on this device, copy the number or <strong>{contacts.email}</strong> instead.</p>}
         <p>You can call without an EcoPin report or trust score. SWMO confirms crew availability, response and schedule; opening a call or email does not submit a report or dispatch a crew.</p>
       </section>
       <section className={styles.card} aria-labelledby="prepare-heading"><h2 id="prepare-heading">Have these details ready</h2>
         <ul><li>Your name, official role and barangay or organizing office</li><li>Exact location and nearest landmark</li><li>Event date/time, cleanup needed and any immediate hazards</li><li>A callback number and EcoPin report ID, if you already have one</li></ul></section>
       <section className={styles.card} aria-labelledby="emergency-heading"><h2 id="emergency-heading">Immediate danger or emergency?</h2>
         <p>For immediate threats to people or public safety, contact the Pasig City Emergency Hotline rather than waiting for an EcoPin review.</p>
-        <p className={styles.number}>{contacts.emergencyPhone}</p><a className={styles.secondary} href={contacts.emergencyTel}>Call Pasig emergency hotline</a>
+        <p className={styles.number}>{contacts.emergencyPhone}</p><div className={styles.actions}><a className={styles.secondary} href={contacts.emergencyTel}>Call Pasig emergency hotline</a><CopyValueButton value={contacts.emergencyPhone} label="Copy hotline number" /></div>
       </section>
       <footer><p>Public office contacts · {contacts.checked?`Last verified ${contacts.checked}.`:'Verification date not provided.'} Dialer and email availability depend on your device.</p>
         <a href={contacts.directory} target="_blank" rel="noopener noreferrer">Official city directory</a>{' · '}

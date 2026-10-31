@@ -51,7 +51,7 @@ export default function UrgencyQueue({compact=false}) {
     <ul className={styles.list}>
       {rows.map(report=><li key={report.id} className={styles.report}>
         <div className={styles.header}>
-          <h3><Link href={`/dashboard/raw-data/${report.id}`}>{report.title}</Link></h3>
+          <h3>{compact?<Link href={`/dashboard/raw-data/${report.id}`}>{report.title}</Link>:report.title}</h3>
           <span className={styles.status}>{report.needs_reverification?'Needs re-verification':report.urgency_status==='pending'?'Awaiting officer review':report.urgency_status}</span>
         </div>
         <p>{urgencyReasonLabels[report.priority_reason] || 'Urgent review requested'}{report.priority_explanation && ` · ${report.priority_explanation}`}</p>

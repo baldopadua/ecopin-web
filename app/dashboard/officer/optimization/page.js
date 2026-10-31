@@ -16,12 +16,13 @@ import OptimizationSettings, { normalizeCapacitySettings } from '@/components/op
 import TemplateSelector from '@/components/ui/TemplateSelector'
 import DisassembleModal from '@/components/optimization/DisassembleModal'
 import { useTask } from '@/components/context/TaskContext'
-import { Sun, CloudRain, CloudLightning, Circle, Globe, Map, Check, CheckCircle2, XCircle, X, Ruler, Timer, RotateCcw, RefreshCw, Loader2, History, AlertCircle, Info, Eye, Lock } from 'lucide-react'
+import { OfficerGuard } from '@/components/auth/RequireRole'
+import { Circle, Globe, Map, Check, CheckCircle2, XCircle, X, Ruler, Timer, RotateCcw, RefreshCw, Loader2, History, AlertCircle, Info, Eye, Lock } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { formatStatusLabel } from '@/lib/helpers/statusHelpers'
 import styles from './optimization.module.css'
 import { 
-  WEATHER_OPTIONS, 
+  weatherOption,
   TRAFFIC_OPTIONS, 
   STATUS_STYLES, 
   CREW_COLORS, 
@@ -29,12 +30,12 @@ import {
   formatDuration, 
   formatDate,
   CrewRouteCard, 
-  RouteMapView,
-  TaskTimeWorkloadGraph
+  RouteMapView
 } from '@/components/optimization/RouteComponents'
 import {
   generatePlan,
   commitPlan,
+  discardOptimization,
   getOptimizationRuns,
   fetchWorkQueue,
   getOptimizationTemplates,
@@ -358,20 +359,6 @@ export default function OptimizationPage() {
     )
   }
 
-  const handleApprove = async (runId) => {
-    try {
-      setActionLoading('approve')
-      await approveOptimization(runId)
-      setCurrentProposal(prev => prev && prev.id === runId ? { ...prev, status: 'approved' } : prev)
-      setNotification({ message: 'Optimization approved — crews have been assigned', type: 'success' })
-      await loadPreviousRuns()
-    } catch (err) {
-      setNotification({ message: err.message || 'Failed to approve', type: 'error' })
-    } finally {
-      setActionLoading(null)
-    }
-  }
-
   const handleDiscard = async (runId) => {
     try {
       setActionLoading('discard')
@@ -409,11 +396,12 @@ export default function OptimizationPage() {
     loadPendingClusters()
   }
 
-  const weatherLabel = WEATHER_OPTIONS.find(w => w.value === (currentProposal?.weather_condition || liveWeather))?.label || 'Normal'
+  const weatherLabel = weatherOption(currentProposal?.weather_condition || liveWeather).label
   const trafficLabel = TRAFFIC_OPTIONS.find(t => t.value === (currentProposal?.traffic_condition || trafficCondition))?.label || 'Low'
 
   const pendingProposal = previousRuns.find(r => r.status === 'proposed')
   return (
+    <OfficerGuard>
     <div className={`workspace-page ${styles.page}`}>
       <PageHeader
         title="Optimization"
@@ -566,9 +554,9 @@ export default function OptimizationPage() {
                 {/* Autonomous Environmental Context Badge */}
                 <div className={styles.contextBadge}>
                   <span className="flex items-center gap-1.5 text-text-primary">
-                    {WEATHER_OPTIONS.find(w => w.value === liveWeather)?.icon || <Sun className="w-3.5 h-3.5 text-warning" />}
-                    <span className="capitalize">{liveWeather}</span>
-                    {liveWeather === 'rainy' && <span className="text-xs text-primary font-semibold">(+15% buffer)</span>}
+                    {weatherOption(liveWeather).icon}
+                    <span>{weatherOption(liveWeather).label}</span>
+                    {liveWeather !== 'normal' && <span className="text-xs text-primary font-semibold">(+15% buffer)</span>}
                   </span>
                   <span className="text-border">|</span>
                   <span className="flex items-center gap-1.5 text-text-primary">
@@ -804,7 +792,7 @@ export default function OptimizationPage() {
                   }
                   weather={
                     <span className="flex items-center justify-center gap-1.5">
-                      {WEATHER_OPTIONS.find(w => w.value === (currentProposal.weather_condition?.toLowerCase() || liveWeather))?.icon || <Sun className="w-4 h-4 text-warning" />}
+                      {weatherOption(currentProposal.weather_condition || liveWeather).icon}
                       {weatherLabel}
                     </span>
                   }
@@ -817,7 +805,7 @@ export default function OptimizationPage() {
                 />
 
                 {/* Summary Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <div className="grid grid-cols-3 gap-3 mb-4">
                   <div className="bg-surface-elevated border border-border p-3 rounded-xl">
                     <p className="text-xs font-sans normal-case tracking-normal text-text-muted m-0">Tasks</p>
                     <p className="text-xl font-semibold text-text-primary m-0 mt-1">{currentProposal.num_tasks_optimized || currentProposal.selectedCount || 0}</p>
@@ -836,15 +824,6 @@ export default function OptimizationPage() {
                         : formatDistance(currentProposalRoutes.reduce((sum, r) => sum + (r.total_distance_meters || 0), 0))}
                     </p>
                   </div>
-                  <div className="bg-surface-elevated border border-border p-3 rounded-xl">
-                    <p className="text-xs font-sans normal-case tracking-normal text-text-muted m-0">Average duration per crew</p>
-                    <p className="text-xl font-semibold text-text-primary m-0 mt-1">
-                      {currentProposal.status === 'draft_plan' 
-                        ? formatDuration((currentProposal.capacityUtilized || 0) / Math.max(1, currentProposal.plannedCrewCount || 1))
-                        : formatDuration((currentProposalRoutes.reduce((sum, r) => sum + (r.total_duration_min || 0), 0)) / Math.max(1, currentProposalRoutes.length || currentProposal.num_crews || 1))
-                      }
-                    </p>
-                  </div>
                 </div>
 
                 {/* Crew Assignments */}
@@ -859,11 +838,6 @@ export default function OptimizationPage() {
                       />
                     ))}
                   </div>
-                )}
-
-                {/* Task-Time Workload Graph */}
-                {currentProposalRoutes.length > 0 && (
-                  <TaskTimeWorkloadGraph routes={currentProposalRoutes} title="Task-time workload distribution" />
                 )}
 
                 {/* Route map */}
@@ -1003,19 +977,6 @@ export default function OptimizationPage() {
                     </div>
                   </div>
                 )}
-
-                {/* Approve Button for generated optimization runs */}
-                {currentProposal.status === 'proposed' && (
-                  <div className="flex gap-4 mt-4 pt-3 border-t border-border">
-                    <button
-                      onClick={() => handleApprove(currentProposal.id)}
-                      disabled={actionLoading}
-                      className="w-full px-6 py-3 bg-primary text-white font-semibold normal-case tracking-normal border border-primary hover:bg-action-hover transition-all disabled:opacity-50 text-sm cursor-pointer rounded-full"
-                    >
-                      {actionLoading === 'approve' ? 'Publishing & Dispatching...' : <span className="flex items-center justify-center"><CheckCircle2 className="w-4 h-4 mr-2" /> Confirm and dispatch to field crews</span>}
-                    </button>
-                  </div>
-                )}
               </div>
             )}
           </div>
@@ -1061,7 +1022,7 @@ export default function OptimizationPage() {
                       { key: 'created_at', label: 'Date', width: '18%', render: value => formatDate(value) },
                       { key: 'status', label: 'Status', width: '15%', render: (value) => <span className={`inline-flex rounded-full border px-3 py-1 ${STATUS_STYLES[value] || ''}`}>{formatStatusLabel(value)}</span> },
                       { key: 'num_tasks_optimized', label: 'Tasks', width: '10%' },
-                      { key: 'weather_condition', label: 'Weather', width: '17%', render: (value) => <span className="flex items-center gap-2">{WEATHER_OPTIONS.find(w => w.value === (value?.toLowerCase() || 'normal'))?.icon || <Sun className="w-4 h-4 text-warning" />}<span>{WEATHER_OPTIONS.find(w => w.value === (value?.toLowerCase() || 'normal'))?.label || 'Normal'}</span></span> },
+                      { key: 'weather_condition', label: 'Weather', width: '17%', render: (value) => <span className="flex items-center gap-2">{weatherOption(value).icon}<span>{weatherOption(value).label}</span></span> },
                       { key: 'traffic_condition', label: 'Traffic', width: '17%', render: (value) => <span className="flex items-center gap-2">{TRAFFIC_OPTIONS.find(t => t.value === (value?.toLowerCase() || 'low'))?.icon || <Circle className="w-4 h-4 text-success fill-success" />}<span>{TRAFFIC_OPTIONS.find(t => t.value === (value?.toLowerCase() || 'low'))?.label || 'Low'}</span></span> },
                       { 
                         key: 'actions', 
@@ -1130,6 +1091,6 @@ export default function OptimizationPage() {
         onDisassembled={handleDisassembled}
       />
     </div>
+    </OfficerGuard>
   )
 }
-

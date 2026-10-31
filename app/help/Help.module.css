@@ -44,7 +44,7 @@
 
 .title {
   font-size: clamp(28px, 4vw, 38px);
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.2;
   letter-spacing: -0.025em;
   margin: 0 0 12px;
@@ -89,6 +89,10 @@
 :global(.dark) .ticketDivider {
   border-color: #2a2a2a;
 }
+
+.ticketNotice { scroll-margin-top: 80px; }
+
+.ticketNotice p a { color: var(--landing-blue, #0052cc); text-underline-offset: 3px; }
 
 .ticketNotice p {
   margin: 0 0 16px;

@@ -7,13 +7,9 @@ import L from 'leaflet'
 import wkx from 'wkx'
 import { Buffer } from 'buffer'
 import { reportDiagnostic } from '../../lib/diagnostics.mjs';
+import { SWMO_DEPOT } from '@/lib/map/pasigMapConstants'
 
-// PASIG BOUNDS
-const PASIG_BOUNDS = [
-  [14.52, 121.02],
-  [14.62, 121.12]
-]
-const PLP_CENTER = [14.561433, 121.075636]
+const PLP_CENTER = SWMO_DEPOT
 
 const parseGeometry = (geometry) => {
   if (!geometry) return null

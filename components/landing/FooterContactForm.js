@@ -29,7 +29,7 @@ export default function FooterContactForm({ cms }) {
     setEmailError(null)
 
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:3000'
+      const API_BASE = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:4002'
 
       const response = await fetch(`${API_BASE}/api/contact/send`, {
         method: 'POST',
@@ -56,7 +56,7 @@ export default function FooterContactForm({ cms }) {
         throw new Error(data.message || 'Failed to send message')
       }
 
-      setEmailSuccess("Message sent successfully! We'll get back to you soon.")
+      setEmailSuccess("Message emailed to SWMO/EcoPin. This is an email inquiry, not a support ticket, so it will not appear in the app's Support tickets. To track a reply there, open a ticket from the Help screen in the EcoPin Android app.")
       setEmailSent(true)
       setEmailForm({
         name: '',
@@ -69,7 +69,7 @@ export default function FooterContactForm({ cms }) {
       setTimeout(() => {
         setEmailSuccess(null)
         setEmailSent(false)
-      }, 4000)
+      }, 12000)
     } catch (error) {
       reportDiagnostic('error', 'contact', 'Contact form failed', error)
 
@@ -93,7 +93,7 @@ export default function FooterContactForm({ cms }) {
             <div className={styles.contactFormCard}>
               <div className={styles.contactFormHeader}>
                 <h3 className={styles.contactFormTitle}>Send us a message</h3>
-                <p className={styles.contactFormSubtitle}>Directly message support or city operations</p>
+                <p className={styles.contactFormSubtitle}>General questions by email. For your own report, open a support ticket in the Android app.</p>
               </div>
 
               {emailError && (

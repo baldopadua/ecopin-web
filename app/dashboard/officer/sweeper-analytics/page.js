@@ -93,7 +93,7 @@ export default function SweeperAnalyticsPage() {
 
   return <OfficerGuard>
     {notification && <Notification {...notification} onClose={() => setNotification(null)} />}
-    <div className={`workspace-page--flow ${styles.page}`}>
+    <div className={`workspace-page workspace-page--flow ${styles.page}`}>
       <PageHeader title="Sweeper analytics" subtitle="Review report deadlines and sweeper task outcomes across all areas."
         breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Sweeper analytics' }]}>
         <Button variant="secondary" onClick={download} disabled={!loaded || loading || !!error || changed || isExporting}>

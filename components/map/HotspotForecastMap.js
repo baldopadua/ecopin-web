@@ -6,6 +6,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { AlertCircle } from 'lucide-react';
 import { reportDiagnostic } from '../../lib/diagnostics.mjs';
+import { PASIG_CENTER, PASIG_BOUNDS, PASIG_MIN_ZOOM } from '@/lib/map/pasigMapConstants'
 
 const ViewToggle = ({ id, label, active, onClick, disabled }) => (
     <button
@@ -428,8 +429,11 @@ export default function HotspotForecastMap({ predictions, timeHorizon, viewModeO
 
       <MapContainer
         key={mapKey}
-        center={[14.5764, 121.0851]}
+        center={PASIG_CENTER}
         zoom={12}
+        maxBounds={PASIG_BOUNDS}
+        maxBoundsViscosity={1}
+        minZoom={PASIG_MIN_ZOOM}
         style={{ height: '100%', width: '100%' }}
         zoomControl={true}
       >

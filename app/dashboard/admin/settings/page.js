@@ -408,7 +408,7 @@ function SystemSettingsContent() {
                     type="text"
                     value={cms.lead_story_title}
                     onChange={(e) => handleCmsChange('lead_story_title', e.target.value)}
-                    className="w-full p-2.5 border border-border rounded-lg bg-surface text-text-primary"
+                    className="w-full p-2.5 border border-border rounded-xl bg-surface text-text-primary"
                   />
                 </div>
 
@@ -421,7 +421,7 @@ function SystemSettingsContent() {
                     type="text"
                     value={cms.lead_photo_tagline}
                     onChange={(e) => handleCmsChange('lead_photo_tagline', e.target.value)}
-                    className="w-full p-2.5 border border-border rounded-lg bg-surface text-text-primary"
+                    className="w-full p-2.5 border border-border rounded-xl bg-surface text-text-primary"
                   />
                 </div>
 
@@ -434,7 +434,7 @@ function SystemSettingsContent() {
                     rows={2}
                     value={cms.lead_story_subtitle}
                     onChange={(e) => handleCmsChange('lead_story_subtitle', e.target.value)}
-                    className="w-full p-2.5 border border-border rounded-lg bg-surface text-text-primary"
+                    className="w-full p-2.5 border border-border rounded-xl bg-surface text-text-primary"
                   />
                 </div>
 
@@ -448,7 +448,7 @@ function SystemSettingsContent() {
                     type="text"
                       value={cms.lead_photo_url}
                       onChange={(e) => handleCmsChange('lead_photo_url', e.target.value)}
-                      className="flex-1 p-2.5 border border-border rounded-lg bg-surface text-text-primary"
+                      className="flex-1 p-2.5 border border-border rounded-xl bg-surface text-text-primary"
                       placeholder="/images/community/street-cleanup.jpg or https://..."
                     />
                     <label className="cursor-pointer shrink-0 inline-flex items-center gap-2 px-3 py-2.5 rounded-lg border border-border bg-surface-elevated hover:bg-surface text-sm font-medium text-text-primary transition-colors">
@@ -492,7 +492,7 @@ function SystemSettingsContent() {
                     type="text"
                     value={cms.lead_photo_caption}
                     onChange={(e) => handleCmsChange('lead_photo_caption', e.target.value)}
-                    className="w-full p-2.5 border border-border rounded-lg bg-surface text-text-primary"
+                    className="w-full p-2.5 border border-border rounded-xl bg-surface text-text-primary"
                   />
                 </div>
 
@@ -505,7 +505,7 @@ function SystemSettingsContent() {
                     type="text"
                     value={cms.lead_photo_credit_name}
                     onChange={(e) => handleCmsChange('lead_photo_credit_name', e.target.value)}
-                    className="w-full p-2.5 border border-border rounded-lg bg-surface text-text-primary"
+                    className="w-full p-2.5 border border-border rounded-xl bg-surface text-text-primary"
                   />
                 </div>
 
@@ -518,7 +518,7 @@ function SystemSettingsContent() {
                     type="url"
                     value={cms.lead_photo_credit_url}
                     onChange={(e) => handleCmsChange('lead_photo_credit_url', e.target.value)}
-                    className="w-full p-2.5 border border-border rounded-lg bg-surface text-text-primary"
+                    className="w-full p-2.5 border border-border rounded-xl bg-surface text-text-primary"
                     placeholder="https://facebook.com/..."
                   />
                 </div>
@@ -685,7 +685,7 @@ function SystemSettingsContent() {
                     type="text"
                         value={cms.announcement_title}
                         onChange={(e) => handleCmsChange('announcement_title', e.target.value)}
-                        className="w-full p-2.5 border border-border rounded-lg bg-surface text-text-primary"
+                        className="w-full p-2.5 border border-border rounded-xl bg-surface text-text-primary"
                         placeholder="Notice to Residents"
                       />
                     </div>
@@ -697,7 +697,7 @@ function SystemSettingsContent() {
                       <select
                         value={cms.announcement_severity}
                         onChange={(e) => handleCmsChange('announcement_severity', e.target.value)}
-                        className="w-full p-2.5 border border-border rounded-lg bg-surface text-text-primary"
+                        className="w-full p-2.5 border border-border rounded-xl bg-surface text-text-primary"
                       >
                         <option value="info">Information (Blue)</option>
                         <option value="warning">Warning / Weather (Amber)</option>
@@ -714,7 +714,7 @@ function SystemSettingsContent() {
                     rows={2}
                         value={cms.announcement_message}
                         onChange={(e) => handleCmsChange('announcement_message', e.target.value)}
-                        className="w-full p-2.5 border border-border rounded-lg bg-surface text-text-primary"
+                        className="w-full p-2.5 border border-border rounded-xl bg-surface text-text-primary"
                         placeholder="Regular waste collection schedules may be adjusted during inclement weather..."
                       />
                     </div>
@@ -728,7 +728,7 @@ function SystemSettingsContent() {
                     type="url"
                         value={cms.announcement_link_url}
                         onChange={(e) => handleCmsChange('announcement_link_url', e.target.value)}
-                        className="w-full p-2.5 border border-border rounded-lg bg-surface text-text-primary"
+                        className="w-full p-2.5 border border-border rounded-xl bg-surface text-text-primary"
                         placeholder="https://facebook.com/..."
                       />
                     </div>
@@ -742,15 +742,15 @@ function SystemSettingsContent() {
                     type="text"
                         value={cms.announcement_link_text}
                         onChange={(e) => handleCmsChange('announcement_link_text', e.target.value)}
-                        className="w-full p-2.5 border border-border rounded-lg bg-surface text-text-primary"
+                        className="w-full p-2.5 border border-border rounded-xl bg-surface text-text-primary"
                         placeholder="Read advisory"
                       />
                     </div>
                   </div>
 
                   {/* Banner Preview */}
-                  <div className="mt-3 p-3 rounded-lg border text-sm flex items-start gap-3 bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400">
-                    <Info size={18} className="shrink-0 mt-0.5" />
+                  <div className={`mt-3 p-3 rounded-xl border text-sm flex items-start gap-3 ${cms.announcement_severity === 'urgent' ? 'bg-error/10 border-error/30 text-error' : cms.announcement_severity === 'warning' ? 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400' : 'bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400'}`}>
+                    {cms.announcement_severity === 'info' || !cms.announcement_severity ? <Info size={18} className="shrink-0 mt-0.5" /> : <AlertTriangle size={18} className="shrink-0 mt-0.5" />}
                     <div>
                       <strong className="block font-semibold">{cms.announcement_title || 'Notice to Residents'}</strong>
                       <span>{cms.announcement_message || 'Advisory text preview...'}</span>
@@ -777,7 +777,7 @@ function SystemSettingsContent() {
                     type="text"
                       value={cms.app_download_url}
                       onChange={(e) => handleCmsChange('app_download_url', e.target.value)}
-                      className="flex-1 p-2.5 border border-border rounded-lg bg-surface text-text-primary"
+                      className="flex-1 p-2.5 border border-border rounded-xl bg-surface text-text-primary"
                       placeholder="/ecopin-app-release.apk or https://..."
                     />
                     <label className="cursor-pointer shrink-0 inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg border border-border bg-surface-elevated hover:bg-surface text-sm font-medium text-text-primary transition-colors">
@@ -813,7 +813,7 @@ function SystemSettingsContent() {
                     type="text"
                     value={cms.app_version_name}
                     onChange={(e) => handleCmsChange('app_version_name', e.target.value)}
-                    className="w-full p-2.5 border border-border rounded-lg bg-surface text-text-primary"
+                    className="w-full p-2.5 border border-border rounded-xl bg-surface text-text-primary"
                     placeholder="v1.2.0"
                   />
                 </div>
@@ -827,7 +827,7 @@ function SystemSettingsContent() {
                     type="url"
                     value={cms.app_playstore_url}
                     onChange={(e) => handleCmsChange('app_playstore_url', e.target.value)}
-                    className="w-full p-2.5 border border-border rounded-lg bg-surface text-text-primary"
+                    className="w-full p-2.5 border border-border rounded-xl bg-surface text-text-primary"
                     placeholder="https://play.google.com/store/apps/details?id=..."
                   />
                 </div>
@@ -841,7 +841,7 @@ function SystemSettingsContent() {
                     type="text"
                     value={cms.app_release_notes}
                     onChange={(e) => handleCmsChange('app_release_notes', e.target.value)}
-                    className="w-full p-2.5 border border-border rounded-lg bg-surface text-text-primary"
+                    className="w-full p-2.5 border border-border rounded-xl bg-surface text-text-primary"
                   />
                 </div>
               </div>
@@ -875,7 +875,7 @@ function SystemSettingsContent() {
                     rows={2}
                     value={cms.maintenance_notice}
                     onChange={(e) => handleCmsChange('maintenance_notice', e.target.value)}
-                    className="w-full p-2.5 border border-border rounded-lg bg-surface text-text-primary"
+                    className="w-full p-2.5 border border-border rounded-xl bg-surface text-text-primary"
                   />
                 </div>
               )}

@@ -28,7 +28,6 @@ import { SkeletonLine, SkeletonCard } from '@/components/ui/Skeleton'
 import { useUser } from '@/components/auth/UserContext'
 import {
   RefreshCw,
-  Upload,
   Image as ImageIcon,
   Loader2,
   Copy,
@@ -159,8 +158,6 @@ export default function ReportDetailPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState(null)
   const [lightboxIndex, setLightboxIndex] = useState(null)
-  const [uploadingBefore, setUploadingBefore] = useState(false)
-  const [uploadingAfter, setUploadingAfter] = useState(false)
   const [noteText, setNoteText] = useState('')
   const [addingNote, setAddingNote] = useState(false)
   const [updatingConsent, setUpdatingConsent] = useState(false)
@@ -553,85 +550,6 @@ export default function ReportDetailPage() {
     setNotification({ message: 'Report approval and severity saved successfully', type: 'success' })
   }
 
-  const handlePhotoUpload = async (photoType, file) => {
-    if (!file) return
-
-    // Validate file type
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
-    if (!validTypes.includes(file.type)) {
-      setNotification({ message: 'Invalid file type. Please upload JPEG, JPG, PNG, or WEBP images.', type: 'error' })
-      return
-    }
-
-    // Validate file size (10MB limit)
-    const maxSize = 10 * 1024 * 1024
-    if (file.size > maxSize) {
-      setNotification({ message: 'File size exceeds 10MB limit. Please upload a smaller image.', type: 'error' })
-      return
-    }
-
-    const setUploading = photoType === 'before' ? setUploadingBefore : setUploadingAfter
-    setUploading(true)
-
-
-    const formData = new FormData()
-    formData.append('image', file)
-    formData.append('photo_type', photoType)
-
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/reports/${reportId}/photo`, {
-        method: 'POST',
-        headers: {
-        },
-        body: formData,
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || errorData.error || 'Failed to upload photo')
-      }
-
-      const data = await response.json()
-      setReport(data.report)
-      setNotification({ message: 'Photo uploaded successfully', type: 'success' })
-    } catch (error) {
-      reportDiagnostic('error', 'media', 'Failed to upload photo:', error)
-      setNotification({ message: error.message || 'Failed to upload photo. Please try again.', type: 'error' })
-    } finally {
-      setUploading(false)
-    }
-  }
-
-  const handlePhotoDelete = async (photoType) => {
-    if (!await confirmAction({ title: 'Delete report photo?', description: 'This removes the selected evidence photo from this report. This action cannot be undone.', action: 'Delete photo' })) {
-      return
-    }
-
-
-
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/reports/${reportId}/photo`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ photo_type: photoType }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || errorData.error || 'Failed to delete photo')
-      }
-
-      const data = await response.json()
-      setReport(data.report)
-      setNotification({ message: 'Photo deleted successfully', type: 'success' })
-    } catch (error) {
-      reportDiagnostic('error', 'media', 'Failed to delete photo:', error)
-      setNotification({ message: error.message || 'Failed to delete photo. Please try again.', type: 'error' })
-    }
-  }
-
   const handlePropertyOwnerConsent = async (newStatus) => {
     if (newStatus === 'denied') {
       const confirmed = await confirmAction({
@@ -970,14 +888,6 @@ export default function ReportDetailPage() {
                   <div className="p-4 border border-border rounded-lg">
                     <div className="flex justify-between items-center mb-3">
                       <h3 className="font-semibold">{isStaff ? 'Before photos' : 'Before Photos'}</h3>
-                      {user?.role === 'field_crew' && report.before_photo_url && (
-                        <button
-                          onClick={() => handlePhotoDelete('before')}
-                          className="px-3 py-1 bg-error hover:bg-error/90 text-white text-sm rounded transition-colors"
-                        >
-                          Delete
-                        </button>
-                      )}
                     </div>
                     {(Array.isArray(report.before_photos) && report.before_photos.length > 0) || report.before_photo_url ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1003,42 +913,6 @@ export default function ReportDetailPage() {
                           )
                         ))}
                       </div>
-                    ) : user?.role === 'field_crew' ? (
-                      <div
-                        className={`border border-border border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${uploadingBefore ? 'border-border bg-surface' : 'border-border hover:border-accent-green hover:bg-accent-green/5'
-                          }`}
-                        onClick={() => document.getElementById('before-photo-input').click()}
-                        onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-accent-green', 'bg-accent-green/10'); }}
-                        onDragLeave={(e) => { e.currentTarget.classList.remove('border-accent-green', 'bg-accent-green/10'); }}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          e.currentTarget.classList.remove('border-accent-green', 'bg-accent-green/10');
-                          if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                            handlePhotoUpload('before', e.dataTransfer.files[0]);
-                          }
-                        }}
-                      >
-                        <input
-                          id="before-photo-input"
-                          type="file"
-                          accept="image/jpeg,image/jpg,image/png,image/webp"
-                          disabled={uploadingBefore}
-                          onChange={(e) => e.target.files[0] && handlePhotoUpload('before', e.target.files[0])}
-                          className="hidden"
-                        />
-                        {uploadingBefore ? (
-                          <div className="flex flex-col items-center gap-2">
-                            <div className="w-8 h-8 border border-border border-accent-green border-t-transparent rounded-full animate-spin"></div>
-                            <p className="text-sm text-text-muted">Uploading...</p>
-                          </div>
-                        ) : (
-                          <>
-                            <Upload size={48} className="text-text-muted mx-auto mb-2" aria-hidden="true" />
-                            <p className="text-sm font-medium text-text-primary">Click or drag to upload</p>
-                            <p className="text-xs text-text-muted mt-1">JPG, PNG, or WEBP • Max 10MB</p>
-                          </>
-                        )}
-                      </div>
                     ) : (
                       <div className="h-48 bg-surface-elevated rounded-lg flex items-center justify-center border border-dashed border-border">
                         <p className="text-text-muted">No before photo uploaded</p>
@@ -1050,14 +924,6 @@ export default function ReportDetailPage() {
                   <div className="p-4 border border-border rounded-lg">
                     <div className="flex justify-between items-center mb-3">
                       <h3 className="font-semibold">{isStaff ? 'After photos' : 'After Photos'}</h3>
-                      {user?.role === 'field_crew' && report.after_photo_url && (
-                        <button
-                          onClick={() => handlePhotoDelete('after')}
-                          className="px-3 py-1 bg-error hover:bg-error/90 text-white text-sm rounded transition-colors"
-                        >
-                          Delete
-                        </button>
-                      )}
                     </div>
                     {(Array.isArray(report.after_photos) && report.after_photos.length > 0) || report.after_photo_url ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1082,42 +948,6 @@ export default function ReportDetailPage() {
                             </button>
                           )
                         ))}
-                      </div>
-                    ) : user?.role === 'field_crew' ? (
-                      <div
-                        className={`border border-border border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${uploadingAfter ? 'border-border bg-surface' : 'border-border hover:border-primary hover:bg-primary/5'
-                          }`}
-                        onClick={() => document.getElementById('after-photo-input').click()}
-                        onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-accent-green', 'bg-accent-green/10'); }}
-                        onDragLeave={(e) => { e.currentTarget.classList.remove('border-accent-green', 'bg-accent-green/10'); }}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          e.currentTarget.classList.remove('border-accent-green', 'bg-accent-green/10');
-                          if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                            handlePhotoUpload('after', e.dataTransfer.files[0]);
-                          }
-                        }}
-                      >
-                        <input
-                          id="after-photo-input"
-                          type="file"
-                          accept="image/jpeg,image/jpg,image/png,image/webp"
-                          disabled={uploadingAfter}
-                          onChange={(e) => e.target.files[0] && handlePhotoUpload('after', e.target.files[0])}
-                          className="hidden"
-                        />
-                        {uploadingAfter ? (
-                          <div className="flex flex-col items-center gap-2">
-                            <div className="w-8 h-8 border border-border border-accent-green border-t-transparent rounded-full animate-spin"></div>
-                            <p className="text-sm text-text-muted">Uploading...</p>
-                          </div>
-                        ) : (
-                          <>
-                            <Upload size={48} className="text-text-muted mx-auto mb-2" aria-hidden="true" />
-                            <p className="text-sm font-medium text-text-primary">Click or drag to upload</p>
-                            <p className="text-xs text-text-muted mt-1">JPG, PNG, or WEBP • Max 10MB</p>
-                          </>
-                        )}
                       </div>
                     ) : (
                       <div className="h-48 bg-surface-elevated rounded-lg flex items-center justify-center border border-dashed border-border">
@@ -1237,7 +1067,7 @@ export default function ReportDetailPage() {
                     </div>
                   </div>
                   {/* SLA Status in Sidebar */}
-                  {slaInfo && (
+                  {!isStaff && slaInfo && (
                     <div>
                       <p className="text-xs text-text-muted">SLA Timeline</p>
                       <div className="mt-1">

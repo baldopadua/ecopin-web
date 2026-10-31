@@ -1,4 +1,5 @@
 import L from 'leaflet'
+import { getReportStatusHex } from '@/lib/helpers/statusHelpers'
 import { resolvePrivateMedia } from '@/lib/api/private-media.mjs'
 
 // No-photo placeholder icon (ImageOff style - square with diagonal line)
@@ -59,11 +60,7 @@ export const createPinIcon = (imageOrUrl, isSelected = false, isDark = false, st
         : '0 3px 12px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(0, 0, 0, 0.1)')
 
   // Status indicator dot (no text/numbers)
-  let statusColor = null
-  if (status === 'urgent') statusColor = '#EF4444'
-  else if (status === 'resolved') statusColor = '#10B981'
-  else if (status === 'in_progress') statusColor = '#3B82F6'
-  else if (status === 'unresolved' || status === 'submitted' || status === 'pending') statusColor = '#F59E0B'
+  const statusColor = status ? getReportStatusHex(status) : null
 
   const statusPip = statusColor ? `
     <div style="

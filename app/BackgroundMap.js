@@ -3,8 +3,9 @@
 import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useEffect } from 'react';
+import { PASIG_CENTER, PASIG_DEFAULT_ZOOM } from '@/lib/map/pasigMapConstants'
 
-export default function BackgroundMap({ isDark, center = [14.5802, 121.0850], zoom = 14 }) {
+export default function BackgroundMap({ isDark, center = PASIG_CENTER, zoom = PASIG_DEFAULT_ZOOM }) {
   // Coordinates for Pasig City by default
   const position = center;
 

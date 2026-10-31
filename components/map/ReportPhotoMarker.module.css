@@ -1,7 +1,7 @@
 .marker { background: transparent; border: 0; }
 .pin { position: relative; width: 50px; height: 58px; cursor: pointer; }
 .error { --pin-color: #d32f2f; } .warning { --pin-color: #b45309; } .success { --pin-color: #2e7d32; }
-.info { --pin-color: #0369a1; } .muted { --pin-color: #59636e; }
+.info { --pin-color: #0369a1; } .purple { --pin-color: #6d28d9; } .muted { --pin-color: #59636e; }
 .photo { position: relative; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;
   overflow: hidden; border: 3px solid var(--pin-color); outline: 2px solid white; border-radius: 50%;
   background: var(--surface-elevated, #f5f7fa); color: var(--text-muted, #59636e); box-shadow: 0 3px 12px #00000033; }

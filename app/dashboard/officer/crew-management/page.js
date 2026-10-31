@@ -14,6 +14,7 @@ import { OfficerGuard } from '@/components/auth/RequireRole'
 import usePublicTheme from '@/components/landing/usePublicTheme'
 import styles from './CrewManagement.module.css'
 import { Bar, Doughnut } from 'react-chartjs-2'
+import { getCsatEntry } from '@/lib/helpers/csatScale'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -56,29 +57,12 @@ function Avatar({ user, size = 'md' }) {
   )
 }
 
-/**
- * Returns citizen sentiment info matching the citizen feedback emoji scale:
- * 1: 😢 Very Dissatisfied | 2: 😕 Dissatisfied | 3: 😐 Neutral | 4: 😊 Satisfied | 5: 😄 Very Satisfied
- */
+/** Citizen sentiment info from the canonical CSAT scale (lib/helpers/csatScale.js). */
 function getSatisfactionInfo(rating) {
-  if (rating == null || rating === '' || isNaN(Number(rating))) {
-    return { emoji: '—', label: 'Unrated', scoreText: 'N/A', tone: 'neutral' }
-  }
-  const num = Number(rating)
-  const rounded = Math.round(num)
-  if (rounded >= 5) {
-    return { emoji: '😄', label: 'Very Satisfied', scoreText: num.toFixed(1), tone: 'positive' }
-  }
-  if (rounded === 4) {
-    return { emoji: '😊', label: 'Satisfied', scoreText: num.toFixed(1), tone: 'positive' }
-  }
-  if (rounded === 3) {
-    return { emoji: '😐', label: 'Neutral', scoreText: num.toFixed(1), tone: 'neutral' }
-  }
-  if (rounded === 2) {
-    return { emoji: '😕', label: 'Dissatisfied', scoreText: num.toFixed(1), tone: 'warning' }
-  }
-  return { emoji: '😢', label: 'Very Dissatisfied', scoreText: num.toFixed(1), tone: 'negative' }
+  const entry = getCsatEntry(rating)
+  if (!entry) return { emoji: '—', label: 'Unrated', scoreText: 'N/A', tone: 'neutral' }
+  const tone = entry.rating >= 4 ? 'positive' : entry.rating === 3 ? 'neutral' : entry.rating === 2 ? 'warning' : 'negative'
+  return { emoji: entry.emoji, label: entry.label, scoreText: Number(rating).toFixed(1), tone }
 }
 
 function MemberChip({ user, onRemove, removing }) {
@@ -1149,7 +1133,7 @@ function PerformanceView({ performanceData, loading }) {
           .stat-box { border: 1px solid #bfdbfe; background-color: #f0f7ff; padding: 12px 16px; border-radius: 8px; }
           .stat-label { font-size: 9.5pt; color: #475569; font-weight: 600; text-transform: uppercase; }
           .stat-val { font-size: 18pt; font-weight: bold; color: #0052cc; margin-top: 4px; }
-          .badge-high { background-color: #dbeafe; color: #1e40af; font-weight: bold; padding: 3px 8px; border-radius: 4px; display: inline-block; }
+          .badge-high { background-color: #d1fae5; color: #065f46; font-weight: bold; padding: 3px 8px; border-radius: 4px; display: inline-block; }
           .badge-mid { background-color: #fef3c7; color: #92400e; font-weight: bold; padding: 3px 8px; border-radius: 4px; display: inline-block; }
           .badge-low { background-color: #fee2e2; color: #991b1b; font-weight: bold; padding: 3px 8px; border-radius: 4px; display: inline-block; }
           .badge-unrated { background-color: #f1f5f9; color: #64748b; padding: 3px 8px; border-radius: 4px; display: inline-block; }
@@ -1755,7 +1739,7 @@ function PerformanceView({ performanceData, loading }) {
         <div className="border border-border rounded-2xl bg-surface p-5 shadow-sm flex flex-col">
           <div className="mb-4">
             <h3 className="text-base font-semibold text-text-primary">Citizen Feedback Breakdown (CSAT)</h3>
-            <p className="text-xs text-text-muted mt-0.5">Distribution of verified citizen ratings across 5 sentiment levels</p>
+            <p className="text-xs text-text-muted mt-0.5">Distribution of verified citizen ratings across 5 sentiment levels. <Link href="/dashboard/officer/metrics?tab=feedback" className="text-workspace-link underline">Full CSAT analytics</Link></p>
           </div>
           <div className="relative flex-1 min-h-[260px] flex items-center justify-center">
             {csatChartData.hasData ? (
@@ -2179,9 +2163,6 @@ function CrewManagementContent() {
             <>
               <span className="text-text-muted">·</span>
               <div className={styles.summaryStat}>
-                <span className="text-sm leading-none" aria-hidden="true">
-                  {getSatisfactionInfo(performanceData.overall.avg_satisfaction_rating).emoji}
-                </span>
                 <span>
                   Overall CSAT: <strong>{getSatisfactionInfo(performanceData.overall.avg_satisfaction_rating).emoji} {performanceData.overall.avg_satisfaction_rating || 'N/A'}</strong> ({performanceData.overall.total_ratings_received || 0} reviews)
                 </span>

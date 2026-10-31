@@ -78,6 +78,30 @@ export async function POST(req, context) {
       const session = await issueWebSession({ accessToken: result.token, refreshToken: kind === 'full' ? result.session?.refresh_token || null : null, kind }, req.signal);
       return webJson(sessionMetadata(session, user), 200, sessionCookie(session.id, session.expiresAt));
     }
+    if (action === 'forgot-password') {
+      const data = await input(req, ['email']);
+      if (!data || typeof data.email !== 'string' || data.email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+        return webJson({ error: 'Please enter a valid email address.' }, 400);
+      }
+      const quota = await checkPreviewQuota(createHash('sha256').update(data.email.trim().toLowerCase()).digest('hex'), req.signal, 'ecopin:session-forgot:v1');
+      if (quota.status !== 200) return webJson({ error: 'Too many requests. Please wait a few minutes and try again.' }, 429);
+      // The answer is identical whether or not the account exists.
+      await authorityFetch('/api/auth/forgot-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: data.email.trim() }) }, req.signal).catch(() => null);
+      return webJson({ success: true });
+    }
+    if (action === 'reset-password') {
+      const data = await input(req, ['token', 'password']);
+      if (!data || typeof data.token !== 'string' || !data.token || data.token.length > 4096 || typeof data.password !== 'string' || !data.password || data.password.length > 1024) {
+        return webJson({ error: 'This reset link is invalid or incomplete. Request a new one.' }, 400);
+      }
+      const response = await authorityFetch('/api/auth/reset-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }, req.signal);
+      if (!response.ok) {
+        let message = 'We could not reset your password. Request a new link and try again.';
+        try { const body = await authorityJson(response, req.signal, 4096); if (response.status === 400 && typeof body?.message === 'string') message = body.message; } catch { /* keep generic message */ }
+        return webJson({ error: message }, response.status >= 500 ? 503 : 400);
+      }
+      return webJson({ success: true });
+    }
     const session = await readWebSession(req);
     if (action === 'logout') {
       if (session) {

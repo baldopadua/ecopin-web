@@ -7,6 +7,7 @@ import LandingNavigation from '@/components/landing/LandingNavigation'
 import PublicFooter from '@/components/landing/PublicFooter'
 import usePublicTheme from '@/components/landing/usePublicTheme'
 import SearchableFAQ from '@/components/support/SearchableFAQ'
+import publicStyles from '@/components/landing/LandingPage.module.css'
 import styles from './Help.module.css'
 
 function HelpContent() {
@@ -37,6 +38,9 @@ function HelpContent() {
           Support tickets are tied to your EcoPin account, so only you can see your questions, the ticket reference and the SWMO reply.
           Open a ticket and check its status from the Help screen in the EcoPin Android app.
         </p>
+        <p>
+          The <a href="#contact">Send us a message</a> form in the page footer is for general questions to SWMO. It does not create a ticket, so you will not be able to track it in the app.
+        </p>
         <Link href="/#mobile-app" className={styles.appLink}>
           <Smartphone size={18} /> Get the Android app
         </Link>
@@ -49,7 +53,7 @@ export default function HelpPage() {
   const { isDark, toggleTheme } = usePublicTheme()
 
   return (
-    <div className={styles.page}>
+    <div className={`${publicStyles.page} ${styles.page}`}>
       <LandingNavigation isDark={isDark} toggleTheme={toggleTheme} activePage="" />
 
       <main className={styles.main}>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { SWMO_DEPOT } from '@/lib/map/pasigMapConstants'
 
 const createCustomIcon = () => {
   return L.divIcon({
@@ -52,7 +53,7 @@ export default function LocationPickerMap({ position, onChange, readOnly = false
 
   if (!isMounted) return <div className="h-[400px] bg-surface-elevated animate-pulse border border-border" />
 
-  const center = position?.lat && position?.lng ? [position.lat, position.lng] : [14.561433, 121.075636] // Default Pasig
+  const center = position?.lat && position?.lng ? [position.lat, position.lng] : SWMO_DEPOT // Default Pasig
 
   return (
     <div className="h-[400px] w-full border border-border relative z-0">

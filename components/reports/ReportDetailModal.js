@@ -173,7 +173,7 @@ export default function ReportDetailModal({ report, evidence = [], agencyRespons
                 <button
                   type="button"
                   onClick={() => setIsLightboxOpen(true)}
-                  className="absolute top-3 left-3 md:left-auto md:right-3 z-20 bg-black/70 text-white p-2 min-h-11 min-w-11 rounded-xl border border-white/20 hover:border-primary hover:text-primary transition-colors"
+                  className="absolute top-14 left-3 md:top-3 md:left-auto md:right-3 z-20 bg-black/70 text-white p-2 min-h-11 min-w-11 rounded-xl border border-white/20 hover:border-primary hover:text-primary transition-colors"
                   title="Expand to Fullscreen"
                   aria-label="Expand photo"
                 >

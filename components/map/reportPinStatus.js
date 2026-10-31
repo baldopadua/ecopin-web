@@ -2,9 +2,9 @@ import { AlertCircle, Clock3, Check, MessageSquare, LockKeyhole, CheckCheck, Hel
 
 export const REPORT_PIN_STATUSES = {
   unresolved: { label: 'Unresolved', tone: 'error', Icon: AlertCircle },
-  in_progress: { label: 'In progress', tone: 'warning', Icon: Clock3 },
+  in_progress: { label: 'In progress', tone: 'info', Icon: Clock3 },
   resolved: { label: 'Resolved', tone: 'success', Icon: Check },
-  waiting_for_feedback: { label: 'Waiting for feedback', tone: 'info', Icon: MessageSquare },
+  waiting_for_feedback: { label: 'Waiting for feedback', tone: 'purple', Icon: MessageSquare },
   pending_owner_consent: { label: 'Pending owner consent', tone: 'info', Icon: LockKeyhole },
   closed: { label: 'Closed', tone: 'muted', Icon: CheckCheck },
 }

@@ -1,0 +1,47 @@
+.page { min-height: 100vh; display: flex; flex-direction: column; }
+.main { flex: 1; max-width: 900px; width: 100%; margin: 0 auto; padding: 32px 20px 80px; }
+.topBar { margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+
+.backLink, .shareButton, .primaryAction, .secondaryAction { min-height: 44px; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; text-decoration: none; }
+.backLink { color: var(--landing-blue); }
+.shareButton { padding: 0 16px; border-radius: 999px; border: 1px solid var(--border-subtle); background: var(--surface-raised); color: var(--text-primary); cursor: pointer; transition: background-color .15s, border-color .15s; }
+.shareButton:hover { border-color: var(--border-strong); }
+.backLink:focus-visible, .shareButton:focus-visible, .primaryAction:focus-visible, .secondaryAction:focus-visible, .thumb:focus-visible { outline: 3px solid var(--landing-blue); outline-offset: 3px; }
+
+.unavailable { background: color-mix(in srgb, var(--error) 8%, transparent); border: 1px solid color-mix(in srgb, var(--error) 25%, transparent); border-radius: var(--radius-card); padding: 24px; text-align: center; margin: 40px 0; }
+.unavailable svg { margin: 0 auto 12px; color: var(--error); }
+.unavailable h2 { font-size: 18px; font-weight: 700; margin: 0 0 8px; color: var(--text-primary); }
+.unavailable p { color: var(--text-secondary); font-size: 14px; margin: 0; }
+
+.card { background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: 20px; overflow: hidden; box-shadow: var(--shadow-sm); }
+.banner { display: flex; align-items: center; gap: 10px; padding: 16px 24px; background: var(--accent-primary); color: #fff; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+
+.photoArea { position: relative; width: 100%; min-height: 260px; max-height: 480px; overflow: hidden; background: #0a0f14; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.thumbs { display: flex; gap: 8px; padding: 12px; background: rgba(0, 0, 0, .6); width: 100%; overflow-x: auto; justify-content: center; }
+.thumb { width: 56px; min-width: 44px; height: 44px; border-radius: 8px; overflow: hidden; border: 2px solid transparent; cursor: pointer; padding: 0; background: #1a1a1a; flex-shrink: 0; opacity: .7; }
+.thumbActive { border-color: #60a5fa; opacity: 1; }
+
+.body { padding: 28px 24px; }
+.tags { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.issueTag { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; background: color-mix(in srgb, var(--accent-primary) 12%, transparent); color: var(--landing-blue); }
+.title { font-size: 24px; font-weight: 700; margin: 0 0 12px; color: var(--text-primary); }
+.description { font-size: 15px; line-height: 1.6; color: var(--text-secondary); margin: 0 0 20px; }
+
+.meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; padding: 16px; background: var(--surface-sunken); border-radius: 12px; border: 1px solid var(--border-subtle); margin: 20px 0 28px; }
+.metaItem { display: flex; align-items: center; gap: 10px; }
+.metaItem svg { color: var(--text-muted); flex-shrink: 0; }
+.metaLabel { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
+.metaValue { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+
+.cta { background: color-mix(in srgb, var(--accent-primary) 6%, var(--surface-raised)); border: 1px solid color-mix(in srgb, var(--accent-primary) 22%, transparent); border-radius: var(--radius-card); padding: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; }
+.cta h2 { font-size: 16px; font-weight: 700; margin: 0 0 6px; color: var(--landing-blue); }
+.cta p { font-size: 13px; color: var(--text-secondary); margin: 0; line-height: 1.5; max-width: 480px; }
+.ctaActions { display: flex; gap: 10px; flex-wrap: wrap; }
+.primaryAction { padding: 0 18px; border-radius: 12px; background: var(--accent-primary); color: #fff; font-weight: 700; font-size: 13px; }
+.secondaryAction { padding: 0 16px; border-radius: 12px; border: 1px solid var(--border-strong); background: var(--surface-raised); color: var(--text-primary); font-size: 13px; }
+
+@media (max-width: 480px) {
+  .main { padding: 24px 16px 64px; }
+  .body { padding: 24px 16px; }
+  .banner { padding: 14px 16px; }
+}

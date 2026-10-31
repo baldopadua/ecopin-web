@@ -256,11 +256,6 @@ function TacticalScanContent() {
                   {observed ? 'Retry actuals' : 'Retry forecast'}
                 </button>
               )}
-              {!feedError && !loading && !observed && allAreas.length > 0 && !filteredAreas.length && (
-                <button type="button" className={styles.clearFilter} onClick={clearFilters}>
-                  Clear filters
-                </button>
-              )}
             </div>
           )}
         </div>

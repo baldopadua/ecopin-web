@@ -212,13 +212,6 @@ export default function LandingPage() {
         <section className={styles.closing}><div data-reveal><Leaf size={28} /><h2>A better Pasig begins<br />with the people in it.</h2></div></section>
       </main>
       <PublicFooter isDark={isDark} settings={cms} />
-      {/* Photo attribution and delete account compliance anchors */}
-      <span className="sr-only">
-        <Link href="/delete-account">Delete account</Link>
-        <span className={styles.photoCredit}>
-          Photography courtesy of <a href="https://www.facebook.com/share/p/19hk6BA5W8/" target="_blank" rel="noopener noreferrer">Pasig Tayo</a> (<a href="https://www.facebook.com/jonah.talagtag.77" target="_blank" rel="noopener noreferrer">Jonah Talagtag</a>)
-        </span>
-      </span>
     </div>
   )
 }

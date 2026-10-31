@@ -12,7 +12,7 @@ export default function NotFound() {
   const { isDark, toggleTheme } = usePublicTheme()
 
   return (
-    <div className={styles.page}>
+    <div className={`${publicStyles.page} ${styles.page}`}>
       <LandingNavigation isDark={isDark} toggleTheme={toggleTheme} activePage="" />
 
       <main className={styles.main}>

@@ -10,6 +10,13 @@ export const WEATHER_OPTIONS = [
   { value: 'storm', label: 'Storm', icon: <CloudLightning className="w-4 h-4 text-purple" /> },
 ]
 
+// The planner reports 'severe'/'rainy'; stored runs use 'storm'/'heavy_rain'.
+const WEATHER_ALIASES = { severe: 'storm', rainy: 'heavy_rain' }
+export const weatherOption = (value) => {
+  const key = String(value || 'normal').toLowerCase()
+  return WEATHER_OPTIONS.find(w => w.value === (WEATHER_ALIASES[key] || key)) || WEATHER_OPTIONS[0]
+}
+
 export const TRAFFIC_OPTIONS = [
   { value: 'low', label: 'Low', icon: <Circle className="w-4 h-4 text-success fill-success" /> },
   { value: 'moderate', label: 'Moderate', icon: <Circle className="w-4 h-4 text-warning fill-warning" /> },
@@ -68,6 +75,7 @@ const RouteLayer = dynamic(
 )
 
 import { calculateWorkloadMetrics } from '@/lib/helpers/workloadMetrics.mjs'
+import { SWMO_DEPOT } from '@/lib/map/pasigMapConstants'
 
 export function TaskTimeWorkloadGraph({ routes = [], title = "Task time workload" }) {
   if (!routes || routes.length === 0) return null
@@ -341,7 +349,7 @@ export function CrewRouteCard({ route, index, color }) {
   )
 }
 
-const PLP_CENTER = [14.561433, 121.075636]
+const PLP_CENTER = SWMO_DEPOT
 
 export function RouteMapView({ routes, travelMode = 'DRIVING' }) {
   const [mounted, setMounted] = useState(false)

@@ -1,9 +1,8 @@
 'use client'
 import OperationalTimeline from '@/components/reports/OperationalTimeline'
-import SecureImage from '@/components/ui/SecureImage'
-import React, { useEffect, useState, useRef } from 'react'
-import { useRouter, useParams } from 'next/navigation'
-import { fetchCleanupTaskById, uploadCleanupPhoto, fetchReportsByClusterId, fetchReportsByIds, fetchReportEvidence, updateLifecycleStage, logAgencyResponse, fetchAgencyResponses, fetchAvailableCrew, assignCleanupTask, updateCleanupTaskTitle } from '@/lib/api'
+import { useEffect, useState, useRef } from 'react'
+import { useParams } from 'next/navigation'
+import { fetchCleanupTaskById, fetchReportsByClusterId, fetchReportsByIds, fetchReportEvidence, fetchAgencyResponses, fetchAvailableCrew, assignCleanupTask, updateCleanupTaskTitle } from '@/lib/api'
 import PageHeader from '@/components/layout/PageHeader'
 import DataTable from '@/components/ui/DataTable'
 import StatusBadge from '@/components/ui/StatusBadge'
@@ -76,24 +75,10 @@ function CleanupTaskDetailContent() {
   const [reports, setReports] = useState([])
   const [reportsEvidence, setReportsEvidence] = useState({})
   const [loading, setLoading] = useState(true)
-  const [markingComplete, setMarkingComplete] = useState(false) // kept for in-flight guard only
-  const [completingReportId, setCompletingReportId] = useState(null)
   const [notification, setNotification] = useState(null)
-  const [expandedReports, setExpandedReports] = useState({})
-  const [lightboxImage, setLightboxImage] = useState(null)
-  const [validatingReport, setValidatingReport] = useState(null)
-  const [loadingEvidence, setLoadingEvidence] = useState({})
   const [evidenceErrors, setEvidenceErrors] = useState({})
   const abortControllersRef = useRef({})
-  const [viewMode, setViewMode] = useState('table') // 'table' or 'detail'
   const [selectedReportId, setSelectedReportId] = useState(null)
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [showLifecycleDropdown, setShowLifecycleDropdown] = useState(false)
-  const [updatingLifecycle, setUpdatingLifecycle] = useState(false)
-  const lifecycleDropdownRef = useRef(null)
-  const [showNoteInput, setShowNoteInput] = useState(false)
-  const [noteText, setNoteText] = useState('')
-  const [addingNote, setAddingNote] = useState(false)
   const [agencyResponses, setAgencyResponses] = useState([])
   const [availableCrew, setAvailableCrew] = useState([])
   const [showAssignmentModal, setShowAssignmentModal] = useState(false)
@@ -105,13 +90,8 @@ function CleanupTaskDetailContent() {
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [editingTitle, setEditingTitle] = useState('')
   const [savingTitle, setSavingTitle] = useState(false)
-  const router = useRouter()
   const params = useParams()
   const taskId = params.id
-
-  useEffect(() => {
-    if (selectedReportId) setCurrentImageIndex(0)
-  }, [selectedReportId])
 
   useEffect(() => {
     const loadTask = async () => {
@@ -153,16 +133,6 @@ function CleanupTaskDetailContent() {
     loadAvailableCrew()
   }, [])
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (lifecycleDropdownRef.current && !lifecycleDropdownRef.current.contains(event.target)) {
-        setShowLifecycleDropdown(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
   // Task completion is handled automatically server-side when the field crew app
   // uploads the final after photo for the last unresolved report. No manual
   // officer action is required or exposed here.
@@ -185,8 +155,6 @@ function CleanupTaskDetailContent() {
     }
   }
 
-
-
   const handleSaveTitle = async () => {
     if (!editingTitle.trim() || editingTitle.trim() === task.title) {
       setIsEditingTitle(false)
@@ -206,174 +174,8 @@ function CleanupTaskDetailContent() {
     }
   }
 
-  const handleLifecycleStageUpdate = async (reportId, newStage) => {
-    const report = reports.find(r => r.id === reportId)
-    
-    // Check if trying to mark as resolved without photos
-    if (newStage === 'resolved' && (!report.before_photo_url || !report.after_photo_url)) {
-      setNotification({ message: 'Please upload both before and after photos before marking the report as resolved.', type: 'warning' })
-      return
-    }
-
-    setUpdatingLifecycle(true)
-    try {
-      await updateLifecycleStage(reportId, newStage)
-      
-      // Refresh reports to show updated lifecycle stage
-      let reportsData = []
-      if (task.is_custom && task.report_ids) {
-        reportsData = await fetchReportsByIds(task.report_ids)
-      } else if (task.cluster_id) {
-        reportsData = await fetchReportsByClusterId(task.cluster_id)
-      }
-      setReports(reportsData)
-      
-      // If we're in detail view, ensure the selected report still exists
-      if (viewMode === 'detail' && selectedReportId) {
-        const reportStillExists = reportsData.find(r => r.id === selectedReportId)
-        if (!reportStillExists) {
-          // Report no longer exists, go back to table view
-          setViewMode('table')
-          setSelectedReportId(null)
-        }
-      }
-      
-      setShowLifecycleDropdown(false)
-      setNotification({ message: 'Lifecycle stage updated successfully', type: 'success' })
-    } catch (error) {
-      reportDiagnostic('error', 'dispatch', 'Failed to update lifecycle stage:', error)
-      setNotification({ message: 'Failed to update lifecycle stage. Please try again.', type: 'error' })
-    } finally {
-      setUpdatingLifecycle(false)
-    }
-  }
-
-  const handleMarkReportComplete = async (reportId) => {
-    const report = reports.find(r => r.id === reportId)
-    
-    // Check if the report is validated
-    if (report.validation_status !== 'validated' && report.validation_status !== 'approved') {
-      setNotification({ message: 'Please validate this report before marking it as complete.', type: 'warning' })
-      return
-    }
-    
-    // Check if the report has both before and after photos
-    if (!report.before_photo_url || !report.after_photo_url) {
-      setNotification({ message: 'Please upload both before and after photos for this report before marking it as complete.', type: 'warning' })
-      return
-    }
-
-    setCompletingReportId(reportId)
-    try {
-      await updateReportStatus(reportId, 'resolved')
-      // Refresh reports to show updated status
-      let reportsData = []
-      if (task.is_custom && task.report_ids) {
-        reportsData = await fetchReportsByIds(task.report_ids)
-      } else if (task.cluster_id) {
-        reportsData = await fetchReportsByClusterId(task.cluster_id)
-      }
-      setReports(reportsData)
-      
-      // If we're in detail view, ensure the selected report still exists
-      if (viewMode === 'detail' && selectedReportId) {
-        const reportStillExists = reportsData.find(r => r.id === selectedReportId)
-        if (!reportStillExists) {
-          // Report no longer exists, go back to table view
-          setViewMode('table')
-          setSelectedReportId(null)
-        }
-      }
-      
-      setNotification({ message: 'Report marked as complete!', type: 'success' })
-    } catch (error) {
-      reportDiagnostic('error', 'dispatch', 'Failed to mark report complete:', error)
-      setNotification({ message: 'Failed to mark report complete. Please try again.', type: 'error' })
-    } finally {
-      setCompletingReportId(null)
-    }
-  }
-
-  const handleValidateReport = async (reportId) => {
-    const report = reports.find(r => r.id === reportId)
-    
-    // Check if the report has both before and after photos
-    if (!report.before_photo_url || !report.after_photo_url) {
-      setNotification({ message: 'Please upload both before and after photos for this report before validating it.', type: 'warning' })
-      return
-    }
-
-    setValidatingReport(reportId)
-    try {
-      await updateReportValidation(reportId, 'validated')
-      // Refresh reports to show updated validation status
-      let reportsData = []
-      if (task.is_custom && task.report_ids) {
-        reportsData = await fetchReportsByIds(task.report_ids)
-      } else if (task.cluster_id) {
-        reportsData = await fetchReportsByClusterId(task.cluster_id)
-      }
-      setReports(reportsData)
-
-      setNotification({ message: 'Report validated successfully', type: 'success' })
-    } catch (error) {
-      reportDiagnostic('error', 'dispatch', 'Failed to validate report:', error)
-      setNotification({ message: 'Failed to validate report. Please try again.', type: 'error' })
-    } finally {
-      setValidatingReport(null)
-    }
-  }
-
-  const handleRejectReport = async (reportId) => {
-    setValidatingReport(reportId)
-    try {
-      await updateReportValidation(reportId, 'rejected')
-      // Refresh reports to show updated validation status
-      let reportsData = []
-      if (task.is_custom && task.report_ids) {
-        reportsData = await fetchReportsByIds(task.report_ids)
-      } else if (task.cluster_id) {
-        reportsData = await fetchReportsByClusterId(task.cluster_id)
-      }
-      setReports(reportsData)
-
-      setNotification({ message: 'Report rejected successfully', type: 'success' })
-    } catch (error) {
-      reportDiagnostic('error', 'dispatch', 'Failed to reject report:', error)
-      setNotification({ message: 'Failed to reject report. Please try again.', type: 'error' })
-    } finally {
-      setValidatingReport(null)
-    }
-  }
-
-  const handleAddNote = async () => {
-    if (!noteText.trim()) return
-    
-    setAddingNote(true)
-    try {
-      await logAgencyResponse(selectedReportId, {
-        action_type: 'manual_note',
-        action_details: noteText
-      })
-      
-      // Refresh agency responses
-      const responses = await fetchAgencyResponses(selectedReportId)
-      setAgencyResponses(responses)
-      
-      setNoteText('')
-      setShowNoteInput(false)
-      setNotification({ message: 'Note added successfully', type: 'success' })
-    } catch (error) {
-      reportDiagnostic('error', 'dispatch', 'Failed to add note:', error)
-      setNotification({ message: 'Failed to add note. Please try again.', type: 'error' })
-    } finally {
-      setAddingNote(false)
-    }
-  }
-
   const handleViewReportDetail = async (reportId) => {
     setSelectedReportId(reportId)
-    setViewMode('detail')
     
     // Load agency responses for the selected report
     try {
@@ -386,7 +188,6 @@ function CleanupTaskDetailContent() {
     
     // Load evidence for the selected report if not already loaded
     if (!reportsEvidence[reportId] && !evidenceErrors[reportId]) {
-      setLoadingEvidence(prev => ({ ...prev, [reportId]: true }))
       setEvidenceErrors(prev => ({ ...prev, [reportId]: null }))
       
       // Cancel any pending request for this report
@@ -411,170 +212,8 @@ function CleanupTaskDetailContent() {
           }
         })
         .finally(() => {
-          setLoadingEvidence(prev => ({ ...prev, [reportId]: false }))
           delete abortControllersRef.current[reportId]
         })
-    }
-  }
-
-  const handleBackToTable = () => {
-    setSelectedReportId(null)
-    setViewMode('table')
-  }
-
-  const handleNextReport = () => {
-    const currentIndex = reports.findIndex(r => r.id === selectedReportId)
-    if (currentIndex < reports.length - 1) {
-      const nextReportId = reports[currentIndex + 1].id
-      setSelectedReportId(nextReportId)
-      
-      // Load evidence for the next report if not already loaded
-      if (!reportsEvidence[nextReportId] && !evidenceErrors[nextReportId]) {
-        setLoadingEvidence(prev => ({ ...prev, [nextReportId]: true }))
-        setEvidenceErrors(prev => ({ ...prev, [nextReportId]: null }))
-        
-        const controller = new AbortController()
-        abortControllersRef.current[nextReportId] = controller
-        
-        fetchReportEvidence(nextReportId, controller.signal)
-          .then(evidence => {
-            setReportsEvidence(prev => ({
-              ...prev,
-              [nextReportId]: evidence || []
-            }))
-          })
-          .catch(error => {
-            if (error.name !== 'AbortError') {
-              reportDiagnostic('error', 'dispatch', 'Failed to fetch evidence for report:', nextReportId, error)
-              setEvidenceErrors(prev => ({ ...prev, [nextReportId]: error.message }))
-            }
-          })
-          .finally(() => {
-            setLoadingEvidence(prev => ({ ...prev, [nextReportId]: false }))
-            delete abortControllersRef.current[nextReportId]
-          })
-      }
-    }
-  }
-
-  const handlePrevReport = () => {
-    const currentIndex = reports.findIndex(r => r.id === selectedReportId)
-    if (currentIndex > 0) {
-      const prevReportId = reports[currentIndex - 1].id
-      setSelectedReportId(prevReportId)
-      
-      // Load evidence for the previous report if not already loaded
-      if (!reportsEvidence[prevReportId] && !evidenceErrors[prevReportId]) {
-        setLoadingEvidence(prev => ({ ...prev, [prevReportId]: true }))
-        setEvidenceErrors(prev => ({ ...prev, [prevReportId]: null }))
-        
-        const controller = new AbortController()
-        abortControllersRef.current[prevReportId] = controller
-        
-        fetchReportEvidence(prevReportId, controller.signal)
-          .then(evidence => {
-            setReportsEvidence(prev => ({
-              ...prev,
-              [prevReportId]: evidence || []
-            }))
-          })
-          .catch(error => {
-            if (error.name !== 'AbortError') {
-              reportDiagnostic('error', 'dispatch', 'Failed to fetch evidence for report:', prevReportId, error)
-              setEvidenceErrors(prev => ({ ...prev, [prevReportId]: error.message }))
-            }
-          })
-          .finally(() => {
-            setLoadingEvidence(prev => ({ ...prev, [prevReportId]: false }))
-            delete abortControllersRef.current[prevReportId]
-          })
-      }
-    }
-  }
-
-  const toggleReportExpansion = async (reportId) => {
-    const isExpanding = !expandedReports[reportId]
-    
-    setExpandedReports(prev => ({
-      ...prev,
-      [reportId]: !prev[reportId]
-    }))
-
-    // Lazy load evidence when expanding
-    if (isExpanding && !reportsEvidence[reportId] && !evidenceErrors[reportId]) {
-      // Cancel any pending request for this report before making a new one
-      if (abortControllersRef.current[reportId]) {
-        abortControllersRef.current[reportId].abort()
-      }
-      
-      setLoadingEvidence(prev => ({ ...prev, [reportId]: true }))
-      setEvidenceErrors(prev => ({ ...prev, [reportId]: null }))
-      
-      // Create new AbortController for this request
-      const controller = new AbortController()
-      abortControllersRef.current[reportId] = controller
-      
-      try {
-        const evidence = await fetchReportEvidence(reportId, controller.signal)
-        setReportsEvidence(prev => ({
-          ...prev,
-          [reportId]: evidence || []
-        }))
-      } catch (error) {
-        if (error.name !== 'AbortError') {
-          reportDiagnostic('error', 'dispatch', 'Failed to fetch evidence for report:', reportId, error)
-          setEvidenceErrors(prev => ({ ...prev, [reportId]: error.message }))
-          setNotification({ message: 'Failed to load evidence. Please try again.', type: 'error' })
-        }
-      } finally {
-        setLoadingEvidence(prev => ({ ...prev, [reportId]: false }))
-        delete abortControllersRef.current[reportId]
-      }
-    }
-  }
-
-
-  const getPhotosByType = (type) => {
-    const photos = []
-    if (type === 'before' && task.before_photo_url) {
-      photos.push({ url: task.before_photo_url, label: 'Task Before' })
-    }
-    if (type === 'after' && task.after_photo_url) {
-      photos.push({ url: task.after_photo_url, label: 'Task After' })
-    }
-    reports.forEach(report => {
-      if (type === 'before' && report.before_photo_url) {
-        photos.push({ url: report.before_photo_url, label: `Report ${report.id} Before` })
-      }
-      if (type === 'after' && report.after_photo_url) {
-        photos.push({ url: report.after_photo_url, label: `Report ${report.id} After` })
-      }
-    })
-    return photos
-  }
-
-  const handleNextPhoto = () => {
-    if (!lightboxImage) return
-    const photos = getPhotosByType(lightboxImage.type)
-    const nextIndex = (lightboxImage.index + 1) % photos.length
-    setLightboxImage({ ...lightboxImage, url: photos[nextIndex].url, index: nextIndex })
-  }
-
-  const handlePreviousPhoto = () => {
-    if (!lightboxImage) return
-    const photos = getPhotosByType(lightboxImage.type)
-    const prevIndex = (lightboxImage.index - 1 + photos.length) % photos.length
-    setLightboxImage({ ...lightboxImage, url: photos[prevIndex].url, index: prevIndex })
-  }
-
-  const getReportCardColor = (status) => {
-    switch (status) {
-      case 'resolved':
-        return 'border-border'
-      case 'in_progress':
-        return 'border-warning/30 bg-warning/10 dark:border-warning/30 dark:bg-warning/10'
-      default:
-        return 'border-border bg-surface-elevated dark:bg-surface-elevated'
     }
   }
 
@@ -669,7 +308,6 @@ function CleanupTaskDetailContent() {
               <div className={styles.routeHeader}><h2 id="operation-route-title">Route map</h2><p>Report locations and connections for this operation.</p></div>
               <div className={styles.routeMap}><OperationsMap tasks={[{ ...task, reports }]} modern={true} reportLinks={true} /></div>
             </section>
-
 
             <div className="xl:col-span-1 h-[400px]">
                <div className="h-full card p-6 border border-border dark:border-[#333333] rounded-xl bg-surface-elevated text-text-primary flex flex-col">
@@ -804,7 +442,6 @@ function CleanupTaskDetailContent() {
 
       {selectedReportId && (
         <ReportDetailModal
-          className={styles.reportDialog}
           report={reports.find(r => r.id === selectedReportId)}
           evidence={reportsEvidence[selectedReportId] || []}
           agencyResponses={agencyResponses}

@@ -1,7 +1,8 @@
 'use client'
 import { Suspense, useEffect, useState, useMemo, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { fetchIssueTypes } from '@/lib/api'
+import { fetchIssueTypes, fetchReportEvidence, fetchAgencyResponses } from '@/lib/api'
+import ReportDetailModal from '@/components/reports/ReportDetailModal'
 import { useDashboardReports, useDashboardTasks } from '@/components/context/DashboardQueryProvider'
 import PageHeader from '@/components/layout/PageHeader'
 import FilterBar from '@/components/ui/FilterBar'
@@ -10,7 +11,7 @@ import Pagination from '@/components/ui/Pagination'
 import useTablePageSize from '@/components/ui/useTablePageSize'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { OfficerGuard } from '@/components/auth/RequireRole'
-import { Target, Wrench, AlertTriangle, Clock, ClipboardCheck } from 'lucide-react'
+import { Target, Wrench, AlertTriangle, ClipboardCheck } from 'lucide-react'
 import styles from './Reports.module.css'
 
 const terminalStatuses = ['resolved', 'closed', 'completed', 'rejected']
@@ -40,6 +41,9 @@ function OfficerReportsContent() {
   const reports = useMemo(() => reportsQuery.data || [], [reportsQuery.data])
   const tasks = useMemo(() => Array.isArray(tasksQuery.data) ? tasksQuery.data : (tasksQuery.data?.tasks || []), [tasksQuery.data])
   const [issueTypes, setIssueTypes] = useState([])
+  const [selectedReportId, setSelectedReportId] = useState(null)
+  const [selectedEvidence, setSelectedEvidence] = useState([])
+  const [selectedResponses, setSelectedResponses] = useState([])
   const loading = reportsQuery.isPending || tasksQuery.isPending
 
   const getTargetStatus = useCallback(() => {
@@ -146,7 +150,11 @@ function OfficerReportsContent() {
   }
 
   const handleRowClick = (report) => {
-    router.push(`/dashboard/raw-data/${report.id}`)
+    setSelectedReportId(report.id)
+    setSelectedEvidence([])
+    setSelectedResponses([])
+    fetchReportEvidence(report.id).then(evidence => setSelectedEvidence(evidence || [])).catch(() => {})
+    fetchAgencyResponses(report.id).then(responses => setSelectedResponses(responses || [])).catch(() => {})
   }
 
   const handleResetFilters = () => {
@@ -242,17 +250,7 @@ function OfficerReportsContent() {
       label: 'Status', 
       width: '12%',
       render: (value, row) => {
-        const overdue = isReportOverdue(row)
-        return (
-          <div className="flex flex-col gap-1 items-start">
-            <StatusBadge status={value} type="report" />
-            {overdue && (
-              <span className={styles.overdueSub}>
-                <Clock size={12} aria-hidden="true" /> Overdue
-              </span>
-            )}
-          </div>
-        )
+        return <StatusBadge status={value} type="report" />
       }
     },
     { 
@@ -431,6 +429,14 @@ function OfficerReportsContent() {
             />
           )}
         </div>
+        {selectedReportId && (
+          <ReportDetailModal
+            report={reports.find(r => r.id === selectedReportId)}
+            evidence={selectedEvidence}
+            agencyResponses={selectedResponses}
+            onClose={() => setSelectedReportId(null)}
+          />
+        )}
       </div>
   )
 }

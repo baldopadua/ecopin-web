@@ -49,3 +49,9 @@
 @media (max-width: 1024px) { .main { padding: 48px 24px; gap: 48px; } }
 @media (max-width: 767px) { .topBar { padding: 16px 24px; } .main { padding: 24px; grid-template-columns: 1fr; gap: 24px; } .formSection { max-width: 480px; margin: auto; order: 1; } .story { order: 2; align-items: center; } .citizenNote { padding: 20px; } }
 @media (prefers-reduced-motion: reduce) { .photoCycle img { transition: none; } }
+
+.forgotLink { align-self: flex-start; display: inline-flex; align-items: center; min-height: 44px; color: var(--landing-blue); font-size: 14px; font-weight: 500; text-underline-offset: 3px; }
+.forgotLink:hover { text-decoration: underline; }
+.forgotLink:focus-visible { outline: 3px solid var(--landing-blue); outline-offset: 3px; }
+.notice { display: flex; gap: 12px; padding: 16px; border-radius: 12px; background: var(--landing-green-bg); color: var(--landing-text); font-size: 14px; line-height: 1.6; }
+.notice p { margin: 0; }

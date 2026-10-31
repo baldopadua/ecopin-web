@@ -41,7 +41,6 @@
 .page [data-reveal]:focus-within { opacity: 1 !important; transform: none !important; }
 .brand { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
 .brand img, .footer img { width: auto; height: 30px; object-fit: contain; }
-:global(.dark) .brand img, :global(.dark) .footer img { filter: brightness(0) invert(1); }
 .brand span { font-size: 11px; color: var(--landing-muted); }
 .nav { display: flex; align-items: center; gap: 32px; }
 .nav a { font-size: 14px; color: var(--landing-muted); padding: 12px 0; }
@@ -361,10 +360,8 @@
   .navSpacer { height: 60px; }
   .desktopMotion { display: none; }
   .mobileMotion { display: flex; align-items: center; gap: 8px; padding: 12px; min-height: 44px; font-size: 14px; color: var(--landing-muted); }
-  .sideNav { right: 8px; padding: 4px; gap: 0; }
   .accountName { max-width: 64px; }
   .signIn:has(.accountAvatar) { padding: 8px; }
-  .community, .about, .guide { padding-right: 48px; }
   .community { padding: 0 24px 56px; }
   .communityHeading { flex-direction: column; align-items: flex-start; gap: 16px; }
   .communityHeading > p { max-width: none; }
@@ -375,14 +372,14 @@
   .photoLead figcaption strong { font-size: 24px; }
   .photoLead > figcaption { padding: 64px 24px 24px; }
   .communityFoot { flex-direction: column; align-items: flex-start; gap: 8px; }
-  .about, .guide, .promiseStrip { margin-right: 72px; padding-right: 0; }
-  .community { padding-right: 72px; }
-  .mobileSection { margin-right: 72px; padding: 32px 16px; }
+  /* Symmetric gutters: the quick-navigation rail is disabled below 768px, so no right-hand reservation. */
+  .about, .guide, .promiseStrip { margin-right: 24px; padding-right: 0; }
+  .mobileSection { margin-right: 16px; padding: 32px 24px; }
+  .sideNav { display: none; }
   .mobileCopy .primaryButton { padding: 12px; font-size: 13px; gap: 8px; }
   .mobileCopy .primaryButton svg:last-child { display: none; }
   .phoneStage { padding: 0; }
   .phoneTilt { width: 210px; }
-  .closing, .footer { padding-right: 72px; }
 }
 .page[data-motion='reduced'] .photoFrame:hover img { transform: none; }
 .page[data-motion='reduced'] .photoStory figure:hover { translate: none; filter: none; }

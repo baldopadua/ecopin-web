@@ -126,6 +126,33 @@ Primary filled actions retain `#0052cc` with white text in both themes. Hover us
 
 Dark surfaces are neutral charcoal. Do not replace them with blue-gray slate. Change semantic tokens together rather than introducing isolated hardcoded surface colors.
 
+### Global tokens and canonical report-status colors (UX-01, UX-03)
+
+`app/globals.css` is the token source for dashboard and shared pages. Never reference a token that is not defined there.
+
+- Surface tiers: `--surface` (page panels), `--surface-elevated` and `--surface-raised` (cards, popovers), `--surface-sunken` (wells, inputs-on-card). Border tiers: `--border-subtle`, `--border`, `--border-strong`. Shadows: `--shadow-sm`, `--shadow-md`, with `--shadow-card`/`--shadow-floating`/`--shadow-dialog` built on them. Light and dark values are both defined; inline fallbacks such as `var(--surface-raised, #fff)` must not be the only definition.
+- `--accent-primary` (`#0052CC`) is the brand blue. `--accent-green` is a legacy alias of it and is blue, not green; use `--accent-primary` in new code and `--landing-green` for environmental green.
+- Outfit loads weights 400-700 only. Do not request 800/900 (`font-black`, `font-extrabold`, `font-weight: 800|900`); the browser would synthesize them.
+- Dark-mode datepicker selected days use white text on `#0052CC`, never black.
+
+**Canonical report status colors** (single source: `REPORT_STATUS_COLORS` / `getReportStatusHex` in [statusHelpers.js](lib/helpers/statusHelpers.js); mobile mirror: `reportStatusColor` in `ecopin_app/lib/shared/reports/presentation/widgets/report_status_presentation.dart`):
+
+| Status | Color | Token |
+| --- | --- | --- |
+| `unresolved` (also pending, submitted, rejected, urgent) | Red | `--error` |
+| `in_progress`, `acknowledged`, `pending_owner_consent` | Blue | `--info` |
+| `waiting_for_feedback`, `responded` | Purple | `--purple` |
+| `resolved` | Green | `--success` |
+| `closed` | Grey | muted |
+
+Badges (`getReportStatusColor`), Leaflet photo pins' status pip (`pinIcon.js`), the dashboard/public photo markers (`reportPinStatus.js` + `ReportPhotoMarker.module.css`, which use AA-darkened variants of the same hues) and `/explore` fallback badges must all follow this table. Add a new status in `statusHelpers.js` first, then in the mobile helper and the two docs. Amber is reserved for warning/SLA risk, not for a report lifecycle status.
+
+### Map defaults, bounds and CSAT scale (UX-04, UX-05)
+
+- Import map defaults from [pasigMapConstants.js](lib/map/pasigMapConstants.js): `PASIG_CENTER` [14.575, 121.08], `SWMO_DEPOT` [14.561433, 121.075636], `PASIG_BOUNDS`, `PASIG_MIN_ZOOM`. Never hardcode coordinates or fall back to Manila. `EcoPinMap`, `/explore` `PublicMap`, `LandingMap`, `HistoricalPatternMap` and `HotspotForecastMap` enforce `maxBounds` with `maxBoundsViscosity={1}`; `EcoPinMap` still accepts `externalMaxBounds`/`externalMinZoom` overrides. Keep OSM/CARTO attribution on every tile layer. Mirror: `ecopin_app/lib/core/constants/app_constants.dart`.
+- Issue categories (six, includes Infrastructure) are `waste, flooding, pollution, infrastructure, illegal_logging, others`, identical to mobile.
+- CSAT: use [csatScale.js](lib/helpers/csatScale.js) (1 Very Dissatisfied red, 2 Dissatisfied amber, 3 Neutral grey, 4 Satisfied blue, 5 Very Satisfied green). Render one emoji plus the score, never two emoji. Print badges: 4+ green, 2.5-4 amber, below red.
+
 ### Theme behavior
 
 The root layout initializes the existing `dark` class from the saved `theme` preference, falling back to the operating system's color scheme. The landing hook observes that class using `useSyncExternalStore` and a `MutationObserver`. Toggling updates both the class and `localStorage.theme`.
@@ -140,7 +167,7 @@ The dark header/footer treatment applies `brightness(0) invert(1)` for a white s
 
 ## 4. Typography and iconography
 
-Use the existing Outfit family through `next/font/google` and `--font-outfit`, with a sans-serif fallback. The root loads weights 400, 500, 600, and 700; landing headings primarily use 500. Do not introduce another display font.
+Use the existing Outfit family through `next/font/google` and `--font-outfit`, with a sans-serif fallback. The root loads weights 400, 500, 600, and 700 (never request 800/900); landing headings primarily use 500. Do not introduce another display font.
 
 | Element | Current treatment |
 | --- | --- |
@@ -566,11 +593,13 @@ Source: the cascade in [LandingPage.module.css](components/landing/LandingPage.m
 
 ### Space for the rail
 
+CTA budget (UX-13): `/explore` is linked once from the hero button and once from the main navigation (the rail omits it); the footer keeps only `Reports Gallery`. Download appears in the navigation and the `#mobile-app` section (plus its `/downloads` install help). Photo attribution appears once, in the About lead-photo caption; `/delete-account` appears once, in the footer. The footer contact form falls back to `http://localhost:4002`, matching `NEXT_PUBLIC_BACKEND_API_URL`. Do not re-add the dark-mode logo invert filter: `Full Logo Dark.png` is already the dark asset.
+
 The rail is fixed, so the content must reserve room for it. Do not simply place it over text.
 
 At tablet widths, About, guide, and promise strip use a 104px right margin; the showcase uses a 96px right margin; the story uses 104px right padding.
 
-On mobile the rail sits 8px from the right edge with 4px padding and no inter-item gap, while maintaining 44px targets. Reading sections reserve approximately 72px on the right through their final margins/padding. The closing band and footer also reserve right space.
+Below 768px the quick-navigation rail is not rendered (`LandingNavigation` uses `matchMedia`) and the sticky header with its menu stays visible instead, so mobile sections use symmetric 24px (showcase 16px) gutters with no right-hand reservation; the closing band and footer use their normal padding. Tablet widths keep the reservations above.
 
 The mobile Android action uses compact 12px padding and 13px type; its trailing arrow is hidden to avoid overflow. The phone is reduced rather than clipped. The photo story stacks the lead above two supporting squares.
 
@@ -669,6 +698,11 @@ These constraints preserve the final design choices and the fixes made during it
 | Hash navigation scrolls twice or jumps | Use native anchors and one active smooth-scroll owner |
 | Editorial imagery becomes live evidence | Keep editorial, category, and report imagery clearly distinguished |
 | Styling changes leak into other roles | Keep landing styling scoped and respect public-page boundaries |
+
+- **Landing tokens scope (UX-08):** `LandingNavigation` and `PublicFooter` read `--landing-*` variables that exist only under `LandingPage.module.css` `.page`. Every route that renders them (`/help`, the global 404, and any new public page) must put that class on its root container alongside its own page class (`className={`${publicStyles.page} ${styles.page}`}`), or the header, drawer and sign-in button render transparent.
+- **Role guards (UX-07, UX-09):** Officer/admin pages wrap their content in `OfficerGuard`/`AdminGuard`/`RequireRole`; pass a role list as `allowedRoles` (plural). Pages must import every API handler they call (for example `approveOptimization`/`discardOptimization` on `/dashboard/officer/optimization`). `/dashboard/raw-data` is only a redirect to `/dashboard/officer/reports`; link to the target directly.
+- **Mobile-only roles on `/auth` (UX-10):** `login()` stores the session before the role is known. For `citizen` and `field_crew` the page must `await logout()` before showing the rejection, and the redirect effect is suppressed while a sign-in is in flight so the stored token never sends a rejected role to `/dashboard`.
+- **Dark-mode inline styles (UX-12):** `/reports/[id]` uses inline `var(--surface-raised)`, `--surface-sunken` and `--border-subtle`; these are defined in `globals.css` for both themes, so keep them defined there instead of relying on fallbacks. Text on `#0052CC` is white.
 
 ## 17. Verification and maintenance
 
@@ -789,6 +823,22 @@ Measure available viewport space and open above when needed. Limit list height a
 PublicLoadingState (and the navigation overlay) share PageLoadingIndicator: the existing logo ring, title, and description sit over a faded street map (RouteMapBackdrop) that is near-opaque at the center and masks out to the page background, so it follows light and dark themes. A route line draws between two pins over a 4.6s loop; reduced motion shows the finished route statically. Public pages use short fade/translation entrances rather than a fullscreen wipe. PublicMotion applies a 450ms, 12px page entrance and reduced-motion overrides; Explore fades over 300ms. Do not alter private dashboard loading behavior as part of this scope.
 
 Sources: [Explore wrapper](app/explore/ExplorePage.js), [report browser](app/explore/PublicMap.js), [toolbar](app/explore/GalleryToolbar.js), [mode switch](app/explore/ViewModeSwitch.js), [styles](app/explore/Explore.module.css), [photo viewer](app/explore/PhotoViewer.js), [focus](app/explore/useDialogFocus.js), [popup](components/landing/PublicReportPopup.js), [dropdown](components/ui/PublicSelect.js), [search](lib/public-gallery.mjs), and [URL helper](lib/explore-url.mjs).
+
+### Explore dedupe rules (UX-14)
+
+- `mobileTab` defaults to `map`; on screens below 768px exactly one of map or list is visible (the split layout only exists at `md` and up).
+- One location control: the toolbar `Location` dropdown. It contains a search box that filters areas and lists matching hotspots (replacing the old floating "Find points of interest" pill). Enter flies to the best match through `handleFindPoi`.
+- The Report Details sidebar has one dismiss control (`Back to Reports` / `Back to Gallery`) and one primary photo trigger (the hero photo) plus the per-image evidence thumbnails; there is no header "Open photos" button, close X, or bottom "View full photos" bar. Gallery cards have one photo trigger and one title/details trigger.
+- `PhotoViewer` has a thumbnail strip for photos and footer Previous/Next for reports. Keyboard arrows still step photos then reports. Do not add stage arrows over the image.
+
+### Public report permalink and support pages (UX-15, UX-16)
+
+- `/reports/[id]` is styled only by `app/reports/[id]/ReportPermalink.module.css` (global tokens `--surface-raised`, `--surface-sunken`, `--border-*`, `--accent-primary`; no inline styles). All interactive controls are at least 44px tall. It has exactly one Explore link (the back link); the error state has no extra buttons.
+- Privacy: rejected reports are never rendered (the page shows "This report is not publicly available."); location shows the barangay or "Pasig City", never raw GPS coordinates. The location-verification result appears once, as the `StatusBadge type="location_verification"`; the banner carries no verification text. Do not mention rewards or other features that do not exist. The backend enforces the same rule: `readReportForViewer` returns 404 for rejected reports to anonymous viewers (authorized owners and staff still read them through the authenticated path), so the page filter is a second layer.
+- Contact details are centralized: read them through `getOfficialContacts(cms)` (`lib/official-contacts.mjs`) and the public CMS; do not hardcode phone numbers or emails in pages or FAQ copy. `/contact` shows the SWMO email once, as the "Email SWMO" button, and its main container uses a 32px top padding because `LandingNavigation` already renders a spacer.
+- `tel:`/`mailto:` buttons do nothing on desktops without a handler, so `/contact` pairs every call/email action with a copy button (`CopyValueButton`, with `execCommand` fallback), a "Write in Gmail (browser)" compose link, and a note. Keep a visible fallback next to any new `tel:`/`mailto:` action.
+- The footer "Send us a message" form only sends an email through `/api/contact/send`; it never creates a support ticket (tickets require a signed-in citizen and are created in the Android app). Its success message and subtitle say so. Do not describe it as ticketing.
+- `/help#tickets` explains that tickets live in the Android app and that the footer "Send us a message" form is for general questions and creates no trackable ticket. `#tickets` has `scroll-margin-top: 80px` so the fixed header does not cover it.
 
 ## 20. Android installation page contract
 
@@ -915,6 +965,7 @@ Staff notifications announce outcomes. Errors/warnings persist until dismissed; 
 Shared report/evidence dialogs use native modal stacking plus explicit Tab cycling and opener focus restoration. Closing a nested viewer returns to its report; closing the report returns to its opener. Photo stage backgrounds are intentionally black for uncropped inspection, while report information follows the theme. Viewer actions have 44px targets, written captions/counts, arrows, zoom, and Escape. On mobile, Close and Expand occupy opposite upper corners; details share the remaining height below the photo rather than being clipped. Evidence thumbnails are keyboard buttons. Batch evidence requests can opt into explicit failure reporting; retry distinguishes failed loading from a genuinely empty photo set. Existing callers retain their previous API helper behavior.
 
 These behaviors are verified by `tests/password-recovery.browser.cjs` and `tests/staff-media.browser.cjs` using synthetic staff data. Verification of other page-specific dialogs remains in the backlog.
+- **Password recovery (UX-17):** `/auth` links to `/forgot-password` (email form; response is identical whether or not the account exists) and the emailed link opens `/reset-password`, which reads the recovery token from the URL fragment, removes it from the address bar, and posts it with the new password to `/api/session/reset-password` (proxied to the backend `reset-password`). Both pages use the `/force-change-password` layout and `Auth.module.css`.
 
 ## 23. Officer analytics
 

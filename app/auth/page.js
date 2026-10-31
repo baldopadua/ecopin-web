@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowRight, ArrowLeft, Eye, EyeOff, Moon, Sun, ShieldCheck, Smartphone, AlertCircle } from 'lucide-react'
 import { readSessionKey, subscribeSession, loadSessionMetadata } from '@/lib/auth-token.mjs'
-import { login } from '@/lib/api/auth'
+import { login, logout } from '@/lib/api/auth'
 import AuthPhotos from './AuthPhotos'
 import motion from '@/components/ui/PublicMotion.module.css'
 import usePublicTheme from '@/components/landing/usePublicTheme'
@@ -22,7 +22,8 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  useEffect(() => { if (token) router.replace('/dashboard') }, [token, router])
+  // Skip while a sign-in is in flight so a rejected mobile-only role is logged out before any redirect.
+  useEffect(() => { if (token && !loading) router.replace('/dashboard') }, [token, loading, router])
   useEffect(() => { void loadSessionMetadata() }, [])
 
   async function handleSubmit(event) {
@@ -37,8 +38,16 @@ export default function AuthPage() {
         return
       }
       const role = data.user?.role || 'citizen'
-      if (role === 'citizen') throw new Error('This sign-in is for authorized personnel. Citizens can report through the EcoPin Android app.')
-      if (role === 'field_crew') throw new Error('Field crews sign in through the EcoPin mobile app. Web access is restricted.')
+      const mobileOnlyMessage = role === 'citizen'
+        ? 'This sign-in is for authorized personnel. Citizens can report through the EcoPin Android app.'
+        : role === 'field_crew'
+          ? 'Field crews sign in through the EcoPin mobile app. Web access is restricted.'
+          : null
+      if (mobileOnlyMessage) {
+        // login() already stored the session; clear it before the redirect effect sees the token.
+        await logout().catch(() => {})
+        throw new Error(mobileOnlyMessage)
+      }
       router.replace('/dashboard')
     } catch (err) {
       setError(err.message || 'We couldn’t sign you in. Please try again.')
@@ -56,6 +65,7 @@ export default function AuthPage() {
         {token ? <p role="status">Opening your account…</p> : <form onSubmit={handleSubmit} className={styles.form} aria-busy={loading}>
           <div><label htmlFor="login-email">Email address</label><input id="login-email" name="email" type="email" autoComplete="username" required value={email} onChange={event => setEmail(event.target.value)} placeholder="you@pasigcity.gov.ph" disabled={loading} /></div>
           <div><label htmlFor="login-password">Password</label><div className={styles.password}><input id="login-password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" required value={password} onChange={event => setPassword(event.target.value)} placeholder="Enter your password" disabled={loading} /><button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} onClick={() => setShowPassword(value => !value)}>{showPassword ? <EyeOff size={20} /> : <Eye size={20} />}</button></div></div>
+          <Link href="/forgot-password" className={styles.forgotLink}>Forgot your password?</Link>
           {error && <div role="alert" className={styles.error}><AlertCircle size={20} /><p>{error}</p></div>}
           <button type="submit" disabled={loading} className={publicStyles.primaryButton}>{loading ? 'Signing in…' : 'Sign in'}{!loading && <ArrowRight size={18} />}</button>
         </form>}

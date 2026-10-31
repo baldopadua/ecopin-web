@@ -1,4 +1,5 @@
 'use client'
+import { getReportStatusHex } from '@/lib/helpers/statusHelpers'
 import { useEffect, useState, useRef } from 'react'
 import PageHeader from '@/components/layout/PageHeader'
 import { fetchPublicReports, fetchSatisfactionAnalytics } from '@/lib/api'
@@ -26,6 +27,7 @@ import {
   Legend,
 } from 'chart.js'
 import { reportDiagnostic } from '../../../../lib/diagnostics.mjs';
+import { CSAT_SCALE } from '@/lib/helpers/csatScale'
 
 ChartJS.register(
   CategoryScale,
@@ -39,8 +41,8 @@ ChartJS.register(
 )
 
 const COLORS = ['#0052CC', '#2E7D32', '#B45309', '#D32F2F', '#7C3AED', '#BE185D', '#0E7490', '#64748B']
-const SATISFACTION_COLORS = ['#EF4444', '#F59E0B', '#9CA3AF', '#3B82F6', '#10B981']
-const SATISFACTION_LABELS = ['Very Dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very Satisfied']
+const SATISFACTION_COLORS = CSAT_SCALE.map(e => e.color)
+const SATISFACTION_LABELS = CSAT_SCALE.map(e => e.label)
 
 export default function MetricsWorkspace() {
   return <RequireRole allowedRoles={['officer', 'admin']}><Analytics /></RequireRole>
@@ -357,7 +359,7 @@ function Analytics() {
     datasets: [
       {
         data: statusData.map(d => d.value),
-        backgroundColor: statusData.map((_, index) => COLORS[index % COLORS.length]),
+        backgroundColor: statusData.map(d => getReportStatusHex(d.name)),
       }
     ]
   }

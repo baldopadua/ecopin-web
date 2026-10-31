@@ -22,6 +22,7 @@ import { reportDiagnostic } from '../../lib/diagnostics.mjs';
 import { MAP_LOCATIONS, getDistanceKm } from '@/lib/map-search.mjs';
 import { groupNearbyMarkers } from '@/lib/marker-grouping.mjs';
 import ClusterMarker from './ClusterMarker';
+import { PASIG_CENTER, PASIG_BOUNDS, PASIG_MIN_ZOOM } from '@/lib/map/pasigMapConstants'
 
 // Polyfill Buffer for browser environment
 if (typeof window !== 'undefined' && !window.Buffer) {
@@ -33,17 +34,12 @@ const normalizeString = (str) => {
   return str.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
 };
 
-const PLP_CENTER = [14.561433, 121.075636]
+const PLP_CENTER = PASIG_CENTER
 const DEFAULT_ZOOM = 15
 const CLUSTER_EXPAND_ZOOM = 15
 // Nearby individual pins collapse into one count marker up to this zoom; closer in, each report shows.
 const PIN_GROUP_MAX_ZOOM = 16
 
-// area bounds
-const PASIG_BOUNDS = [
-  [14.52, 121.02], // Southwest
-  [14.62, 121.12]  // Northeast
-]
 
 // createIcon moved to EcoPinMarker
 
@@ -667,8 +663,9 @@ export default function EcoPinMap({ reports: externalReports, centerLat, centerL
           zoom={centerLat && centerLng ? 17 : DEFAULT_ZOOM}
           maxZoom={21}
           trackResize={false}
-          // maxBounds={externalMaxBounds}
-          // minZoom={externalMinZoom}
+          maxBounds={externalMaxBounds || PASIG_BOUNDS}
+          maxBoundsViscosity={1}
+          minZoom={externalMinZoom ?? PASIG_MIN_ZOOM}
           style={{ height: '100%', width: '100%' }}
           ref={mapRef}
         >

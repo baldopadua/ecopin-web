@@ -9,9 +9,10 @@ import PublicReportPopup from './PublicReportPopup'
 import PublicSelect from '@/components/ui/PublicSelect'
 import { layoutPublicPins } from './public-pin-layout.mjs'
 import styles from './LandingPage.module.css'
+import { PASIG_CENTER, PASIG_DEFAULT_ZOOM, PASIG_BOUNDS as PASIG_MAX_BOUNDS, PASIG_MIN_ZOOM } from '@/lib/map/pasigMapConstants'
 
 const LOCATIONS = {
-  pasig: { label: 'All of Pasig', center: [14.5802, 121.085], zoom: 14 },
+  pasig: { label: 'All of Pasig', center: PASIG_CENTER, zoom: PASIG_DEFAULT_ZOOM },
   ortigas: { label: 'Ortigas Center', center: [14.5862, 121.061], zoom: 15 },
   rosario: { label: 'Rosario', center: [14.5875, 121.092], zoom: 15 },
   maybunga: { label: 'Maybunga', center: [14.5775, 121.0965], zoom: 15 },
@@ -115,7 +116,7 @@ export default function LandingMap({ isDark }) {
       <PublicSelect id="preview-neighborhood" label="Neighborhood" value={location} onChange={setLocation} options={Object.entries(LOCATIONS).map(([value, place]) => ({ value, label: place.label }))} className={styles.toolbarSelect} />
       <PublicSelect id="preview-concern" label="Concern type" value={issueType} onChange={setIssueType} options={Object.entries(TYPES).map(([value, label]) => ({ value, label }))} className={styles.toolbarSelect} />
     </div>
-    <MapContainer center={LOCATIONS.pasig.center} zoom={14} preferCanvas scrollWheelZoom={false} zoomControl={false} className={styles.leafletMap}>
+    <MapContainer center={LOCATIONS.pasig.center} zoom={14} maxBounds={PASIG_MAX_BOUNDS} maxBoundsViscosity={1} minZoom={PASIG_MIN_ZOOM} preferCanvas scrollWheelZoom={false} zoomControl={false} className={styles.leafletMap}>
       <TileLayer key={isDark ? 'dark' : 'light'} url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" className={isDark ? styles.darkTiles : styles.lightTiles} attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' />
       <ReportLayer location={location} issueType={issueType} retry={retry} onState={setState} isDark={isDark} />
       <MapControls onReset={() => setLocation('pasig')} />

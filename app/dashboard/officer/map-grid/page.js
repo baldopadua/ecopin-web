@@ -155,7 +155,6 @@ function OfficerMapContent() {
             externalShowPins={showPins}
             externalShowClusters={showClusters}
             externalShowHeatmap={showHeatmap}
-            externalMaxBounds={[[14.50, 120.90], [14.80, 121.20]]}
             externalMinZoom={12}
           >
             {showTaskPins && (
@@ -307,9 +306,9 @@ function OfficerMapContent() {
                     </span>
                     <span>Overdue cluster</span>
                   </li>
-                  <li className={`${styles.legendItem} ${styles.legendItemFull}`} title="Dashed blue line (#0052cc) represents the task micro-route connecting cluster centroid to constituent report sub-pins.">
+                  <li className={`${styles.legendItem} ${styles.legendItemFull}`} title="Dashed blue line represents the task micro-route connecting cluster centroid to constituent report sub-pins.">
                     <span className={styles.microRouteLine} aria-hidden="true" />
-                    <span>Task micro-route (<code className={styles.microRouteCode}>#0052cc</code>)</span>
+                    <span>Task micro-route</span>
                   </li>
                 </ul>
               </section>

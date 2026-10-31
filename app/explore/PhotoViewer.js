@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, MapPin, X, ImageOff, Play, Video, Loader2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, MapPin, X, ImageOff, Play, Video, Loader2 } from 'lucide-react'
 import SecureImage from '@/components/ui/SecureImage'
 import { isVideoResource, getVideoPosterUrl } from '@/lib/helpers/mediaHelpers'
 import {
@@ -307,8 +307,6 @@ export default function PhotoViewer({
     }
   }
 
-  const canGoPrevious = reportIndex > 0 || safePhotoIndex > 0
-  const canGoNext = reportIndex < reportList.length - 1 || safePhotoIndex < photos.length - 1
 
   return (
     <div className={styles.backdrop} onClick={event => { if (event.target === event.currentTarget) onClose() }}>
@@ -348,28 +346,6 @@ export default function PhotoViewer({
                   className={`${styles.image} w-full h-full object-contain`}
                   wrapperClassName="w-full h-full flex items-center justify-center"
                 />
-              )}
-              {reportList.length > 1 && (
-                <>
-                  <button
-                    type="button"
-                    className={`${styles.photoArrow} ${styles.previous}`}
-                    aria-label="Previous report"
-                    disabled={!canGoPrevious}
-                    onClick={handlePreviousPhoto}
-                  >
-                    <ChevronLeft size={24} />
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.photoArrow} ${styles.next}`}
-                    aria-label="Next report"
-                    disabled={!canGoNext}
-                    onClick={handleNextPhoto}
-                  >
-                    <ChevronRight size={24} />
-                  </button>
-                </>
               )}
               <span className={styles.counter} aria-live="polite">
                 {hasNoPhotos ? `${reportIndex + 1} / ${reportList.length}` : (photos.length > 1 ? `${safePhotoIndex + 1} / ${photos.length}` : `${reportIndex + 1} / ${reportList.length}`)}

@@ -5,6 +5,7 @@ import { publicReportSearchText, matchesGallerySearch } from '@/lib/public-galle
 import Link from 'next/link'
 import Image from 'next/image'
 import { createPinIcon } from '@/components/landing/pinIcon'
+import { getReportStatusHex } from '@/lib/helpers/statusHelpers'
 import { 
   fetchBatchReportEvidence, 
   getCachedEvidence, 
@@ -54,7 +55,6 @@ import {
   AlertCircle, 
  
   Search, 
-  Compass, 
   FileText, 
   Layers, 
   X, 
@@ -82,12 +82,12 @@ import {
   ImageOff
 } from 'lucide-react'
 import { reportDiagnostic } from '../../lib/diagnostics.mjs';
+import { PASIG_CENTER, PASIG_BOUNDS, PASIG_MIN_ZOOM } from '@/lib/map/pasigMapConstants'
 
 if (typeof window !== 'undefined' && !window.Buffer) {
   window.Buffer = Buffer
 }
 
-const PASIG_CENTER = [14.5802, 121.0850]
 const DEFAULT_ZOOM = 14
 const ISSUE_TYPES = ['waste', 'flooding', 'pollution', 'infrastructure', 'illegal_logging', 'others']
 
@@ -333,29 +333,8 @@ function HeatmapLayer({ heatPoints, showHeatmap }) {
 }
 
 // Floating controls placed directly over the map with dark mode support
-function FloatingMapControls({ 
-  onFindPoi, 
-  onSelectCluster,
-  poiClusters = [],
-  loadingClusters = false,
-  poiQuery, 
-  setPoiQuery,
-  showPoiInput,
-  setShowPoiInput
-}) {
+function FloatingMapControls() {
   const map = useMap()
-
-  // Filter clusters and landmarks based on input query
-  const filteredPoiList = useMemo(() => {
-    const q = (poiQuery || '').toLowerCase().trim()
-    if (!q) return poiClusters
-    return poiClusters.filter(item => 
-      (item.title || '').toLowerCase().includes(q) ||
-      (item.nearbyLandmark || '').toLowerCase().includes(q) ||
-      (item.issue_type || '').toLowerCase().includes(q) ||
-      (item.severity || '').toLowerCase().includes(q)
-    )
-  }, [poiClusters, poiQuery])
 
   return (
     <>
@@ -365,96 +344,6 @@ function FloatingMapControls({
         <div className="flex items-center gap-1.5 bg-white/95 dark:bg-[#1C1C1C]/95 px-3.5 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-800/40 shadow-sm text-xs font-semibold text-emerald-700 dark:text-emerald-400 select-none">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
           <span>Verified Reports Only</span>
-        </div>
-
-        {/* Find points of interest pill */}
-        <div className="relative" data-poi-dropdown>
-          <button 
-            type="button" 
-            onClick={() => setShowPoiInput(!showPoiInput)}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border shadow-sm text-xs font-semibold transition-all ${
-              showPoiInput 
-                ? 'bg-blue-50 dark:bg-[#0052CC]/25 text-blue-900 dark:text-[#60A5FA] border-blue-300 dark:border-[#0052CC]/50' 
-                : 'bg-white/95 dark:bg-[#1C1C1C]/95 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-[#333] hover:text-gray-900 dark:hover:text-white hover:shadow'
-            }`}
-          >
-            <Compass className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
-            <span>Find points of interest</span>
-            {poiClusters.length > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 bg-blue-100 dark:bg-[#0052CC]/40 text-[var(--landing-blue)] text-[10px] font-bold rounded-full">
-                {poiClusters.length}
-              </span>
-            )}
-          </button>
-          
-          {showPoiInput && (
-            <div className="absolute top-full left-0 mt-2 w-80 bg-white dark:bg-[#1C1C1C] rounded-2xl shadow-xl border border-gray-200 dark:border-[#2A2A2A] p-2.5 z-50 animate-in fade-in zoom-in-95 duration-150">
-              <div className="relative">
-                <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                <input 
-                  type="text"
-                  placeholder="Search cluster or hotspot..."
-                  value={poiQuery}
-                  onChange={(e) => setPoiQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      onFindPoi(poiQuery)
-                      setShowPoiInput(false)
-                    }
-                  }}
-                  className="w-full pl-8 pr-3 py-1.5 text-xs bg-transparent text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-[#333] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0052CC]"
-                  autoFocus
-                />
-              </div>
-
-              {/* Fetched Clusters Header */}
-              <div className="mt-2.5 px-1 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                <span>Active Clusters & Hotspots</span>
-                <span>{filteredPoiList.length} total</span>
-              </div>
-
-              {/* Fetched Clusters List */}
-              <div className="mt-1.5 max-h-60 overflow-y-auto space-y-1 pr-0.5 custom-scrollbar">
-                {loadingClusters ? (
-                  <div className="py-4 text-center text-xs text-gray-500 dark:text-gray-400 flex items-center justify-center gap-2">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-[#0052CC]" />
-                    <span>Fetching cluster points...</span>
-                  </div>
-                ) : filteredPoiList.length > 0 ? (
-                  filteredPoiList.map(item => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => {
-                        if (onSelectCluster) onSelectCluster(item)
-                        setShowPoiInput(false)
-                      }}
-                      className="w-full text-left px-2.5 py-2 text-xs text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-[#0052CC]/20 hover:text-[#0052CC] dark:hover:text-[#60A5FA] rounded-xl transition-all flex items-start gap-2.5 group border border-transparent hover:border-blue-200 dark:hover:border-blue-900/40"
-                    >
-                      <div className="p-1.5 rounded-lg bg-blue-100/70 dark:bg-blue-900/40 text-[var(--landing-blue)] mt-0.5 flex-shrink-0 group-hover:bg-[#0052CC] group-hover:text-white transition-colors">
-                        <MapPin className="w-3.5 h-3.5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-1">
-                          <span className="font-semibold truncate">{item.title}</span>
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 dark:bg-[#0052CC]/20 text-[var(--landing-blue)] flex-shrink-0">
-                            {item.report_count} {item.report_count === 1 ? 'report' : 'reports'}
-                          </span>
-                        </div>
-                        <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                          {item.subtitle}
-                        </p>
-                      </div>
-                    </button>
-                  ))
-                ) : (
-                  <div className="py-3 text-center text-xs text-gray-400">
-                    No matching cluster points found
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -537,7 +426,6 @@ export default function PublicMap({ theme = 'light' }) {
   
   // Floating dropdown states
   const [activeFilterDropdown, setActiveFilterDropdown] = useState(null)
-  const [showPoiInput, setShowPoiInput] = useState(false)
   const [poiQuery, setPoiQuery] = useState('')
   const [clusters, setClusters] = useState([])
   const [loadingClusters, setLoadingClusters] = useState(false)
@@ -553,7 +441,7 @@ export default function PublicMap({ theme = 'light' }) {
   // Modals
   
   
-  const [mobileTab, setMobileTab] = useState('split')
+  const [mobileTab, setMobileTab] = useState('map')
 
   
   
@@ -713,19 +601,15 @@ export default function PublicMap({ theme = 'light' }) {
 
   // Dismiss open filter dropdowns and POI search on outside-click or Escape key
   useEffect(() => {
-    if (!activeFilterDropdown && !showPoiInput) return
+    if (!activeFilterDropdown) return
     const handleClickOutside = (e) => {
       if (!e.target.closest('[data-filter-dropdown]')) {
         setActiveFilterDropdown(null)
-      }
-      if (!e.target.closest('[data-poi-dropdown]')) {
-        setShowPoiInput(false)
       }
     }
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         setActiveFilterDropdown(null)
-        setShowPoiInput(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -734,7 +618,7 @@ export default function PublicMap({ theme = 'light' }) {
       document.removeEventListener('mousedown', handleClickOutside)
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [activeFilterDropdown, showPoiInput])
+  }, [activeFilterDropdown])
 
   // Client-side filtering & search (strictly enforces verified reports to eliminate false reports)
   const filteredReports = useMemo(() => {
@@ -1475,6 +1359,17 @@ export default function PublicMap({ theme = 'light' }) {
     }
   }, [filteredReports, handleSelectReport])
 
+  // Hotspot matches shown inside the toolbar Location dropdown while searching
+  const hotspotMatches = useMemo(() => {
+    const q = poiQuery.toLowerCase().trim()
+    if (!q) return []
+    return poiClusters.filter(item =>
+      (item.title || '').toLowerCase().includes(q) ||
+      (item.nearbyLandmark || '').toLowerCase().includes(q) ||
+      (item.issue_type || '').toLowerCase().includes(q)
+    ).slice(0, 6)
+  }, [poiClusters, poiQuery])
+
   // Find POI search (searches fetched cluster points of interest, landmarks, and reports)
   const handleFindPoi = useCallback((query) => {
     if (!query) return
@@ -1547,32 +1442,6 @@ export default function PublicMap({ theme = 'light' }) {
                 </span>
               )}
             </button>
-
-            
-
-            <button
-              type="button"
-              onClick={() => {
-                
-                setPhotoSelection({ report: detailedReport, index: 0 })
-                
-              }}
-              className="p-2 rounded-full text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
-              title="Open photos"
-            >
-              <Maximize2 className="w-4 h-4" />
-            </button>
-
-            <div className="h-4 w-px bg-gray-200 dark:bg-[#333] mx-0.5" />
-
-            <button
-              type="button"
-              onClick={() => setDetailedReport(null)}
-              className="p-2 rounded-full text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
-              title="Close details"
-            >
-              <X className="w-4 h-4" />
-            </button>
           </div>
         </div>
 
@@ -1641,7 +1510,7 @@ export default function PublicMap({ theme = 'light' }) {
                     <span>In Progress</span>
                   </span>
                 ) : (
-                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/90 text-white shadow-xs backdrop-blur-md border border-amber-300/30">
+                  <span style={{ backgroundColor: getReportStatusHex(detailedReport.status) }} className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-white shadow-xs backdrop-blur-md border border-white/30">
                     {detailedReport.status?.replace(/_/g, ' ') || 'Unresolved'}
                   </span>
                 )}
@@ -1881,20 +1750,6 @@ export default function PublicMap({ theme = 'light' }) {
             </div>
           )}
         </div>
-
-        {/* Bottom Sticky Action Bar */}
-        <div className="p-4 border-t border-gray-200/80 dark:border-[#2A2A2A] bg-white/95 dark:bg-[#1C1C1C]/95 backdrop-blur-md flex flex-col gap-2.5 flex-shrink-0">
-          <button
-            type="button"
-            onClick={() => {
-              setPhotoSelection({ report: detailedReport, index: 0 })
-            }}
-            className="w-full py-2.5 px-4 rounded-xl font-semibold text-xs border border-gray-200 dark:border-[#333] text-gray-700 dark:text-gray-200 bg-gray-50/80 dark:bg-[#242424] hover:bg-gray-100 dark:hover:bg-[#2A2A2A] transition-colors flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99] shadow-xs"
-          >
-            <Maximize2 className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
-            <span>View full photos & evidence</span>
-          </button>
-        </div>
       </div>
     )
   }
@@ -2069,6 +1924,25 @@ export default function PublicMap({ theme = 'light' }) {
                       data-filter-dropdown="true"
                       className="absolute top-full left-0 mt-1.5 w-56 max-h-72 overflow-y-auto custom-scrollbar bg-white dark:bg-[#1C1C1C] rounded-2xl shadow-xl border border-gray-200 dark:border-[#2A2A2A] py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150"
                     >
+                      <div className="px-2.5 pb-1.5">
+                        <div className="relative">
+                          <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            aria-label="Search areas and hotspots"
+                            placeholder="Search area or hotspot..."
+                            value={poiQuery}
+                            onChange={(e) => setPoiQuery(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && poiQuery.trim()) {
+                                handleFindPoi(poiQuery)
+                                setActiveFilterDropdown(null)
+                              }
+                            }}
+                            className="w-full pl-8 pr-3 py-1.5 text-xs bg-transparent text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-[#333] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0052CC]"
+                          />
+                        </div>
+                      </div>
                       <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-gray-400">Filter Location</div>
                       {[
                         { name: 'all', label: 'All Pasig Areas', count: allReports.length > 0 ? allReports.length : reports.length },
@@ -2077,7 +1951,7 @@ export default function PublicMap({ theme = 'light' }) {
                           label: loc.name,
                           count: locationCounts[loc.name] || 0
                         }))
-                      ].map(loc => (
+                      ].filter(loc => !poiQuery.trim() || loc.label.toLowerCase().includes(poiQuery.trim().toLowerCase())).map(loc => (
                         <button
                           key={loc.name}
                           type="button"
@@ -2104,6 +1978,25 @@ export default function PublicMap({ theme = 'light' }) {
                           {locationFilter === loc.name && <Check className="w-3 h-3 text-[var(--landing-blue)]" />}
                         </button>
                       ))}
+                      {poiQuery.trim() && hotspotMatches.length > 0 && (
+                        <>
+                          <div className="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-gray-400">Hotspots</div>
+                          {hotspotMatches.map(item => (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => {
+                                handleSelectClusterPoi(item)
+                                setActiveFilterDropdown(null)
+                              }}
+                              className="w-full text-left px-3.5 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#2A2A2A] flex items-center justify-between gap-2"
+                            >
+                              <span className="truncate">{item.title}</span>
+                              <span className="text-[10px] px-1.5 rounded-full bg-gray-100 dark:bg-[#2A2A2A] text-gray-500 dark:text-gray-400 flex-shrink-0">{item.report_count}</span>
+                            </button>
+                          ))}
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -2354,6 +2247,9 @@ export default function PublicMap({ theme = 'light' }) {
                 center={PASIG_CENTER}
                 zoom={DEFAULT_ZOOM}
                 maxZoom={21}
+                maxBounds={PASIG_BOUNDS}
+                maxBoundsViscosity={1}
+                minZoom={PASIG_MIN_ZOOM}
                 zoomControl={false}
                 preferCanvas={true}
                 style={{ height: '100%', width: '100%', background: isDark ? '#121212' : '#f3f4f6' }}
@@ -2370,16 +2266,7 @@ export default function PublicMap({ theme = 'light' }) {
 
                 <HeatmapLayer heatPoints={heatPoints} showHeatmap={showHeatmap} />
 
-                <FloatingMapControls 
-                  onFindPoi={handleFindPoi}
-                  onSelectCluster={handleSelectClusterPoi}
-                  poiClusters={poiClusters}
-                  loadingClusters={loadingClusters}
-                  poiQuery={poiQuery}
-                  setPoiQuery={setPoiQuery}
-                  showPoiInput={showPoiInput}
-                  setShowPoiInput={setShowPoiInput}
-                />
+                <FloatingMapControls />
 
                 {/* Cluster Markers */}
                 {showClusters && zoom <= 14 && filteredClusters.map((cluster) => {
@@ -2611,7 +2498,7 @@ export default function PublicMap({ theme = 'light' }) {
                                     <span>In Progress</span>
                                   </span>
                                 ) : (
-                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200 shadow-xs">
+                                  <span style={{ backgroundColor: getReportStatusHex(report.status) }} className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider text-white shadow-xs">
                                     {report.status?.replace(/_/g, ' ') || 'Unresolved'}
                                   </span>
                                 )}
