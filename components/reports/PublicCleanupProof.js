@@ -2,6 +2,7 @@
 import {useEffect,useState} from 'react'
 import {backendFetch} from '@/lib/backend-fetch.mjs'
 import SecureImage from '@/components/ui/SecureImage'
+import {publicPhotoUrls} from '@/lib/cleanup-proof-photos.mjs'
 
 export default function PublicCleanupProof({reportId}) {
  const [result,setResult]=useState(null),[error,setError]=useState(false),[retry,setRetry]=useState(0)
@@ -21,11 +22,14 @@ export default function PublicCleanupProof({reportId}) {
    :!proof?<p className="text-sm text-text-secondary">No officer-approved public cleanup proof is available yet.</p>
    :<>
     <p className="text-sm whitespace-pre-wrap">{proof.public_notes}</p>
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{['before','after'].map(slot=><figure key={slot}>
-     {/* Only this publication endpoint serves redacted pixels; never substitute report originals. */}
-     <SecureImage src={`/api/backend${proof[`${slot}_url`]}`} alt={`${slot==='before'?'Before':'After'} cleanup, privacy reviewed`} className="w-full rounded-lg" loading="lazy" />
-     <figcaption className="text-sm capitalize">{slot} cleanup</figcaption>
-    </figure>)}</div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{['before','after'].map(slot=>{
+     const urls=publicPhotoUrls(proof,slot)
+     return urls.map((url,index)=><figure key={`${slot}-${index}`}>
+      {/* Only this publication endpoint serves redacted pixels; never substitute report originals. */}
+      <SecureImage src={`/api/backend${url}`} alt={`${slot==='before'?'Before':'After'} cleanup${urls.length>1?`, photo ${index+1} of ${urls.length}`:''}, privacy reviewed`} className="w-full rounded-lg" loading="lazy" />
+      <figcaption className="text-sm capitalize">{slot} cleanup{urls.length>1?` ${index+1} of ${urls.length}`:''}</figcaption>
+     </figure>)
+    })}</div>
     <p className="text-xs text-text-secondary">Completed: {new Date(proof.completed_at).toLocaleString()}. Verified: {new Date(proof.verified_at).toLocaleString()}. Sensitive details are covered in these public copies.</p>
    </>}
  </section>
