@@ -20,11 +20,12 @@ test('WT-89: Backend policy allows public and authenticated account deletion end
 })
 
 test('WT-89: LandingPage footer navigation exposes public Delete Account link', () => {
-  const landingPath = path.resolve(__dirname, '../components/landing/LandingPage.js')
-  const content = fs.readFileSync(landingPath, 'utf8')
-
-  assert.ok(content.includes('href="/delete-account"'), 'LandingPage must include link to /delete-account')
-  assert.ok(content.includes('Delete account'), 'LandingPage must display Delete account text')
+  // The landing page renders the shared public footer, which owns the navigation links.
+  const landing = fs.readFileSync(path.resolve(__dirname, '../components/landing/LandingPage.js'), 'utf8')
+  const footer = fs.readFileSync(path.resolve(__dirname, '../components/landing/PublicFooter.js'), 'utf8')
+  assert.match(landing, /PublicFooter/, 'LandingPage must render the public footer')
+  assert.ok(footer.includes('href="/delete-account"'), 'Public footer must include link to /delete-account')
+  assert.ok(footer.includes('Delete account'), 'Public footer must display Delete account text')
 })
 
 test('WT-89: DeleteAccountPage discloses credential scrubbing and public statistics anonymization', () => {

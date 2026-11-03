@@ -28,9 +28,10 @@ test('WT-84: REPORT_PIN_STATUSES defines comprehensive status tones and Lucide i
   }
 
   assert.equal(REPORT_PIN_STATUSES.unresolved.tone, 'error')
-  assert.equal(REPORT_PIN_STATUSES.in_progress.tone, 'warning')
+  // Design tokens were aligned in commit 6a63021: in progress is informational, waiting for feedback has its own purple tone.
+  assert.equal(REPORT_PIN_STATUSES.in_progress.tone, 'info')
   assert.equal(REPORT_PIN_STATUSES.resolved.tone, 'success')
-  assert.equal(REPORT_PIN_STATUSES.waiting_for_feedback.tone, 'info')
+  assert.equal(REPORT_PIN_STATUSES.waiting_for_feedback.tone, 'purple')
   assert.equal(REPORT_PIN_STATUSES.pending_owner_consent.tone, 'info')
   assert.equal(REPORT_PIN_STATUSES.closed.tone, 'muted')
 
@@ -61,13 +62,9 @@ test('WT-84: HotzoneDetail enables photoPins={true} for cluster constituent repo
   )
 })
 
-test('WT-84: Field Crew report detail enables photoPins={true} on static map view', () => {
-  const reportDetailFile = fs.readFileSync(path.join(rootDir, 'app/dashboard/field-crew/operations/[id]/[report_id]/page.js'), 'utf8')
-  assert.match(
-    reportDetailFile,
-    /<EcoPinMap[\s\S]*?allowedReportIds=\{\[report\.id\.toString\(\)\]\}[\s\S]*?photoPins=\{true\}/,
-    'Field Crew report detail must pass photoPins={true} to EcoPinMap'
-  )
+test('WT-84: the retired web field-crew workspace stays removed (field crews use the mobile app)', () => {
+  // Commit 82b69b7 removed the dead web field-crew routes; crew detail maps are covered by the mobile app and the shared CrewTaskLayer test below.
+  assert.equal(fs.existsSync(path.join(rootDir, 'app/dashboard/field-crew')), false, 'No web field-crew pages are expected')
 })
 
 test('WT-84: Shared Map Grid enables photoPins={true} across EcoPinMap and CrewTaskLayer', () => {

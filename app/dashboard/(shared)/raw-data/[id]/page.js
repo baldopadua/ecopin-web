@@ -1,6 +1,7 @@
 'use client'
 import Link from 'next/link'
 import OperationalTimeline from '@/components/reports/OperationalTimeline'
+import CleanupProofReview from '@/components/reports/CleanupProofReview'
 import SecureImage from '@/components/ui/SecureImage'
 import ImageLightbox from '@/components/ui/ImageLightbox'
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react'
@@ -818,6 +819,7 @@ export default function ReportDetailPage() {
 
               </div>
 
+              {isStaff && <CleanupProofReview key={report.id} reportId={report.id} />}
               {isStaff && <details className="card"><summary className="cursor-pointer min-h-11 py-3 font-medium">Recorded operational events</summary><OperationalTimeline key={report.id} reportId={report.id} /></details>}
               {/* Evidence Photos & Videos */}
               {['officer', 'admin'].includes(user?.role) &&

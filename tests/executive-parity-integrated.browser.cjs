@@ -5,6 +5,9 @@ const base='https://localhost:4101',backend='http://127.0.0.1:4102';
 const backendRoot=path.resolve(__dirname,'../../parity-recovery-backend');
 const credentials=JSON.parse(fs.readFileSync(path.join(backendRoot,'.private/parity-fixtures.json'),'utf8'));
 const output=path.resolve('output/t04');fs.mkdirSync(output,{recursive:true});
+const {execFileSync}=require('node:child_process');
+// Open reports at snapshot time, computed from the isolated tables: later slices add their own synthetic reports, so a fixed number would drift.
+const openNow=()=>Number(execFileSync('docker',['exec','-i','supabase_db_parity-recovery-backend','psql','-X','-qAt','-U','postgres','-d','postgres','-c',"select count(*) from public.reports where status::text not in ('resolved','completed','closed','rejected','waiting_for_feedback')"],{encoding:'utf8'}).trim());
 const results=[];function check(name,condition){assert.ok(condition,name);results.push({name,passed:true});}
 async function main(){
  const {validateExecutiveSnapshot}=await import(pathToFileURL(path.resolve('lib/barangay-executive.mjs')));
@@ -21,7 +24,7 @@ async function main(){
    const snapshot=await response.json();validateExecutiveSnapshot(snapshot,'2026-10');
    const total=snapshot.monthly.total;
    check(`${role}: October Manila count reconciles`,total.report_count===4&&total.approved_count===2&&total.rejected_count===1&&total.pending_count===1);
-   check(`${role}: current backlog is not month-end backlog`,total.backlog_total===4);
+   check(`${role}: current backlog is not month-end backlog`,total.backlog_total===openNow()&&total.backlog_total!==total.pending_count);
    check(`${role}: resolution sample reconciles`,total.resolution_count===1&&total.median_resolution_hours===48&&total.average_resolution_hours===48&&total.p90_resolution_hours===48);
    check(`${role}: complete official coverage`,snapshot.monthly.groups.length===31);
    const serialized=JSON.stringify(snapshot);

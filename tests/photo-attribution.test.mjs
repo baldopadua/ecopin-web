@@ -12,7 +12,9 @@ const FB_PROFILE_URL = 'https://www.facebook.com/jonah.talagtag.77'
 
 test('WT-98: LandingPage footer and photo lead include photo credit and attribution links', () => {
   const landingPath = path.resolve(__dirname, '../components/landing/LandingPage.js')
-  const content = fs.readFileSync(landingPath, 'utf8')
+  const footerPath = path.resolve(__dirname, '../components/landing/PublicFooter.js')
+  // The lead caption is in the landing page, the footer credit in the shared public footer.
+  const content = fs.readFileSync(landingPath, 'utf8') + '\n' + fs.readFileSync(footerPath, 'utf8')
 
   assert.ok(content.includes(FB_POST_URL), 'LandingPage must include link to Facebook post')
   assert.ok(content.includes(FB_PROFILE_URL), 'LandingPage must include link to photographer Facebook profile')
