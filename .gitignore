@@ -81,3 +81,5 @@ graphify-out/
 !/tests/sweeper-settings.browser.cjs
 !/tests/operations-crews.browser.cjs
 !/tests/officer-workflow.browser.cjs
+!/tests/report-priority.test.mjs
+!/tests/report-priority.browser.cjs

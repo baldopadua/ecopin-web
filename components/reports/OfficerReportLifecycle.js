@@ -1,3 +1,4 @@
+import ReportPriorityBadge from '@/components/reports/ReportPriorityBadge'
 import { Check } from 'lucide-react'
 import { getReportStatusHex } from '@/lib/helpers/statusHelpers'
 import styles from './OfficerReportLifecycle.module.css'
@@ -21,6 +22,7 @@ export default function OfficerReportLifecycle({ report, slaInfo }) {
       <h2 id="report-lifecycle-title">Operational lifecycle</h2>
       <p className={styles.intro}>Progress from citizen submission to field resolution.</p>
       <div className={styles.statuses}>
+        <ReportPriorityBadge priority={report.citizen_priority} />
         {!stopped && <Status title="Report status" value={report.status} tone={getReportStatusHex(report.status)} />}
         <Status title="Citizen review" value={report.validation_status} tone={VALIDATION_TONE[report.validation_status] || 'var(--info)'} />
         {report.on_private_property && <Status title="Property consent" value={report.property_owner_consent_status} tone={CONSENT_TONE[report.property_owner_consent_status] || 'var(--warning)'} />}

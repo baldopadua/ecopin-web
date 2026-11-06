@@ -1,4 +1,5 @@
 'use client'
+import ReportPriorityBadge from '@/components/reports/ReportPriorityBadge'
 import React, { useEffect, useState, useMemo, useCallback, useRef, useDeferredValue } from 'react'
 import { MAP_LOCATIONS as LOCATIONS } from '@/lib/map-search.mjs'
 import { publicReportSearchText, matchesGallerySearch } from '@/lib/public-gallery.mjs'
@@ -1476,10 +1477,10 @@ export default function PublicMap({ theme = 'light' }) {
                   <span>{detailedReport.issue_type?.replace(/_/g, ' ') || 'Incident'}</span>
                 </span>
                 
-                {detailedReport.status === 'urgent' || detailedReport.severity_level === 'high' ? (
+                {detailedReport.severity_level === 'high' ? (
                   <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-600/90 text-white shadow-xs backdrop-blur-md border border-red-400/30 flex items-center gap-1">
                     <AlertCircle className="w-3 h-3 text-white" />
-                    <span>Urgent</span>
+                    <span>High severity</span>
                   </span>
                 ) : detailedReport.status === 'resolved' ? (
                   <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-600/90 text-white shadow-xs backdrop-blur-md border border-emerald-400/30 flex items-center gap-1">
@@ -1536,6 +1537,7 @@ export default function PublicMap({ theme = 'light' }) {
               <SeverityScore score={detailedReport.severity_score} />
             </div>
 
+            <ReportPriorityBadge priority={detailedReport.citizen_priority} />
             <ResponseDeadline report={detailedReport} statement />
             <dl className="text-sm border-t border-[var(--landing-border)]">
               <div className="grid grid-cols-[104px_1fr] gap-3 py-3 border-b border-[var(--landing-border)]">

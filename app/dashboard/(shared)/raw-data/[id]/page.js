@@ -1,4 +1,5 @@
 'use client'
+import ReportPriorityBadge from '@/components/reports/ReportPriorityBadge'
 import Link from 'next/link'
 import OperationalTimeline from '@/components/reports/OperationalTimeline'
 import CleanupProofReview from '@/components/reports/CleanupProofReview'
@@ -699,6 +700,7 @@ export default function ReportDetailPage() {
               {isStaff ? <OfficerReportLifecycle report={report} slaInfo={slaInfo} /> : <div className="card border border-border border-primary">
                 <div className="text-center mb-6">
                   <h2 className="text-2xl font-bold text-text-primary mb-1">Operational Lifecycle</h2>
+                  <ReportPriorityBadge priority={report.citizen_priority} />
                   <p className="text-xs text-text-muted mb-4">Track progress from citizen submission through field resolution</p>
                   <div className="flex justify-center gap-3 flex-wrap items-center">
                     {report.validation_status === 'rejected' || (report.on_private_property && report.property_owner_consent_status === 'denied') ? (

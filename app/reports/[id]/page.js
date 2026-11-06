@@ -1,5 +1,6 @@
 'use client'
 
+import ReportPriorityBadge from '@/components/reports/ReportPriorityBadge'
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
@@ -152,6 +153,7 @@ export default function PublicReportPage() {
               <div className={styles.tags}>
                 <span className={styles.issueTag}>{report.issue_type || 'Environmental Concern'}</span>
                 <StatusBadge status={report.status || 'pending'} />
+                <ReportPriorityBadge priority={report.citizen_priority} />
                 {report.location_verification_status && (
                   <StatusBadge status={report.location_verification_status} type="location_verification" />
                 )}

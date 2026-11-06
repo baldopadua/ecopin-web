@@ -11,6 +11,7 @@ import usePublicTheme from '@/components/landing/usePublicTheme'
 import publicStyles from '@/components/landing/LandingPage.module.css'
 import motion from '@/components/ui/PublicMotion.module.css'
 import styles from './Downloads.module.css'
+import release from '@/public/ecopin-app-release.json'
 
 const steps = [
   { icon: Download, title: 'Download the app.', text: 'Open this page on your Android phone and tap Download for Android. Keep the downloaded APK file.' },
@@ -31,7 +32,8 @@ export default function DownloadsPage() {
         <div className={styles.downloadCard}><span className={styles.appIcon}><Smartphone size={36} /></span><h2>Get the EcoPin app.</h2><p>Free Android app · Direct APK download</p><a href={safeCmsUrl(cms.app_download_url, "/ecopin-app-release.apk")} download className={publicStyles.primaryButton} onClick={() => setRequested(true)}><Download size={18} /> Download for Android</a><span className={styles.downloadStatus} role="status">{requested ? 'Download requested. Check your phone’s Downloads when it’s ready.' : 'Download starts when you tap the button.'}</span></div>
       </section>
       <section className={styles.release} aria-label="Latest app release">
-        {cms.app_version_name && <h2>Latest release: {cms.app_version_name}</h2>}
+        <h2>Latest release: {release.versionName} (build {release.versionCode})</h2>
+        <p>Shows citizen-selected Urgent and Non-urgent priority in report details, including the field-crew workspace.</p>
         {cms.app_release_notes && <p className="whitespace-pre-line">{cms.app_release_notes}</p>}
         {safeCmsUrl(cms.app_playstore_url) && <a href={safeCmsUrl(cms.app_playstore_url)} className={publicStyles.textButton} target="_blank" rel="noopener noreferrer">Get it on Google Play <ArrowRight size={18} /></a>}
       </section>

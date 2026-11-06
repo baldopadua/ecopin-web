@@ -1,4 +1,5 @@
 'use client'
+import ReportPriorityBadge from '@/components/reports/ReportPriorityBadge'
 import PublicCleanupProof from './PublicCleanupProof'
 import PageTabs from '@/components/ui/PageTabs'
 import { buildReportPhotos, countPhotos, presentGroups, photoSummaryLines } from '@/lib/report-photos.mjs'
@@ -279,6 +280,7 @@ export default function ReportDetailModal({ report, evidence = [], agencyRespons
                 </h2>
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
                   <StatusBadge status={report.status} type="report" />
+                  <ReportPriorityBadge priority={report.citizen_priority} />
                   {report.validation_status && (
                     <StatusBadge status={report.validation_status} type="validation" />
                   )}
