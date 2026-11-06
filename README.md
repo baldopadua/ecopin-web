@@ -2,6 +2,18 @@
 
 EcoPin is an AI-powered environmental response and cleanup monitoring platform.
 
+## Android download
+
+The public Android download buttons use `/ecopin-app-release.apk`, also linked
+from `/downloads`. Its version, source commit, size, and SHA-256 are recorded in
+`public/ecopin-app-release.json`. The 6 November 2026 release is version 0.1.0,
+Android build 5, from app commit `c637ed39551e44e1a1b3d65ada070ac9d2cbaf28`.
+It includes the current field-crew workflows, multiple cleanup proof photos,
+and support screens. Build it from `ecopin_app` with
+`flutter build apk --release --no-pub --build-name=0.1.0 --build-number=5`.
+Replace the APK and manifest together, preserving the existing signing key and
+increasing the Android build number for future upgrades.
+
 ## Officer dispatch tutorial (WT-96)
 
 On the first visit to `/dashboard/officer`, officers see a six-step tour: review

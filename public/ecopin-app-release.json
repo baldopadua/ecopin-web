@@ -1,8 +1,8 @@
 {
   "versionName": "0.1.0",
-  "versionCode": 4,
-  "sizeBytes": 85908170,
-  "sha256": "f20a3e6ca65d54c9084372a46c7fca90dcc1291d8af1793d265a014b4ecd797c",
-  "sourceCommit": "25a6ade571a307072de826292ae0d591ebbeb8f4",
-  "releasedAt": "2026-10-27T02:21:59.380534+00:00"
+  "versionCode": 5,
+  "sizeBytes": 84399350,
+  "sha256": "b1812e03df5f6b7bacfeb1ef28b68a2133d8bb68283a78fe85879bc09c25cfc3",
+  "sourceCommit": "c637ed39551e44e1a1b3d65ada070ac9d2cbaf28",
+  "releasedAt": "2026-11-06T06:52:05.7455780Z"
 }
