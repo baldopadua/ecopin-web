@@ -122,7 +122,7 @@ export default function CleanupTasksPage() {
           <button
             type="button"
             onClick={() => router.push('/dashboard/officer/operations/create')}
-            className={styles.createButton}
+            className={styles.createButton} data-tour="create-task"
           >
             <Plus size={18} aria-hidden="true" />
             <span>Create cleanup task</span>
@@ -159,7 +159,7 @@ export default function CleanupTasksPage() {
 
 
           {/* Tasks List */}
-          <div className={`workspace-fill ${styles.tableWorkspace}`}>
+          <div className={`workspace-fill ${styles.tableWorkspace}`} data-tour="operations-list">
             <div ref={containerRef} className={styles.tableViewport}>
               <DataTable
                 columns={[

@@ -403,7 +403,7 @@ function OfficerReportsContent() {
         />
 
         {/* Reports List */}
-        <div className={`workspace-fill ${styles.tableWorkspace}`}>
+        <div className={`workspace-fill ${styles.tableWorkspace}`} data-tour="reports-list">
            <div ref={containerRef} className={styles.tableViewport}>
            <DataTable
              columns={tableColumns}

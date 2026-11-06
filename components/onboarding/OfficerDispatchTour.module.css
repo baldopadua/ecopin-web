@@ -21,3 +21,5 @@
 .checklist li::marker { color: var(--workspace-link); }
 .card .tip { padding: 12px; background: var(--surface-elevated); border-radius: 8px; font-size: 13px; }
 @media (max-width: 480px) { .card { padding: 16px; } }
+
+@media (max-width: 639px) { .card { max-height: 60dvh; } }

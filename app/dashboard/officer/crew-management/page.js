@@ -1561,7 +1561,7 @@ function CrewManagementContent() {
           { label: 'Crew Management' }
         ]}
       >
-        <div className={styles.viewToggle}>
+        <div className={styles.viewToggle} data-tour="crew-views">
           <button
             onClick={() => setViewMode('members')}
             className={`${styles.toggleButton} ${viewMode === 'members' ? styles.toggleButtonActive : ''}`}

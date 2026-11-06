@@ -539,7 +539,7 @@ export default function OptimizationPage() {
               </div>
             )}
 
-            <div className={styles.settingsCard}>
+            <div className={styles.settingsCard} data-tour="dispatch-settings">
               <div className={styles.settingsCardHeader}>
                 <div>
                   <h3 className="font-semibold text-text-primary text-base normal-case tracking-normal flex items-center gap-2 m-0">
@@ -630,6 +630,7 @@ export default function OptimizationPage() {
               <div className={styles.generateBar}>
                 <div className="flex items-center gap-3">
                   <button
+                    data-tour="generate-proposal"
                     onClick={handleGenerate}
                     disabled={isOptimizing || clustersLoading}
                     className={styles.generateButton}
@@ -704,7 +705,7 @@ export default function OptimizationPage() {
 
             {/* Current Proposal result */}
             {currentProposal && currentProposal.status === 'draft_plan' && (
-              <div className="card border border-border mt-4 mb-4">
+              <div className="card border border-border mt-4 mb-4" data-tour="route-proposal">
                 {/* Dispatch Proposal Headline Banner */}
                 <div className="p-4 bg-primary/10 border border-primary mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl">
                   <div>
@@ -962,6 +963,7 @@ export default function OptimizationPage() {
 
                     <div className="flex flex-col sm:flex-row gap-3">
                       <button
+                        data-tour="confirm-dispatch"
                         onClick={() => handleCommitPlan(currentProposal.id)}
                         disabled={Boolean(actionLoading) || !currentProposal.selectedCount}
                         className="w-full px-6 py-3 bg-primary text-white font-semibold normal-case tracking-normal border border-primary hover:bg-action-hover transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm text-sm cursor-pointer rounded-full"

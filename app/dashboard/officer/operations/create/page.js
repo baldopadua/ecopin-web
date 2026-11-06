@@ -407,7 +407,7 @@ export default function CreateCleanupTaskPage() {
         <>
           <div className={styles.viewTabs} role="group" aria-label="Manual workspace view">
             {[['map', 'Map'], ['reports', 'Reports'], ['details', 'Task details']].map(([id, label]) =>
-              <button key={id} type="button" aria-pressed={compactView === id} onClick={() => setCompactView(id)}>{label}</button>)}
+              <button key={id} type="button" data-tour-view={id} aria-pressed={compactView === id} onClick={() => setCompactView(id)}>{label}</button>)}
           </div>
           <div className={styles.manualWorkspace} data-view={compactView}>
             <section className={`${styles.panel} ${styles.mapPanel}`} aria-label="Select reports on map">

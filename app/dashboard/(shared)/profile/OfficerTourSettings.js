@@ -51,7 +51,7 @@ export default function OfficerTourSettings({ onNotify }) {
       <div className={`${tourStyles.row} ${tourStyles.replay}`}>
         <div className={tourStyles.copy}>
           <h3 className={tourStyles.label}>Walk through it again</h3>
-          <p className={tourStyles.description}>Replay all six steps from the beginning. This also turns the tutorial on.</p>
+          <p className={tourStyles.description}>Replay the full page-by-page workflow from the beginning. This also turns the tutorial on.</p>
         </div>
         <Button type="button" variant="secondary" disabled={status === null} onClick={() => { save('new'); router.push('/dashboard/officer') }}>Replay tutorial</Button>
       </div>

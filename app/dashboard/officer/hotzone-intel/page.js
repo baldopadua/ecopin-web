@@ -289,7 +289,7 @@ export default function ClustersPage() {
           sticky={false}
         />
 
-        <div className={`workspace-fill ${styles.tableWorkspace}`}>
+        <div className={`workspace-fill ${styles.tableWorkspace}`} data-tour="hotzone-list">
           {clusterQuery.isError && <div role="alert">
             Hotzones could not refresh. Previously loaded hotzones remain below if available.
             <button type="button" onClick={() => { void clusterQuery.refetch() }}>Try again</button>

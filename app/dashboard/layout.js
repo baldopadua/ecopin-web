@@ -3,6 +3,7 @@ import { clearSessionMetadata, getSessionMetadata, loadSessionMetadata, subscrib
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Sidebar from '@/components/layout/Sidebar'
+import OfficerDispatchTour from '@/components/onboarding/OfficerDispatchTour'
 import { UserProvider } from '@/components/auth/UserContext'
 import { SessionProvider, useSession } from '@/components/auth/SessionProvider'
 import { TaskProvider } from '@/components/context/TaskContext'
@@ -123,6 +124,7 @@ function DashboardContent({ children }) {
               {children}
             </main>
           </div>
+          <OfficerDispatchTour key={user?.id} />
         </TaskProvider>
         </DashboardQueryProvider>
       </UserProvider>

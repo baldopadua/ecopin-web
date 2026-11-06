@@ -80,3 +80,4 @@ graphify-out/
 !/tests/crew-creation.browser.cjs
 !/tests/sweeper-settings.browser.cjs
 !/tests/operations-crews.browser.cjs
+!/tests/officer-workflow.browser.cjs

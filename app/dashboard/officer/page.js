@@ -12,7 +12,6 @@ import PageTabs from '@/components/ui/PageTabs'
 import LiveOperationsFeed from '@/components/reports/LiveOperationsFeed'
 import StatusBadge from '@/components/ui/StatusBadge'
 import UnprocessedAlerts from '@/components/reports/UnprocessedAlerts'
-import OfficerDispatchTour from '@/components/onboarding/OfficerDispatchTour'
 import { useUser } from '@/components/auth/UserContext'
 import { OfficerGuard } from '@/components/auth/RequireRole'
 import { Users, AlertTriangle, CloudLightning, ChevronRight, Search } from 'lucide-react'
@@ -189,7 +188,6 @@ export default function OfficerHomepage() {
               </Link>}
           </CommandCenterPanel>
         </div>
-        <OfficerDispatchTour key={user?.id} />
         </div>}
       </div>
     </OfficerGuard>
